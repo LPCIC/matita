@@ -1,89 +1,139 @@
 module refiner.
 
+/************************* helpers ************************/
+
+is_flex T :- not (not (dummy1__ = T)).
+
+is_same_flex M N :-
+  is_flex M, is_flex N, not(dummy1__ = M, dummy2__ = N).
+
+mem X [(Y::T::nil)|_] T :- is_same_flex X Y, !.
+mem X [_|L] T :- mem X L T.
+
+find M Sig T :- mem M Sig T, !.
+find M Sig T :- !, prt "Meta " M, prt " not found in " Sig,  not true.
+
+type prt string -> A -> o.
+prt S T :- 
+    print S, term_to_string T TMP, print TMP, print "\n".
+
+/************************* refiner ************************/
+
+of Sig M T M Sig :-
+  is_flex M,
+  !,
+  find M Sig T.
+
+of Sig hole T M [ [M,T], [T,set] | Sig].
+
+of Sig1 (lam S F) (prod S2 T) (lam S2 F2) Sig3 :-
+  of Sig1 S SO S2 Sig2,
+  unify Sig2 SO set,
+  pi x\ (pi Sig\ of Sig x S2 x Sig) => of Sig2 (F x) (T x) (F2 x) Sig3.
+
+of Sig1 (prod S F) set (prod S2 F2) Sig3 :-
+  of Sig1 S SO S2 Sig2,
+  unify Sig2 SO set,
+  pi x\ (pi Sig\ of Sig x S2 x Sig) =>
+    of Sig2 (F x) (T x) (F2 x) Sig3,
+    unify Sig3 (T x) set.
+
+of Sig1 (app M1 N1) (F N2) (app M2 N2) Sig4 :-
+    of Sig1 M1 TM1 M2 Sig2,
+    of Sig2 N1 TN1 N2 Sig3,
+    pi x\
+      of Sig3 hole _ (F x) Sig4,
+      unify Sig4 TM1 (prod TN1 F).
+
+of Sig zero nat zero Sig.
+
+of Sig succ (prod nat (x \ nat)) succ Sig.
+
+of Sig plus (prod nat (x\ prod nat (y\ nat))) plus Sig.
+
+of Sig nat set nat Sig.
+
+of Sig set set set Sig.
+
+of Sig vect (prod nat (x\ set)) vect Sig.
+of Sig vnil (app vect zero) vnil Sig.
+of Sig vcons (prod nat (n\ prod (app vect n) (w\ app vect (app succ n)))) vcons Sig.
+
+of Sig (rec Rty N Base Step) Rty2 (rec Rty2 N2 Base2 Step2) Sig5 :-
+  of Sig1 Rty TRty Rty2 Sig2,
+  unify Sig2 TRty set,
+  of Sig2 N TN N2 Sig3,
+  unify Sig3 TN nat,
+  of Sig3 Base TBase Base2 Sig4,
+  unify Sig4 TBase Rty2,
+  pi n\ pi acc\
+   (pi Sig\ of Sig n nat n Sig) =>
+   (pi Sig\ of Sig acc Rty2 acc Sig) =>
+     of Sig4 (Step n acc) TStep (Step2 n acc) Sig5,
+     unify Sig5 TStep Rty2.
+
+/* retype */
+rof Sig T TY :- of Sig T TY _ _.
+
 /************************* unify ************************/
 
+/* M=M, we also assert M is in Sig */
+unif ff Sig M N :- is_same_flex M N, !, find M Sig _.
+
+/* flex=term */
+unif ff Sig M N,
+unif ff Sig N M :-
+  is_flex M,
+  !,
+  find M Sig T,
+  rof Sig N TN,
+  unify Sig TN T,
+  M = N.
+
 /* reflexive closure + heuristic for == */
-unif ff T T :- !.
+unif ff _ T T :- !.
 
 /* heuristic: fire explicit weak head beta redexes */
-unif ff (app (lam _ F) M) X,
-unif ff X (app (lam _ F) M) :- !, unif ff (F M) X.
-
-/*unif ff (app (lam _ F) M) X,
-unif ff X (app (lam _ F) M) :- !,
- pi x\ unif ff M x => unif ff X (F x).*/
+unif ff Sig (app (lam _ F) M) X,
+unif ff Sig X (app (lam _ F) M) :- !, unify Sig (F M) X.
 
 /* contextual closure + heuristic */
-unif ff (app H A) (app K B) :- unif ff H K, unif ff A B.
+unif ff Sig (app H A) (app K B) :- unify Sig H K, unify Sig A B.
 
 /* contextual closure */
-unif ff (lam S F) (lam T G) :- !, unif ff S T, pi x\ unif ff (F x) (G x).
-unif ff (prod S F) (prod T G) :- !, unif ff S T, pi x\ unif ff (F x) (G x).
+unif ff Sig (lam S F) (lam T G) :- !, unify Sig S T, pi x\ unify Sig (F x) (G x).
+unif ff Sig (prod S F) (prod T G) :- !, unify Sig S T, pi x\ unify Sig (F x) (G x).
 
 /* contextual closure + heuristic */
-unif ff (rec A1 B1 C1 D1) (rec A2 B2 C2 D2) :-
-    unif ff A1 A2,
-    unif ff B1 B2,
-    unif ff C1 C2,
-    pi x\ pi acc\ unif ff (D1 x acc) (D2 x acc).
+unif ff Sig (rec A1 B1 C1 D1) (rec A2 B2 C2 D2) :-
+    unify Sig A1 A2,
+    unify Sig B1 B2,
+    unify Sig C1 C2,
+    pi x\ pi acc\ unify Sig (D1 x acc) (D2 x acc).
 
 /* beta */
-unif _ (app L M) X :- unif ff L (lam _ F), !, unif ff X (F M).
+unif _ Sig (app L M) X :- unify Sig L (lam _ F), !, unify Sig (F M) X.
 
 /* delta */
-unif _ plus (lam nat
+unif _ Sig plus (lam nat
              (n\ (rec nat n
                     (lam nat (x\ x))
                     (m\ acc\ lam nat (n\ app succ (app acc n)))))) :- !.
 /* iota */
-unif _ (rec _ N B R) X :- unif ff N zero, !, unif ff B X.
-unif _ (rec T N B R) X :- unif ff N (app succ M), !, unif ff (R M (rec T M B R)) X.
+unif _ Sig (rec _ N B R) X :- unify Sig N zero, !, unify Sig B X.
+unif _ Sig (rec T N B R) X :- unify Sig N (app succ M), !, unify Sig (R M (rec T M B R)) X.
 
 /* symmetric */
-unif ff A B :- unif tt B A.
+unif ff Sig A B :- unif tt Sig B A.
 
-unify A B :- unif ff A B.
+unify Sig A B :- unif ff Sig A B.
 
-/************************* typeof ************************/
-
-of zero nat zero nil K :- K.
-
-of succ (prod nat (x \ nat)) succ nil K :- K.
-
-of f (prod nat (x \ prod nat (y \ nat))) f nil K :- K.
-
-of plus (prod nat (x\ prod nat (y\ nat))) plus nil K :- K.
-
-of nat set nat nil K :- K.
-
-of set set set nil K :- K.
-
-
-of vect (prod nat (x\ set)) vect nil K :- K.
-of vnil (app vect zero) vnil nil K :- K.
-of vcons (prod nat (n\ prod (app vect n) (w\ app vect (app succ n)))) vcons nil K :- K.
-
-
-of (prod O1 T1) set (prod O2 T2) (append S1 S2) K :-
-    pi x\ (pi H\ H => of x O1 x nil H) => of (T1 x) set (T2 x) S2 (
-    of O1 set O2 S1 K).
-
-of (lam T1 F1) X (lam T2 F2) (append S1 S2) K :-
-    pi x\ (pi H\ H => of x T1 x nil H) => of (F1 x) (T x) (F2 x) S2 (
-    of T1 SO T2 S1 (
-    unify SO set,
-    unify X (prod T2 T),
-    K)).
-
-
-of (app M1 N1) X (app M2 N2) (append S1 S2) K :-
-    of M1 T M2 S1 (
-    unify T (prod A F),
-    of N1 S N2 S2 (
-    unify S A,
-    unify X (F N2),
-    K)).
-
-/*of hole X M ((M::X::nil)::nil) K :- pi x\ (pi S\ pi H\ H => of x X M S H) => K.*/
-
-/* of hole X M ((M::X::nil)::nil) K :- pi x\ K. */
+test_unify Sig1 A B A1 B1 Sig3 :-
+  prt "" (of Sig1 A TA A1 Sig2),
+  of Sig1 A TA A1 Sig2,
+  prt "" (of Sig2 B TB B1 Sig3),
+  of Sig2 B TB B1 Sig3,
+  prt "" (unify Sig3 TA TB),
+  unify Sig3 TA TB,
+  prt "" (unify Sig3 A1 B1),
+  unify Sig3 A1 B1.
