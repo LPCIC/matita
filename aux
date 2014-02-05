@@ -20,3 +20,6 @@ of (lam (prod nat (a\ prod nat (b\ nat))) (f \ (app (lam nat (x\ app (app f x) x
 
 of (prod nat (x\ nat)) T M S true.
 of (prod nat (x\ prod nat (y\ nat))) T M S true.
+
+of (app (app vcons zero) vnil) T M S true.
+of (lam nat (n \ lam (app vect n) (v \ (app (app vcons n) v)))) T M S true.

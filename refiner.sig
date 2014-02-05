@@ -17,6 +17,11 @@ type f term.
 /* rec rty n base step:(n -> res_n -> rty) */
 type rec  term -> term -> term -> (term -> term -> term) -> term.
 
+/** Dependent type */
+type vnil term.
+type vcons term.
+type vect term.
+
 /** Constants with a body ??? */
 type plus term.
 
@@ -27,8 +32,6 @@ type hole term.
 kind bool type.
 type tt bool.
 type ff bool.
-
-type pp term -> string -> o.
 
 type append list A -> list A -> list A.
 

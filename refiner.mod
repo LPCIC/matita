@@ -58,36 +58,30 @@ of nat set nat nil K :- K.
 
 of set set set nil K :- K.
 
+
+of vect (prod nat (x\ set)) vect nil K :- K.
+of vnil (app vect zero) vnil nil K :- K.
+of vcons (prod nat (n\ prod (app vect n) (w\ app vect (app succ n)))) vcons nil K :- K.
+
+
 of (prod O1 T1) set (prod O2 T2) (append S1 S2) K :-
     pi x\ (pi H\ H => of x O1 x nil H) => of (T1 x) set (T2 x) S2 (
     of O1 set O2 S1 K).
 
 of (lam T1 F1) X (lam T2 F2) (append S1 S2) K :-
-    print "entro\n",
     pi x\ (pi H\ H => of x T1 x nil H) => of (F1 x) (T x) (F2 x) S2 (
-    print "vado\n",
     of T1 SO T2 S1 (
-    print "pippo\n",
     unify SO set,
-    print "pluto\n",
     unify X (prod T2 T),
-    print "paperino\n",
     K)).
 
 
 of (app M1 N1) X (app M2 N2) (append S1 S2) K :-
-    print "head=", term_to_string M1 Str1, print Str1, print "\n",
     of M1 T M2 S1 (
-    print "app2\n",
     unify T (prod A F),
-    print "app3\n",
     of N1 S N2 S2 (
-    print "app4\n",
     unify S A,
-    print "app5\n",
-    print "TY=", term_to_string (F N2) Str2, print Str2, print "\n",
     unify X (F N2),
-    print "app6\n",
     K)).
 
 /*of hole X M ((M::X::nil)::nil) K :- pi x\ (pi S\ pi H\ H => of x X M S H) => K.*/
