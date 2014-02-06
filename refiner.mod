@@ -7,7 +7,12 @@ is_flex T :- not (not (dummy1__ = T)).
 is_same_flex M N :-
   is_flex M, is_flex N, not(dummy1__ = M, dummy2__ = N).
 
-mem X [(Y::T::nil)|_] T :- is_same_flex X Y, !.
+same_goal X (decl _ F) T :- pi x\ same_goal X (F x) T.
+same_goal X (goal Y _) T :- prt "AAAAAA " (goal X Y), not true.
+
+mem X [Seq|_] T :- same_goal X Seq T, !. /* TODO */
+mem X (append L _) T :- mem X L T, !.
+mem X (append _ R) T :- mem X R T, !.
 mem X [_|L] T :- mem X L T.
 
 find M Sig T :- mem M Sig T, !.
@@ -19,18 +24,26 @@ prt S T :-
 
 /************************* refiner ************************/
 
-of Sig M T M Sig :-
+of Sig M T M nil :-
   is_flex M,
   !,
   find M Sig T.
 
-of Sig hole T M [ [M,T], [T,set] | Sig].
+of Sig hole T M [ goal M T, goal T set ].
 
-of Sig1 (lam S F) (prod S2 T) (lam S2 F2) Sig3 :-
-  of Sig1 S SO S2 Sig2,
+sigma_appl [] [] _ _ :- !.
+sigma_appl [S1 X|Ss] [decl T S1|Ss1] X T :- sigma_appl Ss Ss1 X T.
+sigma_appl (append L R) (append L1 R1) X T :- sigma_appl L L1 X T, sigma_appl R R1 X T.
+
+of Sig (lam S F) (prod S2 T) (lam S2 F2) (append Ex1 Ex3) :-
+  of Sig S SO S2 Ex1,
+  Sig2 = append Sig Ex1,
   unify Sig2 SO set,
-  pi x\ (pi Sig\ of Sig x S2 x Sig) => of Sig2 (F x) (T x) (F2 x) Sig3.
+  pi x\ sigma Ex2\ (pi Sig\ of Sig x S2 x nil) =>
+    of Sig2 (F x) (T x) (F2 x) Ex2,
+    sigma_appl Ex2 /*=*/ Ex3 x S2.
 
+/*
 of Sig1 (prod S F) set (prod S2 F2) Sig3 :-
   of Sig1 S SO S2 Sig2,
   unify Sig2 SO set,
@@ -38,23 +51,23 @@ of Sig1 (prod S F) set (prod S2 F2) Sig3 :-
     of Sig2 (F x) (T x) (F2 x) Sig3,
     unify Sig3 (T x) set.
 
-of Sig1 (app M1 N1) (F N2) (app M2 N2) Sig4 :-
+of Sig1 (app M1 N1) (F N2) (app M2 N2) Sig3 :-
     of Sig1 M1 TM1 M2 Sig2,
     of Sig2 N1 TN1 N2 Sig3,
     pi x\
       of Sig3 hole _ (F x) Sig4,
       unify Sig4 TM1 (prod TN1 F).
+*/
+of Sig zero nat zero nil.
 
-of Sig zero nat zero Sig.
+of Sig succ (prod nat (x \ nat)) succ nil.
 
-of Sig succ (prod nat (x \ nat)) succ Sig.
+of Sig plus (prod nat (x\ prod nat (y\ nat))) plus nil.
 
-of Sig plus (prod nat (x\ prod nat (y\ nat))) plus Sig.
+of Sig nat set nat nil.
 
-of Sig nat set nat Sig.
-
-of Sig set set set Sig.
-
+of Sig set set set nil.
+/*
 of Sig vect (prod nat (x\ set)) vect Sig.
 of Sig vnil (app vect zero) vnil Sig.
 of Sig vcons (prod nat (n\ prod (app vect n) (w\ app vect (app succ n)))) vcons Sig.
@@ -74,6 +87,7 @@ of Sig (rec Rty N Base Step) Rty2 (rec Rty2 N2 Base2 Step2) Sig5 :-
 
 /* retype */
 rof Sig T TY :- of Sig T TY _ _.
+*/
 
 /************************* unify ************************/
 
@@ -91,7 +105,9 @@ unif ff Sig N M :-
   M = N.
 
 /* reflexive closure + heuristic for == */
-unif ff _ T T :- !.
+/*unif ff _ T T :- !.*/
+unif ff _ nat nat :- !.
+unif ff _ set set :- !.
 
 /* heuristic: fire explicit weak head beta redexes */
 unif ff Sig (app (lam _ F) M) X,
