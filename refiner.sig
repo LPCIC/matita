@@ -9,6 +9,8 @@ type lam  term -> (term -> term) -> term.
 type prod term -> (term -> term) -> term.
 type set  term.
 
+type ginst term -> term -> term.
+
 /** Arithmetics */
 type nat term.
 type zero term.
