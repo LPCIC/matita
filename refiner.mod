@@ -222,6 +222,8 @@ unif ff A B :- unif tt B A.
 
 unify A B :- unif ff A B.
 
+/* GUI */
+
 test_unify A B TA2 A2 B2 Sig :-
   prt "---------> " (of A TA A1 Ex1),
   of A TA A1 Ex1,
