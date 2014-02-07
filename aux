@@ -1,38 +1,41 @@
 not (unify N M).
 not (unify N N).
 test_unify hole hole T M N S.
-test_unify vcons hole T M N Sig.
+test_unify (atom vcons) hole T M N Sig.
 
-test_unify (app hole zero) hole T M N S.
-test_unify (app hole zero) zero T M N S.
+test_unify (app hole (atom zero)) hole T M N S.
+test_unify (app hole (atom zero)) (atom zero) T M N S.
 
-test_unify (app (lam nat (x\ app hole x)) zero) zero T M N S.
-test_unify (app (lam nat (x\ app hole x)) zero) (app succ zero) T M N S.
+test_unify (app hole (app (atom succ) (atom zero))) (app (atom succ) (atom zero)) T M N S.
+test_unify (app hole (atom zero)) (app (atom succ) (atom zero)) T M N S.
+test_unify (app hole (app (atom succ) hole)) (app (atom succ) (atom zero)) T M N S.
+
+#test_unify (app (lam (atom nat) (x\ app hole x)) (app (atom succ) (atom zero))) (app (atom succ) (atom zero)) T M N S.
  
-# test_unify (app plus zero) (rec hole hole hole (x\y\ app (app hole x) y)) T M N Sig.
-# test_unify (app (lam hole (app succ)) hole) (app succ hole) T M N Sig.
+test_unify (app (atom plus) (atom zero)) (rec hole hole hole (lam (atom nat) x\ lam hole y\ app (app hole x) y)) T M N Sig.
+# test_unify (app (lam hole (app (atom succ))) hole) (app (atom succ) hole) T M N Sig.
 
-# test_unify (app (app vcons zero) vnil) hole M N Sig.
-test_unify (lam nat (n \ lam (app vect n) (v \ (app (app vcons n) v)))) hole M N Sig.
+# test_unify (app (app (atom vcons) (atom zero)) (atom vnil)) hole M N Sig.
+test_unify (lam (atom nat) (n \ lam (app (atom vect) n) (v \ (app (app (atom vcons) n) v)))) hole M N Sig.
 
-unify (app (app (lam _ (x\ lam _ (y\ y))) M) N) zero.
-unify (app (app (lam _ (x\ lam _ (y\ y))) M) zero) (app (lam _ (x\x)) zero).
-unify (app (app (lam _ (x\ lam _ (y\ y))) M) zero) (app (lam _ (x\x)) (app (lam _ (x\x)) zero)).
-unify (app (app plus (app succ zero)) (app succ zero)) (app succ (app succ zero)).
-unify (app (app (lam _ (x\ succ)) zero) zero) (app succ zero).
-unify (app succ (app (lam _ (x\ x)) zero)) (app succ zero).
-unify (lam nat (x\ (app succ (app (lam _ (x\ x)) zero)))) (lam Y (y\ (app succ zero))).
-unify (app (app plus (app succ M)) zero) (app (app plus (app succ (app succ N))) zero).
+unify (app (app (lam _ (x\ lam _ (y\ y))) M) N) (atom zero).
+unify (app (app (lam _ (x\ lam _ (y\ y))) M) (atom zero)) (app (lam _ (x\x)) (atom zero)).
+unify (app (app (lam _ (x\ lam _ (y\ y))) M) (atom zero)) (app (lam _ (x\x)) (app (lam _ (x\x)) (atom zero))).
+unify (app (app (atom plus) (app (atom succ) (atom zero))) (app (atom succ) (atom zero))) (app (atom succ) (app (atom succ) (atom zero))).
+unify (app (app (lam _ (x\ (atom succ))) (atom zero)) (atom zero)) (app (atom succ) (atom zero)).
+unify (app (atom succ) (app (lam _ (x\ x)) (atom zero))) (app (atom succ) (atom zero)).
+unify (lam (atom nat) (x\ (app (atom succ) (app (lam _ (x\ x)) (atom zero))))) (lam Y (y\ (app (atom succ) (atom zero)))).
+unify (app (app (atom plus) (app (atom succ) M)) (atom zero)) (app (app (atom plus) (app (atom succ) (app (atom succ) N))) (atom zero)).
 
-of (app succ hole) T M S true.
-of (app succ hole) T M S (of M R A L true).
-of (lam nat (x\ x)) T M S true.
+of (app (atom succ) hole) T M S true.
+of (app (atom succ) hole) T M S (of M R A L true).
+of (lam (atom nat) (x\ x)) T M S true.
 
-of (lam (prod nat (a\ nat)) (f \ (app (lam nat (x\ app f x)) hole))) T M S true.
-of (lam (prod nat (a\ prod nat (b\ nat))) (f \ (app (lam nat (x\ app (app f x) x)) hole))) T M S true.
+of (lam (prod (atom nat) (a\ (atom nat))) (f \ (app (lam (atom nat) (x\ app f x)) hole))) T M S true.
+of (lam (prod (atom nat) (a\ prod (atom nat) (b\ (atom nat)))) (f \ (app (lam (atom nat) (x\ app (app f x) x)) hole))) T M S true.
 
-of (prod nat (x\ nat)) T M S true.
-of (prod nat (x\ prod nat (y\ nat))) T M S true.
+of (prod (atom nat) (x\ (atom nat))) T M S true.
+of (prod (atom nat) (x\ prod (atom nat) (y\ (atom nat)))) T M S true.
 
-of (app (app vcons zero) vnil) T M S true.
-of (lam nat (n \ lam (app vect n) (v \ (app (app vcons n) v)))) T M S true.
+of (app (app (atom vcons) (atom zero)) (atom vnil)) T M S true.
+of (lam (atom nat) (n \ lam (app (atom vect) n) (v \ (app (app (atom vcons) n) v)))) T M S true.

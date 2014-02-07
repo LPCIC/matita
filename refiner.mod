@@ -52,33 +52,27 @@ of (app M1 N1) Z (app M2 N2) (append (append Ex1 Ex2) Ex4) :-
       sigma_appl Ex3 /*=*/ Ex4 x TN1,
       subst F N2 Z.
 
-of zero nat zero nil.
+of (atom ID) T (atom ID) nil :- env ID T.
 
-of succ (prod nat (x \ nat)) succ nil.
-
-of plus (prod nat (x\ prod nat (y\ nat))) plus nil.
-
-of nat set nat nil.
+env zero (atom nat).
+env succ (prod (atom nat) (x \ (atom nat))).
+env plus (prod (atom nat) (x\ prod (atom nat) (y\ (atom nat)))).
+env nat set.
+env vect (prod (atom nat) (x\ set)).
+env vnil (app (atom vect) (atom zero)).
+env vcons (prod (atom nat) (n\ prod (app (atom vect) n) (w\ app (atom vect) (app (atom succ) n)))).
 
 of set set set nil.
-of vect (prod nat (x\ set)) vect nil.
-of vnil (app vect zero) vnil nil.
-of vcons (prod nat (n\ prod (app vect n) (w\ app vect (app succ n)))) vcons nil.
 
-of (rec Rty N Base Step) Rty2 (rec Rty2 N2 Base2 Step2) (append (append Ex1 Ex2) (append Ex3 Ex6)) :-
+of (rec Rty N Base Step) Rty2 (rec Rty2 N2 Base2 Step2) (append (append Ex1 Ex2) (append Ex3 Ex4)) :-
   of Rty TRty Rty2 Ex1,
   unify TRty set,
   of N TN N2 Ex2,
-  unify TN nat,
+  unify TN (atom nat),
   of Base TBase Base2 Ex3,
   unify TBase Rty2,
-  pi n\ sigma Ex5\ pi acc\ sigma Ex4\
-   of n nat n nil =>
-   of acc Rty2 acc nil => (
-     of (Step n acc) TStep (Step2 n acc) Ex4,
-     unify TStep Rty2,
-     sigma_appl Ex4 /*=*/ Ex5 acc Rty2,
-     sigma_appl Ex5 /*=*/ Ex6 n nat).
+  of Step TStep Step2 Ex4,
+  unify TStep (prod (atom nat) n\ prod Rty2 acc \ Rty2).
 
 /* retype */
 rof T TY :- of T TY _ _.
@@ -99,11 +93,7 @@ clean (app M1 N1) (app M2 N2) :- !, clean M1 M2, clean N1 N2.
 clean (lam T1 F1) (lam T2 F2) :- !, clean T1 T2, pi x\ clean (F1 x) (F2 x).
 clean (prod T1 F1) (prod T2 F2) :- !, clean T1 T2, pi x\ clean (F1 x) (F2 x).
 clean (rec A1 B1 C1 D1) (rec A2 B2 C2 D2) :-
-  !,
-  clean A1 A2,
-  clean B1 B2,
-  clean C1 C2,
-  pi x\ pi y\ clean (D1 x y) (D2 x y).
+  !, clean A1 A2, clean B1 B2, clean C1 C2, clean D1 D2.
 clean T T :- !.
 
 % clean_seq L M :- prt "" (clean_seq L M), not true.
@@ -120,25 +110,34 @@ clean_sigma (append (append L1 L2) L3) L :- clean_sigma (append L1 (append L2 L3
 
 /************************* ho ************************/
 
-%ho Res What Where
+% ho (lam _ Res) What TYWhat Where
 
-% proj (zero)
-ho (lam nat (x\x)) zero zero.
+% only mimic in (? ? = T) case
+ho (lam LTY (x\T)) (ginst N _) LTY T :- is_flex N, !.
+ho (lam LTY (x\T)) (app (ginst N _) _) LTY T :- is_flex N, !.
 
-% mimic (any)
-ho (lam (ginst M (ginst N set)) (x\zero)) T zero :- unify T (ginst W (ginst M (ginst N set))).
+% proj rigid
+ho (lam LTY (x\x)) T LTY T2 :- unify T T2.
 
-ho (lam nat (x\ app (L1 x) (R1 x))) zero (app L R) :- ho (lam _ L1) zero L, ho (lam __ R1) zero R.
+% mimic on compound terms
+ho (lam LTY (x\ app (L1 x) (R1 x))) T LTY (app L R) :- ho (lam _ L1) T LTY L, ho (lam __ R1) T LTY R.
+ho (lam LTY (x\ rec (A1 x) (B1 x) (C1 x) (D1 x))) T LTY (rec A B C D) :-
+ ho (lam _ A1) T LTY A, ho (lam _ B1) T LTY B, ho (lam _ C1) T LTY C, ho (lam _ D1) T LTY D.
+ho (lam LTY (x\ lam (L1 x) (R1 x))) T LTY (lam L R) :-
+ ho (lam _ L1) T LTY L, pi x\ ho (lam __ (R1 x)) T LTY (R x).
+ho (lam LTY (x\ prod (L1 x) (R1 x))) T LTY (prod L R) :-
+ ho (lam _ L1) T LTY L, pi x\ ho (lam __ (R1 x)) T LTY (R x).
 
-ho (lam nat (x\ succ)) zero succ.
+% mimic on atomic terms
+ho (lam LTY (x\set)) T LTY set.
+ho (lam LTY (x\A)) T LTY A :- A = atom _.
 
 /************************* copy ************************/
 
 copy (ginst G GT) (ginst G GT1) :- is_flex G, !, copy GT GT1.
 copy (ginst G GT) (ginst G1 GT1) :- copy G G1, copy GT GT1.
-copy zero zero.
-copy nat nat.
 copy set set.
+copy A A :- A = atom _.
 copy (app A B) (app A1 B1) :- copy A A1, copy B B1.
 copy (lam T F) (lam T1 F1) :- copy T T1, pi x\ copy (F x) (F1 x).
 copy (prod T F) (prod T1 F1) :- copy T T1, pi x\ copy (F x) (F1 x).
@@ -170,18 +169,8 @@ unif ff N (ginst M T) :-
 
 /* reflexive closure + heuristic for == */
 /*unif ff _ T T :- !.*/
-unif ff nat nat :- !.
-unif ff zero zero :- !.
-unif ff succ succ :- !.
 unif ff set set :- !.
-unif ff vect vect :- !.
-unif ff vnil vnil :- !.
-unif ff vcons vcons :- !.
-unif ff plus plus :- !.
-
-/* heuristic: fire explicit weak head beta redexes
-unif ff (app (lam _ F) M) X,
-unif ff X (app (lam _ F) M) :- !, unify (F M) X. */
+unif ff A A :- A = atom _, !.
 
 /* contextual closure + heuristic */
 unif ff (app H A) (app K B) :- unify H K, unify A B.
@@ -201,16 +190,11 @@ unif ff (prod S F) (prod T G) :-
 
 /* contextual closure + heuristic */
 unif ff (rec A1 B1 C1 D1) (rec A2 B2 C2 D2) :-
-    unify A1 A2,
-    unify B1 B2,
-    unify C1 C2,
-    pi x\ of x nat x nil => unif ff x x =>
-    pi acc\ of acc A1 acc nil => unif ff acc acc =>
-      unify (D1 x acc) (D2 x acc).
+  unify A1 A2, unify B1 B2, unify C1 C2, unify D1 D2.
 
 /* ho unification */
 unif _ (app (ginst H TH) M) X :-
-  is_flex H, !, ho H2 M X, unify (ginst H TH) H2.
+  is_flex H, !, rof M TYM, ho H2 M TYM X, unify (ginst H TH) H2.
 
 /* beta */
 unif _ (app L M) X :-
@@ -220,13 +204,18 @@ unif _ (app L M) X :-
   unify Y X.
 
 /* delta */
-unif _ plus (lam nat
-             (n\ (rec (prod nat (x\ nat)) n
-                    (lam nat (x\ x))
-                    (m\ acc\ lam nat (n\ app succ (app acc n)))))) :- !.
+unif _ (atom ID) B :- body ID B.
+
+/* delta */
+body plus (lam (atom nat)
+             (n\ (rec (prod (atom nat) (x\ (atom nat))) n
+                    (lam (atom nat) (x\ x))
+                    (lam (atom nat) m\ lam (prod (atom nat) (x\ (atom nat))) acc\
+                       lam (atom nat) (n\ app (atom succ) (app acc n)))))) :- !.
 /* iota */
-unif _ (rec _ N B R) X :- unify N zero, !, unify B X.
-unif _ (rec T N B R) X :- unify N (app succ M), !, unify (R M (rec T M B R)) X.
+unif _ (rec _ N _ _) _ :- is_flex N, !, fail.
+unif _ (rec _ N B R) X :- N = atom zero, !, unify B X.
+unif _ (rec T N B R) X :- N = app (atom succ) M, !, unify (app (app R M) (rec T M B R)) X.
 
 /* symmetric */
 unif ff A B :- unif tt B A.

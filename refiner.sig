@@ -11,23 +11,28 @@ type set  term.
 
 type ginst term -> term -> term.
 
-/** Arithmetics */
-type nat term.
-type zero term.
-type succ term.
+type atom id -> term.
+
 /* rec rty n base step:(n -> res_n -> rty) */
-type rec  term -> term -> term -> (term -> term -> term) -> term.
+type rec  term -> term -> term -> term -> term.
 
-/** Dependent type */
-type vnil term.
-type vcons term.
-type vect term.
-
-/** Constants with a body ??? */
-type plus term.
-
-/** untyped */
 type hole term.
+
+/** Ids */
+type nat id.
+type zero id.
+type succ id.
+type vnil  id.
+type vcons id.
+type vect  id.
+type plus id.
+
+/** Lookup in the library */
+kind id type.
+type env id -> term -> o.
+type body id -> term -> o.
+
+/** Sequents */
 
 kind seq type.
 type decl term -> (term -> seq) -> seq.
@@ -50,7 +55,7 @@ type sigma_appl list seq -> list seq -> term -> term -> o.
 type clean term -> term -> o.
 type clean_sigma list seq -> list seq -> o.
 type clean_seq seq -> seq -> o.
-type ho   term -> term -> term -> o.
+type ho   term -> term -> term -> term -> o.
 type copy term -> term -> o.
 /* subst where what out */
 type subst (term -> term) -> term -> term -> o.
