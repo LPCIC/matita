@@ -38,21 +38,21 @@ kind seq type.
 type decl term -> (term -> seq) -> seq.
 type goal term -> term -> seq.
 
-type mem term -> list seq -> term -> o.
-type find term -> list seq -> term -> o.
 type append list seq -> list seq -> list seq.
 
 /** Program */
-/* of sigma term type term' extra_sigma : sigma@extra_simga is sigma' */
-type of   list seq -> term -> term -> term -> list seq -> o.
-type unif bool -> list seq -> term -> term -> o.
-type unify list seq -> term -> term -> o.
-type rof list seq -> term -> term -> o.
-type test_unify list seq -> term -> term -> term -> term -> list seq -> o.
+type clean term -> term -> o.
+type clean_sigma list seq -> list seq -> o.
+type clean_seq seq -> seq -> o.
+/* of term type term' extra_sigma : sigma@extra_simga is sigma' */
+type of   term -> term -> term -> list seq -> o.
+type unif bool -> term -> term -> o.
+type unify term -> term -> o.
+type rof term -> term -> o.
+type test_unify term -> term -> term -> term -> list seq -> o.
 
 type dummy1__, dummy2__ term.
 type is_flex term -> o.
 type is_same_flex term -> term -> o.
 
 type sigma_appl list seq -> list seq -> term -> term -> o.
-type same_goal term -> seq -> term -> o.

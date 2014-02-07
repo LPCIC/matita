@@ -1,21 +1,24 @@
-not (unify nil N M).
-not (unify nil N N).
-test_unify nil hole hole M N S.
-test_unify nil (app hole zero) hole M N S.
-test_unify nil (app plus zero) (rec hole hole hole (x\y\ app (app hole x) y)) M N Sig.
-test_unify nil (app (lam hole (app succ)) hole) (app succ hole) M N Sig.
+not (unify N M).
+not (unify N N).
+test_unify hole hole M N S.
+test_unify vcons hole M N Sig.
 
-test_unify nil (app (app vcons zero) vnil) hole M N Sig.
-test_unify nil (lam nat (n \ lam (app vect n) (v \ (app (app vcons n) v)))) hole M N Sig.
+# test_unify (app hole zero) hole M N S.
+ 
+# test_unify (app plus zero) (rec hole hole hole (x\y\ app (app hole x) y)) M N Sig.
+# test_unify (app (lam hole (app succ)) hole) (app succ hole) M N Sig.
 
-unify nil (app (app (lam _ (x\ lam _ (y\ y))) M) N) zero.
-unify nil (app (app (lam _ (x\ lam _ (y\ y))) M) zero) (app (lam _ (x\x)) zero).
-unify nil (app (app (lam _ (x\ lam _ (y\ y))) M) zero) (app (lam _ (x\x)) (app (lam _ (x\x)) zero)).
-unify nil (app (app plus (app succ zero)) (app succ zero)) (app succ (app succ zero)).
-unify nil (app (app (lam _ (x\ succ)) zero) zero) (app succ zero).
-unify nil (app succ (app (lam _ (x\ x)) zero)) (app succ zero).
-unify nil (lam nat (x\ (app succ (app (lam _ (x\ x)) zero)))) (lam Y (y\ (app succ zero))).
-unify nil (app (app plus (app succ M)) zero) (app (app plus (app succ (app succ N))) zero).
+# test_unify (app (app vcons zero) vnil) hole M N Sig.
+test_unify (lam nat (n \ lam (app vect n) (v \ (app (app vcons n) v)))) hole M N Sig.
+
+unify (app (app (lam _ (x\ lam _ (y\ y))) M) N) zero.
+unify (app (app (lam _ (x\ lam _ (y\ y))) M) zero) (app (lam _ (x\x)) zero).
+unify (app (app (lam _ (x\ lam _ (y\ y))) M) zero) (app (lam _ (x\x)) (app (lam _ (x\x)) zero)).
+unify (app (app plus (app succ zero)) (app succ zero)) (app succ (app succ zero)).
+unify (app (app (lam _ (x\ succ)) zero) zero) (app succ zero).
+unify (app succ (app (lam _ (x\ x)) zero)) (app succ zero).
+unify (lam nat (x\ (app succ (app (lam _ (x\ x)) zero)))) (lam Y (y\ (app succ zero))).
+unify (app (app plus (app succ M)) zero) (app (app plus (app succ (app succ N))) zero).
 
 of (app succ hole) T M S true.
 of (app succ hole) T M S (of M R A L true).
