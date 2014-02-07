@@ -10,6 +10,9 @@ test_unify (app hole (app (atom succ) (atom zero))) (app (atom succ) (atom zero)
 test_unify (app hole (atom zero)) (app (atom succ) (atom zero)) T M N S.
 test_unify (app hole (app (atom succ) hole)) (app (atom succ) (atom zero)) T M N S.
 
+
+
+
 #test_unify (app (lam (atom nat) (x\ app hole x)) (app (atom succ) (atom zero))) (app (atom succ) (atom zero)) T M N S.
  
 test_unify (app (atom plus) (atom zero)) (rec hole hole hole (lam (atom nat) x\ lam hole y\ app (app hole x) y)) T M N Sig.

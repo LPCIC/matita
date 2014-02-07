@@ -27,6 +27,8 @@ type vcons id.
 type vect  id.
 type plus id.
 
+type var int -> term.
+
 /** Lookup in the library */
 kind id type.
 type env id -> term -> o.
@@ -52,6 +54,7 @@ type is_same_flex term -> term -> o.
 type sigma_appl list seq -> list seq -> term -> term -> o.
 
 /** Program */
+type exp int -> term -> o.
 type clean term -> term -> o.
 type clean_sigma list seq -> list seq -> o.
 type clean_seq seq -> seq -> o.
@@ -68,3 +71,8 @@ type test_unify term -> term -> term -> term -> term -> list seq -> o.
 type of   term -> term -> term -> list seq -> o.
 type unify term -> term -> o.
 
+type claim term -> term -> o.
+
+
+type step list seq -> o.
+type step_in int -> seq -> list seq -> o.

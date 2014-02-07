@@ -239,3 +239,35 @@ test_unify A B TA2 A2 B2 Sig :-
   clean B1 B2,
   print "cleaning4\n",
   clean_sigma (append Ex1 Ex2) Sig.
+
+of (var N) T M Sig :- exp N X, of X T M Sig.
+
+step_in N (decl TY F) Sig :-
+  pi x\ of x TY x nil => copy x x => unify x x => exp N x => (
+  M is (N + 1),
+  prt "hyp " (exp N TY),
+  step_in M (F x) Sig).
+step_in N (goal M MTY) Sig :-
+  prt "=========\n" MTY,
+  print "> ",
+  ((read P,
+  of P TP P1 Sig,
+  unify TP MTY,
+  print "\nOk\n\n",
+  P1 = M) ; print "\nWrong! Please retry\n\n", step_in N (goal M MTY) Sig).
+
+step nil :- print "\nProof completed.\n".
+step [G|GS] :-
+  step_in 0 G Sig1,
+  clean_sigma (append Sig1 GS) Sig2,
+  step Sig2.
+  
+claim Claim P1 :-
+  of Claim T Claim1 Sig1,
+  unify T set,
+  of hole THole P Sig2,
+  unify THole Claim1,
+  clean_sigma (append Sig1 Sig2) Sig,
+  print "\n",
+  step Sig,
+  clean P P1. 
