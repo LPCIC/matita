@@ -29,30 +29,37 @@ type plus term.
 /** untyped */
 type hole term.
 
+kind seq type.
+type decl term -> (term -> seq) -> seq.
+type goal term -> term -> seq.
+
 /* hack */
 kind bool type.
 type tt bool.
 type ff bool.
 
-kind seq type.
-type decl term -> (term -> seq) -> seq.
-type goal term -> term -> seq.
-
 type append list seq -> list seq -> list seq.
-
-/** Program */
-type clean term -> term -> o.
-type clean_sigma list seq -> list seq -> o.
-type clean_seq seq -> seq -> o.
-/* of term type term' extra_sigma : sigma@extra_simga is sigma' */
-type of   term -> term -> term -> list seq -> o.
-type unif bool -> term -> term -> o.
-type unify term -> term -> o.
-type rof term -> term -> o.
-type test_unify term -> term -> term -> term -> list seq -> o.
 
 type dummy1__, dummy2__ term.
 type is_flex term -> o.
 type is_same_flex term -> term -> o.
 
 type sigma_appl list seq -> list seq -> term -> term -> o.
+
+/** Program */
+type clean term -> term -> o.
+type clean_sigma list seq -> list seq -> o.
+type clean_seq seq -> seq -> o.
+type ho   term -> term -> term -> o.
+type copy term -> term -> o.
+/* subst where what out */
+type subst (term -> term) -> term -> term -> o.
+type unif bool -> term -> term -> o.
+type rof term -> term -> o.
+
+type test_unify term -> term -> term -> term -> term -> list seq -> o.
+
+/* of term type term' extra_sigma : sigma@extra_simga is sigma' */
+type of   term -> term -> term -> list seq -> o.
+type unify term -> term -> o.
+

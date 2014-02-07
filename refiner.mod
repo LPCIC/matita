@@ -2,7 +2,8 @@ module refiner.
 
 /************************* helpers ************************/
 
-is_flex T :- not (not (dummy1__ = T)).
+/* is_flex T :- not (not (dummy1__ = T)). */
+is_flex T :- T is dummy1__.
 
 is_same_flex M N :-
   is_flex M, is_flex N, not(dummy1__ = M, dummy2__ = N).
@@ -12,7 +13,7 @@ prt S T :-
     print S, term_to_string T TMP, print TMP, print "\n".
 
 type spy o -> o.
-spy G :- prt "" G, G.
+spy G :- prt "< " G, (G, prt "> " G ; prt ">fail " G).
 
 /************************* refiner ************************/
 
@@ -42,13 +43,14 @@ of (prod S F) set (prod S2 F2) (append Ex1 Ex3) :-
     unify (T x) set,
     sigma_appl Ex2 /*=*/ Ex3 x S2).
 
-of (app M1 N1) (F N2) (app M2 N2) (append (append Ex1 Ex2) Ex4) :-
+of (app M1 N1) Z (app M2 N2) (append (append Ex1 Ex2) Ex4) :-
     of M1 TM1 M2 Ex1,
     of N1 TN1 N2 Ex2,
     pi x\ sigma Ex3\
       of hole (_ x) (F x) Ex3,
       unify TM1 (prod TN1 F),
-      sigma_appl Ex3 /*=*/ Ex4 x TN1.
+      sigma_appl Ex3 /*=*/ Ex4 x TN1,
+      subst F N2 Z.
 
 of zero nat zero nil.
 
@@ -75,7 +77,7 @@ of (rec Rty N Base Step) Rty2 (rec Rty2 N2 Base2 Step2) (append (append Ex1 Ex2)
    of acc Rty2 acc nil => (
      of (Step n acc) TStep (Step2 n acc) Ex4,
      unify TStep Rty2,
-     sigma_appl Ex4 /*=*/ Ex5 acc RTy2,
+     sigma_appl Ex4 /*=*/ Ex5 acc Rty2,
      sigma_appl Ex5 /*=*/ Ex6 n nat).
 
 /* retype */
@@ -96,7 +98,7 @@ clean (ginst M1 _) M2 :- !,
 clean (app M1 N1) (app M2 N2) :- !, clean M1 M2, clean N1 N2.
 clean (lam T1 F1) (lam T2 F2) :- !, clean T1 T2, pi x\ clean (F1 x) (F2 x).
 clean (prod T1 F1) (prod T2 F2) :- !, clean T1 T2, pi x\ clean (F1 x) (F2 x).
-clean (rec A1 B1 C1 D1) (rec A1 B2 C2 D2) :-
+clean (rec A1 B1 C1 D1) (rec A2 B2 C2 D2) :-
   !,
   clean A1 A2,
   clean B1 B2,
@@ -114,10 +116,38 @@ clean_sigma [X|Xs] [Y|Ys] :- clean_seq X Y, !, clean_sigma Xs Ys.
 clean_sigma [_|Xs] Ys :- clean_sigma Xs Ys.
 clean_sigma (append [] L1) L2 :- clean_sigma L1 L2.
 clean_sigma (append [X|Xs] L1) L2 :- clean_sigma [X | append Xs L1] L2.
+clean_sigma (append (append L1 L2) L3) L :- clean_sigma (append L1 (append L2 L3)) L.
+
+/************************* ho ************************/
+
+%ho Res What Where
+
+% proj (zero)
+ho (lam nat (x\x)) zero zero.
+
+% mimic (any)
+ho (lam (ginst M (ginst N set)) (x\zero)) T zero :- unify T (ginst W (ginst M (ginst N set))).
+
+ho (lam nat (x\ app (L1 x) (R1 x))) zero (app L R) :- ho (lam _ L1) zero L, ho (lam __ R1) zero R.
+
+ho (lam nat (x\ succ)) zero succ.
+
+/************************* copy ************************/
+
+copy (ginst G GT) (ginst G GT1) :- is_flex G, !, copy GT GT1.
+copy (ginst G GT) (ginst G1 GT1) :- copy G G1, copy GT GT1.
+copy zero zero.
+copy nat nat.
+copy set set.
+copy (app A B) (app A1 B1) :- copy A A1, copy B B1.
+copy (lam T F) (lam T1 F1) :- copy T T1, pi x\ copy (F x) (F1 x).
+copy (prod T F) (prod T1 F1) :- copy T T1, pi x\ copy (F x) (F1 x).
+
+subst Where What Out :- pi x\ copy x What => copy (Where x) Out.
 
 /************************* unify ************************/
 
-% unif A M N :- prt "" (unif A M N), not true.
+%unif A M N :- prt "" (unif A M N), not true.
 
 unif _ M _ :-  is_flex M, !, prt "GAME OVER" M, not true.
 unif _ _ M :-  is_flex M, !, prt "GAME OVER" M, not true.
@@ -149,9 +179,9 @@ unif ff vnil vnil :- !.
 unif ff vcons vcons :- !.
 unif ff plus plus :- !.
 
-/* heuristic: fire explicit weak head beta redexes */
+/* heuristic: fire explicit weak head beta redexes
 unif ff (app (lam _ F) M) X,
-unif ff X (app (lam _ F) M) :- !, unify (F M) X.
+unif ff X (app (lam _ F) M) :- !, unify (F M) X. */
 
 /* contextual closure + heuristic */
 unif ff (app H A) (app K B) :- unify H K, unify A B.
@@ -178,12 +208,20 @@ unif ff (rec A1 B1 C1 D1) (rec A2 B2 C2 D2) :-
     pi acc\ of acc A1 acc nil => unif ff acc acc =>
       unify (D1 x acc) (D2 x acc).
 
+/* ho unification */
+unif _ (app (ginst H TH) M) X :-
+  is_flex H, !, ho H2 M X, unify (ginst H TH) H2.
+
 /* beta */
-unif _ (app L M) X :- unify L (lam _ F), !, unify (F M) X.
+unif _ (app L M) X :-
+  L = lam _ F,
+  !,
+  subst F M Y,
+  unify Y X.
 
 /* delta */
 unif _ plus (lam nat
-             (n\ (rec nat n
+             (n\ (rec (prod nat (x\ nat)) n
                     (lam nat (x\ x))
                     (m\ acc\ lam nat (n\ app succ (app acc n)))))) :- !.
 /* iota */
@@ -195,18 +233,20 @@ unif ff A B :- unif tt B A.
 
 unify A B :- unif ff A B.
 
-test_unify A B A2 B2 Sig :-
-  prt "" (of A TA A1 Ex1),
+test_unify A B TA2 A2 B2 Sig :-
+  prt "---------> " (of A TA A1 Ex1),
   of A TA A1 Ex1,
-  prt "" (of B TB B1 Ex2),
+  prt "---------> " (of B TB B1 Ex2),
   of B TB B1 Ex2,
-  prt "" (unify TA TB),
+  prt "========== " (unify TA TB),
   unify TA TB,
-  prt "" (unify A1 B1),
+  prt "========== " (unify A1 B1),
   unify A1 B1,
   print "cleaning1\n",
-  clean A1 A2,
+  clean TA TA2,
   print "cleaning2\n",
-  clean B1 B2,
+  clean A1 A2,
   print "cleaning3\n",
+  clean B1 B2,
+  print "cleaning4\n",
   clean_sigma (append Ex1 Ex2) Sig.

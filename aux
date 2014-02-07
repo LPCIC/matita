@@ -1,12 +1,16 @@
 not (unify N M).
 not (unify N N).
-test_unify hole hole M N S.
-test_unify vcons hole M N Sig.
+test_unify hole hole T M N S.
+test_unify vcons hole T M N Sig.
 
-# test_unify (app hole zero) hole M N S.
+test_unify (app hole zero) hole T M N S.
+test_unify (app hole zero) zero T M N S.
+
+test_unify (app (lam nat (x\ app hole x)) zero) zero T M N S.
+test_unify (app (lam nat (x\ app hole x)) zero) (app succ zero) T M N S.
  
-# test_unify (app plus zero) (rec hole hole hole (x\y\ app (app hole x) y)) M N Sig.
-# test_unify (app (lam hole (app succ)) hole) (app succ hole) M N Sig.
+# test_unify (app plus zero) (rec hole hole hole (x\y\ app (app hole x) y)) T M N Sig.
+# test_unify (app (lam hole (app succ)) hole) (app succ hole) T M N Sig.
 
 # test_unify (app (app vcons zero) vnil) hole M N Sig.
 test_unify (lam nat (n \ lam (app vect n) (v \ (app (app vcons n) v)))) hole M N Sig.
