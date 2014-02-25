@@ -53,8 +53,20 @@ type is_same_flex term -> term -> o.
 
 type sigma_appl list seq -> list seq -> term -> term -> o.
 
+type lread A -> o.
+
+/** Tactics */
+kind tactic type.
+type i tactic.
+type a term -> tactic.
+type h int -> tactic.
+type r term -> tactic.
+type undo tactic.
+
+type tacsem tactic -> term -> o.
+
 /** Program */
-type exp int -> term -> o.
+type hyp int -> term -> o.
 type clean term -> term -> o.
 type clean_sigma list seq -> list seq -> o.
 type clean_seq seq -> seq -> o.
