@@ -1,0 +1,7 @@
+*.cm*
+*.o
+.depend
+.*.swp
+.*.un*
+*.lp
+*.lpo
