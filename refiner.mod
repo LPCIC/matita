@@ -222,6 +222,13 @@ unif ff A B :- unif tt B A.
 
 unify A B :- unif ff A B.
 
+/* Tactics */
+
+tacsem i     (lam hole (x\ hole)).
+tacsem (a M) (app M hole).
+tacsem (h N) (var N).
+tacsem (r M) M.
+
 /* GUI */
 
 test_unify A B TA2 A2 B2 Sig :-
@@ -242,27 +249,37 @@ test_unify A B TA2 A2 B2 Sig :-
   print "cleaning4\n",
   clean_sigma (append Ex1 Ex2) Sig.
 
-of (var N) T M Sig :- exp N X, of X T M Sig.
+of (var N) T M Sig :- hyp N X, of X T M Sig.
 
-step_in N (decl TY F) Sig :-
-  pi x\ of x TY x nil => copy x x => unify x x => exp N x => (
+step_in N (decl TY F) Sig2 :-
+  pi x\ sigma Sig\ of x TY x nil => copy x x => unify x x => hyp N x => (
   M is (N + 1),
-  prt "hyp " (exp N TY),
-  step_in M (F x) Sig).
+  prt "" (hyp N TY),
+  step_in M (F x) Sig,
+  sigma_appl Sig /*=*/ Sig2 x TY).
+
+lread T :- read T, !.
+lread T :- print "Not a tactic, retry.\n", lread T.
+
 step_in N (goal M MTY) Sig :-
   prt "=========\n" MTY,
-  print "> ",
-  ((read P,
-  of P TP P1 Sig,
-  unify TP MTY,
-  print "\nOk\n\n",
-  P1 = M) ; print "\nWrong! Please retry\n\n", step_in N (goal M MTY) Sig).
+  print "\n> ",
+  lread T,
+  prt "letto " T,
+  ((T = undo, !, fail)
+  ;(prt "eseguo " T,
+    tacsem T P,
+    of P TP P1 Sig,
+    unify TP MTY,
+    print "\nOk\n\n",
+    P1 = M)
+  ; print "\nWrong! Please retry\n\n", step_in N (goal M MTY) Sig).
 
 step nil :- print "\nProof completed.\n".
 step [G|GS] :-
-  step_in 0 G Sig1,
-  clean_sigma (append Sig1 GS) Sig2,
-  step Sig2.
+  (step_in 0 G Sig1,
+   clean_sigma (append Sig1 GS) Sig2,
+   step Sig2).
   
 claim Claim P1 :-
   of Claim T Claim1 Sig1,
