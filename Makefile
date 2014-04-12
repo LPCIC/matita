@@ -1,4 +1,4 @@
-TJ="$(HOME)/work-area/PROLOG/teyjus/source/"
+TJ="../teyjus/source/"
 
 run: refiner.lp delay.lp
 	rlwrap $(TJ)tjsim refiner
