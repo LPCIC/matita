@@ -1,0 +1,3 @@
+[submodule "elpi/matita"]
+	path = elpi/matita
+	url = git@github.com:gares/matita.git
