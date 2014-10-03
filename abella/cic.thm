@@ -127,12 +127,17 @@ intros. copy: case H2. search.
 
 Split $copy_ok_aux as copy_ok2, copy_list_ok2.
 
-Theorem of_meta2 : forall M S Ty N G0 G2, nabla x,
+Theorem of_meta2 : forall M S Ty N G0 G2 G3, nabla x,
  ctx (G0 x) -> ctx G2 ->
  { G0 x, of x S x |- of (M x) (Ty x) (M x) } ->
  { G2 |- of N S N } ->
- { G0 N |- of (M N) (Ty N) (M N) }.
-skip.
+ (forall x, member x G2 -> member x G3) ->
+ (forall x, member x (G0 N) -> member x G3) ->
+ { G3 |- of (M N) (Ty N) (M N) }.
+intros. monotone H4 with G3. inst H3 with n1 = N.
+monotone H8 with (of N S N :: G3).
+ intros. case H9. search. apply H6 to H10. search.
+cut H9 with H7. search.
 
 Theorem copy_copy : forall G N T1 T2, nabla x,
  { G, copy x N |- copy (T1 x) (T2 x) } ->
@@ -167,7 +172,7 @@ Compat: case Compat.
 /*nil*/ apply copy_ok to _ CopyB. skip.
 /*of*/ Ctx: case Ctx0. Ctx: case Ctx1.
 OfN: assert { of N Ty1 N }. skip.
-Canon: apply of_meta2 to Ctx Ctx1 Canon OfN with x = n1.
+Canon: apply of_meta2 to Ctx Ctx1 Canon OfN _ _ with x = n1. skip.
 CopyB: apply copy_copy to CopyB.
 Ctx: assert ctx (G2 N). skip.
 apply IH to Ctx2 Ctx1 Compat Canon1 CopyB1 _.
