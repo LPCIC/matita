@@ -29,11 +29,11 @@ copy set set.
 
 copy (lam T1 F1) (lam T2 F2) :-
  copy T1 T2,
- pi x\ copy x x => copy (F1 x) (F2 x).
+ pi x\ pi y\ copy x y => copy (F1 x) (F2 y).
 
 copy (prod T1 F1) (prod T2 F2) :-
  copy T1 T2,
- pi x\ copy x x => copy (F1 x) (F2 x).
+ pi x\ pi y\ copy x y => copy (F1 x) (F2 y).
 
 copy (app L1) (app L2) :- list2 copy L1 L2.
 
