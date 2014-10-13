@@ -61,17 +61,27 @@ induction on 2 2. split.
 
 Split $copy_align_aux as copy_align, copy_list_align_aux.
 
-Theorem copy_M_M_aux: forall M L1 L2,
- irl2 L1 L2 -> { L1 |- is_term M } -> { L2 |- copy M M }.
- induction on 2. intros. case H2.
+Theorem $copy_M_M_aux:
+ (forall M L1 L2,
+   irl2 L1 L2 -> { L1 |- is_term M } -> { L2 |- copy M M }) /\
+ (forall L L1 L2,
+   irl2 L1 L2 -> { L1 |- list1 is_term L } -> { L2 |- list2 copy L L }).
+induction on 2 2. split.
+ intros. case H2.
   search.
   apply IH to _ H3. apply IH to _ H4. unfold copy_lam. search.
    apply copy_align to _ H6. backchain irl2_to_copyctx. search.
   apply IH to _ H3. apply IH to _ H4. unfold copy_prod. search.
    apply copy_align to _ H6. backchain irl2_to_copyctx. search.
-  skip.
+  apply IH1 to _ H3. search.
   apply member_irl2 to _ H4. case H3.
   search.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH1 to _ H4. search.
+  apply member_irl2 to _ H4. case H3.
+
+Split $copy_M_M_aux as copy_M_M_aux, copy_list_M_M_aux.
 
 Theorem copy_M_M: forall M, { copy M M }.
 intros. backchain copy_M_M_aux. backchain is_term_ok.
