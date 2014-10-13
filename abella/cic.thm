@@ -33,19 +33,31 @@ case H2. search. apply IH to H3 H4. search.
 
 /********** Properties of copy ************/
 
-Theorem copy_align : forall M N L, nabla z,
+Theorem $copy_align_aux :
+ (forall M N L, nabla z,
+   ctx L ->
+   {L, copy z z |- copy (M z) (N z)} ->
+     nabla x y, {L, copy x y |- copy (M x) (N y)}) /\
+ (forall L L1 L2, nabla z,
   ctx L ->
-  {L, copy z z |- copy (M z) (N z)} ->
-    nabla x y, {L, copy x y |- copy (M x) (N y)}.
-induction on 2. intros. case H2.
+   {L, copy z z |- list2 copy (L1 z) (L2 z)} ->
+     nabla x y, {L, copy x y |- list2 copy (L1 x) (L1 y)}).
+induction on 2 2. split.
+ intros. case H2.
   search.
   apply IH to _ H3. apply IH to _ H4. search.
   apply IH to _ H3. apply IH to _ H4. search.
-  skip.
+  apply IH1 to _ H3. unfold copy_app.
   case H4.
     case H3. search.
     apply member_ctx to _ H5. case H6. case H3.
     apply member_fresh to H5. case H3. search.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH1 to _ H4. unfold list2_xcons.
+  case H4. case H3. apply member_ctx to _ H5. case H6. case H3. case H3.
+
+Split $copy_align_aux as copy_align, copy_list_align_aux.
 
 Define irl2: olist -> olist -> prop by
   irl2 nil nil;

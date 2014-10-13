@@ -16,6 +16,7 @@ neq (lam _ F) set.
 neq (app L) set.
 
 list2 F xnil xnil.
+%:list2_xcons:
 list2 F (xcons X XS) (xcons Y YS) :- F X Y, list2 F XS YS.
 
 list1 F xnil.
@@ -47,6 +48,7 @@ copy (prod T1 F1) (prod T2 F2) :-
  copy T1 T2,
  pi x\ pi y\ copy x y => copy (F1 x) (F2 y).
 
+%:copy_app:
 copy (app L1) (app L2) :- list2 copy L1 L2.
 
 of T ExpTY NewT :- of T InfTY RT, coerce RT InfTY ExpTY NewT.
