@@ -18,6 +18,9 @@ neq (app L) set.
 list2 F xnil xnil.
 list2 F (xcons X XS) (xcons Y YS) :- F X Y, list2 F XS YS.
 
+list1 F xnil.
+list1 F (xcons X XS) :- F X, list1 F XS.
+
 rev-aux xnil Acc Acc.
 rev-aux (xcons X XS) Acc O :- rev-aux XS (xcons X Acc) O.
 rev L LR :- rev-aux L xnil LR.
@@ -25,12 +28,21 @@ rev L LR :- rev-aux L xnil LR.
 if C D B1 B2 :- eq C D, B1.
 if C D B1 B2 :- neq C D, B2.
 
+%%%%%%%%%%%%%%%%% <auxiliary predicates> %%%%%%%%%%%%%%
+is_term set.
+is_term (lam T F) :- is_term T, pi x\ is_term x => is_term (F x).
+is_term (prod T F) :- is_term T, pi x\ is_term x => is_term (F x).
+is_term (app L) :- list1 is_term L.
+%%%%%%%%%%%%%%%%% </auxiliary predicates> %%%%%%%%%%%%%%
+
 copy set set.
 
+%:copy_lam:
 copy (lam T1 F1) (lam T2 F2) :-
  copy T1 T2,
  pi x\ pi y\ copy x y => copy (F1 x) (F2 y).
 
+%:copy_prod:
 copy (prod T1 F1) (prod T2 F2) :-
  copy T1 T2,
  pi x\ pi y\ copy x y => copy (F1 x) (F2 y).

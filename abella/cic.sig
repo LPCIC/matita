@@ -31,7 +31,12 @@ type    subst      (tm -> tm) -> tm -> listtm -> tm -> o.
 type    unify      tm -> tm -> o.
 type    unif       bool -> tm -> tm -> o.
 
+/* <auxiliary> */
+type    is_term    tm -> o.
+/* </auxiliary> */
+
 type    list2      (tm -> tm -> o) -> listtm -> listtm -> o.
+type    list1      (tm -> o) -> listtm -> o.
 type    rev        listtm -> listtm -> o.
 type    rev-aux        listtm -> listtm -> listtm -> o.
 type    if         tm -> tm -> o -> o -> o.
