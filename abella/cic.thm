@@ -5,59 +5,7 @@ Specification "cic".
 /* This cannot be proved inside Abella, but it is true. */
 Theorem is_term_ok: forall M, { is_term M }. skip.
 
-/********** Definition of ctx and its properties ************/
-
-Define ctx: olist -> prop by
-  ctx nil ;
-  nabla x, ctx (of x T x :: L x) := nabla x, ctx (L x) ;
-  nabla x, ctx (copy x N :: L) := ctx L.
-
-Define var: tm -> prop by
-  nabla x, var x.
-
-Theorem member_fresh : forall L E, nabla (x:tm),
-  member (E x) L -> exists F, E = y\F.
-induction on 1. intros. case H1.
-  search.
-  apply IH to H2. search.
-
-Theorem member_ctx: forall G I,
- ctx G -> member I G ->
-  (exists x T, var x /\ I = of x T x) \/
-  (exists x N, var x /\ I = copy x N).
-induction on 1. intros. case H1. case H2.
-/*of*/
-case H2. search. apply IH to H3 H4. search.
-/*copy*/
-case H2. search. apply IH to H3 H4. search.
-
-/********** Properties of copy ************/
-
-Theorem $copy_align_aux :
- (forall M N L, nabla z,
-   ctx L ->
-   {L, copy z z |- copy (M z) (N z)} ->
-     nabla x y, {L, copy x y |- copy (M x) (N y)}) /\
- (forall L L1 L2, nabla z,
-  ctx L ->
-   {L, copy z z |- list2 copy (L1 z) (L2 z)} ->
-     nabla x y, {L, copy x y |- list2 copy (L1 x) (L1 y)}).
-induction on 2 2. split.
- intros. case H2.
-  search.
-  apply IH to _ H3. apply IH to _ H4. search.
-  apply IH to _ H3. apply IH to _ H4. search.
-  apply IH1 to _ H3. unfold copy_app.
-  case H4.
-    case H3. search.
-    apply member_ctx to _ H5. case H6. case H3.
-    apply member_fresh to H5. case H3. search.
- intros. case H2.
-  search.
-  apply IH to _ H3. apply IH1 to _ H4. unfold list2_xcons.
-  case H4. case H3. apply member_ctx to _ H5. case H6. case H3. case H3.
-
-Split $copy_align_aux as copy_align, copy_list_align_aux.
+/********** Technical definition of irl2 and copyctx ************/
 
 Define irl2: olist -> olist -> prop by
   irl2 nil nil;
@@ -68,14 +16,59 @@ Theorem member_irl2: forall G1 G2 I,
 induction on 1. intros. case H1. case H2.
 case H2. search. apply IH to H3 H4. search.
 
+Define copyctx: olist -> prop by
+  copyctx nil ;
+  nabla x, copyctx (copy x (Y x) :: L) := copyctx L.
+
+Theorem member_copyctx: forall G I,
+ copyctx G -> member I G -> exists x y, I = copy x y.
+induction on 1. intros. case H1. case H2.
+case H2. search. apply IH to H3 H4. search.
+
+Theorem member_fresh : forall L E, nabla (x:tm),
+  member (E x) L -> exists F, E = y\F.
+induction on 1. intros. case H1.
+  search.
+  apply IH to H2. search.
+
+Theorem irl2_to_copyctx: forall L1 L2, irl2 L1 L2 -> copyctx L2.
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
+/********** Properties of copy ************/
+
+Theorem $copy_align_aux :
+ (forall M N L, nabla z,
+   copyctx L ->
+   {L, copy z z |- copy (M z) (N z)} ->
+     nabla x y, {L, copy x y |- copy (M x) (N y)}) /\
+ (forall L L1 L2, nabla z,
+  copyctx L ->
+   {L, copy z z |- list2 copy (L1 z) (L2 z)} ->
+     nabla x y, {L, copy x y |- list2 copy (L1 x) (L1 y)}).
+induction on 2 2. split.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH to _ H4. search.
+  apply IH to _ H3. apply IH to _ H4. search.
+  apply IH1 to _ H3. unfold copy_app.
+  case H4.
+    case H3. search.
+    apply member_copyctx to _ H5. apply member_fresh to H5. case H3. search.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH1 to _ H4. unfold list2_xcons.
+  case H4. case H3. apply member_copyctx to _ H5. case H3.
+
+Split $copy_align_aux as copy_align, copy_list_align_aux.
+
 Theorem copy_M_M_aux: forall M L1 L2,
  irl2 L1 L2 -> { L1 |- is_term M } -> { L2 |- copy M M }.
  induction on 2. intros. case H2.
   search.
   apply IH to _ H3. apply IH to _ H4. unfold copy_lam. search.
-   apply copy_align to _ H6. skip. search.
+   apply copy_align to _ H6. backchain irl2_to_copyctx. search.
   apply IH to _ H3. apply IH to _ H4. unfold copy_prod. search.
-   apply copy_align to _ H6. skip. search.
+   apply copy_align to _ H6. backchain irl2_to_copyctx. search.
   skip.
   apply member_irl2 to _ H4. case H3.
   search.
@@ -115,6 +108,26 @@ Split $copy_eq_aux as copy_eq, copy_list_eq.
 
 Theorem copy_M_M_to_eq: forall M N, { copy M N } -> M = N.
  intros. backchain copy_eq.
+
+/********** Definition of irl ************/
+
+Define ctx: olist -> prop by
+  ctx nil ;
+  nabla x, ctx (of x T x :: L x) := nabla x, ctx (L x) ;
+  nabla x, ctx (copy x N :: L) := ctx L.
+
+Define var: tm -> prop by
+  nabla x, var x.
+
+Theorem member_ctx: forall G I,
+ ctx G -> member I G ->
+  (exists x T, var x /\ I = of x T x) \/
+  (exists x N, var x /\ I = copy x N).
+induction on 1. intros. case H1. case H2.
+/*of*/
+case H2. search. apply IH to H3 H4. search.
+/*copy*/
+case H2. search. apply IH to H3 H4. search.
 
 /********** The theorem ************/
 
