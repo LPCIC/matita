@@ -152,14 +152,13 @@ induction on 1. intros. case H1. case H2. case H2. search.
 apply IH to H3 H4 with N = N. search.
 
 Theorem of_meta1 : forall M S Ty N G0 G2 Gc, nabla x,
- ctx (G0 x) -> ctx G2 ->
  { G0 x, of x S x |- of (M x) (Ty x) (M x) } ->
  appendctx G2 (Gc x) (G0 x) ->
  { G2 |- of N S N } ->
  { G0 N |- of (M N) (Ty N) (M N) }.
-intros. inst H3 with n1 = N. monotone H5 with (G0 N).
-intros. apply member_appendctx to H4 H7 with N = N. search.
-cut H6 with H7. search.
+intros. inst H1 with n1 = N. monotone H3 with (G0 N).
+intros. apply member_appendctx to H2 H5 with N = N. search.
+cut H4 with H5. search.
 
 Define compat: olist -> olist -> olist -> prop by
   compat G2 nil G2 ;
@@ -176,24 +175,24 @@ Define closed: olist -> tm -> prop by
   nabla x, closed (copy x N :: L) M := closed L M.
 
 Theorem of_meta3 : forall M Ty Ty2 G0 G1 G2 X,
- ctx G0 -> ctx G1 -> ctx G2 ->
+ ctx G1 -> ctx G2 ->
  { G0 |- of M Ty M } ->
  { G1 |- copy M X } -> closed G1 X ->
  compat G0 G1 G2 ->
  { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
  { G2 |- of X Ty2 X }.
-induction on 7. intros Ctx0 Ctx1 Ctx2 Canon CopyB CopyBClosed Compat CopyTy CopyTyClosed.
+induction on 6. intros Ctx1 Ctx2 Canon CopyB CopyBClosed Compat CopyTy CopyTyClosed.
 Compat: case Compat.
 /*nil*/ apply copy_M_M_to_eq to CopyB. apply copy_M_M_to_eq to CopyTy. search.
 /*sub*/ case CopyTyClosed.
-/*of*/ Ctx: case Ctx0. Ctx: case Ctx1.
-Canon: apply of_meta1 to Ctx Compat1 Canon Compat2 Compat3.
+/*of*/ /*Ctx: case Ctx0.*/ Ctx: case Ctx1.
+Canon: apply of_meta1 to Canon Compat2 Compat3.
 CopyBClosed: case CopyBClosed. CopyTyClosed: case CopyTyClosed.
 CopyB: inst CopyB with n1 = N. apply copy_M_M with M = N.
 CopyB: cut CopyB1 with H1.
 CopyTy: inst CopyTy with n1 = N. apply copy_M_M with M = N.
 CopyTy: cut CopyTy1 with H1.
-apply IH to _ _ _ _ CopyB2 _ Compat4 CopyTy2 _. xxx.
+apply IH to _ _ _ CopyB2 _ Compat4 CopyTy2 _.
 search.
 
 /******************* OLD STUFF *********************/ xxx.
