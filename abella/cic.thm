@@ -119,26 +119,6 @@ Split $copy_eq_aux as copy_eq, copy_list_eq.
 Theorem copy_M_M_to_eq: forall M N, { copy M N } -> M = N.
  intros. backchain copy_eq.
 
-/********** Definition of irl ************/
-
-Define ctx: olist -> prop by
-  ctx nil ;
-  nabla x, ctx (of x T x :: L x) := nabla x, ctx (L x) ;
-  nabla x, ctx (copy x N :: L) := ctx L.
-
-Define var: tm -> prop by
-  nabla x, var x.
-
-Theorem member_ctx: forall G I,
- ctx G -> member I G ->
-  (exists x T, var x /\ I = of x T x) \/
-  (exists x N, var x /\ I = copy x N).
-induction on 1. intros. case H1. case H2.
-/*of*/
-case H2. search. apply IH to H3 H4. search.
-/*copy*/
-case H2. search. apply IH to H3 H4. search.
-
 /********** The theorem ************/
 
 Define appendctx: olist -> olist -> olist -> prop by
@@ -166,7 +146,6 @@ Define compat: olist -> olist -> olist -> prop by
    nabla y, compat G0 (G1 y) G2 ;
   nabla x, compat (of x Ty x :: G0 x) (copy x N :: G1) G2 :=
     exists Gl Gc, nabla x,
-    ctx (Gc x) /\ ctx Gl /\ /* redundant I think */
     appendctx Gl (Gc x) (G0 x) /\
     { Gl |- of N Ty N } /\ compat (G0 N) G1 G2. 
 
@@ -175,27 +154,46 @@ Define closed: olist -> tm -> prop by
   nabla x, closed (copy x N :: L) M := closed L M.
 
 Theorem of_meta3 : forall M Ty Ty2 G0 G1 G2 X,
- ctx G1 -> ctx G2 ->
  { G0 |- of M Ty M } ->
  { G1 |- copy M X } -> closed G1 X ->
  compat G0 G1 G2 ->
  { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
  { G2 |- of X Ty2 X }.
-induction on 6. intros Ctx1 Ctx2 Canon CopyB CopyBClosed Compat CopyTy CopyTyClosed.
+induction on 4. intros Canon CopyB CopyBClosed Compat CopyTy CopyTyClosed.
 Compat: case Compat.
 /*nil*/ apply copy_M_M_to_eq to CopyB. apply copy_M_M_to_eq to CopyTy. search.
 /*sub*/ case CopyTyClosed.
-/*of*/ /*Ctx: case Ctx0.*/ Ctx: case Ctx1.
-Canon: apply of_meta1 to Canon Compat2 Compat3.
+/*of*/
+Canon: apply of_meta1 to Canon Compat Compat1.
 CopyBClosed: case CopyBClosed. CopyTyClosed: case CopyTyClosed.
 CopyB: inst CopyB with n1 = N. apply copy_M_M with M = N.
 CopyB: cut CopyB1 with H1.
 CopyTy: inst CopyTy with n1 = N. apply copy_M_M with M = N.
 CopyTy: cut CopyTy1 with H1.
-apply IH to _ _ _ CopyB2 _ Compat4 CopyTy2 _.
+apply IH to _ CopyB2 _ Compat2 CopyTy2 _.
 search.
 
 /******************* OLD STUFF *********************/ xxx.
+
+/********** Definition of irl ************/
+
+Define ctx: olist -> prop by
+  ctx nil ;
+  nabla x, ctx (of x T x :: L x) := nabla x, ctx (L x) ;
+  nabla x, ctx (copy x N :: L) := ctx L.
+
+Define var: tm -> prop by
+  nabla x, var x.
+
+Theorem member_ctx: forall G I,
+ ctx G -> member I G ->
+  (exists x T, var x /\ I = of x T x) \/
+  (exists x N, var x /\ I = copy x N).
+induction on 1. intros. case H1. case H2.
+/*of*/
+case H2. search. apply IH to H3 H4. search.
+/*copy*/
+case H2. search. apply IH to H3 H4. search.
 
 Theorem of_meta2 : forall M S Ty N G0 G2 G3, nabla x,
  ctx (G0 x) -> ctx G2 ->
