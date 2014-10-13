@@ -173,6 +173,35 @@ CopyTy: cut CopyTy1 with H1.
 apply IH to _ CopyB2 _ Compat2 CopyTy2 _.
 search.
 
+Define compat1: olist -> olist -> olist -> prop by
+  compat1 nil nil G2 ;
+  nabla y, compat1 G0 (of y Ty2 y :: G1 y) G2 :=
+   nabla y, compat1 G0 (G1 y) G2 ;
+  nabla x, compat1 (of x Ty x :: G0 x) (copy x N :: G1) G2 :=
+    { G2 |- of N Ty N } /\ compat1 (G0 N) G1 G2. 
+
+Theorem compat1_compat: forall G0 G1 G2 G02,
+ compat1 G0 G1 G2 -> appendctx G0 G2 G02 -> compat G02 G1 G2.
+skip. /* Seems false or hard
+induction on 1. intros. case H1.
+ case H2. search.
+ apply IH to H3 H2. skip.
+ case H2. assert (appendctx (G3 N) G5 (L2 N)). skip. apply IH to H4 H6.
+  unfold.
+ xxx.
+*/
+
+Theorem of_meta4 : forall M Ty Ty2 G0 G1 G2 X,
+ { G0 |- of M Ty M } ->
+ { G1 |- copy M X } -> closed G1 X ->
+ compat1 G0 G1 G2 ->
+ { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
+ { G2 |- of X Ty2 X }.
+intros. assert (exists G02, appendctx G0 G2 G02). skip. case H7.
+monotone H1 with G02. intros. apply member_appendctx to H8 H9. search.
+apply of_meta3 to H9 H2 H3 _ H5 H6 with G2 = G2. backchain compat1_compat.
+search.
+
 /******************* OLD STUFF *********************/ xxx.
 
 /********** Definition of irl ************/
