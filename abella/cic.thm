@@ -141,6 +141,10 @@ Theorem append_functional_aux: forall G1 G2, is_olist G1 -> exists G3,
 Theorem append_functional: forall G1 G2, exists G3, appendctx G1 G2 G3.
  intros. apply is_olist_ok with L = G1. backchain append_functional_aux.
 
+Theorem appendctx_closed: forall G1 G2 G3, nabla (x:tm),
+ appendctx G1 G2 (G3 x) -> exists G4, G3 = y\G4.
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
 Theorem member_appendctx2: forall G2 Gc G0 N y, nabla (x:tm),
  appendctx (Gc x) G2 (G0 x) ->
  member y G2 -> member y (G0 N).
@@ -212,8 +216,7 @@ Theorem compat1_compat: forall G0 G1 G2 G02,
  compat1 G0 G1 G2 -> appendctx G0 G2 G02 -> compat G02 G1 G2.
 induction on 1. intros. case H1.
  case H2. search.
- /* CSC: true, but how to obtain this? */
- assert (nabla n2, G02 n1 = G02 n2). skip. case H4.
+ apply appendctx_closed to H2 with x = n1.
   apply IH to H3 H2.  unfold. intros. apply IH to H3 H2. search.
  case H2. unfold. apply inst_append to H5 with N = N.
   apply IH to H4 H6. search.
