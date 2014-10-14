@@ -5,6 +5,13 @@ Specification "cic".
 /* This cannot be proved inside Abella, but it is true. */
 Theorem is_term_ok: forall M, { is_term M }. skip.
 
+Define is_olist: olist -> prop by
+   is_olist nil ;
+   is_olist (HD::TL) := is_olist TL.
+
+/* This cannot be proved inside Abella, but it is true. */
+Theorem is_olist_ok: forall L, is_olist L. skip.
+
 /********** Technical definition of irl2 and copyctx ************/
 
 Define irl2: olist -> olist -> prop by
@@ -125,6 +132,15 @@ Define appendctx: olist -> olist -> olist -> prop by
   appendctx nil L L ;
   appendctx (HD::TL) L1 (HD::L2) := appendctx TL L1 L2.
 
+Theorem append_functional_aux: forall G1 G2, is_olist G1 -> exists G3,
+ appendctx G1 G2 G3.
+ induction on 1. intros. case H1.
+  search.
+  apply IH to H2 with G2 = G2. search.
+
+Theorem append_functional: forall G1 G2, exists G3, appendctx G1 G2 G3.
+ intros. apply is_olist_ok with L = G1. backchain append_functional_aux.
+
 Theorem member_appendctx2: forall G2 Gc G0 N y, nabla (x:tm),
  appendctx (Gc x) G2 (G0 x) ->
  member y G2 -> member y (G0 N).
@@ -135,6 +151,13 @@ Theorem member_appendctx1: forall G1 G2 G3 X,
  appendctx G1 G2 G3 -> member X G1 -> member X G3.
 induction on 1. intros. case H1. case H2. case H2. unfold. search.
 apply IH to H3 H4. search.
+
+Theorem inst_append :
+ forall G1 G2 G3 N, nabla (x:tm),
+  appendctx (G1 x) G2 (G3 x) -> appendctx (G1 N) G2 (G3 N).
+induction on 1. intros. case H1.
+ search.
+ apply IH to H2 with N = N. search.
 
 Theorem of_meta1 : forall M S Ty N G0 G2 Gc, nabla x,
  { G0 x, of x S x |- of (M x) (Ty x) (M x) } ->
@@ -192,7 +215,7 @@ induction on 1. intros. case H1.
  /* CSC: true, but how to obtain this? */
  assert (nabla n2, G02 n1 = G02 n2). skip. case H4.
   apply IH to H3 H2.  unfold. intros. apply IH to H3 H2. search.
- case H2. unfold. assert (appendctx (G3 N) G5 (L2 N)). skip.
+ case H2. unfold. apply inst_append to H5 with N = N.
   apply IH to H4 H6. search.
 
 Theorem of_meta4 : forall M Ty Ty2 G0 G1 G2 X,
@@ -201,9 +224,9 @@ Theorem of_meta4 : forall M Ty Ty2 G0 G1 G2 X,
  compat1 G0 G1 G2 ->
  { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
  { G2 |- of X Ty2 X }.
-intros. assert (exists G02, appendctx G0 G2 G02). skip. case H7.
-monotone H1 with G02. intros. apply member_appendctx1 to H8 H9. search.
-apply of_meta3 to H9 H2 H3 _ H5 H6 with G2 = G2. backchain compat1_compat.
+intros. apply append_functional with G1 = G0, G2 = G2.
+monotone H1 with G3. intros. apply member_appendctx1 to H7 H8. search.
+apply of_meta3 to H8 H2 H3 _ H5 H6 with G2 = G2. backchain compat1_compat.
 search.
 
 /******************* OLD STUFF *********************/ xxx.
