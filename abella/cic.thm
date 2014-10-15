@@ -2,6 +2,142 @@ Specification "cic".
 
 /********** Axioms ************/
 
+Define is_olist: olist -> prop by
+   is_olist nil ;
+   is_olist (HD::TL) := is_olist TL.
+
+/* This cannot be proved inside Abella, but it is true. */
+Theorem is_olist_ok: forall L, is_olist L. skip.
+
+Theorem copy_M_M: forall M, { copy M M }. skip.
+Theorem copy_M_M_to_eq: forall M N, { copy M N } -> M = N. skip.
+
+/**************************/
+
+Define appendctx: olist -> olist -> olist -> prop by
+  appendctx nil L L ;
+  appendctx (HD::TL) L1 (HD::L2) := appendctx TL L1 L2.
+
+Theorem append_functional_aux: forall G1 G2, is_olist G1 -> exists G3,
+ appendctx G1 G2 G3.
+ induction on 1. intros. case H1.
+  search.
+  apply IH to H2 with G2 = G2. search.
+
+Theorem append_functional: forall G1 G2, exists G3, appendctx G1 G2 G3.
+ intros. apply is_olist_ok with L = G1. backchain append_functional_aux.
+
+Theorem appendctx_closed: forall G1 G2 G3, nabla (x:tm),
+ appendctx G1 G2 (G3 x) -> exists G4, G3 = y\G4.
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
+Theorem member_appendctx1: forall G1 G2 G3 X,
+ appendctx G1 G2 G3 -> member X G1 -> member X G3.
+induction on 1. intros. case H1. case H2. case H2. unfold. search.
+apply IH to H3 H4. search.
+
+Theorem member_appendctx2: forall G1 G2 G3 X,
+ appendctx G1 G2 G3 -> member X G2 -> member X G3.
+induction on 1. intros. case H1. search. unfold. apply IH to H3 H2. search.
+
+Theorem inst_append :
+ forall G1 G2 G3 N, nabla (x:tm),
+  appendctx (G1 x) G2 (G3 x) -> appendctx (G1 N) G2 (G3 N).
+induction on 1. intros. case H1.
+ search.
+ apply IH to H2 with N = N. search.
+
+Theorem of_meta1 : forall M S Ty N G0 G2 Gc, nabla x,
+ { G0 x, of x S x |- of (M x) (Ty x) (M x) } ->
+ appendctx (Gc x) G2 (G0 x) ->
+ { G2 |- of N S N } ->
+ { G0 N |- of (M N) (Ty N) (M N) }.
+intros. inst H1 with n1 = N. monotone H3 with (G0 N).
+intros. apply inst_append to H2 with x = n1, N = N.
+apply member_appendctx2 to H6 H5. search.
+cut H4 with H5. search.
+
+Define compat: olist -> olist -> olist -> prop by
+  compat G2 nil G2 ;
+  nabla y, compat (G0 y) (of y Ty2 y :: G1 y) (G2 y) :=
+   nabla y, compat (G0 y) (G1 y) (G2 y) ;
+  nabla x, compat (of x Ty x :: G0 x) (copy x x :: G1 x) (G2 x) :=
+   nabla x, member (of x Ty x) (G0 x) /\ compat (G0 x) (G1 x) (G2 x) ; 
+  nabla x, compat (of x Ty x :: G0 x) (copy x N :: G1) G2 :=
+    exists Gl Gc, nabla x,
+    appendctx (Gc x) Gl (G0 x) /\
+    { Gl |- of N Ty N } /\ compat (G0 N) G1 G2. 
+
+Define closed: olist -> tm -> prop by
+  closed nil M ;
+  nabla x, closed (copy x x :: L x) (M x) := nabla x, closed (L x) (M x) ;
+  nabla x, closed (copy x N :: L) M := closed L M.
+
+Theorem of_meta3 : forall M Ty Ty2 G0 G1 G2 X,
+ { G0 |- of M Ty M } ->
+ { G1 |- copy M X } -> closed G1 X ->
+ compat G0 G1 G2 ->
+ { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
+ { G2 |- of X Ty2 X }.
+induction on 4. intros Canon CopyB CopyBClosed Compat CopyTy CopyTyClosed.
+Compat: case Compat.
+/*nil*/ apply copy_M_M_to_eq to CopyB. apply copy_M_M_to_eq to CopyTy. search.
+/*sub*/ case CopyTyClosed.
+/*irl*/
+CopyBClosed: case CopyBClosed. CopyTyClosed: case CopyTyClosed.
+apply copy_M_M with M = n1.
+CopyB: cut CopyB with H1.
+CopyTy: cut CopyTy with H1.
+Canon: assert {G3 n1 |- of n1 Ty1 n1}.
+Canon: cut Canon with Canon1.
+apply IH to _ CopyB1 CopyBClosed Compat1 CopyTy1 CopyTyClosed.
+search.
+/*of*/
+Canon: apply of_meta1 to Canon Compat Compat1.
+CopyBClosed: case CopyBClosed. CopyTyClosed: case CopyTyClosed.
+CopyB: inst CopyB with n1 = N. apply copy_M_M with M = N.
+CopyB: cut CopyB1 with H1.
+CopyTy: inst CopyTy with n1 = N. apply copy_M_M with M = N.
+CopyTy: cut CopyTy1 with H1.
+apply IH to _ CopyB2 _ Compat2 CopyTy2 _.
+search.
+
+Define compat1: olist -> olist -> olist -> prop by
+  compat1 nil nil G2 ;
+  nabla y, compat1 G0 (of y Ty2 y :: G1 y) G2 :=
+   nabla y, compat1 G0 (G1 y) G2 ;
+  nabla x, compat1 (of x Ty x :: G0 x) (copy x x :: G1 x) (G2 x) :=
+   nabla x, member (of x Ty x) (G2 x) /\ compat1 (G0 x) (G1 x) (G2 x) ;
+  nabla x, compat1 (of x Ty x :: G0 x) (copy x N :: G1) G2 :=
+    { G2 |- of N Ty N } /\ compat1 (G0 N) G1 G2. 
+
+Theorem compat1_compat: forall G0 G1 G2 G02,
+ compat1 G0 G1 G2 -> appendctx G0 G2 G02 -> compat G02 G1 G2.
+induction on 1. intros. case H1.
+ case H2. search.
+ apply appendctx_closed to H2 with x = n1.
+  apply IH to H3 H2.  unfold. intros. apply IH to H3 H2. search.
+ case H2. unfold. intros. split.
+  apply member_appendctx2 to H5 H3. search.
+  apply IH to H4 H5. search.
+ case H2. unfold. apply inst_append to H5 with N = N.
+  apply IH to H4 H6. search.
+
+Theorem of_meta4 : forall M Ty Ty2 G0 G1 G2 X,
+ { G0 |- of M Ty M } ->
+ { G1 |- copy M X } -> closed G1 X ->
+ compat1 G0 G1 G2 ->
+ { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
+ { G2 |- of X Ty2 X }.
+intros. apply append_functional with G1 = G0, G2 = G2.
+monotone H1 with G3. intros. apply member_appendctx1 to H7 H8. search.
+apply of_meta3 to H8 H2 H3 _ H5 H6 with G2 = G2. backchain compat1_compat.
+search.
+
+/******************* OLD STUFF WITH COPY2 *********************/ xxx.
+
+/********** Axioms ************/
+
 /* This cannot be proved inside Abella, but it is true. */
 Theorem is_term_ok: forall M, { is_term M }. skip.
 
