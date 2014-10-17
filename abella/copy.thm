@@ -1,0 +1,7 @@
+Specification "cic".
+
+/********** Axioms ************/
+
+Theorem copy_M_M: forall M, { copy M M }. skip.
+Theorem copy_M_M_to_eq: forall M N, { copy M N } -> M = N. skip.
+

@@ -1,0 +1,60 @@
+Specification "cic".
+
+/********** Axioms ************/
+
+Define is_olist: olist -> prop by
+   is_olist nil ;
+   is_olist (HD::TL) := is_olist TL.
+
+/* This cannot be proved inside Abella, but it is true. */
+Theorem is_olist_ok: forall L, is_olist L. skip.
+
+/*********** Library: split ***************/
+
+Define split : olist -> olist -> o -> prop by
+  split (A :: G) G A ;
+  split (A :: G) (A :: D) B := split G D B.
+
+Theorem split_inst : forall L1 L2 E, nabla (x:tm),
+  split L1 (L2 x) (E x) -> (nabla z, L2 x = L2 z).
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
+Theorem member_split: forall L1 L2 E X,
+ member X L1 -> split L1 L2 E -> X = E \/ member X L2.
+induction on 1. intros. case H1. case H2. search. search.
+case H2. search. apply IH to H3 H4. case H5. search. search.
+
+Theorem inst_split: forall L1 L2 E N, nabla (x:tm),
+ split (L1 x) L2 (E x) -> split (L1 N) L2 (E N).
+induction on 1. intros. case H1. search. apply IH to H2 with N = N. search.
+
+/*********** Library: appendctx ***************/
+
+Define appendctx: olist -> olist -> olist -> prop by
+  appendctx nil L L ;
+  appendctx (HD::TL) L1 (HD::L2) := appendctx TL L1 L2.
+
+Theorem append_functional_aux: forall G1 G2, is_olist G1 -> exists G3,
+ appendctx G1 G2 G3.
+ induction on 1. intros. case H1.
+  search.
+  apply IH to H2 with G2 = G2. search.
+
+Theorem append_functional: forall G1 G2, exists G3, appendctx G1 G2 G3.
+ intros. apply is_olist_ok with L = G1. backchain append_functional_aux.
+
+Theorem member_appendctx1: forall G1 G2 G3 X,
+ appendctx G1 G2 G3 -> member X G1 -> member X G3.
+induction on 1. intros. case H1. case H2. case H2. unfold. search.
+apply IH to H3 H4. search.
+
+Theorem member_appendctx2: forall G1 G2 G3 X,
+ appendctx G1 G2 G3 -> member X G2 -> member X G3.
+induction on 1. intros. case H1. search. unfold. apply IH to H3 H2. search.
+
+Theorem inst_appendctx :
+ forall G1 G2 G3 N, nabla (x:tm),
+  appendctx (G1 x) G2 (G3 x) -> appendctx (G1 N) G2 (G3 N).
+induction on 1. intros. case H1.
+ search.
+ apply IH to H2 with N = N. search.
