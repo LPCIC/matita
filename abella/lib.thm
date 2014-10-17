@@ -15,18 +15,14 @@ Define split : olist -> olist -> o -> prop by
   split (A :: G) G A ;
   split (A :: G) (A :: D) B := split G D B.
 
-Theorem split_inst : forall L1 L2 E, nabla (x:tm),
+Theorem inst_split : forall L1 L2 E, nabla (x:tm),
   split L1 (L2 x) (E x) -> (nabla z, L2 x = L2 z).
 induction on 1. intros. case H1. search. apply IH to H2. search.
 
-Theorem member_split: forall L1 L2 E X,
- member X L1 -> split L1 L2 E -> X = E \/ member X L2.
-induction on 1. intros. case H1. case H2. search. search.
-case H2. search. apply IH to H3 H4. case H5. search. search.
-
-Theorem inst_split: forall L1 L2 E N, nabla (x:tm),
- split (L1 x) L2 (E x) -> split (L1 N) L2 (E N).
-induction on 1. intros. case H1. search. apply IH to H2 with N = N. search.
+Theorem monotone_split: forall G1 G2 X,
+ split G1 G2 X -> forall Y, member Y G1 -> member Y (X :: G2).
+induction on 1. intros. case H1. search. case H2. search. apply IH to H3.
+apply H5 to H4. case H6. search. search.
 
 /*********** Library: appendctx ***************/
 

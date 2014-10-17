@@ -29,7 +29,7 @@ Theorem closed_split: forall G1 G5 X N, nabla n1,
   (nabla x, X n1 = X x) /\ closed G5 (X n1).
 induction on 1. intros. case H1.
  case H2.
- case H2. apply IH to H3 H4. apply split_inst to H4. search.
+ case H2. apply IH to H3 H4. apply inst_split to H4. search.
  case H2. search.
 
 /**** The theorem ****/
@@ -59,10 +59,8 @@ Canon: inst Canon with n1 = N. monotone Compat1 with (L2 N). intros.
  apply member_appendctx2 to Append1 H1. search. Canon: cut Canon1 with H1.
 CopyBClosed: apply closed_split to CopyBClosed Compat.
 CopyTyClosed: apply closed_split to CopyTyClosed Compat.
-monotone CopyB with (copy n1 N :: G5).
- intros. apply member_split to H2 Compat. case H3. search. search.
-monotone CopyTy with (copy n1 N :: G5).
- intros. apply member_split to H3 Compat. case H4. search. search.
+monotone CopyB with (copy n1 N :: G5). backchain monotone_split.
+monotone CopyTy with (copy n1 N :: G5). backchain monotone_split.
 apply copy_M_M to Compat3.
 CopyB: inst H2 with n1 = N. CopyB: cut CopyB1 with H4.
 CopyTy: inst H3 with n1 = N. CopyTy: cut CopyTy1 with H4.
