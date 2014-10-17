@@ -57,14 +57,13 @@ Define compat: olist -> olist -> olist -> prop by
   compat nil nil G2 ;
   nabla y, compat (G0 y) (of y Ty2 y :: G1 y) (G2 y) :=
    nabla y, compat (G0 y) (G1 y) (G2 y) ;
-  nabla x, compat (of x Ty x :: G0 x) (copy x x :: G1 x) (G2 x) :=
+  nabla x, compat (of x Ty x :: G0 x) (G1 x) (G2 x) :=
    nabla x, member (of x Ty x) (G2 x) /\ compat (G0 x) (G1 x) (G2 x) ;
   nabla x, compat (of x Ty x :: G0 x) (copy x N :: G1) G2 :=
     { G2 |- of N Ty N } /\ compat (G0 N) G1 G2. 
 
 Define closed: olist -> tm -> prop by
   closed nil M ;
-  nabla x, closed (copy x x :: L x) (M x) := nabla x, closed (L x) (M x) ;
   nabla x, closed (copy x N :: L) M := closed L M.
 
 Theorem of_meta3 : forall M Ty Ty2 G0 G1 G2 G02 X,
@@ -81,13 +80,9 @@ Compat: case Compat.
 /*sub*/ case CopyTyClosed.
 /*irl*/
 Append: case Append.
-CopyBClosed: case CopyBClosed. CopyTyClosed: case CopyTyClosed.
-apply copy_M_M with M = n1.
-CopyB: cut CopyB with H1.
-CopyTy: cut CopyTy with H1.
-apply IH to Compat1 Append _ CopyB1 CopyBClosed CopyTy1 CopyTyClosed.
+apply IH to Compat1 Append _ _ CopyBClosed _ CopyTyClosed.
 Compat: apply member_appendctx2 to Append Compat.
-monotone Canon with L2 n1. intros. case H2. search. search. search.
+monotone Canon with L2 n1. intros. case H1. search. search. search.
 search.
 /*of*/
 Append: case Append. Append: apply inst_append to Append with N = N.
