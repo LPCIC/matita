@@ -9,16 +9,9 @@ Define compat: olist -> olist -> olist -> prop by
   nabla x, compat (of x Ty x :: G0 x) (G1 x) (G2 x) :=
    nabla x, member (of x Ty x) (G2 x) /\ compat (G0 x) (G1 x) (G2 x) ;
   nabla x, compat (of x Ty x :: G0 x) (G1c x) G2 :=
-   exists N G1, nabla x, split (G1c x) G1 (copy x N) /\
-    { G2 |- of N Ty N } /\ compat (G0 N) G1 G2 /\ { is_term N }.
- /* CSC: the invariant is obviously wrong when N is not a closed term.
-    In that case { is_term N } does not hold. Thus (G1c x) should
-    contain (copy x x) just for the irl2 predicate :-(
-    Could a solution be to add to the program
-     copy x x :- var x.
-     is_term x :- var x.
-    and to assume var x after every quantifier?
- */
+   exists N G1 L, nabla x, split (G1c x) G1 (copy x N) /\
+    { G2 |- of N Ty N } /\ compat (G0 N) G1 G2 /\ { L |- is_term N } /\
+    irl2 L G1.
 
 Define closed: olist -> tm -> prop by
   closed nil M ;
@@ -61,7 +54,7 @@ CopyBClosed: apply closed_split to CopyBClosed Compat.
 CopyTyClosed: apply closed_split to CopyTyClosed Compat.
 monotone CopyB with (copy n1 N :: G5). backchain monotone_split.
 monotone CopyTy with (copy n1 N :: G5). backchain monotone_split.
-apply copy_M_M to Compat3.
+apply copy_M_M to _ Compat3.
 CopyB: inst H2 with n1 = N. CopyB: cut CopyB1 with H4.
 CopyTy: inst H3 with n1 = N. CopyTy: cut CopyTy1 with H4.
 apply IH to Compat2 Append1 _ CopyB2 _ CopyTy2 _.

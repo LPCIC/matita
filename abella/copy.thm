@@ -29,10 +29,7 @@ induction on 2 2. split.
   apply IH to _ H3. apply IH1 to _ H4. search.
   apply member_irl2 to _ H4. case H3.
 
-Split $copy_M_M_aux as copy_M_M_aux, copy_list_M_M_aux.
-
-Theorem copy_M_M: forall M, { is_term M } -> { copy M M }.
-intros. backchain copy_M_M_aux.
+Split $copy_M_M_aux as copy_M_M, copy_list_M_M.
 
 /********** copy_M_M_to_eq ************/
 

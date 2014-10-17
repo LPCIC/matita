@@ -61,7 +61,7 @@ of hole Ty2 T2 :- of Ty set Ty, copy Ty Ty2, of T Ty T, copy T T2.
 
 of (lam S F) (prod S2 T) (lam S2 F2) :-
   of S set S2,
-  pi x\ of x S2 x => of (F x) (T x) (F2 x).
+  pi x\ of x S2 x => copy x x => of (F x) (T x) (F2 x).
 
 % case dropped
 %of (lam S F) TY (lam S2 F2) :-
@@ -71,7 +71,7 @@ of (lam S F) (prod S2 T) (lam S2 F2) :-
 %  (pi x\ (of x S3 x :- !) => of (F x) (T x) (F2 x)).
 
 of (prod S F) set (prod S2 F2) :-
-  of S set S2, pi x\ of x S2 x => of (F x) set (F2 x).
+  of S set S2, pi x\ of x S2 x => copy x x => of (F x) set (F2 x).
 
 of (app (xcons T U)) TyV V :-
   of T TyT T1, eat-prod T1 xnil xnil TyT U V TyV.
@@ -122,9 +122,9 @@ unif ff set set.
 unif ff (app AS) (app BS) :- list2 unify AS BS.
 
 unif ff (lam S F) (lam T G) :-
-  unify S T, pi x\ of x S x => unify (F x) (G x).
+  unify S T, pi x\ of x S x => copy x x => unify (F x) (G x).
 unif ff (prod S F) (prod T G) :-
-  unify S T, pi x\ of x S x => unify (F x) (G x).
+  unify S T, pi x\ of x S x => copy x x => unify (F x) (G x).
 
 
 unif _ X Y :- whd-progress X Z, unify Z Y.
