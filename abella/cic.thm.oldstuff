@@ -1,0 +1,444 @@
+/******************* OLD STUFF WITH COPY2 *********************/ xxx.
+
+/********** Axioms ************/
+
+/* This cannot be proved inside Abella, but it is true. */
+Theorem is_term_ok: forall M, { is_term M }. skip.
+
+Define is_olist: olist -> prop by
+   is_olist nil ;
+   is_olist (HD::TL) := is_olist TL.
+
+/* This cannot be proved inside Abella, but it is true. */
+Theorem is_olist_ok: forall L, is_olist L. skip.
+
+/********** Technical definition of irl2 and copyctx ************/
+
+Define irl2: olist -> olist -> prop by
+  irl2 nil nil;
+  nabla x, irl2 (is_term x :: L1) (copy x x :: L2) := irl2 L1 L2.
+
+Theorem member_irl2: forall G1 G2 I,
+ irl2 G1 G2 -> member I G1 -> exists x, I = is_term x /\ member (copy x x) G2.
+induction on 1. intros. case H1. case H2.
+case H2. search. apply IH to H3 H4. search.
+
+Define copyctx: olist -> prop by
+  copyctx nil ;
+  nabla x, copyctx (copy x (Y x) :: L) := copyctx L.
+
+Theorem member_copyctx: forall G I,
+ copyctx G -> member I G -> exists x y, I = copy x y.
+induction on 1. intros. case H1. case H2.
+case H2. search. apply IH to H3 H4. search.
+
+Theorem member_fresh : forall L E, nabla (x:tm),
+  member (E x) L -> exists F, E = y\F.
+induction on 1. intros. case H1.
+  search.
+  apply IH to H2. search.
+
+Theorem irl2_to_copyctx: forall L1 L2, irl2 L1 L2 -> copyctx L2.
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
+/********** Properties of copy ************/
+
+Theorem $copy_align_aux :
+ (forall M N L, nabla z,
+   copyctx L ->
+   {L, copy z z |- copy (M z) (N z)} ->
+     nabla x y, {L, copy x y |- copy (M x) (N y)}) /\
+ (forall L L1 L2, nabla z,
+  copyctx L ->
+   {L, copy z z |- list2 copy (L1 z) (L2 z)} ->
+     nabla x y, {L, copy x y |- list2 copy (L1 x) (L1 y)}).
+induction on 2 2. split.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH to _ H4. search.
+  apply IH to _ H3. apply IH to _ H4. search.
+  apply IH1 to _ H3. unfold copy_app.
+  case H4.
+    case H3. search.
+    apply member_copyctx to _ H5. apply member_fresh to H5. case H3. search.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH1 to _ H4. unfold list2_xcons.
+  case H4. case H3. apply member_copyctx to _ H5. case H3.
+
+Split $copy_align_aux as copy_align, copy_list_align_aux.
+
+Theorem $copy_M_M_aux:
+ (forall M L1 L2,
+   irl2 L1 L2 -> { L1 |- is_term M } -> { L2 |- copy M M }) /\
+ (forall L L1 L2,
+   irl2 L1 L2 -> { L1 |- list1 is_term L } -> { L2 |- list2 copy L L }).
+induction on 2 2. split.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH to _ H4. unfold copy_lam. search.
+   apply copy_align to _ H6. backchain irl2_to_copyctx. search.
+  apply IH to _ H3. apply IH to _ H4. unfold copy_prod. search.
+   apply copy_align to _ H6. backchain irl2_to_copyctx. search.
+  apply IH1 to _ H3. search.
+  apply member_irl2 to _ H4. case H3.
+  search.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH1 to _ H4. search.
+  apply member_irl2 to _ H4. case H3.
+
+Split $copy_M_M_aux as copy_M_M_aux, copy_list_M_M_aux.
+
+Theorem copy_M_M: forall M, { copy M M }.
+intros. backchain copy_M_M_aux. backchain is_term_ok.
+
+Define irl: olist -> prop by
+  irl nil ;
+  nabla x, irl (of x T x :: L x) := nabla x, irl (L x) ;
+  nabla x, irl (copy x x :: L) := irl L.
+
+Theorem member_irl: forall G I,
+ irl G -> member I G -> (exists x T, I = of x T x) \/ (exists x, I = copy x x).
+induction on 1. intros. case H1. case H2.
+/*of*/
+case H2. search. apply IH to H3 H4. search.
+/*copy*/
+case H2. search. apply IH to H3 H4. search.
+
+Theorem $copy_eq_aux:
+ (forall M N G, irl G -> { G |- copy M N } -> M = N) /\
+ (forall L1 L2 G, irl G -> {G |- list2 copy L1 L2} -> L1 = L2).
+induction on 2 2. split.
+intros. case H2.
+ search.
+ apply IH to _ H3. inst H4 with n2 = n1. apply IH to _ H5. search.
+ apply IH to _ H3. inst H4 with n2 = n1. apply IH to _ H5. search.
+ apply IH1 to _ H3. search.
+ apply member_irl to H1 H4. case H5. case H3. case H3. search.
+intros. case H2.
+ search.
+ apply IH to _ H3. apply IH1 to _ H4. search.
+ apply member_irl to H1 H4. case H5. case H3. case H3.
+
+Split $copy_eq_aux as copy_eq, copy_list_eq.
+
+Theorem copy_M_M_to_eq: forall M N, { copy M N } -> M = N.
+ intros. backchain copy_eq.
+
+/********** The theorem ************/
+
+Define appendctx: olist -> olist -> olist -> prop by
+  appendctx nil L L ;
+  appendctx (HD::TL) L1 (HD::L2) := appendctx TL L1 L2.
+
+Theorem append_functional_aux: forall G1 G2, is_olist G1 -> exists G3,
+ appendctx G1 G2 G3.
+ induction on 1. intros. case H1.
+  search.
+  apply IH to H2 with G2 = G2. search.
+
+Theorem append_functional: forall G1 G2, exists G3, appendctx G1 G2 G3.
+ intros. apply is_olist_ok with L = G1. backchain append_functional_aux.
+
+Theorem appendctx_closed: forall G1 G2 G3, nabla (x:tm),
+ appendctx G1 G2 (G3 x) -> exists G4, G3 = y\G4.
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
+Theorem member_appendctx2: forall G2 Gc G0 N y, nabla (x:tm),
+ appendctx (Gc x) G2 (G0 x) ->
+ member y G2 -> member y (G0 N).
+induction on 1. intros. case H1. search. unfold.
+apply IH to H3 H2 with N = N. search.
+
+Theorem member_appendctx1: forall G1 G2 G3 X,
+ appendctx G1 G2 G3 -> member X G1 -> member X G3.
+induction on 1. intros. case H1. case H2. case H2. unfold. search.
+apply IH to H3 H4. search.
+
+Theorem inst_append :
+ forall G1 G2 G3 N, nabla (x:tm),
+  appendctx (G1 x) G2 (G3 x) -> appendctx (G1 N) G2 (G3 N).
+induction on 1. intros. case H1.
+ search.
+ apply IH to H2 with N = N. search.
+
+Theorem of_meta1 : forall M S Ty N G0 G2 Gc, nabla x,
+ { G0 x, of x S x |- of (M x) (Ty x) (M x) } ->
+ appendctx (Gc x) G2 (G0 x) ->
+ { G2 |- of N S N } ->
+ { G0 N |- of (M N) (Ty N) (M N) }.
+intros. inst H1 with n1 = N. monotone H3 with (G0 N).
+intros. apply member_appendctx2 to H2 H5 with N = N. search.
+cut H4 with H5. search.
+
+Define compat: olist -> olist -> olist -> prop by
+  compat G2 nil G2 ;
+  nabla y, compat G0 (of y Ty2 y :: G1 y) G2 :=
+   nabla y, compat G0 (G1 y) G2 ;
+  nabla x, compat (of x Ty x :: G0 x) (copy x N :: G1) G2 :=
+    exists Gl Gc, nabla x,
+    appendctx (Gc x) Gl (G0 x) /\
+    { Gl |- of N Ty N } /\ compat (G0 N) G1 G2. 
+
+Define closed: olist -> tm -> prop by
+  closed nil M ;
+  nabla x, closed (copy x N :: L) M := closed L M.
+
+Theorem of_meta3 : forall M Ty Ty2 G0 G1 G2 X,
+ { G0 |- of M Ty M } ->
+ { G1 |- copy M X } -> closed G1 X ->
+ compat G0 G1 G2 ->
+ { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
+ { G2 |- of X Ty2 X }.
+induction on 4. intros Canon CopyB CopyBClosed Compat CopyTy CopyTyClosed.
+Compat: case Compat.
+/*nil*/ apply copy_M_M_to_eq to CopyB. apply copy_M_M_to_eq to CopyTy. search.
+/*sub*/ case CopyTyClosed.
+/*of*/
+Canon: apply of_meta1 to Canon Compat Compat1.
+CopyBClosed: case CopyBClosed. CopyTyClosed: case CopyTyClosed.
+CopyB: inst CopyB with n1 = N. apply copy_M_M with M = N.
+CopyB: cut CopyB1 with H1.
+CopyTy: inst CopyTy with n1 = N. apply copy_M_M with M = N.
+CopyTy: cut CopyTy1 with H1.
+apply IH to _ CopyB2 _ Compat2 CopyTy2 _.
+search.
+
+Define compat1: olist -> olist -> olist -> prop by
+  compat1 nil nil G2 ;
+  nabla y, compat1 G0 (of y Ty2 y :: G1 y) G2 :=
+   nabla y, compat1 G0 (G1 y) G2 ;
+  nabla x, compat1 (of x Ty x :: G0 x) (copy x N :: G1) G2 :=
+    { G2 |- of N Ty N } /\ compat1 (G0 N) G1 G2. 
+
+Theorem compat1_compat: forall G0 G1 G2 G02,
+ compat1 G0 G1 G2 -> appendctx G0 G2 G02 -> compat G02 G1 G2.
+induction on 1. intros. case H1.
+ case H2. search.
+ apply appendctx_closed to H2 with x = n1.
+  apply IH to H3 H2.  unfold. intros. apply IH to H3 H2. search.
+ case H2. unfold. apply inst_append to H5 with N = N.
+  apply IH to H4 H6. search.
+
+Theorem of_meta4 : forall M Ty Ty2 G0 G1 G2 X,
+ { G0 |- of M Ty M } ->
+ { G1 |- copy M X } -> closed G1 X ->
+ compat1 G0 G1 G2 ->
+ { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
+ { G2 |- of X Ty2 X }.
+intros. apply append_functional with G1 = G0, G2 = G2.
+monotone H1 with G3. intros. apply member_appendctx1 to H7 H8. search.
+apply of_meta3 to H8 H2 H3 _ H5 H6 with G2 = G2. backchain compat1_compat.
+search.
+
+/******************* OLD STUFF *********************/ xxx.
+
+/********** Definition of irl ************/
+
+Define ctx: olist -> prop by
+  ctx nil ;
+  nabla x, ctx (of x T x :: L x) := nabla x, ctx (L x) ;
+  nabla x, ctx (copy x N :: L) := ctx L.
+
+Define var: tm -> prop by
+  nabla x, var x.
+
+Theorem member_ctx: forall G I,
+ ctx G -> member I G ->
+  (exists x T, var x /\ I = of x T x) \/
+  (exists x N, var x /\ I = copy x N).
+induction on 1. intros. case H1. case H2.
+/*of*/
+case H2. search. apply IH to H3 H4. search.
+/*copy*/
+case H2. search. apply IH to H3 H4. search.
+
+Theorem of_meta2 : forall M S Ty N G0 G2 G3, nabla x,
+ ctx (G0 x) -> ctx G2 ->
+ { G0 x, of x S x |- of (M x) (Ty x) (M x) } ->
+ { G2 |- of N S N } ->
+ (forall x, member x G2 -> member x G3) ->
+ (forall x, member x (G0 N) -> member x G3) ->
+ { G3 |- of (M N) (Ty N) (M N) }.
+intros. monotone H4 with G3. inst H3 with n1 = N.
+monotone H8 with (of N S N :: G3).
+ intros. case H9. search. apply H6 to H10. search.
+cut H9 with H7. search.
+
+
+Specification "cic".
+Define irl: olist -> prop by
+  irl nil ;
+  nabla x, irl (of x T x :: L x) := nabla x, irl (L x) ;
+  nabla x, irl (copy x x :: L) := irl L.
+
+/*Define var: tm -> prop by
+  nabla x, var x.*/
+
+Theorem member_irl: forall G I,
+ irl G -> member I G ->
+  (exists x T, /*var x /\*/ I = of x T x) \/ (exists x, /*var x /\*/ I = copy x x).
+induction on 1. intros. case H1. case H2.
+/*of*/
+case H2. search. apply IH to H3 H4. search.
+/*copy*/
+case H2. search. apply IH to H3 H4. search.
+
+Theorem $copy_ok_aux : 
+ (forall G R N F, nabla x, irl G ->
+   { G, copy x N |- copy (F x) R } -> R = F N) /\
+ (forall G R N F, nabla x, irl G ->
+   { G, copy x N |- list2 copy (F x) R } -> R = F N).
+induction on 2 2.
+split. intros. copy: case H2.
+/*set*/ search.
+/*lam*/
+  apply IH to _ copy.
+  apply IH to _ copy1.
+  search.
+/*prod*/
+  apply IH to _ copy.
+  apply IH to _ copy1.
+  search.
+/*app*/
+  apply IH1 to _ copy.
+  search.
+/*context*/
+  case copy1.
+    case copy. search.
+    apply member_irl to H1 H3. case H4. case copy. case copy. search.
+/*second lemma*/
+intros. copy: case H2. search.
+/*xcons*/
+  apply IH to _ copy.
+  apply IH1 to _ copy1.
+  search.
+/*bad context*/
+  case copy1. case copy. apply member_irl to H1 H3. case H4.
+  case copy. case copy.
+
+Split $copy_ok_aux as copy_ok, copy_list_ok.
+
+Theorem of_meta : forall M S Ty Ty2 N G1 G2 X, nabla x y z,
+ irl G1 -> irl G2 ->
+ { of x S x |- of (M x) (Ty x) (M x) } ->
+ { G1, copy y N |- copy (M y) X } ->
+ { G2 |- of N S N } ->
+ { G2, copy z N |- copy (Ty z) Ty2 } ->
+ { G2 |- of X Ty2 X }.
+intros Irl1 Irl2 Canon SubT ofN SubTY.
+apply copy_ok to Irl1  SubT.
+apply copy_ok to Irl2 SubTY.
+inst Canon with n1 = N.
+cut H1 with ofN.
+search.
+
+Define ctx: olist -> prop by
+  ctx nil ;
+  nabla x, ctx (of x T x :: L x) := nabla x, ctx (L x) ;
+  nabla x, ctx (copy x (N x) :: L) := ctx L.
+
+Define var: tm -> prop by
+  nabla x, var x.
+
+Theorem member_ctx: forall G I,
+ ctx G -> member I G ->
+  (exists x T, var x /\ I = of x T x) \/
+  (exists x N, var x /\ I = copy x N).
+induction on 1. intros. case H1. case H2.
+/*of*/
+case H2. search. apply IH to H3 H4. search.
+/*copy*/
+case H2. search. apply IH to H3 H4. search.
+
+% Theorem reflexive_copy: forall G N, { G |- copy N N }.
+Theorem out_of_scope_member : forall G T, nabla x,
+  member (copy x (T x)) G -> false.
+induction on 1. intros. case H1. apply IH to H2.
+
+Theorem $copy_ok_aux2 : 
+ (forall G R N F, nabla x, ctx G ->
+   { G, copy x N |- copy (F x) R } ->
+     exists H, { G |- copy H R } /\ H = F N ) /\
+ (forall G R N F, nabla x, ctx G ->
+   { G, copy x N |- list2 copy (F x) R } ->
+    exists H, { G |- list2 copy H R } /\ H = F N).
+induction on 2 2.
+split. intros. copy: case H2.
+/*set*/ search.
+/*lam*/
+  apply IH to _ copy.
+  apply IH to _ copy1.
+  search.
+/*prod*/
+  apply IH to _ copy.
+  apply IH to _ copy1.
+  search.
+/*app*/
+  apply IH1 to _ copy.
+  search.
+/*context*/
+  case copy1.
+    case copy. skip.
+    apply member_ctx to H1 H3. case H4. case copy. case H5. case copy. search.
+    apply out_of_scope_member to H3.
+/*second lemma*/
+intros. copy: case H2. search.
+/*xcons*/
+  apply IH to _ copy.
+  apply IH1 to _ copy1.
+  search.
+/*bad context*/
+  case copy1. case copy. apply member_ctx to H1 H3. case H4.
+  case copy. case H5. case copy.
+  apply out_of_scope_member to H3.
+
+Split $copy_ok_aux as copy_ok2, copy_list_ok2.
+
+Theorem of_meta2 : forall M S Ty N G0 G2 G3, nabla x,
+ ctx (G0 x) -> ctx G2 ->
+ { G0 x, of x S x |- of (M x) (Ty x) (M x) } ->
+ { G2 |- of N S N } ->
+ (forall x, member x G2 -> member x G3) ->
+ (forall x, member x (G0 N) -> member x G3) ->
+ { G3 |- of (M N) (Ty N) (M N) }.
+intros. monotone H4 with G3. inst H3 with n1 = N.
+monotone H8 with (of N S N :: G3).
+ intros. case H9. search. apply H6 to H10. search.
+cut H9 with H7. search.
+
+Theorem copy_copy : forall G N T1 T2, nabla x,
+ { G, copy x N |- copy (T1 x) (T2 x) } ->
+  { G |- copy (T1 N) (T2 N) }.
+intros. assert { copy N N }. skip. inst H1 with n1 = N. cut H3 with H2. search.
+
+Define appendctx: olist -> olist -> olist -> prop by
+  appendctx nil nil nil.
+
+Define compat: olist -> olist -> olist -> prop by
+  compat nil nil G2 ;
+  /* How do I say that x does not occur in G1??? */
+  nabla x, compat (of x Ty x :: G0 x) (copy x N :: G1) G2 :=
+   { G2 |- of N Ty N } /\ compat (G0 N) G1 G2. 
+
+Define closed: olist -> tm -> prop by
+  nabla x, closed (copy x (N x) :: L) M := closed L M.
+
+Theorem of_meta3 : forall M Ty Ty2 G0 G1 G2 /*G3*/ X,
+ ctx G0 -> ctx G1 -> ctx G2 ->
+ { G0 |- of M Ty M } ->
+ { G1 |- copy M X } ->
+ compat G0 G1 G2 ->
+ { G1 |- copy Ty Ty2 } ->
+ { G2 |- of X Ty2 X }.
+induction on 6. intros Ctx0 Ctx1 Ctx2 Canon CopyB Compat CopyTy.
+Compat: case Compat.
+/*nil*/ apply copy_ok to _ CopyB. apply copy_ok to _ CopyTy. search.
+/*of*/ Ctx: case Ctx0. Ctx: case Ctx1.
+Canon: apply of_meta2 to Ctx Ctx2 Canon Compat _ _ with x = n1. skip.
+CopyB: apply copy_copy to CopyB.
+CopyTy: apply copy_copy to CopyTy.
+Ctx: assert ctx (G3 N). skip.
+apply IH to Ctx3 Ctx1 Ctx2 Canon1 CopyB1 Compat1 CopyTy1.
+xxx.
