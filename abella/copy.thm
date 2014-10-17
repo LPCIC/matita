@@ -1,9 +1,5 @@
 Specification "cic".
 
-/********** Axioms ************/
-
-Theorem is_term_ok: forall M, { is_term M }. skip.
-
 /********** copy_M_M ************/
 
 Define irl2: olist -> olist -> prop by
@@ -35,8 +31,8 @@ induction on 2 2. split.
 
 Split $copy_M_M_aux as copy_M_M_aux, copy_list_M_M_aux.
 
-Theorem copy_M_M: forall M, { copy M M }.
-intros. backchain copy_M_M_aux. backchain is_term_ok.
+Theorem copy_M_M: forall M, { is_term M } -> { copy M M }.
+intros. backchain copy_M_M_aux.
 
 /********** copy_M_M_to_eq ************/
 
