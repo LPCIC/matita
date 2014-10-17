@@ -2,6 +2,73 @@ Specification "cic".
 
 /********** Axioms ************/
 
-Theorem copy_M_M: forall M, { copy M M }. skip.
-Theorem copy_M_M_to_eq: forall M N, { copy M N } -> M = N. skip.
+Theorem is_term_ok: forall M, { is_term M }. skip.
 
+/********** copy_M_M ************/
+
+Define irl2: olist -> olist -> prop by
+  irl2 nil nil;
+  nabla x, irl2 (is_term x :: L1) (copy x x :: L2) := irl2 L1 L2.
+
+Theorem member_irl2: forall G1 G2 I,
+ irl2 G1 G2 -> member I G1 -> exists x, I = is_term x /\ member (copy x x) G2.
+induction on 1. intros. case H1. case H2.
+case H2. search. apply IH to H3 H4. search.
+
+Theorem $copy_M_M_aux:
+ (forall M L1 L2,
+   irl2 L1 L2 -> { L1 |- is_term M } -> { L2 |- copy M M }) /\
+ (forall L L1 L2,
+   irl2 L1 L2 -> { L1 |- list1 is_term L } -> { L2 |- list2 copy L L }).
+induction on 2 2. split.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH to _ H4. search.
+  apply IH to _ H3. apply IH to _ H4. search.
+  apply IH1 to _ H3. search.
+  apply member_irl2 to _ H4. case H3.
+  search.
+ intros. case H2.
+  search.
+  apply IH to _ H3. apply IH1 to _ H4. search.
+  apply member_irl2 to _ H4. case H3.
+
+Split $copy_M_M_aux as copy_M_M_aux, copy_list_M_M_aux.
+
+Theorem copy_M_M: forall M, { copy M M }.
+intros. backchain copy_M_M_aux. backchain is_term_ok.
+
+/********** copy_M_M_to_eq ************/
+
+Define irl: olist -> prop by
+  irl nil ;
+  nabla x, irl (of x T x :: L x) := nabla x, irl (L x) ;
+  nabla x, irl (copy x x :: L) := irl L.
+
+Theorem member_irl: forall G I,
+ irl G -> member I G -> (exists x T, I = of x T x) \/ (exists x, I = copy x x).
+induction on 1. intros. case H1. case H2.
+/*of*/
+case H2. search. apply IH to H3 H4. search.
+/*copy*/
+case H2. search. apply IH to H3 H4. search.
+
+Theorem $copy_eq_aux:
+ (forall M N G, irl G -> { G |- copy M N } -> M = N) /\
+ (forall L1 L2 G, irl G -> {G |- list2 copy L1 L2} -> L1 = L2).
+induction on 2 2. split.
+intros. case H2.
+ search.
+ apply IH to _ H3. apply IH to _ H4. search.
+ apply IH to _ H3.  apply IH to _ H4. search.
+ apply IH1 to _ H3. search.
+ apply member_irl to H1 H4. case H5. case H3. case H3. search.
+intros. case H2.
+ search.
+ apply IH to _ H3. apply IH1 to _ H4. search.
+ apply member_irl to H1 H4. case H5. case H3. case H3.
+
+Split $copy_eq_aux as copy_eq, copy_list_eq.
+
+Theorem copy_M_M_to_eq: forall M N, { copy M N } -> M = N.
+ intros. backchain copy_eq.
