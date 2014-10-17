@@ -1,15 +1,17 @@
 Specification "cic".
 
-/********** Axioms ************/
+/********** is_olist ************/
 
 Define is_olist: olist -> prop by
    is_olist nil ;
    is_olist (HD::TL) := is_olist TL.
 
-/* This cannot be proved inside Abella, but it is true. */
-Theorem is_olist_ok: forall L, is_olist L. skip.
+Theorem inst_is_olist: forall G N, nabla (x:tm),
+ is_olist (G N) -> is_olist (G x).
+induction on 1. intros. case H1. case H2. search. case H2.
+apply IH to H3 with x = n1, G = G2, N = N. search.
 
-/*********** Library: split ***************/
+/*********** split ***************/
 
 Define split : olist -> olist -> o -> prop by
   split (A :: G) G A ;
@@ -24,20 +26,22 @@ Theorem monotone_split: forall G1 G2 X,
 induction on 1. intros. case H1. search. case H2. search. apply IH to H3.
 apply H5 to H4. case H6. search. search.
 
-/*********** Library: appendctx ***************/
+Theorem split_is_olist: forall G0 G1 E,
+ split G0 G1 E -> is_olist G1 -> is_olist G0.
+induction on 1. intros. case H1. search. apply IH to H3 _. case H2. search.
+search.
+
+/*********** appendctx ***************/
 
 Define appendctx: olist -> olist -> olist -> prop by
   appendctx nil L L ;
   appendctx (HD::TL) L1 (HD::L2) := appendctx TL L1 L2.
 
-Theorem append_functional_aux: forall G1 G2, is_olist G1 -> exists G3,
+Theorem append_functional: forall G1 G2, is_olist G1 -> exists G3,
  appendctx G1 G2 G3.
  induction on 1. intros. case H1.
   search.
   apply IH to H2 with G2 = G2. search.
-
-Theorem append_functional: forall G1 G2, exists G3, appendctx G1 G2 G3.
- intros. apply is_olist_ok with L = G1. backchain append_functional_aux.
 
 Theorem member_appendctx1: forall G1 G2 G3 X,
  appendctx G1 G2 G3 -> member X G1 -> member X G3.

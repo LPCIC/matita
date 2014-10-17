@@ -13,6 +13,13 @@ Define compat: olist -> olist -> olist -> prop by
     { G2 |- of N Ty N } /\ compat (G0 N) G1 G2 /\ { L |- is_term N } /\
     irl2 L G1.
 
+Theorem compat_is_olist: forall G0 G1 G2,
+ compat G0 G1 G2 -> is_olist G0.
+induction on 1. intros. case H1.
+ search.
+ apply IH to H3. search.
+ apply IH to H4. backchain split_is_olist. backchain inst_is_olist.
+
 Define closed: olist -> tm -> prop by
   closed nil M ;
   nabla x, closed (copy x N :: L) M := closed L M.
@@ -66,6 +73,7 @@ Theorem main_thm : forall M Ty Ty2 G0 G1 G2 X,
  compat G0 G1 G2 ->
  { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
  { G2 |- of X Ty2 X }.
-intros. apply append_functional with G1 = G0, G2 = G2.
+intros. apply append_functional to _ with G1 = G0, G2 = G2.
+apply compat_is_olist to H4. search.
 monotone H1 with G3. intros. apply member_appendctx1 to H7 H8. search.
 backchain main_lemma.
