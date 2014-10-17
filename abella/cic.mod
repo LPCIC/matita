@@ -41,12 +41,12 @@ copy set set.
 %:copy_lam:
 copy (lam T1 F1) (lam T2 F2) :-
  copy T1 T2,
- pi x\ pi y\ copy x y => copy (F1 x) (F2 y).
+ pi x\ copy x x => copy (F1 x) (F2 x).
 
 %:copy_prod:
 copy (prod T1 F1) (prod T2 F2) :-
  copy T1 T2,
- pi x\ pi y\ copy x y => copy (F1 x) (F2 y).
+ pi x\ copy x x => copy (F1 x) (F2 x).
 
 %:copy_app:
 copy (app L1) (app L2) :- list2 copy L1 L2.
@@ -55,6 +55,9 @@ of T ExpTY NewT :- of T InfTY RT, coerce RT InfTY ExpTY NewT.
 
 % cases dropped
 coerce T TyA TyE T :- unify TyA TyE.
+
+% mono-directional rule
+of hole Ty2 T2 :- of Ty set Ty, copy Ty Ty2, of T Ty T, copy T T2.
 
 of (lam S F) (prod S2 T) (lam S2 F2) :-
   of S set S2,
@@ -113,6 +116,8 @@ subst Where What Rest Out :- % fixme: app[app)...
   if (app Rest) (app xnil) (eq Out Out2) (eq Out (app (xcons Out2 Rest))).
 
 unify A B :- unif ff A B.
+
+unif ff set set.
 
 unif ff (app AS) (app BS) :- list2 unify AS BS.
 

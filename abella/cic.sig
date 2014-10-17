@@ -14,6 +14,7 @@ type    and        o -> o -> o.
 type    xcons       tm -> listtm -> listtm.
 type    xnil        listtm.
 
+type    hole       tm.
 type    set        tm.
 type    lam        tm -> (tm -> tm) -> tm.
 type    prod       tm -> (tm -> tm) -> tm.
