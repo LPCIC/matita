@@ -2,6 +2,37 @@ Specification "metacic".
 
 /********** copy_M_M ************/
 
+/*
+Define list2_prop: (tm -> prop) -> listtm -> prop by
+  list2_prop P xnil ;
+  list2_prop P (xcons HD TL) := P HD /\ list2_prop P TL.
+
+Define irl2: olist -> tm -> prop by
+  nabla x, irl2 (G x) x := nabla x, member (copy x x) (G x) ;
+  irl2 G set ;
+  irl2 G (lam T F) := irl2 G T /\ nabla x, irl2 (copy x x :: G) (F x) ;
+  irl2 G (prod T F) := irl2 G T /\ nabla x, irl2 (copy x x :: G) (F x) ;
+  irl2 G (app L) := list2_prop (irl2 G) L.
+
+Theorem $copy_M_M_aux:
+ (forall G M, irl2 G M -> { G |- copy M M }) /\
+ (forall G L, list2_prop (irl2 G) L -> { G |- list2 copy L L }).
+induction on 1 1. split.
+ intros. case H1.
+  search.
+  search.
+  apply IH to H2. apply IH to H3. search.
+  apply IH to H2. apply IH to H3. search.
+  assert {G |- list2 copy L L}. skip. /* Abella's limitation */ search.
+ intros. case H1.
+  search.
+  apply IH1 to H3. assert { G |- copy HD HD }. skip. /* Abella's limitation */ search.
+
+Split $copy_M_M_aux as copy_M_M, copy_list_M_M.
+*/
+
+/********** copy_M_M ************/
+
 Define irl2: olist -> olist -> prop by
   irl2 nil nil;
   nabla x, irl2 (is_term x :: L1) (copy x x :: L2) := irl2 L1 L2.
