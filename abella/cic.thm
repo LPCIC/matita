@@ -27,9 +27,9 @@ Define closed: olist -> tm -> prop by
   nabla x, closed (copy x x :: L x) (M x) := nabla x, closed (L x) (M x) ;
   nabla x, closed (copy x N :: L) M := closed L M.
 
-Theorem closed_split: forall G1 G5 X N, nabla n1,
- closed (G1 n1) (X n1) -> split (G1 n1) G5 (copy n1 N) ->
-  (nabla x, X n1 = X x) /\ closed G5 (X n1).
+Theorem closed_split: forall G1 G5 X N, nabla x,
+ closed (G1 x) (X x) -> split (G1 x) G5 (copy x N) ->
+  (nabla y, X x = X y) /\ closed G5 (X x).
 induction on 1. intros. case H1.
  case H2.
  case H2. apply IH to H3 H4. search.
@@ -134,7 +134,7 @@ Define reflect_copy_context: olist -> olist -> olist -> listtm -> prop by
    exists G1, nabla (x:tm),
     split (G1c x) G1 (copy x N) /\ reflect_copy_context (G0 x) G1 (G2 x) L.
 
-/*Define reflect_copy_context: olist -> olist -> listtm -> prop by
+/ *Define reflect_copy_context: olist -> olist -> listtm -> prop by
   reflect_copy_context nil G2 xnil ;
   nabla (x:tm), reflect_copy_context (copy x x :: G1 x) (copy x x :: G2 x) (xcons x (L x)) :=
    nabla (x:tm), reflect_copy_context (G1 x) (G2 x) (L x) ;
@@ -150,9 +150,9 @@ Theorem reflect_compat: forall G0 G1 G2 L0 L1 Ty Ty2,
  { G2 |- of-seq L0 L1 Ty2 } ->
  compat G0 G1 G2.
 induction on 3. intros. case H3.
-/*nil* /
+/ *nil* /
 case H4. search.
-/*of* /
+/ *of* /
 case H4.
  skip.
  case H5.
@@ -180,7 +180,7 @@ apply IH to H4 H2 _ with Ty2 = Ty2 n1.
     case H2.
      skip.
      case H6.
-      case H9. skip. /* bug * / case H11. case H10. skip. /* vero per contesti di tipaggio * /
+      case H9. skip. / * bug * / case H11. case H10. skip. / * vero per contesti di tipaggio * /
       skip.
      xxx.
      xxx.
@@ -196,8 +196,8 @@ case H3. case H5. case H2.
  ...
  ...
  ...
-skip. /* G2 not a typing context * /
-skip. /* G2 not a typing context * /
+skip. / * G2 not a typing context * /
+skip. / * G2 not a typing context * /
 xxx.
 
 Theorem main_refl_thm : forall M Ty Ty2 G0 G1 G2 X,
