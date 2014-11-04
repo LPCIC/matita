@@ -29,13 +29,6 @@ rev L LR :- rev-aux L xnil LR.
 if C D B1 B2 :- eq C D, B1.
 if C D B1 B2 :- neq C D, B2.
 
-%%%%%%%%%%%%%%%%% <auxiliary predicates> %%%%%%%%%%%%%%
-is_term set.
-is_term (lam T F) :- is_term T, pi x\ is_term x => is_term (F x).
-is_term (prod T F) :- is_term T, pi x\ is_term x => is_term (F x).
-is_term (app L) :- list1 is_term L.
-%%%%%%%%%%%%%%%%% </auxiliary predicates> %%%%%%%%%%%%%%
-
 copy set set.
 
 %:copy_lam:
