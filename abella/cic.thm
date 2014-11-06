@@ -1,0 +1,119 @@
+Specification "metacic".
+Import "copy".
+Import "lib".
+
+/**** The theory ****/
+
+Define typing_context: olist -> prop by
+  typing_context nil ;
+  nabla x, typing_context (copy x x :: of x Ty x :: G x) :=
+   nabla x, typing_context (G x).
+
+Define var_decl: o -> prop by
+  nabla x, var_decl (of x T x).
+
+Theorem member_typing_context: forall X G,
+ typing_context G -> member X G -> var_decl X \/ exists x, X = copy x x.
+induction on 1. intros. case H1. case H2. case H2. search. case H4. search.
+apply IH to H3 H5. case H6. search. search.
+
+Theorem member_typing_context2: forall Ty G, nabla x,
+ typing_context (G x) -> member (of x Ty x) (G x) -> member (copy x x) (G x).
+induction on 1. intros. case H1. case H2.
+ case H2. case H4. apply IH to H3 H5. search. search.
+
+/*
+Theorem variable_typing_inversion: forall G T, nabla x,
+ typing_context (G x) -> { G x |- of x (T x) x } ->
+  (nabla y, T x = T y) /\
+   exists Ty,
+    member (of x Ty x) (G x) /\ { G x |- unify Ty (T x) }.
+induction on 2. intros. case H2.
+ case H4.
+  apply IH to _ H3. search.
+ apply member_typing_context to H1 H4. case H5.
+  case H6. case H3.
+  case H3. search.
+  case H3.
+*/
+
+Theorem typing_context_to_irl: forall G,
+ typing_context G -> irl G.
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
+Theorem irl2_to_olist: forall L G,
+ irl2 L G -> is_olist L.
+induction on 1. intros. case H1. search. apply IH to H3. search.
+
+Define free: tm -> olist -> prop by
+ nabla x, free x L.
+
+Theorem irl2_inversion: forall L G, nabla x,
+ irl2 (L x) (G x) -> (nabla y, L x = L y) \/ exists L1, free x L1 /\ split (L x) L1 (is_term x).
+induction on 1. intros. case H1.
+ search.
+ apply IH to H3 with x = n1. case H4. search. case H5. search.
+ search.
+
+Define union : olist -> olist -> olist -> prop by
+ union L1 L2 L3 :=
+  (forall X, member X L1 -> member X L3) /\
+  (forall X, member X L2 -> member X L3) /\
+  (forall X, member X L3 -> member X L1 \/ member X L2).
+
+Theorem union_functional: forall L1 L2, is_olist L1 ->
+ exists L3, union L1 L2 L3.
+induction on 1. intros. case H1.
+ exists L2. unfold.  intros. case H2. search. search.
+ apply IH to H2 with L2 = L2. case H3. skip.
+
+Define is_var: tm -> prop by
+ nabla x, is_var x.
+
+Theorem irl2_member: forall X L G,
+ irl2 L G -> member X L ->
+  exists x, is_var x /\ X = is_term x /\ member (copy x x) G.
+induction on 1. intros. case H1. case H2. case H2. search. apply IH to H4 H5.
+ search.
+
+Theorem irl2_union: forall L1 L2 L3 G,
+ union L1 L2 L3 -> irl2 L1 G -> irl2 L2 G -> irl2 L3 G.
+skip. /*
+induction on 1. intros. case H2. case H1. search.
+ apply H7 to _ with X = HD. case H9.
+  apply irl2_member to H3 H10. case H11.
+xxx.
+ case H2. apply IH to H4 _ _.*/
+
+Theorem irl2_chop: forall L S G, nabla x,
+ irl2 L (copy x x :: of x S x :: G) -> irl2 L G.
+induction on 1. intros. case H1. search. apply IH to H3. case H2. case H5.
+ search.
+
+Theorem well_typed_to_irl2:
+ forall G N M Ty, typing_context G -> { G |- of N Ty M } ->
+  exists L, { L |- is_term M } /\ irl2 L G.
+induction on 2. intros. case H2.
+/* coerce */
+ apply IH to _ H3. skip.
+/* implicit */
+ apply copy_eq to _ H6. backchain typing_context_to_irl.
+  apply IH to _ H5. search.
+/* lam */
+ apply IH to _ H3. apply IH to _ H4.
+  apply irl2_inversion to H8 with x = n1. case H9.
+   apply union_functional to _ with L1 = L, L2 = L2. backchain irl2_to_olist.
+    case H10 (keep). monotone H5 with L3. monotone H7 with L3.
+    apply irl2_chop to H8. apply irl2_union to H10 _ _. search.
+   case H10. assert irl2 L3 G. skip.
+    apply union_functional to _ with L1 = L, L2 = L3. backchain irl2_to_olist.
+    case H13 (keep). monotone H5 with L4. monotone H7 with is_term n1 :: L4.
+     skip. /* true */ apply irl2_union to H13 _ _. search.
+/* prod */
+skip.
+/* app */
+skip.
+/* set */
+skip.
+/* lookup */
+skip.
