@@ -112,12 +112,32 @@ Theorem irl2_cons: forall L G, nabla x,
 intros. case H1. unfold. intros. case H3. search. apply H2 to H4. case H5.
 search. search.
 
-Theorem unify_lam: forall G X S1 F1, { G |- unify (lam S1 F1) X } ->
+Theorem transitive_whd_progress: forall G M1 M2 M3,
+ { G |- whd-progress M1 M2 } -> { G |- whd-progress M2 M3 } ->
+  { G |- whd-progress M1 M3 }.
+skip.
+
+Theorem unify_whd_progress: forall G M1 M2 M3, typing_context G ->
+ {G |- unify M1 M3} -> {G |- whd-progress M1 M2} -> { G |- unify M2 M3 }.
+skip.
+
+Theorem lam_stuck: forall G S F Z, ~ { G |- whd-progress (lam S F) Z }.
+skip.
+
+Theorem unify_lam: forall G X S1 F1,
+ typing_context G ->
+ { G |- unify (lam S1 F1) X } ->
  exists S2 F2,
   (X = lam S2 F2 \/ { G |- whd-progress X (lam S2 F2) }) /\
   { G |- unify S1 S2 } /\
   nabla x, { G, of x S1 x, copy x x |- unify (F1 x) (F2 x) }.
-skip.
+induction on 2. intros. case H2.
+ search.
+ search.
+ apply lam_stuck to H3.
+ apply IH to _ H4. case H5. search. apply transitive_whd_progress to H3 H8.
+  search.
+ apply member_typing_context to H1 H4. case H5. case H6. case H3. case H3.
 
 Theorem transitive_unify: forall G T1 T2 T3, typing_context G ->
  { G |- unify T1 T2 } -> { G |- unify T2 T3 } -> { G |- unify T1 T3 }.
@@ -126,7 +146,7 @@ induction on 2. intros. case H2.
 /* set */ search.
 /* app */ skip.
 /* lam */
-apply unify_lam to H3. assert { G |- unify (lam S F) (lam S2 F2) }.
+apply unify_lam to _ H3. assert { G |- unify (lam S F) (lam S2 F2) }.
  apply IH to _ H4 H7.
  monotone H8 with (copy n1 n1 :: of n1 S n1 :: of n1 T n1 :: G).
  intros. case H10. search. search.
@@ -135,7 +155,7 @@ apply unify_lam to H3. assert { G |- unify (lam S F) (lam S2 F2) }.
 case H6. search. search.
 /* prod */ skip.
 /* whd-l */ apply IH to _ H5 H3. search.
-/* whd-r */ backchain IH. skip. /* New important theorem! */
+/* whd-r */ backchain IH. backchain unify_whd_progress.
 /* lookup */
 apply member_typing_context to H1 H5. case H6. case H7. case H4. case H4.
 
