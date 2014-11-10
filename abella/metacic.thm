@@ -68,7 +68,7 @@ CopyBClosed: apply closed_split to CopyBClosed Compat.
 CopyTyClosed: apply closed_split to CopyTyClosed Compat.
 monotone CopyB with (copy n1 N :: G5). backchain monotone_split.
 monotone CopyTy with (copy n1 N :: G5). backchain monotone_split.
-apply copy_M_M to _ Compat3.
+apply copy_M_M to Compat4 Compat3.
 CopyB: inst H2 with n1 = N. CopyB: cut CopyB1 with H4.
 CopyTy: inst H3 with n1 = N. CopyTy: cut CopyTy1 with H4.
 apply IH to Compat2 Append1 _ CopyB2 _ CopyTy2 _.
