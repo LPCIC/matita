@@ -1,5 +1,16 @@
 Specification "metacic".
 
+/********** member ************/
+
+Theorem member_restrict: forall X L, nabla (x : tm),
+ member (X x) L -> nabla y, X x = X y.
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
+/********** free ************/
+
+Define free: tm -> olist -> prop by
+ nabla x, free x L.
+
 /********** is_olist ************/
 
 Define is_olist: olist -> prop by

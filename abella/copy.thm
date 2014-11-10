@@ -1,4 +1,5 @@
 Specification "metacic".
+Import "lib".
 
 /********** copy_M_M ************/
 
@@ -60,6 +61,12 @@ induction on 2 2. split.
   case H1. apply H5 to H4. case H3.
 
 Split $copy_M_M_aux as copy_M_M, copy_list_M_M.
+
+Theorem irl2_appendctx: forall L1 L2 L3 G,
+ irl2 L1 G -> irl2 L2 G -> appendctx L1 L2 L3 -> irl2 L3 G.
+intros. unfold. intros. apply member_appendctx3 to H3 H4. case H5.
+ case H1. apply H7 to H6. search.
+ case H2. apply H7 to H6. search.
 
 /********** copy_M_M_to_eq ************/
 

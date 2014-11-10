@@ -41,75 +41,80 @@ Theorem typing_context_to_irl: forall G,
  typing_context G -> irl G.
 induction on 1. intros. case H1. search. apply IH to H2. search.
 
-Theorem irl2_to_olist: forall L G,
- irl2 L G -> is_olist L.
-skip./*induction on 1. intros. case H1. search. apply IH to H3. search.*/
-
-Define free: tm -> olist -> prop by
- nabla x, free x L.
+Theorem appendctx_to_is_olist: forall L1 L2 L3,
+ appendctx L1 L2 L3 -> is_olist L2 -> is_olist L3.
+induction on 1. intros. case H1. search. apply IH to H3 _. search.
 
 Theorem irl2_inversion: forall L G, nabla x,
- irl2 (L x) (G x) -> exists L2, free x L2 /\
+ is_olist (L x) ->
+ irl2 (L x) (G x) -> exists L2, free x L2 /\ is_olist L2 /\
   (forall X, member X (L x) -> member X L2 \/ X = is_term x) /\
   (forall X, member X L2 -> member X (L x)).
-skip./*
 induction on 1. intros. case H1.
  search.
- apply IH to H3 with x = n1. case H4. exists (is_term n2 :: L4 n2).
-  split. search. intros. case H7. search. apply H5 to H8. case H9.search.search.
-  intros. case H7. search. apply H6 to H8. search.
- apply IH to H3. case H4. exists L3. split. search. intros. case H7. search.
-  apply H5 to H8. search. intros. apply H6 to H7. search.*/
-
-Theorem irl2_appendctx: forall L1 L2 L3 G,
- irl2 L1 G -> irl2 L2 G -> appendctx L1 L2 L3 -> irl2 L3 G.
-intros. unfold. intros. apply member_appendctx3 to H3 H4. case H5.
- case H1. apply H7 to H6. search.
- case H2. apply H7 to H6. search.
+ apply IH to H3 _ with G = G.
+  case H2. unfold. intros. apply H4 to _ with X = X n1. case H6. search. search.
+  case H4 (keep). case H2. apply H8 to _ with X = HD n1. case H9.
+   exists (is_term n2 :: L1 n2). split.
+    search.
+    search.
+    intros. case H11. search. apply H6 to H12. case H13. search. search.
+    intros. case H11. search. apply H7 to H12. search.
+ apply IH to H3 _ with G = G.
+  unfold. intros. apply H6 to H11. case H12.
+   apply member_restrict to H13. apply H8 to _ with X = X1. search.
+   search.
+  case H11 (keep). exists L4. split.
+   search.
+   search.
+   intros. case H15. search. apply H13 to H16. case H17. search. search.
+   intros. apply H14 to H15. search.
 
 Theorem well_typed_to_irl2:
  forall G N M Ty, typing_context G -> { G |- of N Ty M } ->
-  exists L, { L |- is_term M } /\ irl2 L G.
+  exists L, { L |- is_term M } /\ irl2 L G /\ is_olist L.
 induction on 2. intros. case H2.
 /* coerce */
  apply IH to _ H3.
  case H4.
   search.
-  apply member_typing_context to H1 H8. case H9. case H10. case H7. case H7.
+  apply member_typing_context to H1 H9. case H10. case H11. case H8. case H8.
 /* implicit */
  apply copy_eq to _ H6. backchain typing_context_to_irl.
   apply IH to _ H5. search.
 /* lam */
  apply IH to _ H3. apply IH to _ H4.
- apply irl2_inversion to H8 with x = n1. case H9.
- apply append_functional to _ with G1 = L, G2 = L3. backchain irl2_to_olist.
+ apply irl2_inversion to _ H9 with x = n1. case H11.
+ apply append_functional to _ with G1 = L, G2 = L3.
  monotone H5 with G3. intros. backchain member_appendctx1.
- monotone H7 with (is_term n1 :: G3). intros.
- apply H10 to H14. case H15. unfold 2. backchain member_appendctx2. search.
+ monotone H8 with (is_term n1 :: G3). intros.
+ apply H13 to H17. case H18. unfold 2. backchain member_appendctx2. search.
  exists G3. split. search.
- apply irl2_appendctx to _ _ H12 with G = G.
-  unfold. intros. apply H11 to H15. case H8. apply H17 to H16. case H18.
-  case H19. case H20. search.
- search.
+  apply irl2_appendctx to _ _ H15 with G = G.
+   unfold. intros. apply H14 to H18. case H9. apply H20 to H19. case H21.
+    case H22. case H23. search.
+   search.
+  apply appendctx_to_is_olist to H15 _. search.
 /* prod */
  apply IH to _ H3. apply IH to _ H4.
- apply irl2_inversion to H8 with x = n1. case H9.
- apply append_functional to _ with G1 = L, G2 = L3. backchain irl2_to_olist.
+ apply irl2_inversion to _ H9 with x = n1. case H11.
+ apply append_functional to _ with G1 = L, G2 = L3.
  monotone H5 with G3. intros. backchain member_appendctx1.
- monotone H7 with (is_term n1 :: G3). intros.
- apply H10 to H14. case H15. unfold 2. backchain member_appendctx2. search.
+ monotone H8 with (is_term n1 :: G3). intros.
+ apply H13 to H17. case H18. unfold 2. backchain member_appendctx2. search.
  exists G3. split. search.
- apply irl2_appendctx to _ _ H12 with G = G.
-  unfold. intros. apply H11 to H15. case H8. apply H17 to H16. case H18.
-  case H19. case H20. search.
- search.
+  apply irl2_appendctx to _ _ H15 with G = G.
+   unfold. intros. apply H14 to H18. case H9. apply H20 to H19. case H21.
+    case H22. case H23. search.
+   search.
+  apply appendctx_to_is_olist to H15 _. search.
 /* app */
 skip.
 /* set */
- exists nil. split. search. unfold. intros. case H3.
+ exists nil. split. search. unfold. intros. case H3. search.
 /* lookup */
  apply member_typing_context to H1 H4. case H5.
   case H6. case H3. apply member_typing_context2 to H1 H4.
    exists (is_term n1 :: nil). split. search. unfold. intros. case H8. search.
-   case H9.
+   case H9. search.
   case H3.
