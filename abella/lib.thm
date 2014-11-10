@@ -52,6 +52,11 @@ Theorem member_appendctx2: forall G1 G2 G3 X,
  appendctx G1 G2 G3 -> member X G2 -> member X G3.
 induction on 1. intros. case H1. search. unfold. apply IH to H3 H2. search.
 
+Theorem member_appendctx3: forall G1 G2 G3 X,
+ appendctx G1 G2 G3 -> member X G3 -> member X G1 \/ member X G2.
+induction on 1. intros. case H1. search. case H2. search. apply IH to H3 _.
+case H5. search. search.
+
 Theorem inst_appendctx :
  forall G1 G2 G3 N, nabla (x:tm),
   appendctx (G1 x) G2 (G3 x) -> appendctx (G1 N) G2 (G3 N).

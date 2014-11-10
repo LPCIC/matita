@@ -17,7 +17,7 @@ Theorem compat_is_olist: forall G0 G1 G2,
  compat G0 G1 G2 -> is_olist G0.
 induction on 1. intros. case H1.
  search.
- apply IH to H3. search.
+ apply IH to H4. search.
  apply IH to H4. backchain split_is_olist. backchain inst_is_olist.
 
 Define closed: olist -> tm -> prop by

@@ -33,19 +33,12 @@ Split $copy_M_M_aux as copy_M_M, copy_list_M_M.
 
 /********** copy_M_M ************/
 
+Define var: tm -> prop by
+ nabla x, var x.
+
 Define irl2: olist -> olist -> prop by
-  irl2 nil G ;
-  nabla x, irl2 (is_term x :: L1) (L2 x) :=
-   nabla x, member (copy x x) (L2 x) /\ irl2 L1 (L2 x).
-
-Theorem member_irl2: forall G1 G2 I,
- irl2 G1 G2 -> member I G1 -> exists x, I = is_term x /\ member (copy x x) G2.
-induction on 1. intros. case H1. case H2.
-case H2. search. apply IH to H4 H5. search.
-
-Theorem weaken_irl2: forall L G, nabla x,
- irl2 L G -> irl2 L (copy x x :: G).
-induction on 1. intros. case H1. search. apply IH to H3. search.
+ irl2 L G := forall X, member X L ->
+  exists x, X = is_term x /\ var x /\  member (copy x x) G.
 
 Theorem $copy_M_M_aux:
  (forall M L1 L2,
@@ -53,19 +46,18 @@ Theorem $copy_M_M_aux:
  (forall L L1 L2,
    irl2 L1 L2 -> { L1 |- list1 is_term L } -> { L2 |- list2 copy L L }).
 induction on 2 2. split.
- intros. case H2.
+ intros. case H1. case H2.
   search.
-  apply IH to _ H3. apply IH to _ H4 with L2 = copy n1 n1 :: L2.
-   apply weaken_irl2 to H1 with x = n1. search. search.
-  apply IH to _ H3. apply IH to _ H4 with L2 = copy n1 n1 :: L2.
-   apply weaken_irl2 to H1 with x = n1. search. search.
-  apply IH1 to _ H3. search.
-  apply member_irl2 to _ H4. case H3.
-  search.
+  apply IH to _ H4. apply IH to _ H5 with L2 = copy n1 n1 :: L2.
+   unfold. intros. case H7. search. apply H3 to H8. search. search.
+  apply IH to _ H4. apply IH to _ H5 with L2 = copy n1 n1 :: L2.
+   unfold. intros. case H7. search. apply H3 to H8. search. search.
+  apply IH1 to _ H4. search.
+  apply H3 to H5. case H4. search.
  intros. case H2.
   search.
   apply IH to _ H3. apply IH1 to _ H4. search.
-  apply member_irl2 to _ H4. case H3.
+  case H1. apply H5 to H4. case H3.
 
 Split $copy_M_M_aux as copy_M_M, copy_list_M_M.
 
