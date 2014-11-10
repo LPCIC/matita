@@ -6,8 +6,7 @@ Import "cic".
 Define compat: olist -> olist -> olist -> prop by
   compat nil nil G2 ;
   nabla x, compat (of x Ty x :: copy x x :: G0 x) (G1 x) (G2 x) :=
-   nabla x, member (of x Ty x) (G2 x) /\ member (copy x x) (G2 x) /\
-    compat (G0 x) (G1 x) (G2 x) ;
+   nabla x, { G2 x |- of x Ty x } /\ compat (G0 x) (G1 x) (G2 x) ;
   nabla x, compat (of x Ty x :: copy x x :: G0 x) (G1c x) G2 :=
    exists N G1 L, nabla x, split (G1c x) G1 (copy x N) /\
     { G2 |- of N Ty N } /\ compat (G0 N) G1 G2 /\ { L |- is_term N } /\
@@ -17,7 +16,7 @@ Theorem compat_is_olist: forall G0 G1 G2,
  compat G0 G1 G2 -> is_olist G0.
 induction on 1. intros. case H1.
  search.
- apply IH to H4. search.
+ apply IH to H3. search.
  apply IH to H4. backchain split_is_olist. backchain inst_is_olist.
 
 Define closed: olist -> tm -> prop by
@@ -43,22 +42,27 @@ induction on 1. intros. case H1.
 Theorem main_lemma : forall M Ty Ty2 G0 G1 G2 G02 X,
  compat G0 G1 G2 ->
  appendctx G0 G2 G02 ->
+ typing_context G02 ->
  { G02 |- of M Ty M } ->
  { G1 |- copy M X } -> closed G1 X ->
  { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
  { G2 |- of X Ty2 X }.
 induction on 1.
-intros Compat Append Canon CopyB CopyBClosed CopyTy CopyTyClosed.
+intros Compat Append TypingCtx Canon CopyB CopyBClosed CopyTy CopyTyClosed.
 Compat: case Compat.
 /*nil*/
 Append: case Append.
 apply copy_M_M_to_eq to CopyB. apply copy_M_M_to_eq to CopyTy. search.
 /*irl*/
 Append: case Append. Append: case Append.
-apply IH to Compat2 Append _ _ CopyBClosed _ CopyTyClosed.
-Compat: apply member_appendctx2 to Append Compat.
-monotone Canon with L3 n1. intros. case H1. search.
-case H2. backchain member_appendctx2. search. search.  search.
+apply IH to Compat1 Append _ _ _ CopyBClosed _ CopyTyClosed.
+monotone Compat with L3 n1. intros. backchain member_appendctx2.
+Canon: cut Canon with H1.
+apply simple_variable_typing_inversion to _ H1. case TypingCtx. case H2.
+apply member_typing_context2 to _ H3. case TypingCtx.
+monotone Canon1 with L3 n1. intros. case H5. search. search. search.
+case TypingCtx.
+search.
 /*of*/
 Append: case Append. Append: case Append.
 Append: apply inst_appendctx to Append with N = N.
@@ -71,20 +75,23 @@ monotone CopyTy with (copy n1 N :: G5). backchain monotone_split.
 apply copy_M_M to Compat4 Compat3.
 CopyB: inst H2 with n1 = N. CopyB: cut CopyB1 with H4.
 CopyTy: inst H3 with n1 = N. CopyTy: cut CopyTy1 with H4.
-apply IH to Compat2 Append1 _ CopyB2 _ CopyTy2 _.
+apply IH to Compat2 Append1 _ _ CopyB2 _ CopyTy2 _.
 assert { G4 |- copy N N }. apply copy_M_M to Compat5 Compat3. search.
 monotone H5 with L3 N. intros. backchain member_appendctx2.
-cut Canon2 with H6. search. search.
+cut Canon2 with H6. search. case TypingCtx. search.
 
 Theorem main_thm : forall M Ty Ty2 G0 G1 G2 X,
+ typing_context G0 -> typing_context G2 ->
  { G0 |- of M Ty M } ->
  { G1 |- copy M X } -> closed G1 X ->
  compat G0 G1 G2 ->
  { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
  { G2 |- of X Ty2 X }.
-intros. apply append_functional to _ with G1 = G0, G2 = G2.
+intros TypingCtx0 TypingCtx2.
+apply append_functional to _ with G1 = G0, G2 = G2.
 apply compat_is_olist to H4. search.
 monotone H1 with G3. intros. apply member_appendctx1 to H7 H8. search.
+apply append_typing_context to _ _ H7.
 backchain main_lemma.
 
 /**** The reflective version ****/

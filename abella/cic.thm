@@ -4,6 +4,8 @@ Import "lib".
 
 /**** The theory ****/
 
+/*********** Well typed terms can be copied **********/
+
 Define typing_context: olist -> prop by
   typing_context nil ;
   nabla x, typing_context (copy x x :: of x Ty x :: G x) :=
@@ -25,6 +27,12 @@ induction on 1. intros. case H1. case H2.
 Theorem typing_context_to_irl: forall G,
  typing_context G -> irl G.
 induction on 1. intros. case H1. search. apply IH to H2. search.
+
+Theorem append_typing_context: forall G1 G2 G3,
+ typing_context G1 -> typing_context G2 -> appendctx G1 G2 G3 ->
+  typing_context G3.
+induction on 3. intros. case H3. search.  case H1. case H4. apply IH to _ _ H6.
+search.
 
 Theorem appendctx_to_is_olist: forall L1 L2 L3,
  appendctx L1 L2 L3 -> is_olist L2 -> is_olist L3.
@@ -104,8 +112,23 @@ skip.
    case H9. search.
   case H3.
 
+/*********** Variable typing inversion, partial information **********/
+
 Define tmfree: tm -> tm -> prop by
  nabla x, tmfree x T.
+
+Theorem simple_variable_typing_inversion: forall G T, nabla x,
+ typing_context (G x) -> { G x |- of x (T x) x } ->
+  exists Ty, tmfree x Ty /\  member (of x Ty x) (G x).
+induction on 2. intros. case H2.
+ case H4.
+  apply IH to _ H3. case H6. search.
+ apply member_typing_context to H1 H6. case H7.
+  case H8. case H5. case H5. case H5.
+ apply member_typing_context to H1 H4. case H5. case H6.
+  case H3. case H3. search. case H3.
+
+/*********** More informative version, not necessary! **********/
 
 Theorem irl2_cons: forall L G, nabla x,
  irl2 L G -> irl2 (is_term x :: L) (copy x x :: G).
