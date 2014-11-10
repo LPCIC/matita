@@ -112,17 +112,44 @@ Theorem irl2_cons: forall L G, nabla x,
 intros. case H1. unfold. intros. case H3. search. apply H2 to H4. case H5.
 search. search.
 
-Theorem transitive_whd_progress: forall G M1 M2 M3,
+/* FALSE!!!!! Why is it true in our case??? */
+Theorem transitive_neq: forall G M1 M2 M3, typing_context G ->
+ { G |- neq M1 M2 } -> { G |- neq M2 M3 } -> { G |- neq M1 M3 }.
+skip.
+
+Theorem transitive_whd: forall G M1 M2 M3, typing_context G ->
+ { G |- whd M1 M2 } -> { G |- whd M2 M3 } -> { G |- whd M1 M3 }.
+skip.
+
+Theorem transitive_whd_progress: forall G M1 M2 M3, typing_context G ->
  { G |- whd-progress M1 M2 } -> { G |- whd-progress M2 M3 } ->
   { G |- whd-progress M1 M3 }.
-skip.
+intros. case H2.
+ case H3.
+  apply transitive_whd to _ H4 H6. apply transitive_neq to _ H5 H7. search.
+  apply member_typing_context to H1 H7. case H8. case H9. case H6. case H6.
+ apply member_typing_context to H1 H5. case H6. case H7. case H4. case H4.
 
 Theorem unify_whd_progress: forall G M1 M2 M3, typing_context G ->
  {G |- unify M1 M3} -> {G |- whd-progress M1 M2} -> { G |- unify M2 M3 }.
 skip.
 
-Theorem lam_stuck: forall G S F Z, ~ { G |- whd-progress (lam S F) Z }.
-skip.
+Theorem neq_irreflexive: forall G M, typing_context G -> ~ { G |- neq M M }.
+induction on 2. intros. case H2.
+ apply IH to _ H3.
+ apply IH to _ H3.
+ apply IH to _ H3.
+ apply IH to _ H3.
+ apply IH to _ H3.
+ apply member_typing_context to H1 H4. case H5. case H6. case H3. case H3.
+
+Theorem lam_stuck: forall G S F Z, typing_context G ->
+ ~ { G |- whd-progress (lam S F) Z }.
+intros. case H2.
+ case H3.
+  apply neq_irreflexive to _ H4.
+  apply member_typing_context to H1 H6. case H7. case H8. case H5. case H5.
+ apply member_typing_context to H1 H4. case H5. case H6. case H3. case H3.
 
 Theorem unify_lam: forall G X S1 F1,
  typing_context G ->
@@ -134,8 +161,8 @@ Theorem unify_lam: forall G X S1 F1,
 induction on 2. intros. case H2.
  search.
  search.
- apply lam_stuck to H3.
- apply IH to _ H4. case H5. search. apply transitive_whd_progress to H3 H8.
+ apply lam_stuck to _ H3.
+ apply IH to _ H4. case H5. search. apply transitive_whd_progress to _ H3 H8.
   search.
  apply member_typing_context to H1 H4. case H5. case H6. case H3. case H3.
 
