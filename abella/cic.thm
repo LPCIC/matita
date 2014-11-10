@@ -109,7 +109,8 @@ Define tmfree: tm -> tm -> prop by
 
 Theorem irl2_cons: forall L G, nabla x,
  irl2 L G -> irl2 (is_term x :: L) (copy x x :: G).
-skip.
+intros. case H1. unfold. intros. case H3. search. apply H2 to H4. case H5.
+search. search.
 
 Theorem transitive_unify: forall G T1 T2 T3,
  { G |- unify T1 T2 } -> { G |- unify T2 T3 } -> { G |- unify T1 T3 }.
