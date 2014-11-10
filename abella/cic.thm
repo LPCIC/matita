@@ -22,21 +22,6 @@ Theorem member_typing_context2: forall Ty G, nabla x,
 induction on 1. intros. case H1. case H2.
  case H2. case H4. apply IH to H3 H5. search. search.
 
-/*
-Theorem variable_typing_inversion: forall G T, nabla x,
- typing_context (G x) -> { G x |- of x (T x) x } ->
-  (nabla y, T x = T y) /\
-   exists Ty,
-    member (of x Ty x) (G x) /\ { G x |- unify Ty (T x) }.
-induction on 2. intros. case H2.
- case H4.
-  apply IH to _ H3. search.
- apply member_typing_context to H1 H4. case H5.
-  case H6. case H3.
-  case H3. search.
-  case H3.
-*/
-
 Theorem typing_context_to_irl: forall G,
  typing_context G -> irl G.
 induction on 1. intros. case H1. search. apply IH to H2. search.
@@ -117,4 +102,39 @@ skip.
   case H6. case H3. apply member_typing_context2 to H1 H4.
    exists (is_term n1 :: nil). split. search. unfold. intros. case H8. search.
    case H9. search.
+  case H3.
+
+Define tmfree: tm -> tm -> prop by
+ nabla x, tmfree x T.
+
+Theorem irl2_cons: forall L G, nabla x,
+ irl2 L G -> irl2 (is_term x :: L) (copy x x :: G).
+skip.
+
+Theorem transitive_unify: forall G T1 T2 T3,
+ { G |- unify T1 T2 } -> { G |- unify T2 T3 } -> { G |- unify T1 T3 }.
+skip.
+
+Theorem reflexive_unify: forall G T, { G |- unify T T }.
+search.
+/*induction on 1. intros. case H1.
+ search.
+ apply IH to H3 _. apply IH to H4 _ with G = copy n1 n1 :: G.
+  apply irl2_cons to H2. search. search.
+ apply IH to H3 _. apply IH to H4 _ with G = copy n1 n1 :: G.
+  apply irl2_cons to H2. search. search.
+ skip.
+ case H2. apply H5 to H4. case H6. case H3.*/
+
+Theorem variable_typing_inversion: forall G T, nabla x,
+ typing_context (G x) -> { G x |- of x (T x) x } ->
+  exists Ty,
+   tmfree x Ty /\  member (of x Ty x) (G x) /\ { G x |- unify Ty (T x) }.
+induction on 2. intros. case H2.
+ case H4.
+  apply IH to _ H3. case H6. apply transitive_unify to H8 H5. search.
+ apply member_typing_context to H1 H6. case H7.
+  case H8. case H5. case H5. case H5.
+ apply member_typing_context to H1 H4. case H5. case H6.
+  case H3. case H3. apply reflexive_unify with G = G n1, T = T n1. search.
   case H3.
