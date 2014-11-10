@@ -110,6 +110,8 @@ subst Where What Rest Out :- % fixme: app[app)...
 
 unify A B :- unif ff A B.
 
+unif ff X X. % Makes the algorithm inefficient. Necessary for variables.
+
 unif ff set set.
 
 unif ff (app AS) (app BS) :- list2 unify AS BS.
