@@ -108,23 +108,22 @@ subst Where What Rest Out :- % fixme: app[app)...
   (pi x\ copy x What => copy (Where x) Out2),
   if (app Rest) (app xnil) (eq Out Out2) (eq Out (app (xcons Out2 Rest))).
 
-unify A B :- unif ff A B.
+unify X X. % Makes the algorithm inefficient. Necessary for variables.
 
-unif ff X X. % Makes the algorithm inefficient. Necessary for variables.
+unify set set.
 
-unif ff set set.
+unify (app AS) (app BS) :- list2 unify AS BS.
 
-unif ff (app AS) (app BS) :- list2 unify AS BS.
-
-unif ff (lam S F) (lam T G) :-
+unify (lam S F) (lam T G) :-
   unify S T, pi x\ of x S x => copy x x => unify (F x) (G x).
-unif ff (prod S F) (prod T G) :-
+unify (prod S F) (prod T G) :-
   unify S T, pi x\ of x S x => copy x x => unify (F x) (G x).
 
 
-unif _ X Y :- whd-progress X Z, unify Z Y.
+%:unify_whd_l:
+unify X Y :- whd-progress X Z, unify Z Y.
 
-
-unif ff A B :- unif tt B A.
+%:unify_whd_r:
+unify X Y :- whd-progress Y Z, unify X Z.
 
 whd-progress X Y :- whd X Y, neq X Y.

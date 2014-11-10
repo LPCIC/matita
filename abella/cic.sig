@@ -30,7 +30,6 @@ type    whd        tm -> tm -> o.
 type    whd-progress tm -> tm -> o.
 type    subst      (tm -> tm) -> tm -> listtm -> tm -> o.
 type    unify      tm -> tm -> o.
-type    unif       bool -> tm -> tm -> o.
 
 /* <auxiliary> */
 type    is_term    tm -> o.

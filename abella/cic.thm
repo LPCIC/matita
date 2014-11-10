@@ -112,9 +112,32 @@ Theorem irl2_cons: forall L G, nabla x,
 intros. case H1. unfold. intros. case H3. search. apply H2 to H4. case H5.
 search. search.
 
-Theorem transitive_unify: forall G T1 T2 T3,
- { G |- unify T1 T2 } -> { G |- unify T2 T3 } -> { G |- unify T1 T3 }.
+Theorem unify_lam: forall G X S1 F1, { G |- unify (lam S1 F1) X } ->
+ exists S2 F2,
+  (X = lam S2 F2 \/ { G |- whd-progress X (lam S2 F2) }) /\
+  { G |- unify S1 S2 } /\
+  nabla x, { G, of x S1 x, copy x x |- unify (F1 x) (F2 x) }.
 skip.
+
+Theorem transitive_unify: forall G T1 T2 T3, typing_context G ->
+ { G |- unify T1 T2 } -> { G |- unify T2 T3 } -> { G |- unify T1 T3 }.
+induction on 2. intros. case H2.
+/* id */ search.
+/* set */ search.
+/* app */ skip.
+/* lam */
+apply unify_lam to H3. assert { G |- unify (lam S F) (lam S2 F2) }.
+ apply IH to _ H4 H7.
+ monotone H8 with (copy n1 n1 :: of n1 S n1 :: of n1 T n1 :: G).
+ intros. case H10. search. search.
+ assert { G, of n1 S n1, copy n1 n1 |- of n1 T n1 }. cut H10 with H11.
+ apply IH to _ H5 H12. search.
+case H6. search. search.
+/* prod */ skip.
+/* whd-l */ apply IH to _ H5 H3. search.
+/* whd-r */ backchain IH. skip. /* New important theorem! */
+/* lookup */
+apply member_typing_context to H1 H5. case H6. case H7. case H4. case H4.
 
 Theorem reflexive_unify: forall G T, { G |- unify T T }.
 search.
@@ -133,7 +156,7 @@ Theorem variable_typing_inversion: forall G T, nabla x,
    tmfree x Ty /\  member (of x Ty x) (G x) /\ { G x |- unify Ty (T x) }.
 induction on 2. intros. case H2.
  case H4.
-  apply IH to _ H3. case H6. apply transitive_unify to H8 H5. search.
+  apply IH to _ H3. case H6. apply transitive_unify to _ H8 H5. search.
  apply member_typing_context to H1 H6. case H7.
   case H8. case H5. case H5. case H5.
  apply member_typing_context to H1 H4. case H5. case H6.
