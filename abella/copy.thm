@@ -3,38 +3,71 @@ Import "lib".
 
 /********** copy_M_M ************/
 
-/*
-Define list2_prop: (tm -> prop) -> listtm -> prop by
-  list2_prop P xnil ;
-  list2_prop P (xcons HD TL) := P HD /\ list2_prop P TL.
-
-Define irl2: olist -> tm -> prop by
+Define
+ irl2: olist -> tm -> prop,
+ irl2list: olist -> listtm -> prop
+by
   nabla x, irl2 (G x) x := nabla x, member (copy x x) (G x) ;
   irl2 G set ;
   irl2 G (lam T F) := irl2 G T /\ nabla x, irl2 (copy x x :: G) (F x) ;
   irl2 G (prod T F) := irl2 G T /\ nabla x, irl2 (copy x x :: G) (F x) ;
-  irl2 G (app L) := list2_prop (irl2 G) L.
+  irl2 G (app L) := irl2list G L ;
+
+  irl2list G xnil ;
+  irl2list G (xcons HD TL) := irl2 G HD /\ irl2list G TL.
 
 Theorem $copy_M_M_aux:
  (forall G M, irl2 G M -> { G |- copy M M }) /\
- (forall G L, list2_prop (irl2 G) L -> { G |- list2 copy L L }).
+ (forall G L, irl2list G L -> { G |- list2 copy L L }).
 induction on 1 1. split.
  intros. case H1.
   search.
   search.
   apply IH to H2. apply IH to H3. search.
   apply IH to H2. apply IH to H3. search.
-  assert {G |- list2 copy L L}. skip. /* Abella's limitation */ search.
+  apply IH1 to H2. search.
  intros. case H1.
   search.
-  apply IH1 to H3. assert { G |- copy HD HD }. skip. /* Abella's limitation */ search.
+  apply IH to H2. apply IH1 to H3. search.
 
 Split $copy_M_M_aux as copy_M_M, copy_list_M_M.
-*/
+
+Theorem $irl2_weaken:
+ (forall G1 G2 F,
+  (forall x, member (copy x x) G1 -> member (copy x x) G2) ->
+   irl2 G1 F -> irl2 G2 F) /\
+ (forall G1 G2 L,
+  (forall x, member (copy x x) G1 -> member (copy x x) G2) ->
+   irl2list G1 L -> irl2list G2 L).
+induction on 2 2. split.
+intros. case H2.
+ apply H1 to H3. search.
+ search.
+ apply IH to _ H3. apply IH to _ H4 with G2 = copy n1 n1 :: G2.
+  intros. case H6. search. apply H1 to H7. search.
+  search.
+ apply IH to _ H3. apply IH to _ H4 with G2 = copy n1 n1 :: G2.
+  intros. case H6. search. apply H1 to H7. search.
+  search.
+ apply IH1 to _ H3. search.
+intros. case H2.
+ search.
+ apply IH to _ H3. apply IH1 to _ H4. search.
+
+Split $irl2_weaken as irl2_weaken, irl2list_weaken.
+
+/*Theorem irl2_appendctx: forall L1 L2 L3 G,
+ irl2 L1 G -> irl2 L2 G -> appendctx L1 L2 L3 -> irl2 L3 G.
+induction on 3. intros. case H3. search. xxx.
+xxx.
+
+intros. unfold. intros. apply member_appendctx3 to H3 H4. case H5.
+ case H1. apply H7 to H6. search.
+ case H2. apply H7 to H6. search.*/
 
 /********** copy_M_M ************/
 
-Define var: tm -> prop by
+/*Define var: tm -> prop by
  nabla x, var x.
 
 Define irl2: olist -> olist -> prop by
@@ -66,7 +99,7 @@ Theorem irl2_appendctx: forall L1 L2 L3 G,
  irl2 L1 G -> irl2 L2 G -> appendctx L1 L2 L3 -> irl2 L3 G.
 intros. unfold. intros. apply member_appendctx3 to H3 H4. case H5.
  case H1. apply H7 to H6. search.
- case H2. apply H7 to H6. search.
+ case H2. apply H7 to H6. search.*/
 
 /********** copy_M_M_to_eq ************/
 
