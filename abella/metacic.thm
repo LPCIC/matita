@@ -38,6 +38,30 @@ induction on 1. intros. case H1.
 
 /**** The theorem ****/
 
+/* Falso: (copy n2 T) \in G |/- n2 = T.
+Theorem test: forall G M N T, nabla x,
+ { G, copy x M |- copy (N x) T } -> N M = T.
+induction on 1. intros. case H1.
+ search.
+ skip.
+ skip.
+ skip.
+ case H3. case H2. search.
+xxx. */
+
+/* Falso: (copy n1 T) \in G |/- copy T T
+Theorem test: forall G M N T, nabla x,
+ { G, copy x M |- copy (N x) T } -> { G |- copy (N M) T }.
+induction on 1. intros. case H1 (keep).
+ search.
+ skip.
+ skip.
+ skip.
+xxx.
+ case H3.
+  case H2.
+xxx. */
+
 Theorem main_lemma : forall M Ty Ty2 G0 G1 G2 G02 X,
  compat G0 G1 G2 ->
  appendctx G0 G2 G02 ->
@@ -96,120 +120,30 @@ apply append_typing_context to _ _ H7.
 backchain main_lemma.
 
 /**** The reflective version ****/
-
 /*
-Define typing_context: olist -> prop by
-  typing_context nil ;
-  nabla x, typing_context (of x Ty x :: copy x x :: G x) :=
-   nabla x, typing_context (G x).
+Define reflect: olist -> olist -> olist -> tm -> listtm -> seq -> prop by
+  reflect nil nil G2 Concl xnil (vdash Concl);
+  nabla x, reflect (of x Ty x :: copy x x :: G0 x) (G1 x) (G2 x)
+   Concl (xcons x (Subst x)) (decl Ty Seq) :=
+   nabla x, reflect (G0 x) (G1 x) (G2 x) Concl (Subst x) (Seq x) ;
+  nabla x, reflect (of x Ty x :: copy x x :: G0 x) (G1c x) G2
+   Concl (xcons N Subst) (decl Ty Seq) :=
+   exists N G1, nabla x, split (G1c x) G1 (copy x N) /\
+    reflect (G0 x) G1 G2 Concl Subst (Seq x) /\ irl2 G1 N.
 
-Theorem member_typing_context: forall X G,
- typing_context G -> member X G ->
-  exists x Ty, (X = of x Ty x \/ X = copy x x).
-induction on 1. intros. case H1. case H2. case H2. search. case H4. search.
-apply IH to H3 H5. case H6. search. search.
-
-Theorem member_typing_context2: forall Ty G, nabla x,
- typing_context (G x) -> member (of x Ty x) (G x) -> member (copy x x) (G x).
-induction on 1. intros. case H1. case H2.
- case H2. case H4. apply IH to H3 H5. search.
- case H2. search. search.
-
-Theorem variable_typing_inversion: forall G T, nabla x,
- typing_context (G x) -> { G x |- of x T x } -> member (of x T x) (G x).
-induction on 2. intros. case H2.
- xxx.
- apply member_typing_context to H1 H4. case H5. case H3. search. case H3.
-
-Define reflect_typing_context: olist -> tm -> seq -> prop by
-  reflect_typing_context nil Concl (vdash Concl) ;
-  nabla x,
-   reflect_typing_context (of x Ty x :: copy x x :: G0 x) (Concl x)
-    (decl Ty Seq) :=
-   nabla x, reflect_typing_context (G0 x) (Concl x) (Seq x).
-
-Define reflect_copy_context: olist -> olist -> olist -> listtm -> prop by
-  reflect_copy_context nil nil G2 xnil ;
-  nabla x,
-   reflect_copy_context (of x Ty x :: copy x x :: G0 x) (G1c x) (G2 x)
-    (xcons N (L x)):=
-   exists G1, nabla (x:tm),
-    split (G1c x) (G1 x) (copy x x) /\ reflect_copy_context (G0 x) (G1 x) (G2 x) (L x) ;
-  nabla x,
-   reflect_copy_context (of x Ty x :: copy x x :: G0 x) (G1c x) (G2 x)
-    (xcons N L):=
-   exists G1, nabla (x:tm),
-    split (G1c x) G1 (copy x N) /\ reflect_copy_context (G0 x) G1 (G2 x) L.
-
-/ *Define reflect_copy_context: olist -> olist -> listtm -> prop by
-  reflect_copy_context nil G2 xnil ;
-  nabla (x:tm), reflect_copy_context (copy x x :: G1 x) (copy x x :: G2 x) (xcons x (L x)) :=
-   nabla (x:tm), reflect_copy_context (G1 x) (G2 x) (L x) ;
-  nabla (x:tm), reflect_copy_context (copy x N :: G1) G2 (xcons N L) :=
-   reflect_copy_context G1 G2 L.* /
-
-Theorem reflect_compat: forall G0 G1 G2 L0 L1 Ty Ty2,
+Theorem reflect_compat: forall G0 G1 G2 Concl Subst SubstConcl Seq,
  typing_context G2 ->
- (forall N G3, nabla x, member (copy x N) G1 -> G2 = G3 x ->
-   nabla y, G3 x = G3 y) ->
- reflect_typing_context G0 Ty L0 ->
- reflect_copy_context G0 G1 G2 L1 ->
- { G2 |- of-seq L0 L1 Ty2 } ->
- compat G0 G1 G2.
-induction on 3. intros. case H3.
-/ *nil* /
-case H4. search.
-/ *of* /
-case H4.
- skip.
- case H5.
-  apply IH to H1 _ H6 H8 _ with Ty2 = Ty2 n1.
-   skip.
-   skip.
-   xxx.
-  apply member_typing_context to H1 H9. case H10. case H8. case H8.
-
-
- xxx.
-case H4.
- xxx.
+ reflect G0 G1 G2 Concl Subst Seq ->
+ { G2 |- of-seq Seq Subst SubstConcl } ->
+ compat G0 G1 G2 /\ { G1 |- copy Concl SubstConcl }.
+induction on 2. intros. case H2.
+ case H3. skip./*Falso*/ skip./*Vero*/
  case H3.
- xxx.
- apply member_typing_context to H1 H7. case H8. case H6. case H6.
-
-
-
+  apply IH to _ H4 _. search.
+  apply member_typing_context to H1 H6. case H7. case H8. case H5. case H5.
+   case H5.
+ case H3.
+  apply IH to _ H5 _ with SubstConcl = SubstConcl n1.
+   skip./*False*/
 xxx.
-apply IH to H4 H2 _ with Ty2 = Ty2 n1.
- skip.
- unfold. intros. split.
-  case H3.
-    case H2.
-     skip.
-     case H6.
-      case H9. skip. / * bug * / case H11. case H10. skip. / * vero per contesti di tipaggio * /
-      skip.
-     xxx.
-     xxx.
-    skip.
-    skip.
-  skip.
-  skip.
-  search.
-
-xxx.
-case H3. case H5. case H2.
- apply IH to H4 H8 H6.
- ...
- ...
- ...
-skip. / * G2 not a typing context * /
-skip. / * G2 not a typing context * /
-xxx.
-
-Theorem main_refl_thm : forall M Ty Ty2 G0 G1 G2 X,
- { G0 |- of M Ty M } ->
- { G1 |- copy M X } -> closed G1 X ->
- compat G0 G1 G2 ->
- { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
- { G2 |- of X Ty2 X }.*/
+  skip./*Vero*/*/
