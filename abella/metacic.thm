@@ -120,16 +120,31 @@ apply append_typing_context to _ _ H7.
 backchain main_lemma.
 
 /**** The reflective version ****/
-/*
 Define reflect: olist -> olist -> olist -> tm -> listtm -> seq -> prop by
   reflect nil nil G2 Concl xnil (vdash Concl);
   nabla x, reflect (of x Ty x :: copy x x :: G0 x) (G1 x) (G2 x)
-   Concl (xcons x (Subst x)) (decl Ty Seq) :=
-   nabla x, reflect (G0 x) (G1 x) (G2 x) Concl (Subst x) (Seq x) ;
+   (Concl x) (xcons x (Subst x)) (decl Ty Seq) :=
+   nabla x, reflect (G0 x) (G1 x) (G2 x) (Concl x) (Subst x) (Seq x) ;
   nabla x, reflect (of x Ty x :: copy x x :: G0 x) (G1c x) G2
-   Concl (xcons N Subst) (decl Ty Seq) :=
-   exists N G1, nabla x, split (G1c x) G1 (copy x N) /\
-    reflect (G0 x) G1 G2 Concl Subst (Seq x) /\ irl2 G1 N.
+   (Concl x) (xcons N Subst) (decl Ty Seq) :=
+     exists G1, nabla x, split (G1c x) G1 (copy x N) /\
+    reflect (G0 x) G1 G2 (Concl x) Subst (Seq x) /\ irl2 G1 N.
+
+Theorem reflect_compat: forall G0 G1 G2 Concl Subst SubstConcl Seq,
+ typing_context G2 ->
+ reflect G0 G1 G2 Concl Subst Seq ->
+ closed G1 Concl ->
+ { G2 |- of-seq Seq Subst SubstConcl } ->
+ compat G0 G1 G2 /\ { G1 |- copy Concl SubstConcl }.
+induction on 4. intros. case H4.
+ case H2. split. search. skip./*Falso*/
+ case H2.
+  apply IH to _ H7 _ H6. search.
+  apply closed_split to H3 H7.
+  xxx.
+ apply member_typing_context to H1 H6. case H7. case H8. case H5. case H5.
+xxx.
+
 
 Theorem reflect_compat: forall G0 G1 G2 Concl Subst SubstConcl Seq,
  typing_context G2 ->
@@ -143,7 +158,8 @@ induction on 2. intros. case H2.
   apply member_typing_context to H1 H6. case H7. case H8. case H5. case H5.
    case H5.
  case H3.
+xxx.
   apply IH to _ H5 _ with SubstConcl = SubstConcl n1.
    skip./*False*/
 xxx.
-  skip./*Vero*/*/
+  skip./*Vero*/
