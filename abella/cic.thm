@@ -1,0 +1,80 @@
+Specification "cic".
+Import "copy".
+Import "lib".
+
+/**** The two invariants ****/
+
+Define compat: olist -> olist -> olist -> prop by
+  compat nil nil G2 ;
+  nabla x, compat (of x Ty x :: G0 x) (G1 x) (G2 x) :=
+   nabla x, member (of x Ty x) (G2 x) /\ compat (G0 x) (G1 x) (G2 x) ;
+  nabla x, compat (of x Ty x :: G0 x) (G1c x) G2 :=
+   exists N G1, nabla x, split (G1c x) G1 (copy x N) /\
+    { G2 |- of N Ty N } /\ compat (G0 N) G1 G2 /\ { is_term N }.
+ /* CSC: the invariant is obviously wrong when N is not a closed term.
+    In that case { is_term N } does not hold. Thus (G1c x) should
+    contain (copy x x) just for the irl2 predicate :-(
+    Could a solution be to add to the program
+     copy x x :- var x.
+     is_term x :- var x.
+    and to assume var x after every quantifier?
+ */
+
+Define closed: olist -> tm -> prop by
+  closed nil M ;
+  nabla x, closed (copy x N :: L) M := closed L M.
+
+Theorem closed_split: forall G1 G5 X N, nabla n1,
+ closed (G1 n1) (X n1) -> split (G1 n1) G5 (copy n1 N) ->
+  (nabla x, X n1 = X x) /\ closed G5 (X n1).
+induction on 1. intros. case H1.
+ case H2.
+ case H2. apply IH to H3 H4. apply split_inst to H4. search.
+ case H2. search.
+
+/**** The theorem ****/
+
+Theorem main_lemma : forall M Ty Ty2 G0 G1 G2 G02 X,
+ compat G0 G1 G2 ->
+ appendctx G0 G2 G02 ->
+ { G02 |- of M Ty M } ->
+ { G1 |- copy M X } -> closed G1 X ->
+ { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
+ { G2 |- of X Ty2 X }.
+induction on 1.
+intros Compat Append Canon CopyB CopyBClosed CopyTy CopyTyClosed.
+Compat: case Compat.
+/*nil*/
+Append: case Append.
+apply copy_M_M_to_eq to CopyB. apply copy_M_M_to_eq to CopyTy. search.
+/*irl*/
+Append: case Append.
+apply IH to Compat1 Append _ _ CopyBClosed _ CopyTyClosed.
+Compat: apply member_appendctx2 to Append Compat.
+monotone Canon with L2 n1. intros. case H1. search. search. search.
+search.
+/*of*/
+Append: case Append. Append: apply inst_appendctx to Append with N = N.
+Canon: inst Canon with n1 = N. monotone Compat1 with (L2 N). intros.
+ apply member_appendctx2 to Append1 H1. search. Canon: cut Canon1 with H1.
+CopyBClosed: apply closed_split to CopyBClosed Compat.
+CopyTyClosed: apply closed_split to CopyTyClosed Compat.
+monotone CopyB with (copy n1 N :: G5).
+ intros. apply member_split to H2 Compat. case H3. search. search.
+monotone CopyTy with (copy n1 N :: G5).
+ intros. apply member_split to H3 Compat. case H4. search. search.
+apply copy_M_M to Compat3.
+CopyB: inst H2 with n1 = N. CopyB: cut CopyB1 with H4.
+CopyTy: inst H3 with n1 = N. CopyTy: cut CopyTy1 with H4.
+apply IH to Compat2 Append1 _ CopyB2 _ CopyTy2 _.
+search.
+
+Theorem main_thm : forall M Ty Ty2 G0 G1 G2 X,
+ { G0 |- of M Ty M } ->
+ { G1 |- copy M X } -> closed G1 X ->
+ compat G0 G1 G2 ->
+ { G1 |- copy Ty Ty2 } -> closed G1 Ty2 ->
+ { G2 |- of X Ty2 X }.
+intros. apply append_functional with G1 = G0, G2 = G2.
+monotone H1 with G3. intros. apply member_appendctx1 to H7 H8. search.
+backchain main_lemma.

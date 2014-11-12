@@ -11,7 +11,6 @@ append [X|XS] L R  :- !,
   $with-gc[append XS L L1, [XS,L]], R=[X|L1], $with-gc[true, [X,R,L1]].
 append [] L L :- $erase L.
 
-
 main W :-
   X1 = [x1,x2,x3,x4,x5,x6,x7,x8,x9,x10],
   append X1 X1 X2 ,
