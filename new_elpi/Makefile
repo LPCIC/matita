@@ -1,2 +1,2 @@
 newelpi: newelpi.ml
-	ocamlc -o newelpi newelpi.ml
+	ocamlopt -o newelpi unix.cmxa newelpi.ml

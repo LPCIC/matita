@@ -282,18 +282,22 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
           aux
 
 
-        let run prog f =
-         match run0 prog (Atom.empty_bindings) [] [] f with
-            Some (binds,orl) -> Some (binds,(prog,orl))
-          | None -> None
+        let run_next prog binds andl orl f =
+         let time0 = Unix.gettimeofday() in
+         let res =
+          match run0 prog binds andl orl f with
+             Some (binds,orl) -> Some (binds,(prog,orl))
+           | None -> None in
+         let time1 = Unix.gettimeofday() in
+         prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
+         res
+
+        let run prog f = run_next prog (Atom.empty_bindings) [] [] f
 
         let next (prog,orl) =
           match orl with
             [] -> None
-          | (binds,f,andl)::orl ->
-              (match run0 prog binds andl orl f with
-                 Some(binds,orl) -> Some (binds,(prog,orl))
-               | None -> None)
+          | (binds,f,andl)::orl -> run_next prog binds andl orl f
 
         let main_loop prog query =
          let rec aux =
