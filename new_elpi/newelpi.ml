@@ -1,19 +1,32 @@
+(***** library functions *****)
+        
+(*val filter_map : ('a -> 'b option) -> 'a list -> 'b list*)
+let rec filter_map mapf =
+ function
+    [] -> []
+  | hd::tl ->
+     match mapf hd with
+        None -> filter_map mapf tl
+      | Some hd' -> hd'::filter_map mapf tl
+
+(***** real code *****)
+
 exception NotUnifiable of string Lazy.t;;
 
 module type AtomT =
-   sig	
-	type t
+   sig        
+        type t
         val pp : t -> string
         type bindings
         val pp_bindings : bindings -> string
         val empty_bindings : bindings
         (* raises NotUnifiable in case of failure *)
-	val unify: bindings -> t -> t -> bindings
+        val unify: bindings -> t -> t -> bindings
    end;;
 
 module type Refreshable =
-   sig	
-	type r
+   sig        
+        type r
         type refresher
         val empty_refresher : refresher
         val refresh : refresher -> r -> refresher * r
@@ -139,17 +152,18 @@ let test = FormulaeInt.And (FormulaeInt.Atom 0, FormulaeInt.Atom 1);;
 
 module type ProgramT =
    sig
-	type t
+        type t
         type atomT
         type formulaT
         type bindings
-	val backchain: bindings -> atomT -> t -> 
-					(bindings * formulaT) list
-        val filter_map : ('a -> 'b option) -> 'a list -> 'b list
+        val backchain: bindings -> atomT -> t -> 
+                                        (bindings * formulaT) list
         val make: (atomT*formulaT) list -> t
    end
 
-
+(* No indexing at all; a program is a list and retrieving the clauses
+   from the program is O(n) where n is the size of the program.
+   Matching is done using unification directly. *)
 module Program(Atom: RefreshableAtomT) : ProgramT
     with type atomT := Atom.t
     and  type formulaT := RefreshableFormulae(Atom).formula
@@ -157,24 +171,16 @@ module Program(Atom: RefreshableAtomT) : ProgramT
    struct
         module Form = RefreshableFormulae(Atom)
 
-	type t = (Atom.t*Form.formula) list
-	
-        let rec filter_map mapf =
-         function
-            [] -> []
-          | hd::tl ->
-             match mapf hd with
-                None -> filter_map mapf tl
-              | Some hd' -> hd'::filter_map mapf tl
+        type t = (Atom.t*Form.formula) list
    
         (* backchain: bindings -> atomT -> 
-	                 (Atom.t*Form.formula) list -> 
-		            (bindings * formulaT) list           *)
+                         (Atom.t*Form.formula) list -> 
+                            (bindings * formulaT) list           *)
         let backchain binds a l =
           filter_map (fun clause -> 
-	    let atom,f = Form.refresh clause in
+            let atom,f = Form.refresh clause in
             try
-    	      let binds = Atom.unify binds atom a in 
+                  let binds = Atom.unify binds atom a in 
                 Some (binds,f)
             with NotUnifiable _ -> None) l                
         let make p = p;;
