@@ -48,7 +48,7 @@ module AtomInt : RefreshableAtomT with type t = int =
         type bindings = unit
         let pp_bindings () = ""
         let empty_bindings = ()
-	let unify () x y =
+        let unify () x y =
          if (x = y) then ()
          else
           raise (NotUnifiable
@@ -67,7 +67,7 @@ module AtomString : RefreshableAtomT with type t = string =
         type bindings = unit
         let pp_bindings () = ""
         let empty_bindings = ()
-	let unify () x y =
+        let unify () x y =
          if (x = y) then ()
          else
           raise (NotUnifiable
@@ -76,12 +76,12 @@ module AtomString : RefreshableAtomT with type t = string =
 
 module type FormulaeT =
    sig
-    	 type atomT
-    	 type formula = 
-		And of formula * formula
-      	      | Or of formula * formula
+             type atomT
+             type formula = 
+                And of formula * formula
+                    | Or of formula * formula
               | True
-      	      | Atom of atomT;;
+                    | Atom of atomT;;
 
          val pp : formula -> string
    end;;
@@ -97,11 +97,11 @@ module type RefreshableFormulaeT =
 
 module Formulae(Atom: AtomT) : FormulaeT with type atomT := Atom.t =
    struct
-	type formula = 
-		And of formula * formula
-	      | Or of formula * formula
+        type formula = 
+                And of formula * formula
+              | Or of formula * formula
               | True
-	      | Atom of Atom.t;;
+              | Atom of Atom.t;;
 
         let rec pp =
          function
@@ -205,7 +205,7 @@ module ProgramHash(Atom: HashableRefreshableAtomT) : ProgramT
 
         (* Atom.t -> (Atom.t*Form.formula) list *)
         module Hash = Hashtbl.Make(Atom.IndexData)
-	type t = Form.clause Hash.t
+        type t = Form.clause Hash.t
 
         let rec filter_map mapf =
          function
@@ -217,14 +217,14 @@ module ProgramHash(Atom: HashableRefreshableAtomT) : ProgramT
    
                   
       (* backchain: bindings -> atomT -> 
-	                 Form.formula Hash.t -> 
-		            (bindings * formulaT) list           *)
+                         Form.formula Hash.t -> 
+                            (bindings * formulaT) list           *)
         let backchain binds a h =
           let l = List.rev (Hash.find_all h (Atom.index a)) in
           filter_map (fun clause -> 
-	    let atom,f = Form.refresh clause in
+            let atom,f = Form.refresh clause in
             try
-    	      let binds = Atom.unify binds atom a in 
+                  let binds = Atom.unify binds atom a in 
                 Some (binds,f)
             with NotUnifiable _ -> None) 
             l                       
@@ -256,7 +256,7 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
         type cont =
           Prog.t * (Atom.bindings * F.formula * F.formula list) list
 
-	let run0 prog =
+        let run0 prog =
          (* aux binds andl orl f
            (binds,(f::andl))::orl) *)
          let rec aux binds andl orl =
@@ -264,11 +264,11 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
              F.True ->                  (* (True::andl)::orl *)
               (match andl with
                   [] -> Some (binds,orl)       (* (binds,[])::orl *)
-		| hd::tl -> aux binds tl orl hd) (* (hd::tl)::orl *) 
+                | hd::tl -> aux binds tl orl hd) (* (hd::tl)::orl *) 
 
-           | F.Atom i ->                (*  (A::and)::orl) *)	       	
-	       (match Prog.backchain binds i prog with              
-	           [] ->
+           | F.Atom i ->                (*  (A::and)::orl) *)                       
+               (match Prog.backchain binds i prog with              
+                   [] ->
                     (match orl with
                         [] -> None
                       | (bnd,f,andl)::tl -> aux bnd andl tl f)
@@ -339,7 +339,7 @@ RunInt.main_loop prog (Atom 0);;
 
 module type VarT =
    sig
-	type t
+        type t
         val pp : t -> string
         val compare : t -> t -> int
         val eq : t -> t -> bool
@@ -349,7 +349,7 @@ module type VarT =
 
 module Variable : VarT = 
    struct
-	type t = int
+        type t = int
         let pp n = "X" ^ string_of_int n
         let compare = compare
         let eq = (=)
@@ -370,23 +370,23 @@ module Variable : VarT =
 
 module type FuncT =
    sig
-	type t
+        type t
         val pp : t -> string
         val eq : t -> t -> bool
    end;;
 
 module Func : FuncT with type t = int = 
    struct
-	type t = int
+        type t = int
         let pp n = "f" ^ string_of_int n
         let eq = (=)
    end;;
 
 module type TermT =
    sig
-    	type varT
+            type varT
         type funcT
-    	type term = Var of varT | App of funcT * (term list)
+            type term = Var of varT | App of funcT * (term list)
         val pp : term -> string
    end;;
 
@@ -454,7 +454,7 @@ module Bindings(Vars: VarT)(Func: FuncT) :
         module Terms = Term(Vars)(Func)
         type bindings = Terms.term MapVars.t
 
-	let empty_bindings = MapVars.empty
+        let empty_bindings = MapVars.empty
 
         let lookup bind k =
          try Some (MapVars.find k bind)
@@ -474,7 +474,7 @@ module type UnifyT =
         type bindings
         type termT
         (* unify sub t1 t2 = sub'  iff  t1 sub' = t2 sub' and sub <= sub' *)
-	val unify: bindings -> termT -> termT -> bindings         
+        val unify: bindings -> termT -> termT -> bindings         
    end;;
 
 module Unify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
@@ -485,15 +485,15 @@ module Unify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var
    struct
         module T = Term(Var)(Func)
 
-	let rec unify sub t1 t2 = match t1,t2 with
+        let rec unify sub t1 t2 = match t1,t2 with
             (T.Var v1, T.Var v2) when Var.eq v1 v2 -> sub
-  	  | (T.Var v1, _) ->
+            | (T.Var v1, _) ->
                 (match Bind.lookup sub v1 with
                    None -> Bind.bind sub v1 t2
                  | Some t -> unify sub t t2)
-	  | (_, T.Var _) -> unify sub t2 t1
-	  | (T.App (f1,l1), T.App (f2,l2)) -> 
-		if Func.eq f1 f2 && List.length l1 = List.length l2 then
+          | (_, T.Var _) -> unify sub t2 t1
+          | (T.App (f1,l1), T.App (f2,l2)) -> 
+                if Func.eq f1 f2 && List.length l1 = List.length l2 then
                   List.fold_left2 unify sub l1 l2
                 else
                   raise (NotUnifiable (lazy "Terms are not unifiable!"))
