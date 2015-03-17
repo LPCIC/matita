@@ -1,17 +1,26 @@
 open Lprun
 
+let test_prog prog query =
+ List.iter
+  (fun (msg,run,_) ->
+    prerr_endline (msg query);
+    if run prog query then
+     prerr_endline "ERROR\n"
+    else prerr_endline "success\n") implementations
+;;
+
 let run_prog prog query =
- let module FOAtomImplApprox = ApproximatableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
- let module FOProgramApprox = ProgramIndexL(FOAtomImplApprox) in
- let module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox) in
- prerr_endline ("Testing with two level inefficient index " ^ FOFormulae.pp query);
- let loadedprog = FOProgramApprox.make (Obj.magic prog) in
- RunFOApprox.main_loop loadedprog (Obj.magic query)
+ let msg,_,main_loop = List.hd implementations in
+ prerr_endline (msg query);
+ main_loop prog query
+;;
 
 let _ =
   let argv = Sys.argv in
+  (* j=1 iff -test is not passed *)
+  let j = if argv.(1) = "-test" then 2 else 1 in
   let b = Buffer.create 1024 in
-  for i=1 to Array.length argv - 1 do
+  for i=j to Array.length argv - 1 do
     Printf.eprintf "loading %s\n" argv.(i);
       let ic = open_in argv.(i) in
       try
@@ -22,8 +31,10 @@ let _ =
   let p = Buffer.contents b in
   let p = Parser.parse_program p in
   let g =
+   if j = 1 then (
     Printf.printf "goal> %!";
-    input_line stdin in
+    input_line stdin)
+   else "main." in
   let g = Parser.parse_goal g in
-  run_prog p g
+  if j=1 then run_prog p g else test_prog p g
 ;;

@@ -640,28 +640,8 @@ let query = Atom (App(p,[Var y])) in
 prerr_endline ("Testing " ^ FOFormulae.pp query);
 RunFO.main_loop prog query
 ;;
-
-(* RUN with non indexed engine *)
-prerr_endline ("Testing " ^ FOFormulae.pp query);
-let loadedprog = FOProgram.make prog in
-RunFO.main_loop loadedprog query;
-
-(* RUN with indexed engine *)
-module FOAtomImplHash = HashableFOAtom(Variable)(Func)(Bindings(Variable)(Func))
-module FOProgramHash = ProgramHash(FOAtomImplHash)
-module RunFOHash = Run(FOAtomImplHash)(FOProgramHash);;
-prerr_endline ("Testing with index " ^ FOFormulae.pp query);
-let loadedprog = FOProgramHash.make (Obj.magic prog) in
-RunFOHash.main_loop loadedprog (Obj.magic query)
-
-(* RUN with two levels inefficient indexed engine *)
-module FOAtomImplApprox = ApproximatableFOAtom(Variable)(Func)(Bindings(Variable)(Func))
-module FOProgramApprox = ProgramIndexL(FOAtomImplApprox)
-module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox);;
-prerr_endline ("Testing with two level inefficient index " ^ FOFormulae.pp query);
-let loadedprog = FOProgramApprox.make (Obj.magic prog) in
-RunFOApprox.main_loop loadedprog (Obj.magic query)
 *)
+
 
 module FOAtomImpl = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS))
 module FOTerm = Term(Variable)(FuncS)
@@ -669,3 +649,52 @@ module FOFormulae = RefreshableFormulae(FOAtomImpl)
 
 include FOFormulae
 include FOTerm
+
+type program = (FOAtomImpl.t * formula) list
+
+(* List of implementations, i.e. quadruples
+   msg: formula -> string
+   load_and_run: program -> Program.t
+   load_and_main_loop: program -> query -> unit *)
+let implementations =
+ let impl1 =
+  (* RUN with two levels inefficient indexed engine *)
+  let module FOAtomImplApprox = ApproximatableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgramApprox = ProgramIndexL(FOAtomImplApprox) in
+  let module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox) in
+   (fun q -> "Testing with two level inefficient index "^FOFormulae.pp q),
+   (fun (p : program) (q : formula) ->
+     RunFOApprox.run (FOProgramApprox.make (Obj.magic p)) (Obj.magic q)
+      = None),
+   (fun (p : program) (q : formula) ->
+     RunFOApprox.main_loop (FOProgramApprox.make (Obj.magic p))
+      (Obj.magic q)) in
+
+ let impl2 =
+  (* RUN with indexed engine *)
+  let module FOAtomImplHash = HashableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+   (fun q -> "Testing with one level index hashtbl "^FOFormulae.pp q),
+   (fun p q ->
+     RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
+      = None),
+   (fun p q ->
+     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
+      (Obj.magic q)) in
+
+ let impl3 =
+  (* RUN with non indexed engine *)
+  let module FOAtomImpl = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgram = Program(FOAtomImpl) in
+  let module RunFO = Run(FOAtomImpl)(FOProgram) in
+   (fun q -> "Testing with no index list "^FOFormulae.pp q),
+   (fun p q ->
+     RunFO.run (FOProgram.make (Obj.magic p)) (Obj.magic q)
+      = None),
+   (fun p q ->
+     RunFO.main_loop (FOProgram.make (Obj.magic p))
+      (Obj.magic q)) in
+
+ [impl3;impl2;impl1]
+;;
