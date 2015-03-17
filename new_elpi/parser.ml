@@ -1,22 +1,50 @@
-module Parser : sig (* {{{ parser for LP programs *)
+exception NotInProlog;;
 
-  type program
-  type goal
+type formula = Lprun.formula
+type program = (Lprun.FOAtomImpl.t * Lprun.formula) list
+type goal = Lprun.formula
 
-  val parse_program : (*?ontop:program ->*) string -> program
-  val parse_goal : string -> goal
-(* }}} *)
-end = struct (* {{{ *)
+let eq_clause =
+ let v1 = Lprun.Variable.fresh () in
+  Lprun.App("=",[Lprun.Var v1 ; Lprun.Var v1]), Lprun.True
 
-type formula = unit
-type program = (formula * formula) list
-type goal = formula
+let mkClause lhs rhs =
+ match lhs with
+    Lprun.Atom t -> t,rhs
+  | _ -> raise NotInProlog
 
-let mkConj l = ()
-let mkAtomBiUnif a b = ()
-let mkApp l = ()
-let mkUVar u = ()
-let mkCon c = ()
+let rec mkConj =
+ function
+    [] -> Lprun.True
+  | [f] -> f
+  | hd::tl -> Lprun.And (hd, mkConj tl)
+;;
+
+let mkAtomBiUnif a b =
+ match a,b with
+    Lprun.Atom a, Lprun.Atom b -> Lprun.Atom (Lprun.App("=",[a;b]))
+  | _ -> raise NotInProlog
+
+let mkApp =
+ function
+    Lprun.Atom(Lprun.App(c,l1))::l2 ->
+     let l2 =
+      List.map(function (Lprun.Atom t) -> t| _ -> raise NotInProlog) l2 in
+     Lprun.Atom(Lprun.App(c,l1@l2))
+  | _ -> raise NotInProlog
+
+let uvmap = ref [];;
+let reset () = uvmap := []
+
+let get_uv u =
+  if List.mem_assoc u !uvmap then List.assoc u !uvmap
+  else
+    let n = Lprun.Variable.fresh () in
+    uvmap := (u,n) :: !uvmap;
+    n
+
+let mkUVar u = Lprun.Atom (Lprun.Var (get_uv u))
+let mkCon c = Lprun.Atom (Lprun.App(c,[]))
 
 let rec number = lexer [ '0'-'9' number ]
 let rec ident =
@@ -176,7 +204,7 @@ let () =
 
 EXTEND
   GLOBAL: lp premise atom goal;
-  lp: [ [ cl = LIST0 clause; EOF -> cl ] ];
+  lp: [ [ cl = LIST0 clause; EOF -> eq_clause::cl ] ];
 (*  name : [ [ c = CONSTANT -> c | u = UVAR -> u | FRESHUV -> "_" ] ];
   label : [ [ COLON;
               n = name;
@@ -202,13 +230,16 @@ EXTEND
          check_clause clause;
          reset (); 
          ([], key_of clause, clause, name), insertion*)
-         hd,hyp ]];
+         reset (); 
+         mkClause hd hyp ]];
   goal:
     [[ p = premise -> (*
          let g = sigma_abstract p in
          check_goal g;
          reset ();
-         g*) p ]];
+         g*)
+         reset (); 
+         p ]];
   premise : [[ a = atom -> a ]];
   concl : [[ a = atom LEVEL "term" -> a ]];
   atom : LEVEL "pi"
@@ -265,8 +296,8 @@ EXTEND
           | None -> check_con c lvl; x
           | Some b ->  mkBin 1 (grab x 1 b))*)
           mkCon c
-      | u = UVAR -> (*let u, lvl = lvl_name_of u in mkUv (get_uv u) lvl*) mkUVar (Some u)
-      | u = FRESHUV -> (*let u, lvl = fresh_lvl_name () in mkUv (get_uv u) lvl*) mkUVar None
+      | u = UVAR -> (*let u, lvl = lvl_name_of u in mkUv (get_uv u) lvl*) mkUVar u
+      | u = FRESHUV -> (*let u, lvl = fresh_lvl_name () in mkUv (get_uv u) lvl*) mkUVar u
       (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))
       | NIL -> mkNil
       | s = LITERAL -> mkExt (mkString s)
@@ -302,7 +333,7 @@ EXTEND
 END
 
 let parse e s =
-  (*reset ();*)
+  reset ();
   try Grammar.Entry.parse e (Stream.of_string s)
   with Ploc.Exc(l,(Token.Error msg | Stream.Error msg)) ->
     let last = Ploc.last_pos l in
@@ -338,5 +369,3 @@ let parse_program (*?(ontop=[])*) s : program =
 
 let parse_goal s : goal = parse goal s
 (*let parse_data s : data = parse atom s*)
-
-end (* }}} *)

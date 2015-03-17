@@ -2,14 +2,17 @@ PP=camlp5o -I . -I +camlp5
 PPPARSE=$(PP) pa_extend.cmo pa_lexer.cmo
 FLAGS=-I +camlp5
 
-newelpi: newelpi.cmx parser.cmx
-	ocamlopt $(FLAGS) -o newelpi camlp5.cmxa unix.cmxa parser.cmx newelpi.cmx
+newelpi: newelpi.cmx lprun.cmx parser.cmx
+	ocamlopt $(FLAGS) -o newelpi camlp5.cmxa unix.cmxa lprun.cmx parser.cmx newelpi.cmx
 
-newelpi.cmx: newelpi.ml parser.cmx parser.cmi
+newelpi.cmx: newelpi.ml lprun.cmx parser.cmx
 	ocamlopt -c newelpi.ml
 
-parser.cmi: parser.mli
+lprun.cmx lprun.cmi: lprun.ml
+	ocamlopt -c lprun.ml
+
+parser.cmi: parser.mli lprun.cmi
 	ocamlopt -c parser.mli
 
-parser.cmx: parser.ml parser.cmi
+parser.cmx: parser.ml parser.cmi lprun.cmx
 	ocamlopt -pp '$(PPPARSE)' $(FLAGS) -o $@ -c $<

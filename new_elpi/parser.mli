@@ -1,7 +1,2 @@
-module Parser : sig
-  type program
-  type goal
-
-  val parse_program : string -> program
-  val parse_goal : string -> goal
-end
+val parse_program : string -> (Lprun.FOAtomImpl.t * Lprun.formula) list
+val parse_goal : string -> Lprun.formula
