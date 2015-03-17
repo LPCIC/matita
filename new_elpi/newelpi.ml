@@ -196,6 +196,11 @@ module type HashableRefreshableAtomT =
  end
 ;;
 
+(* One level indexing; a program is an hash-table indexed on the
+   predicate that is the head of the clause. Unification is used
+   eagerly on all the clauses with the good head. Retrieving the
+   clauses is O(n) where n is the number of clauses with the
+   good head. *)
 module ProgramHash(Atom: HashableRefreshableAtomT) : ProgramT
     with type atomT := Atom.t
     and  type formulaT := RefreshableFormulae(Atom).formula
@@ -236,6 +241,50 @@ module ProgramHash(Atom: HashableRefreshableAtomT) : ProgramT
           h
    end;;
 
+module type ApproximatableRefreshableAtomT =
+ sig
+  include RefreshableAtomT
+  type approx
+  val approx: t -> approx
+  val matchp: approx -> approx -> bool
+ end
+;;
+
+(* Two level inefficient indexing; a program is a list of clauses.
+   Approximated matching is used to retrieve the candidates.
+   Unification is then performed on the candidates.
+   *** NOTE: this is probably redundant and more inefficient than
+       just doing eager unification without approximated matching ***
+   Retrieving the good clauses is O(n) where n is the size of the
+   program. *)
+module ProgramIndexL(Atom: ApproximatableRefreshableAtomT) : ProgramT
+    with type atomT := Atom.t
+    and  type formulaT := RefreshableFormulae(Atom).formula
+    and  type bindings := Atom.bindings =
+   struct
+        module Form = RefreshableFormulae(Atom)
+
+        (* triples (app,(a,f)) where app is the approximation of a *)
+        type t = (Atom.approx * (Atom.t * Form.formula)) list
+
+        (* backchain: bindings -> atomT -> 
+                         Form.formula Hash.t -> 
+                            (bindings * formulaT) list           *)
+        let backchain binds a l =
+          let app = Atom.approx a in
+          let l = List.filter (fun (a',_) -> Atom.matchp app a') l in
+          filter_map (fun (_,clause) ->
+           let atom,f = Form.refresh clause in
+           try
+            let binds = Atom.unify binds atom a in 
+            Some (binds,f)
+           with NotUnifiable _ -> None
+           ) l
+        ;;
+        
+        let make =
+          List.map (fun ((a,_) as clause) -> Atom.approx a,clause)
+   end;;
 
 (* ---------------------------------------- *)
 
@@ -533,6 +582,31 @@ module HashableFOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT :=
     | TermFO.Var _ -> raise (Failure "Ill formed program")
  end
 
+module ApproximatableFOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
+ ApproximatableRefreshableAtomT
+  with type t = Term(Var)(Func).term
+=
+ struct
+  include FOAtom(Var)(Func)(Bind)
+
+  type approx = Func.t * (Func.t option)
+
+  module TermFO = Term(Var)(Func)
+
+  let approx =
+   function
+      TermFO.App(f,[])
+    | TermFO.App(f,TermFO.Var _::_) -> f,None
+    | TermFO.App(f,TermFO.App(g,_)::_) -> f, Some g
+    | TermFO.Var _ -> raise (Failure "Ill formed program")
+
+  let matchp app1 app2 =
+   match app1,app2 with
+      (f1,None),(f2,_)
+    | (f1,_),(f2,None)-> f1=f2
+    | (f1,Some g1),(f2,Some g2) -> f1=f2 && g1=g2
+ end
+
 module FOAtomImpl = FOAtom(Variable)(Func)(Bindings(Variable)(Func))
 module FOProgram = Program(FOAtomImpl)
 module RunFO = Run(FOAtomImpl)(FOProgram)
@@ -665,3 +739,11 @@ module RunFOHash = Run(FOAtomImplHash)(FOProgramHash);;
 prerr_endline ("Testing with index " ^ FOFormulae.pp query);
 let loadedprog = FOProgramHash.make (Obj.magic prog) in
 RunFOHash.main_loop loadedprog (Obj.magic query)
+
+(* RUN with two levels inefficient indexed engine *)
+module FOAtomImplApprox = ApproximatableFOAtom(Variable)(Func)(Bindings(Variable)(Func))
+module FOProgramApprox = ProgramIndexL(FOAtomImplApprox)
+module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox);;
+prerr_endline ("Testing with two level inefficient index " ^ FOFormulae.pp query);
+let loadedprog = FOProgramApprox.make (Obj.magic prog) in
+RunFOApprox.main_loop loadedprog (Obj.magic query)
