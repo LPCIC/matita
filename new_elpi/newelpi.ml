@@ -76,12 +76,12 @@ module AtomString : RefreshableAtomT with type t = string =
 
 module type FormulaeT =
    sig
-             type atomT
-             type formula = 
-                And of formula * formula
-                    | Or of formula * formula
-              | True
-                    | Atom of atomT;;
+         type atomT
+         type formula = 
+            And of formula * formula
+          | Or of formula * formula
+          | True
+          | Atom of atomT;;
 
          val pp : formula -> string
    end;;
