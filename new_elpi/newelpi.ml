@@ -606,50 +606,50 @@ let prog =
 
 (* X1 =  (xcons x1 (xcons x2 (xcons x3 (xcons x4 (xcons x5 (xcons x6 (xcons x7 (xcons x8 (xcons x9 (xcons x10 xnil)))))))))) *)
 let query =
-let bigX1 = 
+let _bigX1 = 
 App(xcons, [x1 ; App(xcons, [x2 ; App(xcons, [x3 ; 
 App(xcons, [x4 ; App(xcons, [x5 ; App(xcons, [x6 ; 
 App(xcons, [x7 ; App(xcons, [x8 ; App(xcons, [x9 ; 
 App(xcons, [x10 ; xnil])])])])])])])])])]) in
-let bigY = Var (Variable.fresh ()) in
-let bigZ = Var (Variable.fresh ()) in
-let bigX2 = Var (Variable.fresh ()) in
-let bigX3 = Var (Variable.fresh ()) in
-let bigX4 = Var (Variable.fresh ()) in
-let bigX5 = Var (Variable.fresh ()) in
-let bigX6 = Var (Variable.fresh ()) in
-let bigX7 = Var (Variable.fresh ()) in
-let bigX8 = Var (Variable.fresh ()) in
-let bigX9 = Var (Variable.fresh ()) in
-let bigX10 = Var (Variable.fresh ()) in
-let bigX11 = Var (Variable.fresh ()) in
-let bigX12 = Var (Variable.fresh ()) in
-let bigX13 = Var (Variable.fresh ()) in
-let bigX14 = Var (Variable.fresh ()) in
-let bigX15 = Var (Variable.fresh ()) in
-let bigX16 = Var (Variable.fresh ()) in
-let bigX17 = Var (Variable.fresh ()) in
-let bigX18 = Var (Variable.fresh ()) in
+let _bigY = Var (Variable.fresh ()) in
+let _bigZ = Var (Variable.fresh ()) in
+let _bigX2 = Var (Variable.fresh ()) in
+let _bigX3 = Var (Variable.fresh ()) in
+let _bigX4 = Var (Variable.fresh ()) in
+let _bigX5 = Var (Variable.fresh ()) in
+let _bigX6 = Var (Variable.fresh ()) in
+let _bigX7 = Var (Variable.fresh ()) in
+let _bigX8 = Var (Variable.fresh ()) in
+let _bigX9 = Var (Variable.fresh ()) in
+let _bigX10 = Var (Variable.fresh ()) in
+let _bigX11 = Var (Variable.fresh ()) in
+let _bigX12 = Var (Variable.fresh ()) in
+let _bigX13 = Var (Variable.fresh ()) in
+let _bigX14 = Var (Variable.fresh ()) in
+let _bigX15 = Var (Variable.fresh ()) in
+let _bigX16 = Var (Variable.fresh ()) in
+let _bigX17 = Var (Variable.fresh ()) in
+let _bigX18 = Var (Variable.fresh ()) in
 let querylist = [
-Atom (App(append,[bigX1 ; bigX1 ; bigX2])) ;
-(*Atom (App(append,[bigX2 ; bigX2 ; bigX3])) ;
-Atom (App(append,[bigX3 ; bigX3 ; bigX4])) ;
-Atom (App(append,[bigX4 ; bigX4 ; bigX5])) ;
-Atom (App(append,[bigX5 ; bigX5 ; bigX6])) ;
-Atom (App(append,[bigX6 ; bigX6 ; bigX7])) ;
-Atom (App(append,[bigX7 ; bigX7 ; bigX8])) ;
-Atom (App(append,[bigX8 ; bigX8 ; bigX9])) ;
-Atom (App(append,[bigX9 ; bigX9 ; bigX10])) ;
-Atom (App(append,[bigX10 ; bigX10 ; bigX11])) ;
-Atom (App(append,[bigX11 ; bigX11 ; bigX12])) ;
-Atom (App(append,[bigX12 ; bigX12 ; bigX13])) ;
-Atom (App(append,[bigX13 ; bigX13 ; bigX14])) ;
-Atom (App(append,[bigX14 ; bigX14 ; bigX15])) ;
-Atom (App(append,[bigX15 ; bigX15 ; bigX16])) ;
-Atom (App(append,[bigX16 ; bigX16 ; bigX17])) ;
-Atom (App(append,[bigX17 ; bigX17 ; bigX18])) ;*)
-Atom (App(rev,[bigX2 ; bigY])) ;
-Atom (App(rev,[bigY ; bigZ])) ] in
+Atom (App(append,[_bigX1 ; _bigX1 ; _bigX2])) ;
+(*Atom (App(append,[_bigX2 ; _bigX2 ; _bigX3])) ;
+Atom (App(append,[_bigX3 ; _bigX3 ; _bigX4])) ;
+Atom (App(append,[_bigX4 ; _bigX4 ; _bigX5])) ;
+Atom (App(append,[_bigX5 ; _bigX5 ; _bigX6])) ;
+Atom (App(append,[_bigX6 ; _bigX6 ; _bigX7])) ;
+Atom (App(append,[_bigX7 ; _bigX7 ; _bigX8])) ;
+Atom (App(append,[_bigX8 ; _bigX8 ; _bigX9])) ;
+Atom (App(append,[_bigX9 ; _bigX9 ; _bigX10])) ;
+Atom (App(append,[_bigX10 ; _bigX10 ; _bigX11])) ;
+Atom (App(append,[_bigX11 ; _bigX11 ; _bigX12])) ;
+Atom (App(append,[_bigX12 ; _bigX12 ; _bigX13])) ;
+Atom (App(append,[_bigX13 ; _bigX13 ; _bigX14])) ;
+Atom (App(append,[_bigX14 ; _bigX14 ; _bigX15])) ;
+Atom (App(append,[_bigX15 ; _bigX15 ; _bigX16])) ;
+Atom (App(append,[_bigX16 ; _bigX16 ; _bigX17])) ;
+Atom (App(append,[_bigX17 ; _bigX17 ; _bigX18])) ;*)
+Atom (App(rev,[_bigX2 ; _bigY])) ;
+Atom (App(rev,[_bigY ; _bigZ])) ] in
   List.fold_left (fun fla acc -> FOFormulae.And(fla,acc)) True querylist
 ;;
 
