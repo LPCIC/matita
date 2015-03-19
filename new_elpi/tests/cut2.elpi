@@ -1,0 +1,11 @@
+/* To test run q X; the only expected results are X=ok1 and X=ok2.
+   This is the brain-damaged semantics of Teyjus */
+q X :- c Y, !, x Y X ; e X.
+q ok2.
+
+c one.
+c two.
+
+x two ko.
+
+e ok1.

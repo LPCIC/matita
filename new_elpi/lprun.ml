@@ -81,6 +81,7 @@ module type FormulaeT =
             And of formula * formula
           | Or of formula * formula
           | True
+          | Cut
           | Atom of atomT;;
 
          val pp : formula -> string
@@ -101,6 +102,7 @@ module Formulae(Atom: AtomT) : FormulaeT with type atomT := Atom.t =
                 And of formula * formula
               | Or of formula * formula
               | True
+              | Cut
               | Atom of Atom.t;;
 
         let rec pp =
@@ -108,6 +110,7 @@ module Formulae(Atom: AtomT) : FormulaeT with type atomT := Atom.t =
             And(f1,f2) -> "(" ^ pp f1 ^ "," ^ pp f2 ^ ")"
           | Or(f1,f2) -> "(" ^ pp f1 ^ ";" ^ pp f2 ^ ")"
           | True -> "true"
+          | Cut -> "!"
           | Atom a -> Atom.pp a
    end;;
 
@@ -136,6 +139,7 @@ module RefreshableFormulae(Atom: RefreshableAtomT) :
               let l,f2 = aux l f2 in
                l, Or(f1,f2)
            | True -> l, True
+           | Cut -> l, Cut  
            | Atom a ->
               let l,a = Atom.refresh l a in
               l, Atom a in
@@ -301,58 +305,86 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
         module F = RefreshableFormulae(Atom)
 
         (* A cont is just the program plus the or list,
-           i.e. a list of bindings * head of and_list * tl of and_list *)
+           i.e. a list of level * bindings * head of and_list * tl of and_list 
+           The level is incremented when there is a *)
         type cont =
-          Prog.t * (Atom.bindings * F.formula * F.formula list) list
+          Prog.t * (int * Atom.bindings * F.formula * F.formula list) list
 
         let run0 prog =
-         (* aux binds andl orl f
-           (binds,(f::andl))::orl) *)
-         let rec aux binds andl orl =
+         (* aux lvl binds andl orl f
+           (lvl,binds,(f::andl))::orl) *)
+         let rec aux lvl binds andl orl =
           function
              F.True ->                  (* (True::andl)::orl *)
               (match andl with
                   [] -> Some (binds,orl)       (* (binds,[])::orl *)
-                | hd::tl -> aux binds tl orl hd) (* (hd::tl)::orl *) 
-
-           | F.Atom i ->                (*  (A::and)::orl) *)                       
+                  (* lvl-1 is because the body of a clause like a :- b,c.
+                     is represented as And(b,c) in the and list and not like
+                     b::c. Therefore an entry in the and list always
+                     is a stack frame for the body of a clause.
+                     An or expression is also to be thought as an anonymous
+                     clause invocation (with special handling of cut).
+                     Thus hd is the stack frame of the parent call, that was
+                     done at level lvl-1. *) 
+                | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *) 
+           | F.Cut ->
+              let orl =
+               (* We filter out from the or list every frame whose lvl
+                  is >= then ours. *)
+               let rec filter =
+                function
+                   [] -> []
+                 | ((lvl',_,_,_)::_) as l when lvl' < lvl -> l
+                 | _::tl -> filter tl
+               in
+                filter orl
+              in
+              (* cut&paste from True case *)
+              (match andl with
+                  [] -> Some (binds,orl)       (* (binds,[])::orl *)
+                | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *)
+           | F.Atom i ->         (*A::and)::orl)*)                       
                (match Prog.backchain binds i prog with              
                    [] ->
                     (match orl with
                         [] -> None
-                      | (bnd,f,andl)::tl -> aux bnd andl tl f)
+                      | (lvl,bnd,f,andl)::tl -> aux lvl bnd andl tl f)
                  | (bnd,f)::tl ->
-                     aux bnd andl
+                     aux (lvl+1) bnd andl
                       (List.append
-                        (List.map (fun (bnd,f) -> bnd,f,andl) tl)
+                        (List.map (fun (bnd,f) -> lvl+1, bnd,f,andl) tl)
                         orl) f)
                     
            | F.And (f1, f2) ->             (* ((f1,f2)::andl)::orl *)
-              aux binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
+              aux lvl binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
 
+           (* Because of the +2 vs +1, the semantics of (c,! ; d)
+              is to kill the alternatives for c, preserving the d one.
+              Note: this is incoherent with the semantics of ! w.r.t.
+              backchaining, but that's what Tejyus implements. *)
            | F.Or (f1, f2) ->              (* ((f1;f2)::andl)::orl) *)
-              aux binds andl ((binds,f2,andl)::orl) f1
+              aux (lvl+2) binds andl ((lvl+1,binds,f2,andl)::orl) f1
                                            (* (f1::andl)::(f2::andl)::orl *)
          in
           aux
 
 
-        let run_next prog binds andl orl f =
+        let run_next prog lvl binds andl orl f =
          let time0 = Unix.gettimeofday() in
          let res =
-          match run0 prog binds andl orl f with
+          match run0 prog lvl binds andl orl f with
              Some (binds,orl) -> Some (binds,(prog,orl))
            | None -> None in
          let time1 = Unix.gettimeofday() in
          prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
          res
 
-        let run prog f = run_next prog (Atom.empty_bindings) [] [] f
+        let run prog f = run_next prog 0 (Atom.empty_bindings) [] [] f
 
         let next (prog,orl) =
           match orl with
             [] -> None
-          | (binds,f,andl)::orl -> run_next prog binds andl orl f
+          | (lvl,binds,f,andl)::orl -> run_next prog lvl binds andl orl f
 
         let main_loop prog query =
          let rec aux =

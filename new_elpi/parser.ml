@@ -20,6 +20,13 @@ let rec mkConj =
   | hd::tl -> Lprun.And (hd, mkConj tl)
 ;;
 
+let rec mkDisj =
+ function
+    [] -> assert false (*Lprun.False*)
+  | [f] -> f
+  | hd::tl -> Lprun.Or (hd, mkDisj tl)
+;;
+
 let mkAtomBiUnif a b =
  match a,b with
     Lprun.Atom a, Lprun.Atom b -> Lprun.Atom (Lprun.App("=",[a;b]))
@@ -32,6 +39,8 @@ let mkApp =
       List.map(function (Lprun.Atom t) -> t| _ -> raise NotInProlog) l2 in
      Lprun.Atom(Lprun.App(c,l1@l2))
   | _ -> raise NotInProlog
+
+let mkAtomBiCut = Lprun.Cut
 
 let uvmap = ref [];;
 let reset () = uvmap := []
@@ -70,6 +79,7 @@ let tok = lexer
   |  ":"  -> "COLON",$buf
   |  "::"  -> "CONS",$buf
   | ',' -> "COMMA",","
+  | ';' -> "SEMICOLON",","
   | '.' -> "FULLSTOP","."
   | '\\' -> "BIND","\\"
   | '/' -> "BIND","/"
@@ -196,7 +206,7 @@ let check_clause x = ()
 let check_goal x = ()*)
 
 let atom_levels =
-  ["pi";"conjunction";"implication";"equality";"term";"app";"simple";"list"]
+  ["pi";"disjunction";"conjunction";"implication";"equality";"term";"app";"simple";"list"]
 
 let () =
   Grammar.extend [ Grammar.Entry.obj atom, None,
@@ -243,30 +253,30 @@ EXTEND
   premise : [[ a = atom -> a ]];
   concl : [[ a = atom LEVEL "term" -> a ]];
   atom : LEVEL "pi"
-     [(*[ PI; x = bound; BIND; p = atom LEVEL "conjunction" ->
+     [(*[ PI; x = bound; BIND; p = atom LEVEL "disjuction" ->
          let (x, is_uv), annot = x, None in
          let bind = if is_uv then mkSigma1 else mkPi1 annot in
          bind (grab x 1 p)
-      | PI; annot = bound; x = bound; BIND; p = atom LEVEL "conjunction" ->
+      | PI; annot = bound; x = bound; BIND; p = atom LEVEL "disjuction" ->
          let (x, is_uv), annot = x, Some (fst annot) in
          let bind = if is_uv then mkSigma1 else mkPi1 annot in
          bind (grab x 1 p)
-      | PI; LPAREN; annot = atom LEVEL "conjunction"; RPAREN;
-        x = bound; BIND; p = atom LEVEL "conjunction" ->
+      | PI; LPAREN; annot = atom LEVEL "disjuction"; RPAREN;
+        x = bound; BIND; p = atom LEVEL "disjuction" ->
          let (x, is_uv), annot = x, Some annot in
          let bind = if is_uv then mkSigma1 else mkPi1 annot in
          bind (grab x 1 p)
       | PI; annot = atom LEVEL "list";
-        x = bound; BIND; p = atom LEVEL "conjunction" ->
+        x = bound; BIND; p = atom LEVEL "disjuction" ->
          let (x, is_uv), annot = x, Some annot in
          let bind = if is_uv then mkSigma1 else mkPi1 annot in
          bind (grab x 1 p)
-      | SIGMA; x = bound; BIND; p = atom LEVEL "conjunction" ->
+      | SIGMA; x = bound; BIND; p = atom LEVEL "disjuction" ->
          mkSigma1 (grab (fst x) 1 p) ]*)];
+  atom : LEVEL "disjunction"
+     [[ l = LIST1 atom LEVEL "conjunction" SEP SEMICOLON -> mkDisj l ]];
   atom : LEVEL "conjunction"
-     [[ l = LIST1 atom LEVEL "implication" SEP COMMA ->
-          if List.length l = 1 then List.hd l
-          else mkConj l (*(L.of_list l)*) ]];
+     [[ l = LIST1 atom LEVEL "implication" SEP COMMA -> mkConj l ]];
   atom : LEVEL "implication"
      [[ (*a = atom; IMPL; p = atom LEVEL "implication" ->
           mkImpl (mkAtom a) (mkAtom p)
@@ -310,9 +320,9 @@ EXTEND
       | SHARP; hd = atom LEVEL "simple"; args = atom LEVEL "simple";
         info = OPT atom LEVEL "simple" ->
           mkVApp `Frozen hd args info
-      | bt = BUILTIN; a = atom LEVEL "simple" -> mkAtomBiCustom bt a
+      | bt = BUILTIN; a = atom LEVEL "simple" -> mkAtomBiCustom bt a*)
       | BANG -> mkAtomBiCut
-      | DELAY; t = atom LEVEL "simple"; p = atom LEVEL "simple";
+      (*| DELAY; t = atom LEVEL "simple"; p = atom LEVEL "simple";
         vars = OPT [ IN; x = atom LEVEL "simple" -> x ];
         info = OPT [ WITH; x = atom LEVEL "simple" -> x ] ->
           mkDelay t p vars info
