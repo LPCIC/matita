@@ -1,5 +1,16 @@
 open Lprun
 
+(*
+let _ =
+  let control = Gc.get () in
+  let tweaked_control = { control with
+    Gc.minor_heap_size = 33554432; (** 4M *)
+    Gc.space_overhead = 120;
+  } in
+  Gc.set tweaked_control
+;;
+*)
+
 let test_prog prog query =
  List.iter
   (fun (msg,run,_) ->
