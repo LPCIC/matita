@@ -589,7 +589,37 @@ module Unify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var
                   raise (NotUnifiable (lazy "Terms are not unifiable!"))
    end;;
 
-module FOUnif = Unify(Variable)(Func)(Bindings(Variable)(Func))
+module FlatUnify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
+ UnifyT
+  with type bindings := Bind.bindings
+  and type termT := Term(Var)(Func).term
+=
+   struct
+        module T = Term(Var)(Func)
+
+        let rec flatten sub i =
+         match i with
+            (T.Var v) ->
+             (match Bind.lookup sub v with
+                 None -> i
+               | Some t -> t)
+          | T.App(f,l) ->
+             let l' = List.map (flatten sub) l in
+              if l'==l then i else T.App(f, l')
+
+        let rec unify sub t1 t2 = match t1,t2 with
+            (T.Var v1, T.Var v2) when Var.eq v1 v2 -> sub
+            | (T.Var v1, _) ->
+                (match Bind.lookup sub v1 with
+                   None -> Bind.bind sub v1 (flatten sub t2)
+                 | Some t -> unify sub t t2)
+          | (_, T.Var _) -> unify sub t2 t1
+          | (T.App (f1,l1), T.App (f2,l2)) -> 
+                if Func.eq f1 f2 && List.length l1 = List.length l2 then
+                  List.fold_left2 unify sub l1 l2
+                else
+                  raise (NotUnifiable (lazy "Terms are not unifiable!"))
+   end;;
 
 module FOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
  RefreshableAtomT
@@ -648,6 +678,37 @@ module ApproximatableFOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type te
     | (f1,Some g1),(f2,Some g2) -> f1=f2 && g1=g2
  end
 
+module FOFlatAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
+ RefreshableAtomT
+  with type t = Term(Var)(Func).term
+=
+ struct
+   include RefreshableTerm(Var)(Func)
+   include Bind
+   include FlatUnify(Var)(Func)(Bind)
+   type t = term
+ end
+
+module HashableFOFlatAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
+ HashableRefreshableAtomT
+  with type t = Term(Var)(Func).term
+=
+ struct
+  include FOFlatAtom(Var)(Func)(Bind)
+  module IndexData =
+   struct
+    type t = Func.t
+    let equal = Func.eq
+    let hash = Hashtbl.hash
+   end
+
+  module TermFO = Term(Var)(Func)
+
+  let index =
+   function
+      TermFO.App(f,_) -> f
+    | TermFO.Var _ -> raise (Failure "Ill formed program")
+ end
 (*
 module FOAtomImpl = FOAtom(Variable)(Func)(Bindings(Variable)(Func))
 module FOProgram = Program(FOAtomImpl)
@@ -728,5 +789,19 @@ let implementations =
      RunFO.main_loop (FOProgram.make (Obj.magic p))
       (Obj.magic q)) in
 
- [impl3;impl2;impl1]
+ let impl4 =
+  (* RUN with indexed engine *)
+  let module FOAtomImplHash = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+   (fun q -> "Testing with one level index hashtbl + flattening "^FOFormulae.pp q),
+   (fun p q ->
+     RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
+      = None),
+   (fun p q ->
+     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
+      (Obj.magic q)) in
+
+
+ [impl3;impl2;impl1;impl4]
 ;;
