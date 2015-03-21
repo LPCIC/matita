@@ -65,42 +65,6 @@ intros. unfold. intros. apply member_appendctx3 to H3 H4. case H5.
  case H1. apply H7 to H6. search.
  case H2. apply H7 to H6. search.*/
 
-/********** copy_M_M ************/
-
-/*Define var: tm -> prop by
- nabla x, var x.
-
-Define irl2: olist -> olist -> prop by
- irl2 L G := forall X, member X L ->
-  exists x, X = is_term x /\ var x /\  member (copy x x) G.
-
-Theorem $copy_M_M_aux:
- (forall M L1 L2,
-   irl2 L1 L2 -> { L1 |- is_term M } -> { L2 |- copy M M }) /\
- (forall L L1 L2,
-   irl2 L1 L2 -> { L1 |- list1 is_term L } -> { L2 |- list2 copy L L }).
-induction on 2 2. split.
- intros. case H1. case H2.
-  search.
-  apply IH to _ H4. apply IH to _ H5 with L2 = copy n1 n1 :: L2.
-   unfold. intros. case H7. search. apply H3 to H8. search. search.
-  apply IH to _ H4. apply IH to _ H5 with L2 = copy n1 n1 :: L2.
-   unfold. intros. case H7. search. apply H3 to H8. search. search.
-  apply IH1 to _ H4. search.
-  apply H3 to H5. case H4. search.
- intros. case H2.
-  search.
-  apply IH to _ H3. apply IH1 to _ H4. search.
-  case H1. apply H5 to H4. case H3.
-
-Split $copy_M_M_aux as copy_M_M, copy_list_M_M.
-
-Theorem irl2_appendctx: forall L1 L2 L3 G,
- irl2 L1 G -> irl2 L2 G -> appendctx L1 L2 L3 -> irl2 L3 G.
-intros. unfold. intros. apply member_appendctx3 to H3 H4. case H5.
- case H1. apply H7 to H6. search.
- case H2. apply H7 to H6. search.*/
-
 /********** copy_M_M_to_eq ************/
 
 Define irl: olist -> prop by
