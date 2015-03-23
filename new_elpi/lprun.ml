@@ -18,7 +18,7 @@ module type AtomT =
         type t
         val pp : t -> string
         type bindings
-        val cardinal: bindings -> int
+        val cardinal: bindings -> bindings * int
         val pp_bindings : bindings -> string
         val empty_bindings : bindings
         (* raises NotUnifiable in case of failure *)
@@ -47,7 +47,7 @@ module AtomInt : RefreshableAtomT with type t = int =
         let refresh () n = (),n
 
         type bindings = unit
-        let cardinal () = 0
+        let cardinal () = (),0
         let pp_bindings () = ""
         let empty_bindings = ()
         let unify () x y =
@@ -67,7 +67,7 @@ module AtomString : RefreshableAtomT with type t = string =
         let refresh () n = (),n
 
         type bindings = unit
-        let cardinal () = 0
+        let cardinal () = (),0
         let pp_bindings () = ""
         let empty_bindings = ()
         let unify () x y =
@@ -380,8 +380,11 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
            | None -> None in
          let time1 = Unix.gettimeofday() in
          prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-         (match res with Some (binds,_) -> Gc.compact() ; prerr_endline ("Final bindings size: " ^ string_of_int (Atom.cardinal binds)) | _ -> ());
-         res
+         (match res with Some (binds,orl) -> Gc.compact() ;
+let binds,_ = Atom.cardinal binds in
+let rec waste acc n = if n = 0 then acc else (waste (`K n :: acc) (n-1)) in if waste [] 1000000 = [] then prerr_endline "";
+Gc.compact() ;
+let binds,size = Atom.cardinal binds in prerr_endline ("Final bindings size: " ^ string_of_int size) ; Some (binds,orl) | None -> None)
 
         let run prog f = run_next prog 0 (Atom.empty_bindings) [] [] f
 
@@ -395,6 +398,7 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
           function
              None -> prerr_endline "Fail"
            | Some (l,cont) ->
+              prerr_endline ("Query: " ^ F.pp query) ;
               prerr_endline (Atom.pp_bindings l) ;
               prerr_endline "More? (Y/n)";
               if read_line() <> "n" then
@@ -485,9 +489,10 @@ module WeakVariable : WeakVarT =
          let maxvar = ref 0 in
          let fresh () =
           incr maxvar;
+(*prerr_endline ("Fresh variable: " ^ string_of_int !maxvar);*)
           let v = Box !maxvar in
           Gc.finalise (fun (Box n) ->
-           prerr_endline ("#@@ " ^ string_of_int n);
+           (*prerr_endline ("#@@ " ^ string_of_int n);*)
            to_be_dropped := n::!to_be_dropped) v;
           v
          in
@@ -496,6 +501,7 @@ module WeakVariable : WeakVarT =
             try l,List.assoc n l
             with Not_found ->
              let n' = fresh () in
+(*prerr_endline ("Refresh variable: " ^ string_of_int n ^ " to " ^ string_of_int (let Box n = n' in n));*)
              (n,n')::l,n')
    end;;
 
@@ -575,7 +581,7 @@ module type BindingsT =
         type termT
         type bindings
         val pp_bindings : bindings -> string
-        val cardinal : bindings -> int
+        val cardinal : bindings -> bindings * int
         val empty_bindings: bindings
         (* bind sigma v t = sigma [v |-> t] *)
         val bind : bindings -> varT -> termT -> bindings
@@ -601,7 +607,7 @@ module Bindings(Vars: VarT)(Func: FuncT) :
 
         let bind bind k v = MapVars.add k v bind
 
-        let cardinal = MapVars.cardinal
+        let cardinal bind = bind, MapVars.cardinal bind
 
         let pp_bindings bind =
          String.concat "\n"
@@ -622,32 +628,39 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) :
 
         let empty_bindings = MapVars.empty
 
+        let pp_bindings bind =
+         (*Gc.compact();
+         let bind = clean bind in*)
+         String.concat "\n"
+          (MapVars.fold
+            (fun k v s -> (Vars.pp (Vars.Box k) ^ " |-> " ^ Terms.pp v) :: s)
+            bind [])
+
         let rec clean bind =
-         Gc.compact();
+         (* Gc.compact (); *)
          let tbr = !Vars.to_be_dropped in
-         (*Vars.to_be_dropped := [];*)
+         Vars.to_be_dropped := [];
          if tbr = [] then bind else (
+          (*prerr_endline ("Maps before removal:");
+          prerr_endline (pp_bindings bind);*)
           let bind =
            List.fold_left (fun bind n ->
             MapVars.remove n bind) bind tbr in
-          (*clean*) bind)
+          (*prerr_endline ("Maps after removal:");
+          prerr_endline (pp_bindings bind);*)
+          clean bind)
 
         let lookup bind (Vars.Box k) =
-         let bind = clean bind in
+         (*let bind = clean bind in*)
          try Some (MapVars.find k bind)
          with Not_found -> None
 
         let bind bind (Vars.Box k) v = MapVars.add k v (clean bind)
 
-        let cardinal bind = MapVars.cardinal (clean bind)
-
-        let pp_bindings bind =
-         Gc.compact();
+        let cardinal bind =
          let bind = clean bind in
-         String.concat "\n"
-          (MapVars.fold
-            (fun k v s -> (Vars.pp (Vars.Box k) ^ " |-> " ^ Terms.pp v) :: s)
-            bind [])
+          bind,MapVars.cardinal bind
+
    end
 
 module type UnifyT =
@@ -922,8 +935,11 @@ let implementations =
      RunFOHash.run (FOProgramHash.make (Obj.magic (convert_prog p))) (Obj.magic (convert_query q))
       = None),
    (fun p q ->
-     RunFOHash.main_loop (FOProgramHash.make (Obj.magic (convert_prog p)))
-      (Obj.magic (convert_query q))) in
+     let q = convert_query q in
+     let p = convert_prog p in
+     prerr_endline ("Testing with one level index hashtbl and automatic GC "^WeakFOFormulae.pp q);
+     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
+      (Obj.magic q)) in
 
  let impl6 =
   (* RUN with indexed engine and automatic GC *)
@@ -954,8 +970,11 @@ let implementations =
      RunFOHash.run (FOProgramHash.make (Obj.magic (convert_prog p))) (Obj.magic (convert_query q))
       = None),
    (fun p q ->
-     RunFOHash.main_loop (FOProgramHash.make (Obj.magic (convert_prog p)))
-      (Obj.magic (convert_query q))) in
+     let q = convert_query q in
+     let p = convert_prog p in
+     prerr_endline ("Testing with one level index hashtbl + flattening and automatic GC "^WeakFOFormulae.pp q);
+     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
+      (Obj.magic q)) in
 
 
  [impl3;impl2;impl1;impl5;impl6;impl4]
