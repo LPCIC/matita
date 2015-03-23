@@ -18,6 +18,7 @@ module type AtomT =
         type t
         val pp : t -> string
         type bindings
+        val cardinal: bindings -> int
         val pp_bindings : bindings -> string
         val empty_bindings : bindings
         (* raises NotUnifiable in case of failure *)
@@ -46,6 +47,7 @@ module AtomInt : RefreshableAtomT with type t = int =
         let refresh () n = (),n
 
         type bindings = unit
+        let cardinal () = 0
         let pp_bindings () = ""
         let empty_bindings = ()
         let unify () x y =
@@ -65,6 +67,7 @@ module AtomString : RefreshableAtomT with type t = string =
         let refresh () n = (),n
 
         type bindings = unit
+        let cardinal () = 0
         let pp_bindings () = ""
         let empty_bindings = ()
         let unify () x y =
@@ -377,6 +380,7 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
            | None -> None in
          let time1 = Unix.gettimeofday() in
          prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
+         (match res with Some (binds,_) -> Gc.compact() ; prerr_endline ("Final bindings size: " ^ string_of_int (Atom.cardinal binds)) | _ -> ());
          res
 
         let run prog f = run_next prog 0 (Atom.empty_bindings) [] [] f
@@ -527,6 +531,7 @@ module type BindingsT =
         type termT
         type bindings
         val pp_bindings : bindings -> string
+        val cardinal : bindings -> int
         val empty_bindings: bindings
         (* bind sigma v t = sigma [v |-> t] *)
         val bind : bindings -> varT -> termT -> bindings
@@ -551,6 +556,8 @@ module Bindings(Vars: VarT)(Func: FuncT) :
          with Not_found -> None
 
         let bind bind k v = MapVars.add k v bind
+
+        let cardinal = MapVars.cardinal
 
         let pp_bindings bind =
          String.concat "\n"
