@@ -455,6 +455,50 @@ module Variable : VarT =
              (n,n')::l,n')
    end;;
 
+module type WeakVarT =
+   sig
+        type t = Box of int
+        val pp : t -> string
+        (* Compare and eq are useless since we exposed
+           the implementation of t. The alternative is to
+           export another type t' and the bijection between
+           t and t'. *)
+        val compare : t -> t -> int
+        val eq : t -> t -> bool
+        include Refreshable with type r := t
+        val fresh : unit -> t
+        val to_be_dropped: int list ref
+   end;;
+
+module WeakVariable : WeakVarT = 
+   struct
+        type t = Box of int
+        let pp (Box n) = "X" ^ string_of_int n
+        let compare = compare
+        let eq = (=)
+        let to_be_dropped = ref [];;
+
+        type refresher = (int * t) list
+        let empty_refresher = []
+
+        let fresh,refresh =
+         let maxvar = ref 0 in
+         let fresh () =
+          incr maxvar;
+          let v = Box !maxvar in
+          Gc.finalise (fun (Box n) ->
+           prerr_endline ("#@@ " ^ string_of_int n);
+           to_be_dropped := n::!to_be_dropped) v;
+          v
+         in
+          fresh,
+          (fun l (Box n) ->
+            try l,List.assoc n l
+            with Not_found ->
+             let n' = fresh () in
+             (n,n')::l,n')
+   end;;
+
 module type FuncT =
    sig
         type t
@@ -563,6 +607,46 @@ module Bindings(Vars: VarT)(Func: FuncT) :
          String.concat "\n"
           (MapVars.fold
             (fun k v s -> (Vars.pp k ^ " |-> " ^ Terms.pp v) :: s)
+            bind [])
+   end
+
+module WeakBindings(Vars: WeakVarT)(Func: FuncT) : 
+ BindingsT 
+  with type varT := Vars.t
+  and type termT := Term(Vars)(Func).term
+  =
+   struct
+        module MapVars = Map.Make(struct type t = int let compare = compare let eq = (=) end)
+        module Terms = Term(Vars)(Func)
+        type bindings = Terms.term MapVars.t
+
+        let empty_bindings = MapVars.empty
+
+        let rec clean bind =
+         Gc.compact();
+         let tbr = !Vars.to_be_dropped in
+         (*Vars.to_be_dropped := [];*)
+         if tbr = [] then bind else (
+          let bind =
+           List.fold_left (fun bind n ->
+            MapVars.remove n bind) bind tbr in
+          (*clean*) bind)
+
+        let lookup bind (Vars.Box k) =
+         let bind = clean bind in
+         try Some (MapVars.find k bind)
+         with Not_found -> None
+
+        let bind bind (Vars.Box k) v = MapVars.add k v (clean bind)
+
+        let cardinal bind = MapVars.cardinal (clean bind)
+
+        let pp_bindings bind =
+         Gc.compact();
+         let bind = clean bind in
+         String.concat "\n"
+          (MapVars.fold
+            (fun k v s -> (Vars.pp (Vars.Box k) ^ " |-> " ^ Terms.pp v) :: s)
             bind [])
    end
 
@@ -809,6 +893,70 @@ let implementations =
      RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
       (Obj.magic q)) in
 
+ let impl5 =
+  (* RUN with indexed engine and automatic GC *)
+  let module FOAtomImpl = FOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
+  let module WeakFOTerm = Term(WeakVariable)(FuncS) in
+  let module WeakFOFormulae = RefreshableFormulae(FOAtomImpl) in
+  let module FOAtomImplHash = HashableFOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
+  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+  let rec convert_term =
+   function
+      Var x -> WeakFOTerm.Var (WeakVariable.Box (Obj.magic x))
+    | App (c,l) -> WeakFOTerm.App(c, List.map convert_term l) in
+  let rec convert_formula =
+   function
+      Atom t -> WeakFOFormulae.Atom (convert_term t)
+    | And(f1,f2) -> WeakFOFormulae.And(convert_formula f1,convert_formula f2)
+    | Or(f1,f2) -> WeakFOFormulae.Or(convert_formula f1,convert_formula f2)
+    | True -> WeakFOFormulae.True
+    | Cut -> WeakFOFormulae.Cut in
+  let convert_prog p =
+   List.map (fun (a,f) -> convert_term a, convert_formula f) p in
+  let convert_prog p = List.map WeakFOFormulae.refresh (convert_prog p) in
+  let convert_query q =
+   snd (WeakFOFormulae.refresh (WeakFOTerm.Var (WeakVariable.Box (-1)),(convert_formula q)))in
+   (fun q -> "Testing with one level index hashtbl and automatic GC "^FOFormulae.pp q),
+   (fun p q ->
+     RunFOHash.run (FOProgramHash.make (Obj.magic (convert_prog p))) (Obj.magic (convert_query q))
+      = None),
+   (fun p q ->
+     RunFOHash.main_loop (FOProgramHash.make (Obj.magic (convert_prog p)))
+      (Obj.magic (convert_query q))) in
 
- [impl3;impl2;impl1;impl4]
+ let impl6 =
+  (* RUN with indexed engine and automatic GC *)
+  let module FOAtomImpl = FOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
+  let module WeakFOTerm = Term(WeakVariable)(FuncS) in
+  let module WeakFOFormulae = RefreshableFormulae(FOAtomImpl) in
+  let module FOAtomImplHash = HashableFOFlatAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
+  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+  let rec convert_term =
+   function
+      Var x -> WeakFOTerm.Var (WeakVariable.Box (Obj.magic x))
+    | App (c,l) -> WeakFOTerm.App(c, List.map convert_term l) in
+  let rec convert_formula =
+   function
+      Atom t -> WeakFOFormulae.Atom (convert_term t)
+    | And(f1,f2) -> WeakFOFormulae.And(convert_formula f1,convert_formula f2)
+    | Or(f1,f2) -> WeakFOFormulae.Or(convert_formula f1,convert_formula f2)
+    | True -> WeakFOFormulae.True
+    | Cut -> WeakFOFormulae.Cut in
+  let convert_prog p =
+   List.map (fun (a,f) -> convert_term a, convert_formula f) p in
+  let convert_prog p = List.map WeakFOFormulae.refresh (convert_prog p) in
+  let convert_query q =
+   snd (WeakFOFormulae.refresh (WeakFOTerm.Var (WeakVariable.Box (-1)),(convert_formula q)))in
+   (fun q -> "Testing with one level index hashtbl + flattening and automatic GC "^FOFormulae.pp q),
+   (fun p q ->
+     RunFOHash.run (FOProgramHash.make (Obj.magic (convert_prog p))) (Obj.magic (convert_query q))
+      = None),
+   (fun p q ->
+     RunFOHash.main_loop (FOProgramHash.make (Obj.magic (convert_prog p)))
+      (Obj.magic (convert_query q))) in
+
+
+ [impl3;impl2;impl1;impl5;impl6;impl4]
 ;;
