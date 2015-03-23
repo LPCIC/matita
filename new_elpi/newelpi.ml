@@ -12,8 +12,12 @@ let _ =
 *)
 
 let test_prog prog query =
+ let i = ref 0 in
  List.iter
   (fun (msg,run,_) ->
+    Gc.compact();
+    incr i;
+    prerr_endline ("Implementation #" ^ string_of_int !i);
     prerr_endline (msg query);
     if run prog query then
      prerr_endline "ERROR\n"
