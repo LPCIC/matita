@@ -1,7 +1,12 @@
 % X10:
-%   yap                          0.027s
-%   elpi                         3.771s
-%   one level index hashtbl      0.528s
+%   yap                                     0.027s
+%   elpi                                    3.771s
+%   one level index hashtbl                 0.528s
+%   two level inefficient index             0.681s
+%   one level index hashtbl + automatic GC  0.899s
+%   one lvl hashtbl + flat + automatic GC   0.763s
+%   one lvl hashtbl + flat                  0.629s
+
 
 % X13:
 %   yap                          0.083s
@@ -10,20 +15,14 @@
 %   two level inefficient index  4.48s
 
 % X14:
+%   ocaml                        0.058s
 %   yap                          0.119s
 %   elpi                         stack overflow after 20.893s
 %   one level index hashtbl      10.600s
 %   two level inefficient index  12.024s
-
-% yap:
-%  X10, X11, X12:        <= 0.029s
-%  X13                      0.083s
-%  X14                      0.119s
-%  X15                      error
-
-% ocaml:
-%  X14                      0.058s
- 
+%   one level hashtbl + autom GC 16.163s
+%   one lvl hash+flat+ auto GC   14.971s
+%   one lvl hashtbl + flat       10.680s
 
 rev L RL  :- aux L xnil  RL .
 aux xnil  L  L .
