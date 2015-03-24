@@ -380,11 +380,12 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
            | None -> None in
          let time1 = Unix.gettimeofday() in
          prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-         (match res with Some (binds,orl) -> Gc.compact() ;
-let binds,_ = Atom.cardinal binds in
-let rec waste acc n = if n = 0 then acc else (waste (`K n :: acc) (n-1)) in if waste [] 1000000 = [] then prerr_endline "";
-Gc.compact() ;
-let binds,size = Atom.cardinal binds in prerr_endline ("Final bindings size: " ^ string_of_int size) ; Some (binds,orl) | None -> None)
+         (match res with
+             Some (binds,orl) ->
+              Gc.full_major() ; let binds,size = Atom.cardinal binds in
+              prerr_endline ("Final bindings size: " ^ string_of_int size) ;
+              Some (binds,orl)
+           | None -> None)
 
         let run prog f = run_next prog 0 (Atom.empty_bindings) [] [] f
 
