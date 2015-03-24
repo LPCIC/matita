@@ -706,18 +706,18 @@ module FlatUnify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term
             (T.Var v) ->
              (match Bind.lookup sub v with
                  None -> i
-               | Some t -> t)
+               | Some t -> deref sub t)
           | T.App(_,_) -> i
 
         let rec flatten sub i =
          match i with
-            (T.Var v) ->
-             (match Bind.lookup sub v with
-                 None -> i
-               | Some t -> t)
+            (T.Var _) -> deref sub i
           | T.App(f,l) ->
              let l' = List.map (flatten sub) l in
               if l'==l then i else T.App(f, l')
+
+(*let flatten sub i =
+prerr_endline ("F: " ^ T.pp i); flatten sub i*)
 
         (* unify sub pattern query
            the query is only dereferences
@@ -726,21 +726,24 @@ module FlatUnify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term
            the rationale is that patterns are small, queries can be huge
            flattening queries leads to quadratic complexity on our example
            because the same input can be flattened multiple times *)
-        let rec unify sub t1 t2 = match t1,t2 with
+        let rec unify ~do_flatten sub t1 t2 = match t1,t2 with
             (T.Var v1, T.Var v2) when Var.eq v1 v2 -> sub
-          | (T.Var v1, _) ->
-              (match Bind.lookup sub v1 with
-                 None -> Bind.bind sub v1 (deref sub t2)
-               | Some t -> unify sub t t2)
-          | (_,T.Var v2) ->
-              (match Bind.lookup sub v2 with
-                 None -> Bind.bind sub v2 (flatten sub t1)
-               | Some t -> unify sub t1 t)
           | (T.App (f1,l1), T.App (f2,l2)) -> 
                 if Func.eq f1 f2 && List.length l1 = List.length l2 then
-                  List.fold_left2 unify sub l1 l2
+                  List.fold_left2 (unify ~do_flatten) sub l1 l2
                 else
                   raise (NotUnifiable (lazy "Terms are not unifiable!"))
+          | (T.Var _, _)
+          | (_, T.Var _) ->
+             let t1 = (if do_flatten then flatten else deref) sub t1 in
+             let t2 = (if do_flatten then flatten else deref) sub t2 in
+             match t1,t2 with
+                (T.Var v1, T.Var v2) when Var.eq v1 v2 -> sub
+              | (T.Var v1, _) -> Bind.bind sub v1 t2
+              | (_, T.Var v2) -> Bind.bind sub v2 t1
+              | (T.App _, T.App _) -> unify ~do_flatten:false sub t1 t2
+
+          let unify = unify ~do_flatten:true
    end;;
 
 module FOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
