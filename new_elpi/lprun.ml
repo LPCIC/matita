@@ -286,7 +286,21 @@ module ProgramIndexL(Atom: ApproximatableRefreshableAtomT) : ProgramT
 
 (* ---------------------------------------- *)
 
-module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and type formulaT := RefreshableFormulae(Atom).formula and type bindings := Atom.bindings):
+module type GCT =
+ sig
+  type bindings
+  type formula
+  val gc: force:bool -> bindings -> formula list -> bindings
+ end
+
+module NoGC(Atom: RefreshableAtomT) :
+ GCT with type bindings := Atom.bindings
+     and  type formula := RefreshableFormulae(Atom).formula =
+ struct
+  let gc ~force binds _ = binds
+ end
+
+module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and type formulaT := RefreshableFormulae(Atom).formula and type bindings := Atom.bindings)(GC : GCT with type bindings := Atom.bindings and type formula := RefreshableFormulae(Atom).formula) :
    sig
     type cont (* continuation *)
     val run: Prog.t -> RefreshableFormulae(Atom).formula ->
@@ -304,11 +318,18 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
         type cont =
           Prog.t * (int * Atom.bindings * F.formula * F.formula list) list
 
+        (* WARNING: bad non reentrant imperative code here
+           At least query should go into the continuation for next
+           to work!
+        *)
+        let query = ref F.True;;
+
         let run0 prog =
          (* aux lvl binds andl orl f
            (lvl,binds,(f::andl))::orl) *)
-         let rec aux lvl binds andl orl =
-          function
+         let rec aux lvl binds andl orl f =
+          let binds = GC.gc (f = F.True && andl=[]) binds (!query::f::andl) in
+          match f with
              F.True ->                  (* (True::andl)::orl *)
               (match andl with
                   [] -> Some (binds,orl)       (* (binds,[])::orl *)
@@ -378,7 +399,9 @@ module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and 
               Some (binds,orl)
            | None -> None)
 
-        let run prog f = run_next prog 0 (Atom.empty_bindings) [] [] f
+        let run prog f =
+         query := f ;
+         run_next prog 0 (Atom.empty_bindings) [] [] f
 
         let next (prog,orl) =
           match orl with
@@ -578,7 +601,8 @@ module type BindingsT =
         (* bind sigma v t = sigma [v |-> t] *)
         val bind : bindings -> varT -> termT -> bindings
         (* lookup sigma v = Some t   iff  [v |-> t] \in sigma *)
-        val lookup : bindings -> varT -> termT option 
+        val lookup : bindings -> varT -> termT option
+        val filter : (varT -> bool) -> bindings -> bindings
    end
 
 module Bindings(Vars: VarT)(Func: FuncT) : 
@@ -587,25 +611,28 @@ module Bindings(Vars: VarT)(Func: FuncT) :
   and type termT := Term(Vars)(Func).term
   =
    struct
-        module MapVars = Map.Make(Vars)
-        module Terms = Term(Vars)(Func)
-        type bindings = Terms.term MapVars.t
+     module MapVars = Map.Make(Vars)
+     module Terms = Term(Vars)(Func)
+     module VarSet = Set.Make(Vars);;
+     type bindings = Terms.term MapVars.t
 
-        let empty_bindings = MapVars.empty
+     let empty_bindings = MapVars.empty
+        
+     let lookup bind k =
+      try Some (MapVars.find k bind)
+      with Not_found -> None
 
-        let lookup bind k =
-         try Some (MapVars.find k bind)
-         with Not_found -> None
+     let bind bind k v = MapVars.add k v bind
 
-        let bind bind k v = MapVars.add k v bind
+     let cardinal bind = bind, MapVars.cardinal bind
 
-        let cardinal bind = bind, MapVars.cardinal bind
-
-        let pp_bindings bind =
-         String.concat "\n"
-          (MapVars.fold
-            (fun k v s -> (Vars.pp k ^ " |-> " ^ Terms.pp v) :: s)
-            bind [])
+     let pp_bindings bind =
+      String.concat "\n"
+       (MapVars.fold
+         (fun k v s -> (Vars.pp k ^ " |-> " ^ Terms.pp v) :: s)
+         bind [])
+        
+     let filter f bind = MapVars.filter (fun k _ -> f k) bind 
    end
 
 module WeakBindings(Vars: WeakVarT)(Func: FuncT) : 
@@ -653,6 +680,7 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) :
          let bind = clean bind in
           bind,MapVars.cardinal bind
 
+        let filter f bind = MapVars.filter (fun k _ -> f (Vars.Box k)) bind 
    end
 
 module type UnifyT =
@@ -798,6 +826,7 @@ module ApproximatableFOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type te
 module FOFlatAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
  RefreshableAtomT
   with type t = Term(Var)(Func).term
+  and  type bindings = Bind.bindings
 =
  struct
    include RefreshableTerm(Var)(Func)
@@ -809,6 +838,7 @@ module FOFlatAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Ter
 module HashableFOFlatAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
  HashableRefreshableAtomT
   with type t = Term(Var)(Func).term
+  and  type bindings = Bind.bindings
 =
  struct
   include FOFlatAtom(Var)(Func)(Bind)
@@ -826,6 +856,91 @@ module HashableFOFlatAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type term
       TermFO.App(f,_) -> f
     | TermFO.Var _ -> raise (Failure "Ill formed program")
  end
+
+(* IMPLEMENT A GC
+
+input: andl + current formula
+       bindings
+
+1. V = FV(andl+current formula)   all variables occurring in
+2. O = emptyset    (already visited variables)
+   while not empty V
+     v <- V
+     O := v + O
+     let t = bindings(v)
+     for each w in FV(t)
+      if w in O then ()
+      else V := w + V
+3. now V is empty and O holds all the reachable variables
+   for each v in Dom(bindings)
+    if v not in O then remove v bindings 
+*)
+
+module GC(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t)(Formulae: FormulaeT with type atomT := FOAtom(Var)(Func)(Bind).t) :
+ GCT with type bindings := Bind.bindings
+     and type formula :=    Formulae.formula 
+=
+ struct
+  
+  module Term = Term(Var)(Func);;
+  open Term
+  open Formulae
+
+  module VarSet = Set.Make(Var);;
+    let rec findVarsTerm =
+     function
+      Var(x) -> VarSet.singleton x
+    | App(_,args) -> 
+        List.fold_left 
+          (fun acc term -> 
+             VarSet.union (findVarsTerm term) acc) VarSet.empty args
+
+    let rec findVarsFla =
+     function
+      True -> VarSet.empty
+    | Cut -> VarSet.empty
+    | Atom(t) -> findVarsTerm t 
+    | And(f1,f2) -> VarSet.union (findVarsFla f1) (findVarsFla f2)
+    | Or(f1,f2) -> VarSet.union (findVarsFla f1) (findVarsFla f2)
+
+    let oneLevelBindChain binds ivars =
+      let visited = ref VarSet.empty in
+      let vars = ref ivars in
+      while not (VarSet.is_empty !vars) do
+        let v = VarSet.choose !vars in
+        vars := VarSet.remove v !vars ;
+        visited := VarSet.add v !visited ;
+        match Bind.lookup binds v with
+          Some t ->
+           let vset = findVarsTerm t in
+           VarSet.iter
+            (fun x ->
+              if not (VarSet.mem x !visited) then vars:= VarSet.add x !vars)
+            vset
+        | None -> ()
+      done ;
+      !visited
+
+   let do_gc binds andl =
+    let vars = 
+     List.fold_left 
+      (fun acc fla ->
+        VarSet.union acc (findVarsFla fla)) VarSet.empty andl in
+    let reachable_vars = oneLevelBindChain binds vars in
+    Bind.filter (fun x -> VarSet.mem x reachable_vars) binds
+
+   let gc ~force =
+    let do_it = ref false in
+    ignore (Gc.create_alarm (fun () -> do_it := true));
+    fun binds andl ->
+     if !do_it || force then (
+      do_it := false ;
+      do_gc binds andl )
+     else binds
+  end
+
+
+
 (*
 module FOAtomImpl = FOAtom(Variable)(Func)(Bindings(Variable)(Func))
 module FOProgram = Program(FOAtomImpl)
@@ -871,7 +986,7 @@ let implementations =
   (* RUN with non indexed engine *)
   let module FOAtomImpl = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module FOProgram = Program(FOAtomImpl) in
-  let module RunFO = Run(FOAtomImpl)(FOProgram) in
+  let module RunFO = Run(FOAtomImpl)(FOProgram)(NoGC(FOAtomImpl)) in
    (fun q -> "Testing with no index list "^FOFormulae.pp q),
    (fun p q ->
      RunFO.run (FOProgram.make (Obj.magic p)) (Obj.magic q)
@@ -884,7 +999,7 @@ let implementations =
   (* RUN with indexed engine *)
   let module FOAtomImplHash = HashableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(NoGC(FOAtomImplHash)) in
    (fun q -> "Testing with one level index hashtbl "^FOFormulae.pp q),
    (fun p q ->
      RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
@@ -897,7 +1012,7 @@ let implementations =
   (* RUN with two levels inefficient indexed engine *)
   let module FOAtomImplApprox = ApproximatableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module FOProgramApprox = ProgramIndexL(FOAtomImplApprox) in
-  let module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox) in
+  let module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox)(NoGC(FOAtomImplApprox)) in
    (fun q -> "Testing with two level inefficient index "^FOFormulae.pp q),
    (fun (p : program) (q : formula) ->
      RunFOApprox.run (FOProgramApprox.make (Obj.magic p)) (Obj.magic q)
@@ -913,7 +1028,7 @@ let implementations =
   let module WeakFOFormulae = RefreshableFormulae(FOAtomImpl) in
   let module FOAtomImplHash = HashableFOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
   let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(NoGC(FOAtomImplHash)) in
   let rec convert_term =
    function
       Var x -> WeakFOTerm.Var (WeakVariable.Box (Obj.magic x))
@@ -948,7 +1063,7 @@ let implementations =
   let module WeakFOFormulae = RefreshableFormulae(FOAtomImpl) in
   let module FOAtomImplHash = HashableFOFlatAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
   let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(NoGC(FOAtomImplHash)) in
   let rec convert_term =
    function
       Var x -> WeakFOTerm.Var (WeakVariable.Box (Obj.magic x))
@@ -980,7 +1095,7 @@ let implementations =
   (* RUN with indexed engine *)
   let module FOAtomImplHash = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(NoGC(FOAtomImplHash)) in
    (fun q -> "Testing with one level index hashtbl + flattening "^FOFormulae.pp q),
    (fun p q ->
      RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
@@ -989,5 +1104,18 @@ let implementations =
      RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
       (Obj.magic q)) in
 
- [impl1;impl2;impl3;impl4;impl5;impl6]
+ let impl7 =
+  let module FOAtomImplHash = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(GC(Variable)(FuncS)(Bindings(Variable)(FuncS))(RefreshableFormulae(FOAtomImplHash))) in
+   (fun q -> "Testing with one level index hashtbl + flattening + manual GC "^FOFormulae.pp q),
+   (fun p q ->
+     RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
+      = None),
+   (fun p q ->
+     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
+      (Obj.magic q)) in
+
+
+ [impl1;impl2;impl3;impl4;impl5;impl6;impl7]
 ;;
