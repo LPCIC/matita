@@ -877,16 +877,16 @@ type program = (FOAtomImpl.t * formula) list
    load_and_main_loop: program -> query -> unit *)
 let implementations =
  let impl1 =
-  (* RUN with two levels inefficient indexed engine *)
-  let module FOAtomImplApprox = ApproximatableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOProgramApprox = ProgramIndexL(FOAtomImplApprox) in
-  let module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox) in
-   (fun q -> "Testing with two level inefficient index "^FOFormulae.pp q),
-   (fun (p : program) (q : formula) ->
-     RunFOApprox.run (FOProgramApprox.make (Obj.magic p)) (Obj.magic q)
+  (* RUN with non indexed engine *)
+  let module FOAtomImpl = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgram = Program(FOAtomImpl) in
+  let module RunFO = Run(FOAtomImpl)(FOProgram) in
+   (fun q -> "Testing with no index list "^FOFormulae.pp q),
+   (fun p q ->
+     RunFO.run (FOProgram.make (Obj.magic p)) (Obj.magic q)
       = None),
-   (fun (p : program) (q : formula) ->
-     RunFOApprox.main_loop (FOProgramApprox.make (Obj.magic p))
+   (fun p q ->
+     RunFO.main_loop (FOProgram.make (Obj.magic p))
       (Obj.magic q)) in
 
  let impl2 =
@@ -903,32 +903,19 @@ let implementations =
       (Obj.magic q)) in
 
  let impl3 =
-  (* RUN with non indexed engine *)
-  let module FOAtomImpl = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOProgram = Program(FOAtomImpl) in
-  let module RunFO = Run(FOAtomImpl)(FOProgram) in
-   (fun q -> "Testing with no index list "^FOFormulae.pp q),
-   (fun p q ->
-     RunFO.run (FOProgram.make (Obj.magic p)) (Obj.magic q)
+  (* RUN with two levels inefficient indexed engine *)
+  let module FOAtomImplApprox = ApproximatableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgramApprox = ProgramIndexL(FOAtomImplApprox) in
+  let module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox) in
+   (fun q -> "Testing with two level inefficient index "^FOFormulae.pp q),
+   (fun (p : program) (q : formula) ->
+     RunFOApprox.run (FOProgramApprox.make (Obj.magic p)) (Obj.magic q)
       = None),
-   (fun p q ->
-     RunFO.main_loop (FOProgram.make (Obj.magic p))
+   (fun (p : program) (q : formula) ->
+     RunFOApprox.main_loop (FOProgramApprox.make (Obj.magic p))
       (Obj.magic q)) in
 
  let impl4 =
-  (* RUN with indexed engine *)
-  let module FOAtomImplHash = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
-   (fun q -> "Testing with one level index hashtbl + flattening "^FOFormulae.pp q),
-   (fun p q ->
-     RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
-      = None),
-   (fun p q ->
-     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
-      (Obj.magic q)) in
-
- let impl5 =
   (* RUN with indexed engine and automatic GC *)
   let module FOAtomImpl = FOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
   let module WeakFOTerm = Term(WeakVariable)(FuncS) in
@@ -963,7 +950,7 @@ let implementations =
      RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
       (Obj.magic q)) in
 
- let impl6 =
+ let impl5 =
   (* RUN with indexed engine and automatic GC *)
   let module FOAtomImpl = FOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
   let module WeakFOTerm = Term(WeakVariable)(FuncS) in
@@ -998,6 +985,18 @@ let implementations =
      RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
       (Obj.magic q)) in
 
+ let impl6 =
+  (* RUN with indexed engine *)
+  let module FOAtomImplHash = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
+  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash) in
+   (fun q -> "Testing with one level index hashtbl + flattening "^FOFormulae.pp q),
+   (fun p q ->
+     RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
+      = None),
+   (fun p q ->
+     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
+      (Obj.magic q)) in
 
- [impl3;impl2;impl1;impl5;impl6;impl4]
+ [impl1;impl2;impl3;impl4;impl5;impl6]
 ;;
