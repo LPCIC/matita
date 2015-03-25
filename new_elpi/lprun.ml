@@ -218,15 +218,6 @@ module ProgramHash(Atom: HashableRefreshableAtomT) : ProgramT
         (* Atom.t -> (Atom.t*Form.formula) list *)
         module Hash = Hashtbl.Make(Atom.IndexData)
         type t = Form.clause Hash.t
-
-        let rec filter_map mapf =
-         function
-            [] -> []
-          | hd::tl ->
-             match mapf hd with
-                None -> filter_map mapf tl
-              | Some hd' -> hd'::filter_map mapf tl
-   
                   
       (* backchain: bindings -> atomT -> 
                          Form.formula Hash.t -> 
