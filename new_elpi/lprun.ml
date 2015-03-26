@@ -213,30 +213,30 @@ module ProgramHash(Atom: HashableRefreshableAtomT) : ProgramT
     and  type formulaT := RefreshableFormulae(Atom).formula
     and  type bindings := Atom.bindings =
    struct
-        module Form = RefreshableFormulae(Atom)
+     module Form = RefreshableFormulae(Atom)
 
-        (* Atom.t -> (Atom.t*Form.formula) list *)
-        module Hash = Hashtbl.Make(Atom.IndexData)
-        type t = Form.clause Hash.t
+     (* Atom.t -> (Atom.t*Form.formula) list *)
+     module Hash = Hashtbl.Make(Atom.IndexData)
+     type t = Form.clause Hash.t
                   
-      (* backchain: bindings -> atomT -> 
+   (* backchain: bindings -> atomT -> 
                          Form.formula Hash.t -> 
                             (bindings * formulaT) list           *)
-        let backchain binds a h =
-          let l = List.rev (Hash.find_all h (Atom.index a)) in
-          filter_map (fun clause -> 
-            let atom,f = Form.refresh clause in
-            try
-                  let binds = Atom.unify binds atom a in 
-                Some (binds,f)
-            with NotUnifiable _ -> None) 
-            l                       
+     let backchain binds a h =
+       let l = List.rev (Hash.find_all h (Atom.index a)) in
+       filter_map (fun clause -> 
+         let atom,f = Form.refresh clause in
+         try
+           let binds = Atom.unify binds atom a in 
+             Some (binds,f)
+           with NotUnifiable _ -> None) 
+         l                       
         
-        let make p =
-          let h = Hash.create 199 in
-          List.iter
-           (fun ((a,v) as clause) -> Hash.add h (Atom.index a) clause) p;
-          h
+     let make p =
+       let h = Hash.create 199 in
+       List.iter
+         (fun ((a,v) as clause) -> Hash.add h (Atom.index a) clause) p;
+       h
    end;;
 
 module type ApproximatableRefreshableAtomT =
@@ -518,36 +518,36 @@ module WeakVariable : WeakVarT =
              let n' = fresh () in
 (*prerr_endline ("Refresh variable: " ^ string_of_int n ^ " to " ^ string_of_int (let Box n = n' in n));*)
              (n,n')::l,n')
-   end;;
+  end;;
 
 module type FuncT =
-   sig
-        type t
-        val pp : t -> string
-        val eq : t -> t -> bool
-   end;;
+  sig
+    type t
+    val pp : t -> string
+    val eq : t -> t -> bool
+  end;;
 
 module Func : FuncT with type t = int = 
-   struct
-        type t = int
-        let pp n = "f" ^ string_of_int n
-        let eq = (=)
-   end;;
+  struct
+    type t = int
+    let pp n = "f" ^ string_of_int n
+    let eq = (=)
+  end;;
 
 module FuncS : FuncT with type t = string = 
-   struct
-        type t = string
-        let pp n = n
-        let eq = (=)
-   end;;
+  struct
+    type t = string
+    let pp n = n
+    let eq = (=)
+  end;;
 
 module type TermT =
-   sig
-            type varT
-        type funcT
-            type term = Var of varT | App of funcT * (term list)
-        val pp : term -> string
-   end;;
+  sig
+    type varT
+    type funcT
+    type term = Var of varT | App of funcT * (term list)
+    val pp : term -> string
+  end;;
 
 module Term(Var:VarT)(Func:FuncT) :
  TermT
@@ -895,15 +895,15 @@ module GC(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(F
           (fun acc term -> 
              VarSet.union (findVarsTerm term) acc) VarSet.empty args
 
-    let rec findVarsFla =
+    let rec find_vars_fla =
      function
       True -> VarSet.empty
     | Cut -> VarSet.empty
     | Atom(t) -> findVarsTerm t 
-    | And(f1,f2) -> VarSet.union (findVarsFla f1) (findVarsFla f2)
-    | Or(f1,f2) -> VarSet.union (findVarsFla f1) (findVarsFla f2)
+    | And(f1,f2) -> VarSet.union (find_vars_fla f1) (find_vars_fla f2)
+    | Or(f1,f2) -> VarSet.union (find_vars_fla f1) (find_vars_fla f2)
 
-    let oneLevelBindChain binds ivars =
+    let one_level_bind_chain binds ivars =
       let visited = ref VarSet.empty in
       let vars = ref ivars in
       while not (VarSet.is_empty !vars) do
@@ -925,8 +925,8 @@ module GC(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(F
     let vars = 
      List.fold_left 
       (fun acc fla ->
-        VarSet.union acc (findVarsFla fla)) VarSet.empty andl in
-    let reachable_vars = oneLevelBindChain binds vars in
+        VarSet.union acc (find_vars_fla fla)) VarSet.empty andl in
+    let reachable_vars = one_level_bind_chain binds vars in
     Bind.filter (fun x -> VarSet.mem x reachable_vars) binds
 
    let gc ~force =
