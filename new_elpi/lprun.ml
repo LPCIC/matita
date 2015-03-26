@@ -203,7 +203,15 @@ module type HashableRefreshableAtomT =
  end
 ;;
 
-(* One level indexing; a program is an hash-table indexed on the
+module type MapableRefreshableAtomT =
+ sig
+  include RefreshableAtomT
+  module IndexData : Map.OrderedType 
+  val index: t -> IndexData.t
+ end
+;;
+
+(* One level indexing; a program is a hash-table indexed on the
    predicate that is the head of the clause. Unification is used
    eagerly on all the clauses with the good head. Retrieving the
    clauses is O(n) where n is the number of clauses with the
@@ -238,6 +246,47 @@ module ProgramHash(Atom: HashableRefreshableAtomT) : ProgramT
          (fun ((a,v) as clause) -> Hash.add h (Atom.index a) clause) p;
        h
    end;;
+
+
+(* One level indexing; a program is a Map indexed on the
+   predicate that is the head of the clause. Unification is used
+   eagerly on all the clauses with the good head. *)
+module ProgramMap(Atom: MapableRefreshableAtomT) : ProgramT
+    with type atomT := Atom.t
+    and  type formulaT := RefreshableFormulae(Atom).formula
+    and  type bindings := Atom.bindings =
+   struct
+     module Form = RefreshableFormulae(Atom)
+
+     (* Atom.t -> (Atom.t*Form.formula) list *)
+	  module ClauseMap = Map.Make(Atom.IndexData)
+     type t = (Form.clause list)  ClauseMap.t
+                  
+   (* backchain: bindings -> atomT -> 
+                         Form.formula ClauseMap.t -> 
+                            (bindings * formulaT) list    *)
+     let backchain binds a m =
+       let l = List.rev (ClauseMap.find (Atom.index a) m) in
+       filter_map (fun clause -> 
+         let atom,f = Form.refresh clause in
+         try
+           let binds = Atom.unify binds atom a in 
+             Some (binds,f)
+           with NotUnifiable _ -> None) 
+         l                       
+        
+     let make p =       
+       List.fold_left (fun m ((a,_) as clause) -> 
+         let ind = Atom.index a in
+         try 
+           let l = ClauseMap.find ind m in
+           ClauseMap.add ind (clause :: l) m
+         with Not_found -> 
+           ClauseMap.add ind [clause] m
+         ) ClauseMap.empty p
+   end;;
+
+
 
 module type ApproximatableRefreshableAtomT =
  sig
@@ -796,7 +845,30 @@ module HashableFOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT :=
    function
       TermFO.App(f,_) -> f
     | TermFO.Var _ -> raise (Failure "Ill formed program")
- end
+ end;;
+
+
+module MapableFOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
+ MapableRefreshableAtomT
+  with type t = Term(Var)(Func).term
+=
+ struct
+  include FOAtom(Var)(Func)(Bind)
+  module IndexData =
+   struct
+    type t = Func.t
+    let equal = Func.eq
+    let compare n1 n2 = String.compare (Func.pp n1) (Func.pp n2)
+   end
+
+  module TermFO = Term(Var)(Func)
+
+  let index =
+   function
+      TermFO.App(f,_) -> f
+    | TermFO.Var _ -> raise (Failure "Ill formed program")
+ end;;
+
 
 module ApproximatableFOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
  ApproximatableRefreshableAtomT
@@ -1117,5 +1189,18 @@ let implementations =
       (Obj.magic q)) in
 
 
- [impl1;impl2;impl3;impl4;impl5;impl6;impl7]
+let impl8 =
+  (* RUN with indexed engine and Map of clauses instead of Hash of clauses*)
+  let module FOAtomImplMap = MapableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOProgramMap = ProgramMap(FOAtomImplMap) in
+  let module RunFOMap = Run(FOAtomImplMap)(FOProgramMap)(NoGC(FOAtomImplMap)) in
+   (fun q -> "Testing with one level index map "^FOFormulae.pp q),
+   (fun p q ->
+     RunFOMap.run (FOProgramMap.make (Obj.magic p)) (Obj.magic q)
+      = None),
+   (fun p q ->
+     RunFOMap.main_loop (FOProgramMap.make (Obj.magic p))
+      (Obj.magic q)) in
+
+ [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8]
 ;;
