@@ -1,46 +1,28 @@
 exception NotInProlog;;
 
-type formula = Lprun.formula
-type program = (Lprun.FOAtomImpl.t * Lprun.formula) list
-type goal = Lprun.formula
+type formula = Lprun2.term
+type program = (Lprun2.term * Lprun2.term) list
+type goal = Lprun2.term
 
 let eq_clause =
- let v1 = Lprun.Variable.fresh () in
-  Lprun.App("=",[Lprun.Var v1 ; Lprun.Var v1]), Lprun.True
+ let v1 = Lprun2.Variable.fresh () in
+  Lprun2.App("=",[Lprun2.Var v1 ; Lprun2.Var v1]),
+   Lprun2.App(",",[])
 
-let mkClause lhs rhs =
- match lhs with
-    Lprun.Atom t -> t,rhs
-  | _ -> raise NotInProlog
+let mkClause lhs rhs = lhs,rhs
 
-let rec mkConj =
- function
-    [] -> Lprun.True
-  | [f] -> f
-  | hd::tl -> Lprun.And (hd, mkConj tl)
-;;
+let rec mkConj = Lprun2.mkAnd
 
-let rec mkDisj =
- function
-    [] -> assert false (*Lprun.False*)
-  | [f] -> f
-  | hd::tl -> Lprun.Or (hd, mkDisj tl)
-;;
+let rec mkDisj = Lprun2.mkOr
 
-let mkAtomBiUnif a b =
- match a,b with
-    Lprun.Atom a, Lprun.Atom b -> Lprun.Atom (Lprun.App("=",[a;b]))
-  | _ -> raise NotInProlog
+let mkAtomBiUnif a b = Lprun2.App("=",[a;b])
 
 let mkApp =
  function
-    Lprun.Atom(Lprun.App(c,l1))::l2 ->
-     let l2 =
-      List.map(function (Lprun.Atom t) -> t| _ -> raise NotInProlog) l2 in
-     Lprun.Atom(Lprun.App(c,l1@l2))
+    Lprun2.App(c,l1)::l2 -> Lprun2.App(c,l1@l2)
   | _ -> raise NotInProlog
 
-let mkAtomBiCut = Lprun.Cut
+let mkAtomBiCut = Lprun2.mkCut
 
 let uvmap = ref [];;
 let reset () = uvmap := []
@@ -48,12 +30,12 @@ let reset () = uvmap := []
 let get_uv u =
   if List.mem_assoc u !uvmap then List.assoc u !uvmap
   else
-    let n = Lprun.Variable.fresh () in
+    let n = Lprun2.Variable.fresh () in
     uvmap := (u,n) :: !uvmap;
     n
 
-let mkUVar u = Lprun.Atom (Lprun.Var (get_uv u))
-let mkCon c = Lprun.Atom (Lprun.App(c,[]))
+let mkUVar u = Lprun2.Var (get_uv u)
+let mkCon c = Lprun2.App(c,[])
 
 let rec number = lexer [ '0'-'9' number ]
 let rec ident =

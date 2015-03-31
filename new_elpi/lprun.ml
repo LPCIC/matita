@@ -23,6 +23,10 @@ module type AtomT =
         val empty_bindings : bindings
         (* raises NotUnifiable in case of failure *)
         val unify: bindings -> t -> t -> bindings
+
+        type converter
+        val empty_converter : converter
+        val atom_of_ast : converter -> Lprun2.term -> converter * t
    end;;
 
 module type Refreshable =
@@ -55,6 +59,10 @@ module AtomInt : RefreshableAtomT with type t = int =
          else
           raise (NotUnifiable
            (lazy (string_of_int x ^ " vs " ^ string_of_int y)))
+
+        type converter = unit
+        let empty_converter = ()
+        let atom_of_ast _ = assert false
    end;;
 
 module AtomString : RefreshableAtomT with type t = string =
@@ -75,6 +83,10 @@ module AtomString : RefreshableAtomT with type t = string =
          else
           raise (NotUnifiable
            (lazy (x ^ " vs " ^ y)))
+
+        type converter = unit
+        let empty_converter = ()
+        let atom_of_ast _ = assert false
    end;;
 
 module type FormulaeT =
@@ -88,6 +100,10 @@ module type FormulaeT =
           | Atom of atomT;;
 
          val pp : formula -> string
+
+         val query_of_ast : Lprun2.term -> formula
+         val program_of_ast :
+          (Lprun2.term * Lprun2.term) list -> (atomT * formula) list
    end;;
 
 module type RefreshableFormulaeT =
@@ -115,6 +131,47 @@ module Formulae(Atom: AtomT) : FormulaeT with type atomT := Atom.t =
           | True -> "true"
           | Cut -> "!"
           | Atom a -> Atom.pp a
+
+        (* Note: converters from asts are the same as
+           refreshers, but both have fixed types :-(
+           Should be made parametric *)
+        let rec formula_of_ast k t =
+         (* TODO: complete the implementation here *)
+         match Lprun2.as_formula t with
+            Lprun2.And(l) ->
+             let rec aux k =
+              function
+                 [] -> k,True
+               | [t] -> formula_of_ast k t
+               | hd::tl ->
+                  let k,hd = formula_of_ast k hd in
+                  let k,tl = aux k tl in
+                  k,And(hd,tl)
+             in
+              aux k l
+          | Lprun2.Cut -> k,Cut
+          | Lprun2.Or(l) ->
+             let rec aux k =
+              function
+                 [] -> assert false (* TODO: add False *)
+               | [t] -> formula_of_ast k t
+               | hd::tl ->
+                  let k,hd = formula_of_ast k hd in
+                  let k,tl = aux k tl in
+                  k,Or(hd,tl)
+             in
+              aux k l
+          | Lprun2.Atom t ->
+             let k,t = Atom.atom_of_ast k t in
+             k,Atom t
+
+        let query_of_ast t = snd (formula_of_ast Atom.empty_converter t)
+
+        let program_of_ast p =
+         List.map (fun (a,f) ->
+          let l,a = Atom.atom_of_ast Atom.empty_converter a in
+          let _,f = formula_of_ast l f in
+          a,f) p
    end;;
 
 
@@ -596,6 +653,11 @@ module type TermT =
     type funcT
     type term = Var of varT | App of funcT * (term list)
     val pp : term -> string
+
+    (* TODO (LATER) Introduce a Convertable module type *)
+    type converter
+    val empty_converter : converter
+    val term_of_ast : converter -> Lprun2.term -> converter * term
   end;;
 
 module Term(Var:VarT)(Func:FuncT) :
@@ -609,6 +671,34 @@ module Term(Var:VarT)(Func:FuncT) :
       function
          Var v -> Var.pp v
        | App(f,l) -> Func.pp f ^"("^ String.concat "," (List.map pp l) ^")"
+
+     (* Note: converters from asts are the same as
+        refreshers, but both have fixed types :-(
+        Should be made parametric *)
+     let var_of_ast l n =
+      try l,List.assoc n l
+      with Not_found ->
+       let n' = Var.fresh () in
+       (n,n')::l,n'
+
+     type converter = (Lprun2.vart * Var.t) list
+
+     let empty_converter = []
+
+     let rec term_of_ast l =
+      function
+         Lprun2.Var v ->
+          let l,v = var_of_ast l v in
+          l, Var v
+       | Lprun2.App(f,tl) ->
+          let l,rev_tl =
+            List.fold_left
+             (fun (l,tl) t -> let l,t = term_of_ast l t in (l,t::tl))
+             (l,[]) tl
+          in
+          (* TODO: convert the Funcs too *)
+          l, App(Obj.magic f,List.rev rev_tl)
+
    end
 
 module type RefreshableTermT =
@@ -824,6 +914,7 @@ module FOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Va
    include Bind
    include Unify(Var)(Func)(Bind)
    type t = term
+   let atom_of_ast = term_of_ast
  end
 
 module HashableFOAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
@@ -905,6 +996,7 @@ module FOFlatAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Ter
    include Bind
    include FlatUnify(Var)(Func)(Bind)
    type t = term
+   let atom_of_ast = term_of_ast
  end
 
 module HashableFOFlatAtom(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
@@ -1040,15 +1132,6 @@ RunFO.main_loop prog query
 *)
 
 
-module FOAtomImpl = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS))
-module FOTerm = Term(Variable)(FuncS)
-module FOFormulae = RefreshableFormulae(FOAtomImpl)
-
-include FOFormulae
-include FOTerm
-
-type program = (FOAtomImpl.t * formula) list
-
 (* List of implementations, i.e. quadruples
    msg: formula -> string
    load_and_run: program -> Program.t
@@ -1057,17 +1140,18 @@ let implementations =
  let impl1 =
   (* RUN with non indexed engine *)
   let module FOAtomImpl = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module FOFormulae = RefreshableFormulae(FOAtomImpl) in
   let module FOProgram = Program(FOAtomImpl) in
   let module RunFO = Run(FOAtomImpl)(FOProgram)(NoGC(FOAtomImpl)) in
-   (fun q -> "Testing with no index list "^FOFormulae.pp q),
+   (fun (q : Lprun2.term) -> "Testing with no index list "(*TODO ^FOFormulae.pp q*)),
    (fun p q ->
-     RunFO.run (FOProgram.make (Obj.magic p)) (Obj.magic q)
+     RunFO.run (FOProgram.make (FOFormulae.program_of_ast p)) (FOFormulae.query_of_ast q)
       = None),
    (fun p q ->
-     RunFO.main_loop (FOProgram.make (Obj.magic p))
-      (Obj.magic q)) in
+     RunFO.main_loop (FOProgram.make (FOFormulae.program_of_ast p))
+      (FOFormulae.query_of_ast q)) in
 
- let impl2 =
+(*let impl2 =
   (* RUN with indexed engine *)
   let module FOAtomImplHash = HashableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module FOProgramHash = ProgramHash(FOAtomImplHash) in
@@ -1200,7 +1284,7 @@ let impl8 =
       = None),
    (fun p q ->
      RunFOMap.main_loop (FOProgramMap.make (Obj.magic p))
-      (Obj.magic q)) in
+      (Obj.magic q)) in*)
 
- [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8]
+ [impl1(*;impl2;impl3;impl4;impl5;impl6;impl7;impl8*)]
 ;;

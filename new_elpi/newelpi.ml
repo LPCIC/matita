@@ -1,4 +1,4 @@
-open Lprun
+let implementations = Lprun.implementations @ Lprun2.implementations
 
 (*
 let _ =
