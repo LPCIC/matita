@@ -114,32 +114,31 @@ module Term(Var: VarT)(Func: FuncT) : TermT
       | App(f, args) -> 
           Func.pp f ^ "(" ^ String.concat " " (List.map pp_term args) ^ ")"
 
-    let mkAnd l = App(Func.andf,l)
-    let mkOr  l = App(Func.orf, l)
-    let mkCut   = App(Func.cutf,[]) 
+    let mkAnd = function [f] -> f | l -> App(Func.andf,l)
+    let mkOr  = function [f] -> f | l -> App(Func.orf, l)
+    let mkCut = App(Func.cutf,[]) 
     
+    let rec pp =
+      function
+        Var v -> Var.pp v
+      | App (f,l) -> 
+          (*if f = Func.andf then
+          else if f = Func.orf then
+          else if f = Func.cut then*)
+         (* TODO: formulae should be pp as such *)
+         "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
 
      (* raise NotAFormula *)
     let as_formula =
       function
         Var _ -> raise (NotFormula (lazy "Trying to prove a variable"))
-      | App(f,l) ->
+      | App(f,l) as x->
          (* And [] is interpreted as false *)
-         if f = Func.andf then And l
+         if Func.eq f Func.andf then And l
          (* Or [] is interpreted as true *)
-         else if f = Func.orf then Or l
-         else if f = Func.cutf then Cut
-         else Atom (App(f,l))
-
-     let rec pp =
-       function
-         Var v -> Var.pp v
-       | App (f,l) -> 
-           (*if f = Func.andf then
-           else if f = Func.orf then
-           else if f = Func.cut then*)
-          (* TODO: formulae should be pp as such *)
-          "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
+         else if Func.eq f Func.orf then Or l
+         else if Func.eq f Func.cutf then Cut
+         else Atom x
   end;;
 
 
