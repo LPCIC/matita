@@ -136,7 +136,6 @@ module Formulae(Atom: AtomT) : FormulaeT with type atomT := Atom.t =
            refreshers, but both have fixed types :-(
            Should be made parametric *)
         let rec formula_of_ast k t =
-         (* TODO: complete the implementation here *)
          match Lprun2.as_formula t with
             Lprun2.And(l) ->
              let rec aux k =
