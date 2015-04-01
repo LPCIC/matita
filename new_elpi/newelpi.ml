@@ -14,20 +14,25 @@ let _ =
 let test_prog prog query =
  let i = ref 0 in
  List.iter
-  (fun (msg,run,_) ->
+  (fun (module Impl : Lprun2.Implementation) ->
+    let query = Impl.query_of_ast query in
+    let prog = Impl.program_of_ast prog in
     Gc.compact();
     incr i;
     prerr_endline ("Implementation #" ^ string_of_int !i);
-    prerr_endline (msg query);
-    if run prog query then
+    prerr_endline (Impl.msg query);
+    if Impl.execute_once prog query then
      prerr_endline "ERROR\n"
     else prerr_endline "success\n") implementations
 ;;
 
 let run_prog impl prog query =
- let msg,_,main_loop = List.nth implementations (impl-1) in
- prerr_endline (msg query);
- main_loop prog query
+ let (module Impl : Lprun2.Implementation) =
+  List.nth implementations (impl-1) in
+ let query = Impl.query_of_ast query in
+ let prog = Impl.program_of_ast prog in
+ prerr_endline (Impl.msg query);
+ Impl.execute_loop prog query
 ;;
 
 let _ =

@@ -315,13 +315,20 @@ module Program(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term
   end;;
 
 
+module type RunT =
+ sig
+  type term
+  type bindingsT
+  type progT
+  type cont (* continuation *)
+  val run: progT -> term -> (bindingsT * cont) option
+  val next: cont -> (bindingsT * cont) option
+  val main_loop: progT -> term -> unit
+ end
+
 module Run(Term: RefreshableTermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
-  sig
-    type cont (* continuation *)
-    val run: Prog.t -> Term.term -> (Prog.Bind.bindings * cont) option
-    val next: cont -> (Prog.Bind.bindings * cont) option
-    val main_loop: Prog.t -> Term.term -> unit
-  end
+ RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
+           and type progT := Prog.t
  = 
   struct 
         (* A cont is just the program plus the or list,
@@ -443,15 +450,49 @@ module Run(Term: RefreshableTermT)(Prog: ProgramT with type Bind.termT = Term.te
 module FOTerm = RefreshableTerm(Variable)(FuncS)
 include FOTerm
 
+module type Implementation =
+ sig
+  type query
+  type program
+  val query_of_ast : term -> query
+  val program_of_ast : (term * term) list -> program
+  val msg : query -> string
+  val execute_once : program -> query -> bool
+  val execute_loop : program -> query -> unit
+ end
+
+module
+ Implementation
+  (ITerm: TermT)
+  (IProgram: ProgramT with type Bind.termT = ITerm.term
+                      (*and type bindings := ITerm.bindings*))
+  (IRun: RunT with type progT := IProgram.t
+              and type bindingsT := IProgram.Bind.bindings
+              and type term := ITerm.term)
+  (Descr : sig val descr : string end)
+ : Implementation
+=
+ struct
+  (* RUN with non indexed engine *)
+  type query = ITerm.term
+  type program = (ITerm.term * ITerm.term) list
+  let query_of_ast q = Obj.magic q (*ITerm.query_of_ast*) (* TODO *)
+  let program_of_ast p = Obj.magic p (*ITerm.program_of_ast*) (* TODO *)
+  let msg q = Descr.descr ^ ITerm.pp q
+  let execute_once p q = IRun.run (IProgram.make p) q = None
+  let execute_loop p q = IRun.main_loop (IProgram.make p) q
+ end
+;;
+
+
 let implementations = 
   let impl1 =
-  (* RUN with non indexed engine *)
-    let module TermImpl = FOTerm in
-    let module FOProgram = Program(TermImpl)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-    let module RunFO = Run(TermImpl)(FOProgram)(*(NoGC(FOAtomImpl))*) in
-    (fun q -> "Testing with no index list " ^ FOTerm.pp q),
-    (fun p q -> RunFO.run (FOProgram.make p) q = None),
-    (fun p q -> RunFO.main_loop (FOProgram.make p) q)
-  in 
-  [impl1]
+    (* RUN with non indexed engine *)
+    let module ITerm = FOTerm in
+    let module IProgram = Program(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
+    let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
+    let module Descr = struct let descr = "Testing with no index list " end in
+    (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+     : Implementation) in
 
+  [impl1]

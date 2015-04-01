@@ -11,7 +11,7 @@ newelpi.cmx: newelpi.ml lprun2.cmx lprun.cmx parser.cmx
 lprun2.cmx lprun2.cmi: lprun2.ml
 	ocamlopt -g -c lprun2.ml
 
-lprun.cmx lprun.cmi: lprun.ml
+lprun.cmx lprun.cmi: lprun.ml lprun2.cmi
 	ocamlopt -g -c lprun.ml
 
 parser.cmi: parser.mli lprun2.cmi

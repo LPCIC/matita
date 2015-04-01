@@ -406,15 +406,22 @@ module NoGC(Atom: RefreshableAtomT) :
   let gc ~force binds _ = binds
  end
 
-module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and type formulaT := RefreshableFormulae(Atom).formula and type bindings := Atom.bindings)(GC : GCT with type bindings := Atom.bindings and type formula := RefreshableFormulae(Atom).formula) :
-   sig
-    type cont (* continuation *)
-    val run: Prog.t -> RefreshableFormulae(Atom).formula ->
-              (Atom.bindings * cont) option
-    val next: cont -> (Atom.bindings * cont) option
+module type RunT =
+ sig
+  type formula
+  type bindingsT
+  type progT
+  type cont (* continuation *)
+  val run: progT -> formula -> (bindingsT * cont) option
+  val next: cont -> (bindingsT * cont) option
+  val main_loop: progT -> formula -> unit
+ end
 
-    val main_loop: Prog.t -> RefreshableFormulae(Atom).formula -> unit
-   end
+module Run(Atom: RefreshableAtomT)(Prog: ProgramT with type atomT := Atom.t and type formulaT := RefreshableFormulae(Atom).formula and type bindings := Atom.bindings)(GC : GCT with type bindings := Atom.bindings and type formula := RefreshableFormulae(Atom).formula) :
+ RunT
+  with type progT := Prog.t
+  and type bindingsT := Atom.bindings
+  and type formula := RefreshableFormulae(Atom).formula
    = struct 
         module F = RefreshableFormulae(Atom)
 
@@ -1131,160 +1138,113 @@ RunFO.main_loop prog query
 ;;
 *)
 
+module
+ Implementation
+  (IAtom: AtomT)
+  (IFormulae: FormulaeT with type atomT := IAtom.t)
+  (IProgram: ProgramT with type formulaT := IFormulae.formula
+                      and type atomT := IAtom.t
+                      and type bindings := IAtom.bindings)
+  (IRun: RunT with type progT := IProgram.t
+              and type bindingsT := IAtom.bindings
+              and type formula := IFormulae.formula)
+  (Descr : sig val descr : string end)
+ : Lprun2.Implementation
+=
+ struct
+  (* RUN with non indexed engine *)
+  type query = IFormulae.formula
+  type program = (IAtom.t * IFormulae.formula) list
+  let query_of_ast = IFormulae.query_of_ast
+  let program_of_ast = IFormulae.program_of_ast
+  let msg q = Descr.descr ^ IFormulae.pp q
+  let execute_once p q = IRun.run (IProgram.make p) q = None
+  let execute_loop p q = IRun.main_loop (IProgram.make p) q
+ end
+;;
 
 (* List of implementations, i.e. quadruples
    msg: formula -> string
    load_and_run: program -> Program.t
    load_and_main_loop: program -> query -> unit *)
 let implementations =
+ (* RUN with non indexed engine *)
  let impl1 =
-  (* RUN with non indexed engine *)
-  let module FOAtomImpl = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOFormulae = RefreshableFormulae(FOAtomImpl) in
-  let module FOProgram = Program(FOAtomImpl) in
-  let module RunFO = Run(FOAtomImpl)(FOProgram)(NoGC(FOAtomImpl)) in
-   (fun (q : Lprun2.term) -> "Testing with no index list "(*TODO ^FOFormulae.pp q*)),
-   (fun p q ->
-     RunFO.run (FOProgram.make (FOFormulae.program_of_ast p)) (FOFormulae.query_of_ast q)
-      = None),
-   (fun p q ->
-     RunFO.main_loop (FOProgram.make (FOFormulae.program_of_ast p))
-      (FOFormulae.query_of_ast q)) in
+  let module IAtom = FOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = Program(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
+  let module Descr = struct let descr = "Testing with no index list " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+   : Lprun2.Implementation) in
 
-(*let impl2 =
+ let impl2 =
   (* RUN with indexed engine *)
-  let module FOAtomImplHash = HashableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(NoGC(FOAtomImplHash)) in
-   (fun q -> "Testing with one level index hashtbl "^FOFormulae.pp q),
-   (fun p q ->
-     RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
-      = None),
-   (fun p q ->
-     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
-      (Obj.magic q)) in
+  let module IAtom = HashableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = ProgramHash(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
+  let module Descr = struct let descr = "Testing with one level index hashtbl " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
 
  let impl3 =
   (* RUN with two levels inefficient indexed engine *)
-  let module FOAtomImplApprox = ApproximatableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOProgramApprox = ProgramIndexL(FOAtomImplApprox) in
-  let module RunFOApprox = Run(FOAtomImplApprox)(FOProgramApprox)(NoGC(FOAtomImplApprox)) in
-   (fun q -> "Testing with two level inefficient index "^FOFormulae.pp q),
-   (fun (p : program) (q : formula) ->
-     RunFOApprox.run (FOProgramApprox.make (Obj.magic p)) (Obj.magic q)
-      = None),
-   (fun (p : program) (q : formula) ->
-     RunFOApprox.main_loop (FOProgramApprox.make (Obj.magic p))
-      (Obj.magic q)) in
+  let module IAtom = ApproximatableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = ProgramIndexL(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
+  let module Descr = struct let descr = "Testing with two level inefficient index " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
 
  let impl4 =
-  (* RUN with indexed engine and automatic GC *)
-  let module FOAtomImpl = FOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
-  let module WeakFOTerm = Term(WeakVariable)(FuncS) in
-  let module WeakFOFormulae = RefreshableFormulae(FOAtomImpl) in
-  let module FOAtomImplHash = HashableFOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
-  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(NoGC(FOAtomImplHash)) in
-  let rec convert_term =
-   function
-      Var x -> WeakFOTerm.Var (WeakVariable.Box (Obj.magic x))
-    | App (c,l) -> WeakFOTerm.App(c, List.map convert_term l) in
-  let rec convert_formula =
-   function
-      Atom t -> WeakFOFormulae.Atom (convert_term t)
-    | And(f1,f2) -> WeakFOFormulae.And(convert_formula f1,convert_formula f2)
-    | Or(f1,f2) -> WeakFOFormulae.Or(convert_formula f1,convert_formula f2)
-    | True -> WeakFOFormulae.True
-    | Cut -> WeakFOFormulae.Cut in
-  let convert_prog p =
-   List.map (fun (a,f) -> convert_term a, convert_formula f) p in
-  let convert_prog p = List.map WeakFOFormulae.refresh (convert_prog p) in
-  let convert_query q =
-   snd (WeakFOFormulae.refresh (WeakFOTerm.Var (WeakVariable.Box (-1)),(convert_formula q)))in
-   (fun q -> "Testing with one level index hashtbl and automatic GC "^FOFormulae.pp q),
-   (fun p q ->
-     RunFOHash.run (FOProgramHash.make (Obj.magic (convert_prog p))) (Obj.magic (convert_query q))
-      = None),
-   (fun p q ->
-     let q = convert_query q in
-     let p = convert_prog p in
-     prerr_endline ("Testing with one level index hashtbl and automatic GC "^WeakFOFormulae.pp q);
-     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
-      (Obj.magic q)) in
+  let module IAtom = HashableFOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = ProgramHash(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
+  let module Descr = struct let descr = "Testing with one level index hashtbl and automatic GC " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
 
  let impl5 =
   (* RUN with indexed engine and automatic GC *)
-  let module FOAtomImpl = FOAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
-  let module WeakFOTerm = Term(WeakVariable)(FuncS) in
-  let module WeakFOFormulae = RefreshableFormulae(FOAtomImpl) in
-  let module FOAtomImplHash = HashableFOFlatAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
-  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(NoGC(FOAtomImplHash)) in
-  let rec convert_term =
-   function
-      Var x -> WeakFOTerm.Var (WeakVariable.Box (Obj.magic x))
-    | App (c,l) -> WeakFOTerm.App(c, List.map convert_term l) in
-  let rec convert_formula =
-   function
-      Atom t -> WeakFOFormulae.Atom (convert_term t)
-    | And(f1,f2) -> WeakFOFormulae.And(convert_formula f1,convert_formula f2)
-    | Or(f1,f2) -> WeakFOFormulae.Or(convert_formula f1,convert_formula f2)
-    | True -> WeakFOFormulae.True
-    | Cut -> WeakFOFormulae.Cut in
-  let convert_prog p =
-   List.map (fun (a,f) -> convert_term a, convert_formula f) p in
-  let convert_prog p = List.map WeakFOFormulae.refresh (convert_prog p) in
-  let convert_query q =
-   snd (WeakFOFormulae.refresh (WeakFOTerm.Var (WeakVariable.Box (-1)),(convert_formula q)))in
-   (fun q -> "Testing with one level index hashtbl + flattening and automatic GC "^FOFormulae.pp q),
-   (fun p q ->
-     RunFOHash.run (FOProgramHash.make (Obj.magic (convert_prog p))) (Obj.magic (convert_query q))
-      = None),
-   (fun p q ->
-     let q = convert_query q in
-     let p = convert_prog p in
-     prerr_endline ("Testing with one level index hashtbl + flattening and automatic GC "^WeakFOFormulae.pp q);
-     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
-      (Obj.magic q)) in
+  let module IAtom = HashableFOFlatAtom(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = ProgramHash(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
+  let module Descr = struct let descr = "Testing with one level index hashtbl + flattening and automatic GC " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
 
  let impl6 =
   (* RUN with indexed engine *)
-  let module FOAtomImplHash = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(NoGC(FOAtomImplHash)) in
-   (fun q -> "Testing with one level index hashtbl + flattening "^FOFormulae.pp q),
-   (fun p q ->
-     RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
-      = None),
-   (fun p q ->
-     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
-      (Obj.magic q)) in
+  let module IAtom = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = ProgramHash(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
+  let module Descr = struct let descr = "Testing with one level index hashtbl + flattening " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
 
  let impl7 =
-  let module FOAtomImplHash = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOProgramHash = ProgramHash(FOAtomImplHash) in
-  let module RunFOHash = Run(FOAtomImplHash)(FOProgramHash)(GC(Variable)(FuncS)(Bindings(Variable)(FuncS))(RefreshableFormulae(FOAtomImplHash))) in
-   (fun q -> "Testing with one level index hashtbl + flattening + manual GC "^FOFormulae.pp q),
-   (fun p q ->
-     RunFOHash.run (FOProgramHash.make (Obj.magic p)) (Obj.magic q)
-      = None),
-   (fun p q ->
-     RunFOHash.main_loop (FOProgramHash.make (Obj.magic p))
-      (Obj.magic q)) in
-
+  let module IAtom = HashableFOFlatAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = ProgramHash(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(GC(Variable)(FuncS)(Bindings(Variable)(FuncS))(RefreshableFormulae(IAtom))) in
+  let module Descr = struct let descr = "Testing with one level index hashtbl + flattening + manual GC " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
 
 let impl8 =
   (* RUN with indexed engine and Map of clauses instead of Hash of clauses*)
-  let module FOAtomImplMap = MapableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module FOProgramMap = ProgramMap(FOAtomImplMap) in
-  let module RunFOMap = Run(FOAtomImplMap)(FOProgramMap)(NoGC(FOAtomImplMap)) in
-   (fun q -> "Testing with one level index map "^FOFormulae.pp q),
-   (fun p q ->
-     RunFOMap.run (FOProgramMap.make (Obj.magic p)) (Obj.magic q)
-      = None),
-   (fun p q ->
-     RunFOMap.main_loop (FOProgramMap.make (Obj.magic p))
-      (Obj.magic q)) in*)
+  let module IAtom = MapableFOAtom(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = ProgramMap(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
+  let module Descr = struct let descr = "Testing with one level index map " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
 
- [impl1(*;impl2;impl3;impl4;impl5;impl6;impl7;impl8*)]
+ [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8]
 ;;
