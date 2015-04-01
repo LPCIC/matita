@@ -4,11 +4,6 @@ type formula = Lprun2.term
 type program = (Lprun2.term * Lprun2.term) list
 type goal = Lprun2.term
 
-let eq_clause =
- let v1 = Lprun2.Variable.fresh () in
-  Lprun2.App("=",[Lprun2.Var v1 ; Lprun2.Var v1]),
-   Lprun2.App(",",[])
-
 let mkClause lhs rhs = lhs,rhs
 
 let rec mkConj = Lprun2.mkAnd
@@ -16,6 +11,10 @@ let rec mkConj = Lprun2.mkAnd
 let rec mkDisj = Lprun2.mkOr
 
 let mkAtomBiUnif a b = Lprun2.App("=",[a;b])
+
+let eq_clause =
+ let v1 = Lprun2.Variable.fresh () in
+  Lprun2.App("=",[Lprun2.Var v1 ; Lprun2.Var v1]), mkConj []
 
 let mkApp =
  function
