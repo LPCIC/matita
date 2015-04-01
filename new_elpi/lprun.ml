@@ -586,6 +586,28 @@ module Variable : VarT =
              (n,n')::l,n')
    end;;
 
+module ImpVariable : VarT with type t = Obj.t option ref = 
+   struct
+        type t = Obj.t option ref
+
+        let pp _ = "??"
+        let compare x y = assert false
+        let eq = (==)
+
+        type refresher = (Obj.t option ref * Obj.t option ref) list
+        let empty_refresher = []
+
+        let fresh,refresh =
+         let fresh () = ref None in
+          fresh,
+          (fun l n ->
+            try l,List.assq n l
+            with Not_found ->
+             let n' = fresh () in
+             (n,n')::l,n')
+   end;;
+
+
 module type WeakVarT =
    sig
         type t = Box of int
@@ -748,6 +770,30 @@ module type BindingsT =
         (* lookup sigma v = Some t   iff  [v |-> t] \in sigma *)
         val lookup : bindings -> varT -> termT option
         val filter : (varT -> bool) -> bindings -> bindings
+   end
+
+module ImpBindings(Func: FuncT) : 
+ BindingsT 
+  with type varT := ImpVariable.t
+  and type termT := Term(ImpVariable)(Func).term
+  =
+   struct
+     (*module MapVars = Map.Make(Vars)
+     module Terms = Term(Vars)(Func)
+     module VarSet = Set.Make(Vars);;*)
+     type bindings = unit (* TODO Trail goes here *)
+
+     let empty_bindings = ()
+        
+     let lookup _ k = Obj.magic !k
+
+     let bind _ k v = k := Some (Obj.magic v)
+
+     let cardinal _ = (), (-1)
+
+     let pp_bindings _ = "<< no way to print >>"
+        
+     let filter f _ = assert false (* TODO assign None *)
    end
 
 module Bindings(Vars: VarT)(Func: FuncT) : 
@@ -1245,5 +1291,16 @@ let impl8 =
   (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
   : Lprun2.Implementation) in
 
- [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8]
+ let impl9 =
+  (* RUN with indexed engine *)
+  let module IAtom = HashableFOAtom(ImpVariable)(FuncS)(ImpBindings(FuncS)) in
+  let module IFormulae = RefreshableFormulae(IAtom) in
+  let module IProgram = ProgramHash(IAtom) in
+  let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
+  let module Descr = struct let descr = "Testing with one level index hashtbl " end in
+  (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
+
+
+ [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8;impl9]
 ;;
