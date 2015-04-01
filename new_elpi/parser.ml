@@ -10,11 +10,11 @@ let rec mkConj = Lprun2.mkAnd
 
 let rec mkDisj = Lprun2.mkOr
 
-let mkAtomBiUnif a b = Lprun2.App("=",[a;b])
+let mkAtomBiUnif a b = Lprun2.mkEq a b
 
 let eq_clause =
- let v1 = Lprun2.Variable.fresh () in
-  Lprun2.App("=",[Lprun2.Var v1 ; Lprun2.Var v1]), mkConj []
+ let v = Lprun2.Var (Lprun2.Variable.fresh ()) in
+  mkAtomBiUnif v v, mkConj []
 
 let mkApp =
  function
@@ -34,7 +34,7 @@ let get_uv u =
     n
 
 let mkUVar u = Lprun2.Var (get_uv u)
-let mkCon c = Lprun2.App(c,[])
+let mkCon c = Lprun2.App(Lprun2.FuncS.from_string c,[])
 
 let rec number = lexer [ '0'-'9' number ]
 let rec ident =

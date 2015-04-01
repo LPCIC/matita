@@ -29,16 +29,28 @@ module type FuncT =
     val andf : t
     val orf : t
     val cutf : t
+    val eqf : t
+    val from_string : string -> t
   end;;
 
-module FuncS : FuncT with type t = string = 
+module FuncS : FuncT = 
   struct
     type t = string
+
+    (* Hash consing *)
+    let from_string =
+     let h = Hashtbl.create 37 in
+     function x ->
+      try Hashtbl.find h x
+      with Not_found -> Hashtbl.add h x x ; x
+
     let pp n = n
-    let eq = (=)
-    let andf = ","
-    let orf = ";"
-    let cutf = "!"
+    let eq = (==)
+    let andf = from_string ","
+    let orf = from_string ";"
+    let cutf = from_string "!"
+    let eqf = from_string "="
+
   end;;
 
 module type VarT =
@@ -86,6 +98,7 @@ module type TermT =
     val mkCut : term
     val mkAnd : term list -> term
     val mkOr : term list -> term
+    val mkEq : term -> term -> term
 
     (* raise NotAFormula *)
     val as_formula: term -> formula
@@ -117,6 +130,7 @@ module Term(Var: VarT)(Func: FuncT) : TermT
     let mkAnd = function [f] -> f | l -> App(Func.andf,l)
     let mkOr  = function [f] -> f | l -> App(Func.orf, l)
     let mkCut = App(Func.cutf,[]) 
+    let mkEq l r = App(Func.eqf,[l;r]) 
     
     let rec pp =
       function
