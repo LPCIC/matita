@@ -90,10 +90,11 @@ module type TermT =
     type term = Var of vart 
               | App of funct * term list
 
-    type formula = Cut
-					  | Atom of term
-					  | And of term list
-					  | Or of term list
+    type formula =
+       Cut
+     | Atom of term
+     | And of term list
+     | Or of term list
 
     val mkCut : term
     val mkAnd : term list -> term
@@ -116,10 +117,11 @@ module Term(Var: VarT)(Func: FuncT) : TermT
     type term = Var of Var.t 
               | App of Func.t * term list
 
-    type formula = Cut
-					  | Atom of term
-					  | And of term list
-					  | Or of term list
+    type formula =
+       Cut
+    | Atom of term
+    | And of term list
+    | Or of term list
 
     let rec pp_term = 
       function 
