@@ -1297,7 +1297,7 @@ let impl8 =
   let module IFormulae = RefreshableFormulae(IAtom) in
   let module IProgram = ProgramHash(IAtom) in
   let module IRun = Run(IAtom)(IProgram)(NoGC(IAtom)) in
-  let module Descr = struct let descr = "Testing with one level index hashtbl " end in
+  let module Descr = struct let descr = "Testing with imperative one level index hashtbl " end in
   (module Implementation(IAtom)(IFormulae)(IProgram)(IRun)(Descr)
   : Lprun2.Implementation) in
 
