@@ -20,13 +20,13 @@ main :-
    append X8 X8 X9  ,
    append X9 X9 X10  ,
    append X10 X10 X11  ,
-   % append X11 X11 X12  ,
-   % append X12 X12 X13  ,
-   % append X13 X13 X14  ,
+   append X11 X11 X12  ,
+   append X12 X12 X13  ,
+   append X13 X13 X14  ,
    % append X14 X14 X15  ,
    % append X15 X15 X16  ,
    % append X16 X16 X17  ,
    % append X17 X17 X18  ,
-   X = X11 ,
+   X = X14 ,
    rev X  Y,   rev Y Z,  X = Z.
  
