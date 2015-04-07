@@ -18,7 +18,8 @@
 %   ocamlopt                     0.014s
 %   ocamlc                       0.024s
 %   yap                          0.033s
-%   elpi                         stack overflow after 20.893s
+%   teyjus                       0.257s
+%   elpi                         4.72s (setting ulimit -s 81920)
 %   no index                     4.59s
 %   one level index hashtbl      2.30s
 %   two level inefficient index  2.34s
