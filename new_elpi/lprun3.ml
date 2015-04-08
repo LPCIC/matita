@@ -388,6 +388,58 @@ module ProgramHash(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = 
        h
    end;;
 
+(* Two level inefficient indexing; a program is a list of clauses.
+   Approximated matching is used to retrieve the candidates.
+   Unification is then performed on the candidates.
+   *** NOTE: this is probably redundant and more inefficient than
+       just doing eager unification without approximated matching ***
+   Retrieving the good clauses is O(n) where n is the size of the
+   program. *)
+module ProgramIndexL(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term) : ProgramT with module Bind = Unify.Bind =
+   struct
+        module Bind = Unify.Bind
+
+        (* MODULE APPROXIMATABLE: TO BE MOVED OUTSIDE/ *)
+        type approx = Term.funct * (Term.funct option)
+
+        let approx =
+         function
+            Term.App(f,[||]) -> f,None
+          | Term.Var _ -> raise (Failure "Ill formed program")
+          | Term.App(f,a) ->
+             match a.(0) with
+                Term.Var _ -> f,None
+              | Term.App(g,_) -> f, Some g
+
+        let matchp app1 app2 =
+         match app1,app2 with
+            (f1,None),(f2,_)
+          | (f1,_),(f2,None)-> f1=f2
+          | (f1,Some g1),(f2,Some g2) -> f1=f2 && g1=g2
+        (* /MODULE APPROXIMATABLE: TO BE MOVED OUTSIDE *)
+
+        (* triples (app,(a,f)) where app is the approximation of a *)
+        type t = (approx * (Term.term * Term.term)) list
+
+        (* backchain: bindings -> atomT -> 
+                         Form.formula Hash.t -> 
+                            (bindings * formulaT) list           *)
+        let backchain binds a l =
+          let app = approx a in
+          let l = List.filter (fun (a',_) -> matchp app a') l in
+          filter_map (fun (_,clause) ->
+           let atom,f = Term.refresh_clause clause in
+           try
+            let binds = Unify.unify binds atom a in 
+            Some (binds,f)
+           with NotUnifiable _ -> None
+           ) l
+        ;;
+        
+        let make =
+          List.map (fun ((a,_) as clause) -> approx a,clause)
+   end;;
+
 module type RunT =
  sig
   type term
@@ -563,4 +615,13 @@ let implementations =
     (module Implementation(ITerm)(IProgram)(IRun)(Descr)
      : Lprun2.Implementation) in
 
-  [impl1; impl2]
+  let impl3 =
+    (* RUN with two level inefficient index *)
+    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
+    let module IProgram = ProgramIndexL(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
+    let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
+    let module Descr = struct let descr = "Testing with two level inefficient index, optimized imperative " end in
+    (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+     : Lprun2.Implementation) in
+
+  [impl1; impl2; impl3]

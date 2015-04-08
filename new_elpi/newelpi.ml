@@ -1,4 +1,4 @@
-let implementations = Lprun.implementations @ Lprun2.implementations @ Lprun3.implementations
+let implementations = Lprun.implementations @ Lprun2.implementations @ Lprun3.implementations @ Lprun4.implementations
 
 (*
 let _ =
