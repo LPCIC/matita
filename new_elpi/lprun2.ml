@@ -21,7 +21,7 @@ module type Refreshable =
     val refresh : refresher -> r -> refresher * r
   end;;
 
-module type FuncT =
+module type ASTFuncT =
   sig
     type t
     val pp : t -> string
@@ -33,7 +33,7 @@ module type FuncT =
     val from_string : string -> t
   end;;
 
-module FuncS : FuncT = 
+module ASTFuncS : ASTFuncT = 
   struct
     type t = string
 
@@ -52,6 +52,20 @@ module FuncS : FuncT =
     let eqf = from_string "="
 
   end;;
+
+module type FuncT =
+ sig
+  include ASTFuncT
+
+  val funct_of_ast : ASTFuncS.t -> t
+ end
+
+module FuncS : FuncT = 
+ struct
+  include ASTFuncS
+
+  let funct_of_ast x = x
+ end
 
 module type VarT =
   sig
@@ -174,7 +188,7 @@ module type ASTT =
     val pp: term -> string
   end;;
 
-module AST(Var: VarT)(Func: FuncT) : ASTT 
+module AST(Var: VarT)(Func: ASTFuncT) : ASTT 
     with type vart = Var.t and type funct = Func.t 
  = 
   struct
@@ -224,7 +238,7 @@ module AST(Var: VarT)(Func: FuncT) : ASTT
          else Atom x
   end;;
 
-module FOAST = AST(Variable)(FuncS)
+module FOAST = AST(Variable)(ASTFuncS)
 include FOAST
 
 module type TermT =
@@ -262,8 +276,7 @@ module Term(Var: VarT)(Func: FuncT) : TermT
           (fun (l,tl) t -> let l,t = term_of_ast l t in (l,t::tl))
           (l,[]) tl
        in
-       (* TODO: convert the Funcs too *)
-       l, App(Obj.magic f,List.rev rev_tl)
+       l, App(Func.funct_of_ast f,List.rev rev_tl)
 
   let query_of_ast t = snd (term_of_ast empty_converter t)
 
@@ -273,16 +286,6 @@ module Term(Var: VarT)(Func: FuncT) : TermT
     let _,f = term_of_ast l f in
     a,f) p
  end
-
-(*
-Todo:
-1. rename TermT and Term to ASTT and AST
-2. define TermT as an extension of ASTT
-   and Term as an extension of AST
-   with the functions like
-   val term_of_ast : converter -> FOAST.term -> converter * term
-*)
-
 
 module type RefreshableTermT =
   sig
@@ -438,14 +441,7 @@ module MapableRefreshableTerm(Var: VarT)(Func: FuncT) : MapableRefreshableTermT
     | TermFO.Var _ -> raise (Failure "Ill formed program")
  end;;
 
-
 (*------end-------*)
-
-
-
-
-
-
 
 module type BindingsT =
   sig

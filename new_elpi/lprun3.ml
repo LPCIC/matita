@@ -29,7 +29,7 @@ module type Refreshable =
     val refresh : refresher -> r -> refresher * r
   end;;
 
-module type FuncT =
+module type ASTFuncT =
   sig
     type t
     val pp : t -> string
@@ -41,8 +41,8 @@ module type FuncT =
     val from_string : string -> t
   end;;
 
-(*
-module FuncS : FuncT = 
+
+module ASTFuncS : ASTFuncT = 
   struct
     type t = string
 
@@ -60,7 +60,24 @@ module FuncS : FuncT =
     let cutf = from_string "!"
     let eqf = from_string "="
 
-  end;;*)
+  end;;
+
+
+module type FuncT =
+ sig
+  include ASTFuncT
+
+  val funct_of_ast : ASTFuncS.t -> t
+ end
+
+module FuncS : FuncT = 
+ struct
+  include ASTFuncS
+
+  let funct_of_ast x = x
+ end
+
+
 
 module type TermT =
   sig  
@@ -599,8 +616,8 @@ module
 let implementations = 
   let impl1 =
     (* RUN with non indexed engine *)
-    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
-    let module IProgram = Program(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
+    let module ITerm = RefreshableTerm(FuncS) in
+    let module IProgram = Program(ITerm)(Unify(FuncS)(Bindings(FuncS))) in
     let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
     let module Descr = struct let descr = "Testing with no index, optimized imperative " end in
     (module Implementation(ITerm)(IProgram)(IRun)(Descr)
@@ -608,8 +625,8 @@ let implementations =
 
   let impl2 =
     (* RUN with hashtbl *)
-    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
-    let module IProgram = ProgramHash(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
+    let module ITerm = RefreshableTerm(FuncS) in
+    let module IProgram = ProgramHash(ITerm)(Unify(FuncS)(Bindings(FuncS))) in
     let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
     let module Descr = struct let descr = "Testing with one level index, optimized imperative " end in
     (module Implementation(ITerm)(IProgram)(IRun)(Descr)
@@ -617,8 +634,8 @@ let implementations =
 
   let impl3 =
     (* RUN with two level inefficient index *)
-    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
-    let module IProgram = ProgramIndexL(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
+    let module ITerm = RefreshableTerm(FuncS) in
+    let module IProgram = ProgramIndexL(ITerm)(Unify(FuncS)(Bindings(FuncS))) in
     let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
     let module Descr = struct let descr = "Testing with two level inefficient index, optimized imperative " end in
     (module Implementation(ITerm)(IProgram)(IRun)(Descr)

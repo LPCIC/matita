@@ -659,20 +659,25 @@ module type FuncT =
     type t
     val pp : t -> string
     val eq : t -> t -> bool
+
+    val funct_of_ast : Lprun2.ASTFuncS.t -> t
   end;;
 
-module Func : FuncT with type t = int = 
+(*module Func : FuncT with type t = int = 
   struct
     type t = int
     let pp n = "f" ^ string_of_int n
     let eq = (=)
-  end;;
+    let funct_of_ast _ = assert false (* TODO *)
+  end;;*)
 
 module FuncS : FuncT with type t = string = 
   struct
     type t = string
     let pp n = n
+    (* TODO: HASH-CONSING as in Lprun2.ml *)
     let eq = (=)
+    let funct_of_ast x = Lprun2.ASTFuncS.pp x
   end;;
 
 module type TermT =
@@ -724,8 +729,7 @@ module Term(Var:VarT)(Func:FuncT) :
              (fun (l,tl) t -> let l,t = term_of_ast l t in (l,t::tl))
              (l,[]) tl
           in
-          (* TODO: convert the Funcs too *)
-          l, App(Obj.magic f,List.rev rev_tl)
+          l, App(Func.funct_of_ast f,List.rev rev_tl)
 
    end
 

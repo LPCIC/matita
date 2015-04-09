@@ -34,7 +34,7 @@ let get_uv u =
     n
 
 let mkUVar u = Lprun2.Var (get_uv u)
-let mkCon c = Lprun2.App(Lprun2.FuncS.from_string c,[])
+let mkCon c = Lprun2.App(Lprun2.ASTFuncS.from_string c,[])
 
 let rec number = lexer [ '0'-'9' number ]
 let rec ident =
