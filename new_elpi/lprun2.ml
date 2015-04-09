@@ -183,6 +183,7 @@ module type ASTT =
     val mkEq : term -> term -> term
 
     (* raise NotAFormula *)
+(* TODO: use the bindings! *)
     val as_formula: term -> formula
 
     val pp: term -> string
@@ -343,6 +344,7 @@ module type HashableRefreshableTermT =
   sig
     include RefreshableTermT
     module IndexData : Hashtbl.HashedType 
+(* TODO: wrong, use the bindings here too as we did below *)
     val index: term -> IndexData.t
   end;;
 
@@ -374,11 +376,11 @@ module HashableRefreshableTerm(Var:VarT)(Func:FuncT) : HashableRefreshableTermT
 module type ApproximatableRefreshableTermT =
   sig
     include RefreshableTermT
+(* TODO: fix me by adding the bindings as we did below *)
     type approx
     val approx: term -> approx
     val matchp: approx -> approx -> bool
   end;;
-
 
 module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT) :
  ApproximatableRefreshableTermT 
@@ -413,6 +415,7 @@ module type MapableRefreshableTermT =
  sig
   include RefreshableTermT
   module IndexData : Map.OrderedType 
+(* TODO : use bindings *)
   val index: term -> IndexData.t
  end
 ;;
@@ -488,6 +491,57 @@ module ImpBindings(Func: FuncT) :
         
      let filter f _ = assert false (* TODO assign None *)
    end
+
+module type DoubleMapIndexableRefreshableTermT =
+ sig
+  include MapableRefreshableTermT
+  type bindings
+  type approx (* 2nd layer approximation *)
+  val approx: bindings -> term -> approx
+  val matchp: approx -> approx -> bool
+ end
+;;
+
+module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = Term(Var)(Func).term) : DoubleMapIndexableRefreshableTermT
+  with type vart = Var.t
+  and  type funct = Func.t
+  and  type term = Term(Var)(Func).term 
+  and  type formula = Term(Var)(Func).formula
+  and  type bindings = Bind.bindings
+=
+ struct
+   include MapableRefreshableTerm(Var)(Func)
+
+   type bindings = Bind.bindings
+
+   type approx = Func.t option
+
+   (* TODO cut&paste code: move deref to the Bindings module or
+      somewhere else... *)
+   let rec deref sub i =
+     match i with
+       (Var v) ->
+         (match Bind.lookup sub v with
+            None -> i
+         | Some t -> deref sub t)
+     | App(_,_) -> i
+
+   let approx bind =
+     function
+       App(_,[]) -> None
+     | App(_,hd::_) ->
+        (match deref bind hd with
+            Var _-> None
+          | App(g,_) -> Some g)
+     | Var _ -> raise (Failure "Ill formed program")
+
+   let matchp app1 app2 =
+     match app1,app2 with
+       None,_
+     | _,None-> true
+     | Some g1,Some g2 -> g1=g2
+
+ end
 
 
 module Bindings(Vars: VarT)(Func: FuncT) : BindingsT 
@@ -846,6 +900,49 @@ module ProgramHash(Term: HashableRefreshableTermT)(Unify: UnifyT with type Bind.
          (fun ((a,v) as clause) -> Hash.add h (Term.index a) clause) p;
        h
    end;; 
+
+
+(* 2-level indexing; a program is a hash-table indexed on the
+   predicate that is the head of the clause and an associative
+   list on the first argument. Unification is used
+   eagerly on all the clauses with the good head and first argument.
+ *)
+module ProgramDoubleInd(Term: DoubleMapIndexableRefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term and type Bind.bindings = Term.bindings) : ProgramT with module Bind = Unify.Bind 
+ =   
+   struct
+     module Bind = Unify.Bind
+
+     (* Atom.t -> (Atom.t*Form.formula) list *)
+	  module ClauseMap = Map.Make(Term.IndexData)
+     type t = (Term.approx * (Term.term*Term.term)) list ClauseMap.t
+   (* backchain: bindings -> atomT -> 
+                         Form.formula ClauseMap.t -> 
+                            (bindings * formulaT) list    *)
+     let backchain binds a m =
+       let app = Term.approx binds a in
+       let l = List.rev (ClauseMap.find (Term.index a) m) in
+       let l = List.filter (fun (a',_) -> Term.matchp app a') l in
+       filter_map (fun (_,clause) ->
+         let atom,f = Term.refresh_clause clause in
+         try
+           let binds = Unify.unify binds atom a in 
+             Some (binds,f)
+           with NotUnifiable _ -> None) 
+         l                       
+        
+     let make p =       
+       List.fold_left (fun m ((a,_) as clause) -> 
+         let ind = Term.index a in
+         let app = Term.approx Bind.empty_bindings a in
+         try 
+           let l = ClauseMap.find ind m in
+           ClauseMap.add ind ((app,clause) :: l) m
+         with Not_found -> 
+           ClauseMap.add ind [app,clause] m
+         ) ClauseMap.empty p
+
+   end;; 
+
 
 
 (* Two level inefficient indexing; a program is a list of clauses.
@@ -1288,4 +1385,13 @@ let impl9 =
   (module Implementation(ITerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
-  [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8;impl9]
+let impl10 =
+  (* RUN with indexed engine *)
+  let module ITerm = DoubleMapIndexableRefreshableTerm(ImpVariable)(FuncS)(ImpBindings(FuncS)) in
+  let module IProgram = ProgramDoubleInd(ITerm)(Unify(ImpVariable)(FuncS)(ImpBindings(FuncS))) in
+  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module Descr = struct let descr = "Testing with imperative two level efficient index " end in
+  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  : Implementation) in
+
+  [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8;impl9;impl10]
