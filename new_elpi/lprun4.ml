@@ -433,7 +433,7 @@ module Run(Term: RefreshableTermT)(Prog: Lprun2.ProgramT with type Bind.termT = 
         prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
         (match res with
           Some (binds,orl) ->
-            (* TODO restore Gc.full_major() ;*) let binds,size = Prog.Bind.cardinal binds in
+            Gc.full_major() ; let binds,size = Prog.Bind.cardinal binds in
             prerr_endline ("Final bindings size: " ^ string_of_int size) ;
               Some (binds,orl)
            | None -> None)
