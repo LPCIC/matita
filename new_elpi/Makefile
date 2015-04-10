@@ -13,7 +13,7 @@ newelpi.cmx: newelpi.ml lprun2.cmx lprun.cmx lprun3.cmx lprun4.cmx parser.cmx
 lprun2.cmx lprun2.cmi: lprun2.ml
 	ocamlopt $(OCAMLOPTIONS) -c lprun2.ml
 
-lprun4.cmx lprun4.cmi: lprun4.ml lprun2.cmi
+lprun4.cmx lprun4.cmi: lprun4.ml lprun3.cmi lprun2.cmi
 	ocamlopt $(OCAMLOPTIONS) -c lprun4.ml
 
 lprun3.cmx lprun3.cmi: lprun3.ml lprun2.cmi
