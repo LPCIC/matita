@@ -1,14 +1,5 @@
 (***** library functions *****)
         
-(*val filter_map : ('a -> 'b option) -> 'a list -> 'b list*)
-let rec filter_map mapf =
- function
-    [] -> []
-  | hd::tl ->
-     match mapf hd with
-        None -> filter_map mapf tl
-      | Some hd' -> hd'::filter_map mapf tl
-
 (* precondition: the length of the two arrays must be the same *)
 let array_fold_left2 f a a1 a2 =
  let a = ref a in
@@ -20,64 +11,6 @@ let array_fold_left2 f a a1 a2 =
 (***** real code *****)
 
 exception NotFormula of string Lazy.t;;
-
-module type Refreshable =
-  sig        
-    type r
-    type refresher
-    val empty_refresher : refresher
-    val refresh : refresher -> r -> refresher * r
-  end;;
-
-module type ASTFuncT =
-  sig
-    type t
-    val pp : t -> string
-    val eq : t -> t -> bool
-    val andf : t
-    val orf : t
-    val cutf : t
-    val eqf : t
-    val from_string : string -> t
-  end;;
-
-
-module ASTFuncS : ASTFuncT = 
-  struct
-    type t = string
-
-    (* Hash consing *)
-    let from_string =
-     let h = Hashtbl.create 37 in
-     function x ->
-      try Hashtbl.find h x
-      with Not_found -> Hashtbl.add h x x ; x
-
-    let pp n = n
-    let eq = (==)
-    let andf = from_string ","
-    let orf = from_string ";"
-    let cutf = from_string "!"
-    let eqf = from_string "="
-
-  end;;
-
-
-module type FuncT =
- sig
-  include ASTFuncT
-
-  val funct_of_ast : ASTFuncS.t -> t
- end
-
-module FuncS : FuncT = 
- struct
-  include ASTFuncS
-
-  let funct_of_ast x = x
- end
-
-
 
 module type TermT =
   sig  
@@ -113,7 +46,7 @@ module type TermT =
     val program_of_ast : (Lprun2.term * Lprun2.term) list -> (term * term) list
   end;;
 
-module Term(Func: FuncT) : TermT 
+module Term(Func: Lprun2.FuncT) : TermT 
     with type funct = Func.t 
  = 
   struct
@@ -182,8 +115,7 @@ module Term(Func: FuncT) : TermT
           let tl' = Array.make (List.length tl) (Obj.magic ()) (* dummy *) in
           let l = ref l in
           List.iteri (fun i t -> let l',t' = aux tl' i !l t in l := l' ; tl'.(i) <- t') tl ;
-          (* TODO: convert the Funcs too *)
-          !l, App(Obj.magic f,tl')
+          !l, App(Func.funct_of_ast f,tl')
       in
        aux [||] (-999) l
 
@@ -208,7 +140,7 @@ module type RefreshableTermT =
   end;;
 
 
-module RefreshableTerm(Func:FuncT) : RefreshableTermT
+module RefreshableTerm(Func:Lprun2.FuncT) : RefreshableTermT
   with type vart = Term(Func).vart
   and  type funct = Func.t
   and  type term = Term(Func).term 
@@ -242,32 +174,13 @@ module RefreshableTerm(Func:FuncT) : RefreshableTermT
 
  end;;
 
-module type BindingsT =
-  sig
-    type vart
-    type termT
-    type bindings
-    val pp_bindings : bindings -> string
-    val cardinal : bindings -> bindings * int
-    val empty_bindings: bindings
-
-    (** For Unification *)
-    (* bind sigma v t = sigma [v |-> t] *)
-    val bind : bindings -> vart -> termT -> bindings
-    (* lookup sigma v = Some t   iff  [v |-> t] \in sigma *)
-    val lookup : bindings -> vart -> termT option
-
-    (** For GC *)
-    val filter : (vart -> bool) -> bindings -> bindings
-  end;;
-
-module Bindings(Func: FuncT) : BindingsT 
-  with type vart = Term(Func).vart
+module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT 
+  with type varT = Term(Func).vart
   and type termT = Term(Func).term
   =
    struct
      module T = Term(Func)
-     type vart = T.vart
+     type varT = T.vart
      type termT = T.term
 
      type bindings = unit (* TODO Trail goes here *)
@@ -288,14 +201,6 @@ module Bindings(Func: FuncT) : BindingsT
      let filter f _ = assert false (* TODO assign None *)
    end;;
 
-module type UnifyT =
-  sig
-    module Bind : BindingsT
-   (* unify sub t1 t2 = sub'  iff  t1 sub' = t2 sub' and sub <= sub' *)
-    val unify:
-     Bind.bindings -> Bind.termT -> Bind.termT -> Bind.bindings         
-  end;;
-
 exception NotUnifiable of string Lazy.t
 
 (* DIFFERENCE BETWEEN = AND := IN MODULE TYPE CONSTRAINTS
@@ -303,7 +208,7 @@ module type T = sig type t val f : t -> t end
 T with type t = int  sig type t = int val f : t -> t end
 T with type t := int sig val f: int -> int end *)
 
-module Unify(Func: FuncT)(Bind: BindingsT with type termT = Term(Func).term and type vart = Term(Func).vart) : UnifyT
+module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = Term(Func).term and type varT = Term(Func).vart) : Lprun2.UnifyT
    with module Bind = Bind
 =
   struct
@@ -327,22 +232,10 @@ module Unify(Func: FuncT)(Bind: BindingsT with type termT = Term(Func).term and 
 
 exception NotAnAtom;;
 
-module type ProgramT =
-   sig
-        module Bind : BindingsT
-        type t
-
-        (* may raise NotAnAtom *)
-        val backchain:
-         Bind.bindings -> Bind.termT -> t ->
-          (Bind.bindings * Bind.termT) list
-        val make: (Bind.termT*Bind.termT) list -> t
-   end
-
 (* No indexing at all; a program is a list and retrieving the clauses
    from the program is O(n) where n is the size of the program.
    Matching is done using unification directly. *)
-module Program(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term) : ProgramT with module Bind = Unify.Bind
+module Program(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind
  =
   struct
     module Bind = Unify.Bind
@@ -352,7 +245,7 @@ module Program(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term
                     (Term.term*Term.term) list -> 
                           (bindings * Term.term) list           *)
     let backchain binds a l =
-      filter_map (fun clause -> 
+      Lprun2.filter_map (fun clause -> 
         let atom,f = Term.refresh_clause clause in
           try
             let binds = Unify.unify binds atom a in 
@@ -367,7 +260,7 @@ module Program(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term
    eagerly on all the clauses with the good head. Retrieving the
    clauses is O(n) where n is the number of clauses with the
    good head. *)
-module ProgramHash(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term) : ProgramT with module Bind = Unify.Bind =
+module ProgramHash(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind =
   struct
      module Bind = Unify.Bind
 
@@ -378,8 +271,8 @@ module ProgramHash(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = 
 
      module Hash = Hashtbl.Make(
       struct
-       (* TODO fixme to remove the Obj.magic *)
-       type t = Term.funct (*Lprun2.FuncS.t*)
+       (* TODO fixme by introducing Hashable* to remove the Obj.magic *)
+       type t = Term.funct
        let hash = Obj.magic Hashtbl.hash
        let equal = Obj.magic Lprun2.FuncS.eq
       end)
@@ -390,7 +283,7 @@ module ProgramHash(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = 
                             (bindings * term) list           *)
      let backchain binds a h =
        let l = List.rev (Hash.find_all h (index a)) in
-       filter_map (fun clause -> 
+       Lprun2.filter_map (fun clause -> 
          let atom,f = Term.refresh_clause clause in
          try
            let binds = Unify.unify binds atom a in 
@@ -412,7 +305,7 @@ module ProgramHash(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = 
        just doing eager unification without approximated matching ***
    Retrieving the good clauses is O(n) where n is the size of the
    program. *)
-module ProgramIndexL(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term) : ProgramT with module Bind = Unify.Bind =
+module ProgramIndexL(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind =
    struct
         module Bind = Unify.Bind
 
@@ -444,7 +337,7 @@ module ProgramIndexL(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT 
         let backchain binds a l =
           let app = approx a in
           let l = List.filter (fun (a',_) -> matchp app a') l in
-          filter_map (fun (_,clause) ->
+          Lprun2.filter_map (fun (_,clause) ->
            let atom,f = Term.refresh_clause clause in
            try
             let binds = Unify.unify binds atom a in 
@@ -457,19 +350,8 @@ module ProgramIndexL(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT 
           List.map (fun ((a,_) as clause) -> approx a,clause)
    end;;
 
-module type RunT =
- sig
-  type term
-  type bindingsT
-  type progT
-  type cont (* continuation *)
-  val run: progT -> term -> (bindingsT * cont) option
-  val next: cont -> (bindingsT * cont) option
-  val main_loop: progT -> term -> unit
- end
-
-module Run(Term: RefreshableTermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
- RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
+module Run(Term: RefreshableTermT)(Prog: Lprun2.ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
+ Lprun2.RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
            and type progT := Prog.t
  = 
   struct 
@@ -592,9 +474,9 @@ module Run(Term: RefreshableTermT)(Prog: ProgramT with type Bind.termT = Term.te
 module
  Implementation
   (ITerm: TermT)
-  (IProgram: ProgramT with type Bind.termT = ITerm.term
+  (IProgram: Lprun2.ProgramT with type Bind.termT = ITerm.term
                       (*and type bindings := ITerm.bindings*))
-  (IRun: RunT with type progT := IProgram.t
+  (IRun: Lprun2.RunT with type progT := IProgram.t
               and type bindingsT := IProgram.Bind.bindings
               and type term := ITerm.term)
   (Descr : sig val descr : string end)
@@ -616,8 +498,8 @@ module
 let implementations = 
   let impl1 =
     (* RUN with non indexed engine *)
-    let module ITerm = RefreshableTerm(FuncS) in
-    let module IProgram = Program(ITerm)(Unify(FuncS)(Bindings(FuncS))) in
+    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
+    let module IProgram = Program(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
     let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
     let module Descr = struct let descr = "Testing with no index, optimized imperative " end in
     (module Implementation(ITerm)(IProgram)(IRun)(Descr)
@@ -625,8 +507,8 @@ let implementations =
 
   let impl2 =
     (* RUN with hashtbl *)
-    let module ITerm = RefreshableTerm(FuncS) in
-    let module IProgram = ProgramHash(ITerm)(Unify(FuncS)(Bindings(FuncS))) in
+    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
+    let module IProgram = ProgramHash(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
     let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
     let module Descr = struct let descr = "Testing with one level index, optimized imperative " end in
     (module Implementation(ITerm)(IProgram)(IRun)(Descr)
@@ -634,8 +516,8 @@ let implementations =
 
   let impl3 =
     (* RUN with two level inefficient index *)
-    let module ITerm = RefreshableTerm(FuncS) in
-    let module IProgram = ProgramIndexL(ITerm)(Unify(FuncS)(Bindings(FuncS))) in
+    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
+    let module IProgram = ProgramIndexL(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
     let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
     let module Descr = struct let descr = "Testing with two level inefficient index, optimized imperative " end in
     (module Implementation(ITerm)(IProgram)(IRun)(Descr)
