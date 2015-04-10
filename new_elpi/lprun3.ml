@@ -74,6 +74,7 @@ module Term(Func: Lprun2.FuncT) : TermT
       | App(f, args) -> 
           Func.pp f ^ "(" ^ String.concat " " (List.map pp (Array.to_list args)) ^ ")"
 
+    (* TODO: mkAnd/mkOr is bugged when the array l is made of variables! *)
     let mkAnd = function [f] -> f | l -> App(Func.andf,Array.of_list l)
     let mkOr  = function [f] -> f | l -> App(Func.orf,Array.of_list l)
     
