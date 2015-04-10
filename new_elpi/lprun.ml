@@ -136,8 +136,8 @@ module Formulae(Atom: AtomT) : FormulaeT with type atomT := Atom.t =
            refreshers, but both have fixed types :-(
            Should be made parametric *)
         let rec formula_of_ast k t =
-         match Lprun2.as_formula t with
-            Lprun2.And(l) ->
+         match Lprun2.FOForm.as_formula t with
+            Lprun2.FOForm.And(l) ->
              let rec aux k =
               function
                  [] -> k,True
@@ -148,8 +148,8 @@ module Formulae(Atom: AtomT) : FormulaeT with type atomT := Atom.t =
                   k,And(hd,tl)
              in
               aux k l
-          | Lprun2.Cut -> k,Cut
-          | Lprun2.Or(l) ->
+          | Lprun2.FOForm.Cut -> k,Cut
+          | Lprun2.FOForm.Or(l) ->
              let rec aux k =
               function
                  [] -> assert false (* TODO: add False *)
@@ -160,7 +160,7 @@ module Formulae(Atom: AtomT) : FormulaeT with type atomT := Atom.t =
                   k,Or(hd,tl)
              in
               aux k l
-          | Lprun2.Atom t ->
+          | Lprun2.FOForm.Atom t ->
              let k,t = Atom.atom_of_ast k t in
              k,Atom t
 

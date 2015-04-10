@@ -171,22 +171,10 @@ module type ASTT =
     type term = Var of vart 
               | App of funct * term list
 
-    type formula =
-       Cut
-     | Atom of term
-     | And of term list
-     | Or of term list
-
     val mkCut : term
     val mkAnd : term list -> term
     val mkOr : term list -> term
     val mkEq : term -> term -> term
-
-    (* raise NotAFormula *)
-(* TODO: use the bindings! *)
-    val as_formula: term -> formula
-
-    val pp: term -> string
   end;;
 
 module AST(Var: VarT)(Func: ASTFuncT) : ASTT 
@@ -199,61 +187,89 @@ module AST(Var: VarT)(Func: ASTFuncT) : ASTT
     type term = Var of Var.t 
               | App of Func.t * term list
 
-    type formula =
-       Cut
-    | Atom of term
-    | And of term list
-    | Or of term list
-
-    let rec pp_term = 
-      function 
-        Var v -> Var.pp v
-      | App(f, args) -> 
-          Func.pp f ^ "(" ^ String.concat " " (List.map pp_term args) ^ ")"
-
     let mkAnd = function [f] -> f | l -> App(Func.andf,l)
     let mkOr  = function [f] -> f | l -> App(Func.orf, l)
     let mkCut = App(Func.cutf,[]) 
     let mkEq l r = App(Func.eqf,[l;r]) 
-    
-    let rec pp =
-      function
-        Var v -> Var.pp v
-      | App (f,l) -> 
-          (*if f = Func.andf then
-          else if f = Func.orf then
-          else if f = Func.cut then*)
-         (* TODO: formulae should be pp as such *)
-         "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
+  end;;
 
+module FOAST = AST(Variable)(ASTFuncS)
+
+module type FormulaT =
+  sig  
+    type term
+
+    type formula =
+       Cut
+     | Atom of term
+     | And of term list
+     | Or of term list
+
+    val mkAnd : term list -> term
+    val mkOr : term list -> term
+
+    (* raise NotAFormula *)
+(* TODO: use the bindings! *)
+    val as_formula: term -> formula
+
+    val pp: term -> string
+  end;;
+
+module Formula(Var: VarT)(Func: ASTFuncT) : FormulaT 
+    with type term = AST(Var)(Func).term
+ = 
+  struct
+    module AST = AST(Var)(Func)
+
+    type term = AST.term
+
+    type formula =
+       Cut
+     | Atom of term
+     | And of term list
+     | Or of term list
+
+    let mkAnd = AST.mkAnd
+    let mkOr  = AST.mkOr
+    
      (* raise NotAFormula *)
     let as_formula =
       function
-        Var _ -> raise (NotFormula (lazy "Trying to prove a variable"))
-      | App(f,l) as x->
+        AST.Var _ -> raise (NotFormula (lazy "Trying to prove a variable"))
+      | AST.App(f,l) as x->
          (* And [] is interpreted as false *)
          if Func.eq f Func.andf then And l
          (* Or [] is interpreted as true *)
          else if Func.eq f Func.orf then Or l
          else if Func.eq f Func.cutf then Cut
          else Atom x
+    
+    let rec pp =
+      function
+        AST.Var v -> Var.pp v
+      | AST.App (f,l) -> 
+          (*if f = Func.andf then
+          else if f = Func.orf then
+          else if f = Func.cut then*)
+         (* TODO: formulae should be pp as such *)
+         "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
   end;;
 
-module FOAST = AST(Variable)(ASTFuncS)
-include FOAST
+module FOForm = Formula(Variable)(ASTFuncS)
 
 module type TermT =
  sig
-  include ASTT
+  include FormulaT
 
   val query_of_ast : FOAST.term -> term
   val program_of_ast : (FOAST.term * FOAST.term) list -> (term * term) list
  end
 
 module Term(Var: VarT)(Func: FuncT) : TermT 
-    with type vart = Var.t and type funct = Func.t =
+    with type term = AST(Var)(Func).term =
  struct
-  include AST(Var)(Func)
+  module AST = AST(Var)(Func)
+  include Formula(Var)(Func)
 
   (* Note: converters from asts are the same as
      refreshers, but both have fixed types :-(
@@ -264,26 +280,24 @@ module Term(Var: VarT)(Func: FuncT) : TermT
     let n' = Var.fresh () in
     (n,n')::l,n'
 
-  let empty_converter = []
-
   let rec term_of_ast l =
    function
       FOAST.Var v ->
        let l,v = var_of_ast l v in
-       l, Var v
+       l, AST.Var v
     | FOAST.App(f,tl) ->
        let l,rev_tl =
          List.fold_left
           (fun (l,tl) t -> let l,t = term_of_ast l t in (l,t::tl))
           (l,[]) tl
        in
-       l, App(Func.funct_of_ast f,List.rev rev_tl)
+       l, AST.App(Func.funct_of_ast f,List.rev rev_tl)
 
-  let query_of_ast t = snd (term_of_ast empty_converter t)
+  let query_of_ast t = snd (term_of_ast [] t)
 
   let program_of_ast p =
    List.map (fun (a,f) ->
-    let l,a = term_of_ast empty_converter a in
+    let l,a = term_of_ast [] a in
     let _,f = term_of_ast l f in
     a,f) p
  end
@@ -300,10 +314,10 @@ module type RefreshableTermT =
 
 
 module RefreshableTerm(Var:VarT)(Func:FuncT) : RefreshableTermT
-  with type term = Term(Var)(Func).term 
+  with type term = AST(Var)(Func).term 
 =
  struct
-   include Term(Var)(Func)
+   include AST(Var)(Func)
    type refresher = Var.refresher
    let empty_refresher = Var.empty_refresher
  
@@ -364,8 +378,8 @@ module type BindingsT =
     val filter : (varT -> bool) -> bindings -> bindings
   end;;
 
-module HashableRefreshableTerm(Var:VarT)(Func:FuncT)(Bind:BindingsT with type termT = Term(Var)(Func).term) : HashableRefreshableTermT
-  with type term = Term(Var)(Func).term 
+module HashableRefreshableTerm(Var:VarT)(Func:FuncT)(Bind:BindingsT with type termT = AST(Var)(Func).term) : HashableRefreshableTermT
+  with type term = AST(Var)(Func).term 
   and  type bindings = Bind.bindings
 =
  struct
@@ -377,10 +391,10 @@ module HashableRefreshableTerm(Var:VarT)(Func:FuncT)(Bind:BindingsT with type te
        let hash = Hashtbl.hash
      end
    
-   module TermFO = Term(Var)(Func)
+   module TermFO = AST(Var)(Func)
 
    type bindings = Bind.bindings
-
+   (* TODO: use the bindings here!*)
    let index binds =
    function
       TermFO.App(f,_) -> f
@@ -400,7 +414,7 @@ module type MapableRefreshableTermT =
 
 
 module MapableRefreshableTerm(Var: VarT)(Func: FuncT) : MapableRefreshableTermT
-  with type term = Term(Var)(Func).term 
+  with type term = AST(Var)(Func).term 
 =
  struct
   include RefreshableTerm(Var)(Func)
@@ -411,7 +425,7 @@ module MapableRefreshableTerm(Var: VarT)(Func: FuncT) : MapableRefreshableTermT
     let compare n1 n2 = String.compare (Func.pp n1) (Func.pp n2)
    end
 
-  module TermFO = Term(Var)(Func)
+  module TermFO = AST(Var)(Func)
 
   let index =
    function
@@ -424,11 +438,11 @@ module MapableRefreshableTerm(Var: VarT)(Func: FuncT) : MapableRefreshableTermT
 module ImpBindings(Func: FuncT) : 
  BindingsT 
   with type varT = ImpVariable.t
-  and type termT = Term(ImpVariable)(Func).term
+  and type termT = AST(ImpVariable)(Func).term
   =
    struct
      type varT = ImpVariable.t
-     type termT = Term(ImpVariable)(Func).term
+     type termT = AST(ImpVariable)(Func).term
 
      (*module MapVars = Map.Make(Vars)
      module Terms = Term(Vars)(Func)
@@ -459,20 +473,20 @@ module type ApproximatableRefreshableTermT =
     val matchp: approx -> approx -> bool
   end;;
 
-module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = Term(Var)(Func).term) :
+module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = AST(Var)(Func).term) :
  ApproximatableRefreshableTermT 
-  with type term = Term(Var)(Func).term 
+  with type term = AST(Var)(Func).term 
   and  type bindings = Bind.bindings
 =
  struct
    include RefreshableTerm(Var)(Func) 
-   module T = Term(Var)(Func)
+   module T = AST(Var)(Func)
 
    type approx = Func.t * (Func.t option)
 
    type bindings = Bind.bindings
 
-   module TermFO = Term(Var)(Func)
+   module TermFO = AST(Var)(Func)
 
    let rec deref sub i =
      match i with
@@ -509,13 +523,13 @@ module type DoubleMapIndexableRefreshableTermT =
  end
 ;;
 
-module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = Term(Var)(Func).term) : DoubleMapIndexableRefreshableTermT
-  with type term = Term(Var)(Func).term 
+module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = AST(Var)(Func).term) : DoubleMapIndexableRefreshableTermT
+  with type term = AST(Var)(Func).term 
   and type bindings = Bind.bindings
 =
  struct
    include MapableRefreshableTerm(Var)(Func)
-   module T = Term(Var)(Func)
+   module T = AST(Var)(Func)
 
    type bindings = Bind.bindings
 
@@ -551,16 +565,18 @@ module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT
 
 module Bindings(Vars: VarT)(Func: FuncT) : BindingsT 
   with type varT = Vars.t
-  and type termT = Term(Vars)(Func).term
+  and type termT = AST(Vars)(Func).term
   =
    struct
      type varT = Vars.t
-     type termT = Term(Vars)(Func).term
+     type termT = AST(Vars)(Func).term
+
+     module Form = Formula(Vars)(Func)
 
      module MapVars = Map.Make(Vars)
      module VarSet = Set.Make(Vars)
-     module Terms = Term(Vars)(Func)
-     type bindings = Term(Vars)(Func).term MapVars.t
+     module Terms = AST(Vars)(Func)
+     type bindings = AST(Vars)(Func).term MapVars.t
      let empty_bindings = MapVars.empty
         
      let lookup bind k =
@@ -574,7 +590,7 @@ module Bindings(Vars: VarT)(Func: FuncT) : BindingsT
      let pp_bindings bind =
       String.concat "\n"
        (MapVars.fold
-         (fun k v s -> (Vars.pp k ^ " |-> " ^ Terms.pp v) :: s)
+         (fun k v s -> (Vars.pp k ^ " |-> " ^ Form.pp v) :: s)
          bind [])
 
      let filter f bind = MapVars.filter (fun k _ -> f k) bind 
@@ -583,13 +599,16 @@ module Bindings(Vars: VarT)(Func: FuncT) : BindingsT
 
 module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT 
   with type varT = Vars.t
-  and  type termT = Term(Vars)(Func).term
+  and  type termT = AST(Vars)(Func).term
  =
   struct
     type varT = Vars.t
-    type termT = Term(Vars)(Func).term
+    type termT = AST(Vars)(Func).term
+
+    module Form = Formula(Vars)(Func)
+
     module MapVars = Map.Make(struct type t = int let compare = compare let eq = (=) end)
-    module Terms = Term(Vars)(Func)
+    module Terms = AST(Vars)(Func)
     type bindings = Terms.term MapVars.t
 
     let empty_bindings = MapVars.empty
@@ -599,7 +618,7 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT
       let bind = clean bind in*)
       String.concat "\n"
         (MapVars.fold
-          (fun k v s -> (Vars.pp (Vars.Box k) ^ " |-> " ^ Terms.pp v) :: s)
+          (fun k v s -> (Vars.pp (Vars.Box k) ^ " |-> " ^ Form.pp v) :: s)
             bind [])
 
     let rec clean bind =
@@ -648,11 +667,11 @@ module type T = sig type t val f : t -> t end
 T with type t = int  sig type t = int val f : t -> t end
 T with type t := int sig val f: int -> int end *)
 
-module Unify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = Term(Var)(Func).term and type varT = Var.t) : UnifyT
+module Unify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = AST(Var)(Func).term and type varT = Var.t) : UnifyT
    with module Bind = Bind
 =
   struct
-    module T = Term(Var)(Func)
+    module T = AST(Var)(Func)
     module Bind = Bind
 
     let rec unify sub t1 t2 = 
@@ -671,12 +690,12 @@ module Unify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = Term(Var)
    end;;
 
 
-module FlatUnify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = Term(Var)(Func).term and type varT = Var.t) : UnifyT
+module FlatUnify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = AST(Var)(Func).term and type varT = Var.t) : UnifyT
   with module Bind = Bind
 =
    struct
      module Bind = Bind
-     module T = Term(Var)(Func)
+     module T = AST(Var)(Func)
 
      let rec deref sub i =
        match i with
@@ -723,7 +742,7 @@ prerr_endline ("F: " ^ T.pp i); flatten sub i*)
    end;;
 
 
-module RefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = Term(Var)(Func).term and type varT = Var.t) :
+module RefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = AST(Var)(Func).term and type varT = Var.t) :
  RefreshableTermT
   with type term = RefreshableTerm(Var)(Func).term
 =
@@ -734,8 +753,8 @@ module RefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type ter
  end;;
 
 
-module HashableRefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = Term(Var)(Func).term) : HashableRefreshableTermT
-  with type term = Term(Var)(Func).term 
+module HashableRefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = AST(Var)(Func).term) : HashableRefreshableTermT
+  with type term = AST(Var)(Func).term 
   and  type bindings = Bind.bindings
 =
  struct
@@ -747,7 +766,7 @@ module HashableRefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with 
        let hash = Hashtbl.hash
      end
 
-   module TermFO = Term(Var)(Func)
+   module TermFO = AST(Var)(Func)
 
    type bindings = Bind.bindings
 
@@ -766,14 +785,20 @@ module type GCT =
   val gc: force:bool -> bindings -> term list -> bindings
  end;;
 
-
-module GC(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := Term(Var)(Func).term and type varT := Var.t) :
+module NoGC(Bind: BindingsT) :
  GCT with type bindings := Bind.bindings
-     and type term := Term(Var)(Func).term 
+     and  type term := Bind.termT =
+ struct
+  let gc ~force binds _ = binds
+ end
+
+module GC(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT := AST(Var)(Func).term and type varT := Var.t) :
+ GCT with type bindings := Bind.bindings
+     and type term := AST(Var)(Func).term 
 =
  struct
   
-  module Term = Term(Var)(Func);;
+  module Term = AST(Var)(Func);;
   open Term
 
   module VarSet = Set.Make(Var);;
@@ -1027,8 +1052,8 @@ module type RunT =
   val main_loop: progT -> term -> unit
  end
 
-module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
- RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
+module Run(Form: FormulaT)(Prog: ProgramT with type Bind.termT = Form.term)(GC : GCT with type term := Form.term and type bindings := Prog.Bind.bindings) :
+ RunT with type term := Form.term and type bindingsT := Prog.Bind.bindings
            and type progT := Prog.t
  = 
   struct 
@@ -1036,23 +1061,25 @@ module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : 
            i.e. a list of level * bindings * head of and_list * tl of and_list 
            The level is incremented when there is a *)
     type cont = 
-      Prog.t * (int * Prog.Bind.bindings * Term.term * Term.term list) list
+      Prog.t * (int * Prog.Bind.bindings * Form.term * Form.term list) list
 
         (* WARNING: bad non reentrant imperative code here
            At least query should go into the continuation for next
            to work!
         *)
-        let query = ref (Term.mkAnd [] (* True *))
+        let query = ref (Form.mkAnd [] (* True *))
 
         let run0 prog =
          (* aux lvl binds andl orl f
            (lvl,binds,(f::andl))::orl) *)
          let rec aux lvl binds andl orl f =
-          (*let binds = GC.gc (f = F.True && andl=[]) binds (!query::f::andl) in  TODO : RESTORE *)
-          match Term.as_formula f with
-             Term.And [] ->                  (* (True::andl)::orl *)
+          let binds = GC.gc false binds (!query::f::andl) in
+          match Form.as_formula f with
+             Form.And [] ->                  (* (True::andl)::orl *)
               (match andl with
-                  [] -> Some (binds,orl)       (* (binds,[])::orl *)
+                  [] ->
+                    let binds = GC.gc true binds (!query::f::andl) in
+                    Some (binds,orl)       (* (binds,[])::orl *)
                   (* lvl-1 is because the body of a clause like a :- b,c.
                      is represented as And(b,c) in the and list and not like
                      b::c. Therefore an entry in the and list always
@@ -1062,7 +1089,7 @@ module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : 
                      Thus hd is the stack frame of the parent call, that was
                      done at level lvl-1. *) 
                 | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *) 
-           | Term.Cut ->
+           | Form.Cut ->
               let orl =
                (* We filter out from the or list every frame whose lvl
                   is >= then ours. *)
@@ -1078,7 +1105,7 @@ module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : 
               (match andl with
                   [] -> Some (binds,orl)       (* (binds,[])::orl *)
                 | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *)
-           | Term.Atom i ->         (*A::and)::orl)*)                       
+           | Form.Atom i ->         (*A::and)::orl)*)                       
                (match Prog.backchain binds i prog with              
                    [] ->
                     (match orl with
@@ -1091,8 +1118,8 @@ module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : 
                         orl) f)
            
            (* TODO: OPTIMIZE AND UNIFY WITH TRUE *)   
-           | Term.And (f1::f2) ->             (* ((f1,f2)::andl)::orl *)
-              let f2 = Term.mkAnd f2 in
+           | Form.And (f1::f2) ->             (* ((f1,f2)::andl)::orl *)
+              let f2 = Form.mkAnd f2 in
               aux lvl binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
 
            (* Because of the +2 vs +1, the semantics of (c,! ; d)
@@ -1100,11 +1127,11 @@ module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : 
               Note: this is incoherent with the semantics of ! w.r.t.
               backchaining, but that's what Tejyus implements. *)
            (* TODO: OPTIMIZE AND UNIFY WITH FALSE (maybe) *)
-           | Term.Or (f1::f2) ->              (* ((f1;f2)::andl)::orl) *)
-              let f2 = Term.mkOr f2 in
+           | Form.Or (f1::f2) ->              (* ((f1;f2)::andl)::orl) *)
+              let f2 = Form.mkOr f2 in
               aux (lvl+2) binds andl ((lvl+1,binds,f2,andl)::orl) f1
                                            (* (f1::andl)::(f2::andl)::orl *)
-           | Term.Or [] -> assert false (* TODO, backtrack *)
+           | Form.Or [] -> assert false (* TODO, backtrack *)
          in
           aux
 
@@ -1138,7 +1165,7 @@ module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : 
         function
           None -> prerr_endline "Fail"
         | Some (l,cont) ->
-            prerr_endline ("Query: " ^ Term.pp query) ;
+            prerr_endline ("Query: " ^ Form.pp query) ;
             prerr_endline (Prog.Bind.pp_bindings l) ;
             prerr_endline "More? (Y/n)";
               if read_line() <> "n" then
@@ -1147,128 +1174,6 @@ module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : 
         aux (run prog query)
 
      end;;
-
-
-module RunGC(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(GC : GCT with type term := Term.term and type bindings := Prog.Bind.bindings)(*TODO : RESTORE*) :
- RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
-           and type progT := Prog.t
- = 
-  struct 
-        (* A cont is just the program plus the or list,
-           i.e. a list of level * bindings * head of and_list * tl of and_list 
-           The level is incremented when there is a *)
-    type cont = 
-      Prog.t * (int * Prog.Bind.bindings * Term.term * Term.term list) list
-
-        (* WARNING: bad non reentrant imperative code here
-           At least query should go into the continuation for next
-           to work!
-        *)
-    let query = ref (Term.mkAnd [] (* True *))
-
-    let run0 prog =
-         (* aux lvl binds andl orl f
-           (lvl,binds,(f::andl))::orl) *)
-      let rec aux lvl binds andl orl f =
-      let binds = GC.gc (f = Term.mkAnd [] && andl=[]) binds (!query::f::andl) in  
-          match Term.as_formula f with
-             Term.And [] ->                  (* (True::andl)::orl *)
-              (match andl with
-                  [] -> Some (binds,orl)       (* (binds,[])::orl *)
-                  (* lvl-1 is because the body of a clause like a :- b,c.
-                     is represented as And(b,c) in the and list and not like
-                     b::c. Therefore an entry in the and list always
-                     is a stack frame for the body of a clause.
-                     An or expression is also to be thought as an anonymous
-                     clause invocation (with special handling of cut).
-                     Thus hd is the stack frame of the parent call, that was
-                     done at level lvl-1. *) 
-                | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *) 
-           | Term.Cut ->
-              let orl =
-               (* We filter out from the or list every frame whose lvl
-                  is >= then ours. *)
-               let rec filter =
-                function
-                   [] -> []
-                 | ((lvl',_,_,_)::_) as l when lvl' < lvl -> l
-                 | _::tl -> filter tl
-               in
-                filter orl
-              in
-              (* cut&paste from True case *)
-              (match andl with
-                  [] -> Some (binds,orl)       (* (binds,[])::orl *)
-                | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *)
-           | Term.Atom i ->         (*A::and)::orl)*)                       
-               (match Prog.backchain binds i prog with              
-                   [] ->
-                    (match orl with
-                        [] -> None
-                      | (lvl,bnd,f,andl)::tl -> aux lvl bnd andl tl f)
-                 | (bnd,f)::tl ->
-                     aux (lvl+1) bnd andl
-                      (List.append
-                        (List.map (fun (bnd,f) -> lvl+1, bnd,f,andl) tl)
-                        orl) f)
-           
-           (* TODO: OPTIMIZE AND UNIFY WITH TRUE *)   
-           | Term.And (f1::f2) ->             (* ((f1,f2)::andl)::orl *)
-              let f2 = Term.mkAnd f2 in
-              aux lvl binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
-
-           (* Because of the +2 vs +1, the semantics of (c,! ; d)
-              is to kill the alternatives for c, preserving the d one.
-              Note: this is incoherent with the semantics of ! w.r.t.
-              backchaining, but that's what Tejyus implements. *)
-           (* TODO: OPTIMIZE AND UNIFY WITH FALSE (maybe) *)
-           | Term.Or (f1::f2) ->              (* ((f1;f2)::andl)::orl) *)
-              let f2 = Term.mkOr f2 in
-              aux (lvl+2) binds andl ((lvl+1,binds,f2,andl)::orl) f1
-                                           (* (f1::andl)::(f2::andl)::orl *)
-           | Term.Or [] -> assert false (* TODO, backtrack *)
-         in
-          aux
-
-
-    let run_next prog lvl binds andl orl f =
-      let time0 = Unix.gettimeofday() in
-        let res =
-          match run0 prog lvl binds andl orl f with
-             Some (binds,orl) -> Some (binds,(prog,orl))
-           | None -> None in
-        let time1 = Unix.gettimeofday() in
-        prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-        (match res with
-          Some (binds,orl) ->
-            (* TODO restore Gc.full_major() ;*) let binds,size = Prog.Bind.cardinal binds in
-            prerr_endline ("Final bindings size: " ^ string_of_int size) ;
-              Some (binds,orl)
-           | None -> None)
-
-    let run prog f =
-      query := f ;
-      run_next prog 0 (Prog.Bind.empty_bindings) [] [] f
-
-    let next (prog,orl) =
-      match orl with
-        [] -> None
-      | (lvl,binds,f,andl)::orl -> run_next prog lvl binds andl orl f
-
-    let main_loop prog query =
-      let rec aux =
-        function
-          None -> prerr_endline "Fail"
-        | Some (l,cont) ->
-            prerr_endline ("Query: " ^ Term.pp query) ;
-            prerr_endline (Prog.Bind.pp_bindings l) ;
-            prerr_endline "More? (Y/n)";
-              if read_line() <> "n" then
-                aux (next cont)
-          in
-        aux (run prog query)
-   end;;
-
 
 module type Implementation =
  sig
@@ -1309,8 +1214,9 @@ let implementations =
     (* RUN with non indexed engine *)
     let module IRTerm = Term(Variable)(FuncS) in
     let module ITerm = RefreshableTerm(Variable)(FuncS) in
-    let module IProgram = Program(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-    let module IRun = Run(IRTerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
+    let module IBind = Bindings(Variable)(FuncS) in
+    let module IProgram = Program(ITerm)(Unify(Variable)(FuncS)(IBind)) in
+    let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with no index list " end in
     (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
      : Implementation) in
@@ -1318,9 +1224,10 @@ let implementations =
 let impl2 =
   (* RUN with indexed engine *)
   let module IRTerm = Term(Variable)(FuncS) in
-  let module ITerm = HashableRefreshableTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IBind = Bindings(Variable)(FuncS) in
+  let module ITerm = HashableRefreshableTerm(Variable)(FuncS)(IBind) in
+  let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
@@ -1328,18 +1235,20 @@ let impl2 =
 let impl3 =
   (* RUN with two levels inefficient indexed engine *)
   let module IRTerm = Term(Variable)(FuncS) in
-  let module ITerm = ApproximatableRefreshableTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module IProgram = ProgramIndexL(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IBind = Bindings(Variable)(FuncS) in
+  let module ITerm = ApproximatableRefreshableTerm(Variable)(FuncS)(IBind) in
+  let module IProgram = ProgramIndexL(ITerm)(Unify(Variable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with two level inefficient index " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 let impl4 =
   let module IRTerm = Term(WeakVariable)(FuncS) in
-  let module ITerm = HashableRefreshableTerm(WeakVariable)(FuncS)(Bindings(WeakVariable)(FuncS)) in
-let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(Bindings(WeakVariable)(FuncS))) in
-  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IBind = Bindings(WeakVariable)(FuncS) in
+  let module ITerm = HashableRefreshableTerm(WeakVariable)(FuncS)(IBind) in
+let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl and automatic GC " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
@@ -1348,9 +1257,10 @@ let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(Bindings(Wea
 let impl5 =
   (* RUN with indexed engine and automatic GC *)
   let module IRTerm = Term(WeakVariable)(FuncS) in
-  let module ITerm = HashableRefreshableFlatTerm(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
-  let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS))) in
-  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IBind = WeakBindings(WeakVariable)(FuncS) in
+  let module ITerm = HashableRefreshableFlatTerm(WeakVariable)(FuncS)(IBind) in
+  let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening and automatic GC " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
@@ -1359,9 +1269,10 @@ let impl5 =
 let impl6 =
   (* RUN with indexed engine *)
   let module IRTerm = Term(Variable)(FuncS) in
-  let module ITerm = HashableRefreshableFlatTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IBind = Bindings(Variable)(FuncS) in
+  let module ITerm = HashableRefreshableFlatTerm(Variable)(FuncS)(IBind) in
+  let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
@@ -1369,9 +1280,10 @@ let impl6 =
 
 let impl7 =
   let module IRTerm = Term(Variable)(FuncS) in
-  let module ITerm = HashableRefreshableFlatTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
-  let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = RunGC(IRTerm)(IProgram)(GC(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
+  let module IBind = Bindings(Variable)(FuncS) in
+  let module ITerm = HashableRefreshableFlatTerm(Variable)(FuncS)(IBind) in
+  let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(GC(Variable)(FuncS)(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening + manual GC " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
@@ -1379,9 +1291,10 @@ let impl7 =
 let impl8 =
   (* RUN with indexed engine and Map of clauses instead of Hash of clauses*)
   let module IRTerm = Term(Variable)(FuncS) in
+  let module IBind = Bindings(Variable)(FuncS) in
   let module ITerm = MapableRefreshableTerm(Variable)(FuncS) in
-  let module IProgram = ProgramMap(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IProgram = ProgramMap(ITerm)(Unify(Variable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index map " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
@@ -1389,9 +1302,10 @@ let impl8 =
 let impl9 =
   (* RUN with indexed engine *)
   let module IRTerm = Term(ImpVariable)(FuncS) in
-  let module ITerm = HashableRefreshableTerm(ImpVariable)(FuncS)(ImpBindings(FuncS)) in
-  let module IProgram = ProgramHash(ITerm)(Unify(ImpVariable)(FuncS)(ImpBindings(FuncS))) in
-  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IBind = ImpBindings(FuncS) in
+  let module ITerm = HashableRefreshableTerm(ImpVariable)(FuncS)(IBind) in
+  let module IProgram = ProgramHash(ITerm)(Unify(ImpVariable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with imperative one level index hashtbl " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
@@ -1399,11 +1313,14 @@ let impl9 =
 let impl10 =
   (* RUN with indexed engine *)
   let module IRTerm = Term(ImpVariable)(FuncS) in
-  let module ITerm = DoubleMapIndexableRefreshableTerm(ImpVariable)(FuncS)(ImpBindings(FuncS)) in
-  let module IProgram = ProgramDoubleInd(ITerm)(Unify(ImpVariable)(FuncS)(ImpBindings(FuncS))) in
-  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IBind = ImpBindings(FuncS) in
+  let module ITerm = DoubleMapIndexableRefreshableTerm(ImpVariable)(FuncS)(IBind) in
+  let module IProgram = ProgramDoubleInd(ITerm)(Unify(ImpVariable)(FuncS)(IBind)) in
+  let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with imperative two level efficient index " end in
   (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
   [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8;impl9;impl10]
+
+include FOAST

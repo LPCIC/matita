@@ -10,8 +10,6 @@ let array_fold_left2 f a a1 a2 =
 
 (***** real code *****)
 
-exception NotFormula of string Lazy.t;;
-
 module type TermT =
   sig  
     type vart
@@ -36,6 +34,8 @@ module type TermT =
 
     val mkAnd : term list -> term
     val mkOr : term list -> term
+    val mkCut : term
+    val mkEq : term -> term -> term
 
     (* raise NotAFormula *)
     val as_formula: term -> formula
@@ -77,11 +77,14 @@ module Term(Func: Lprun2.FuncT) : TermT
     (* TODO: mkAnd/mkOr is bugged when the array l is made of variables! *)
     let mkAnd = function [f] -> f | l -> App(Func.andf,Array.of_list l)
     let mkOr  = function [f] -> f | l -> App(Func.orf,Array.of_list l)
+    (* Next two never called: *)
+    let mkCut = App(Func.cutf,[||])
+    let mkEq _ _ = assert false
     
      (* raise NotAFormula *)
     let as_formula =
       function
-        Var _ -> raise (NotFormula (lazy "Trying to prove a variable"))
+        Var _ -> raise (Lprun2.NotFormula (lazy "Trying to prove a variable"))
       | App(f,l) as x->
          (* And [] is interpreted as false *)
          if Func.eq f Func.andf then And (Array.to_list l)
@@ -130,28 +133,8 @@ module Term(Func: Lprun2.FuncT) : TermT
   end;;
 
 
-module type RefreshableTermT =
-  sig
-    type term (*include TermT*)
- (* How to distinguish Atom from formula? 
-    type clause = atomT * formula *)
-    type clause = term * term
-    val refresh_query : term -> term
-    val refresh_clause : clause -> clause
-  end;;
-
-(* TODO: wrong, redo as it was done in lprun.ml *)
-module type HashableRefreshableTermT =
-  sig
-    include TermT
-    include RefreshableTermT with type term := term
-  end;;
-
-module RefreshableTerm(Func:Lprun2.FuncT) : HashableRefreshableTermT
-  with type vart = Term(Func).vart
-  and  type funct = Func.t
-  and  type term = Term(Func).term 
-  and  type formula = Term(Func).formula
+module RefreshableTerm(Func:Lprun2.FuncT) : Lprun2.RefreshableTermT
+  with type term = Term(Func).term 
 =
  struct
    include Term(Func)
@@ -181,6 +164,66 @@ module RefreshableTerm(Func:Lprun2.FuncT) : HashableRefreshableTermT
 
  end;;
 
+module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with type termT = Term(Func).term) : Lprun2.HashableRefreshableTermT
+  with type term = Term(Func).term
+  and  type bindings = Bind.bindings
+=
+ struct
+   include RefreshableTerm(Func)
+   module IndexData =
+     struct
+       type t = Func.t
+       let equal = Func.eq
+       let hash = Hashtbl.hash
+     end
+   
+   module TermFO = Term(Func)
+
+   type bindings = Bind.bindings
+   (* TODO: use the bindings here!*)
+   let index binds =
+   function
+      TermFO.App(f,_) -> f
+    | TermFO.Var _ -> raise (Failure "Ill formed program")
+ end;;
+
+module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = Term(Func).term and type varT = Term(Func).vart) : Lprun2.ApproximatableRefreshableTermT 
+  with type term = Term(Func).term 
+  and  type bindings = Bind.bindings
+=
+ struct
+   include RefreshableTerm(Func) 
+
+   type approx = Func.t * (Func.t option)
+
+   type bindings = Bind.bindings
+
+   module TermFO = Term(Func)
+
+   let rec deref sub i =
+     match i with
+       (TermFO.Var v) ->
+         (match Bind.lookup sub v with
+            None -> i
+         | Some t -> deref sub t)
+     | TermFO.App(_,_) -> i
+
+     let approx bind =
+      function
+         TermFO.App(f,[||]) -> f,None
+       | TermFO.Var _ -> raise (Failure "Ill formed program")
+       | TermFO.App(f,a) ->
+          match deref bind a.(0) with
+             TermFO.Var _ -> f,None
+           | TermFO.App(g,_) -> f, Some g
+
+     let matchp app1 app2 =
+      match app1,app2 with
+         (f1,None),(f2,_)
+       | (f1,_),(f2,None)-> f1=f2
+       | (f1,Some g1),(f2,Some g2) -> f1=f2 && g1=g2
+  end;;
+
 module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT 
   with type varT = Term(Func).vart
   and type termT = Term(Func).term
@@ -208,13 +251,6 @@ module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT
      let filter f _ = assert false (* TODO assign None *)
    end;;
 
-exception NotUnifiable of string Lazy.t
-
-(* DIFFERENCE BETWEEN = AND := IN MODULE TYPE CONSTRAINTS
-module type T = sig type t val f : t -> t end
-T with type t = int  sig type t = int val f : t -> t end
-T with type t := int sig val f: int -> int end *)
-
 module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = Term(Func).term and type varT = Term(Func).vart) : Lprun2.UnifyT
    with module Bind = Bind
 =
@@ -234,250 +270,8 @@ module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = Term(F
           if Func.eq f1 f2 && Array.length l1 = Array.length l2 then
             array_fold_left2 unify sub l1 l2
           else
-            raise (NotUnifiable (lazy "Terms are not unifiable!"))
+            raise (Lprun2.NotUnifiable (lazy "Terms are not unifiable!"))
    end;;
-
-exception NotAnAtom;;
-
-(* No indexing at all; a program is a list and retrieving the clauses
-   from the program is O(n) where n is the size of the program.
-   Matching is done using unification directly. *)
-module Program(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind
- =
-  struct
-    module Bind = Unify.Bind
-
-    type t = (Term.term*Term.term) list
-     (* backchain: bindings -> termT -> 
-                    (Term.term*Term.term) list -> 
-                          (bindings * Term.term) list           *)
-    let backchain binds a l =
-      Lprun2.filter_map (fun clause -> 
-        let atom,f = Term.refresh_clause clause in
-          try
-            let binds = Unify.unify binds atom a in 
-            Some (binds,f)
-          with NotUnifiable _ -> None) l                
-
-    let make p = p;;
-  end;;
-
-(* One level indexing; a program is a hash-table indexed on the
-   predicate that is the head of the clause. Unification is used
-   eagerly on all the clauses with the good head. Retrieving the
-   clauses is O(n) where n is the number of clauses with the
-   good head. *)
-module ProgramHash(Term: HashableRefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind =
-  struct
-     module Bind = Unify.Bind
-
-     (* TODO? This required the HashableRefreshable *)
-     let index =
-      function
-         Term.Var _ -> raise (Failure "Ill formed program")
-       | Term.App(f,_) -> f
-
-     module Hash = Hashtbl.Make(
-      struct
-       (* TODO fixme by introducing Hashable* to remove the Obj.magic *)
-       type t = Term.funct
-       let hash = Obj.magic Hashtbl.hash
-       let equal = Obj.magic Lprun2.FuncS.eq
-      end)
-     type t = Term.clause Hash.t
-                  
-   (* backchain: bindings -> term -> 
-                         Term.term Hash.t -> 
-                            (bindings * term) list           *)
-     let backchain binds a h =
-       let l = List.rev (Hash.find_all h (index a)) in
-       Lprun2.filter_map (fun clause -> 
-         let atom,f = Term.refresh_clause clause in
-         try
-           let binds = Unify.unify binds atom a in 
-             Some (binds,f)
-           with NotUnifiable _ -> None) 
-         l                       
-        
-     let make p =
-       let h = Hash.create 199 in
-       List.iter
-         (fun ((a,v) as clause) -> Hash.add h (index a) clause) p;
-       h
-   end;;
-
-(* Two level inefficient indexing; a program is a list of clauses.
-   Approximated matching is used to retrieve the candidates.
-   Unification is then performed on the candidates.
-   *** NOTE: this is probably redundant and more inefficient than
-       just doing eager unification without approximated matching ***
-   Retrieving the good clauses is O(n) where n is the size of the
-   program. *)
-module ProgramIndexL(Term: HashableRefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind =
-   struct
-        module Bind = Unify.Bind
-
-        (* MODULE APPROXIMATABLE: TO BE MOVED OUTSIDE/ *)
-        type approx = Term.funct * (Term.funct option)
-
-        let approx =
-         function
-            Term.App(f,[||]) -> f,None
-          | Term.Var _ -> raise (Failure "Ill formed program")
-          | Term.App(f,a) ->
-             match a.(0) with
-                Term.Var _ -> f,None
-              | Term.App(g,_) -> f, Some g
-
-        let matchp app1 app2 =
-         match app1,app2 with
-            (f1,None),(f2,_)
-          | (f1,_),(f2,None)-> f1=f2
-          | (f1,Some g1),(f2,Some g2) -> f1=f2 && g1=g2
-        (* /MODULE APPROXIMATABLE: TO BE MOVED OUTSIDE *)
-
-        (* triples (app,(a,f)) where app is the approximation of a *)
-        type t = (approx * (Term.term * Term.term)) list
-
-        (* backchain: bindings -> atomT -> 
-                         Form.formula Hash.t -> 
-                            (bindings * formulaT) list           *)
-        let backchain binds a l =
-          let app = approx a in
-          let l = List.filter (fun (a',_) -> matchp app a') l in
-          Lprun2.filter_map (fun (_,clause) ->
-           let atom,f = Term.refresh_clause clause in
-           try
-            let binds = Unify.unify binds atom a in 
-            Some (binds,f)
-           with NotUnifiable _ -> None
-           ) l
-        ;;
-        
-        let make =
-          List.map (fun ((a,_) as clause) -> approx a,clause)
-   end;;
-
-module Run(Term: HashableRefreshableTermT)(Prog: Lprun2.ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
- Lprun2.RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
-           and type progT := Prog.t
- = 
-  struct 
-        (* A cont is just the program plus the or list,
-           i.e. a list of level * bindings * head of and_list * tl of and_list 
-           The level is incremented when there is a *)
-    type cont = 
-      Prog.t * (int * Prog.Bind.bindings * Term.term * Term.term list) list
-
-        (* WARNING: bad non reentrant imperative code here
-           At least query should go into the continuation for next
-           to work!
-        *)
-        let query = ref (Term.mkAnd [] (* True *))
-
-        let run0 prog =
-         (* aux lvl binds andl orl f
-           (lvl,binds,(f::andl))::orl) *)
-         let rec aux lvl binds andl orl f =
-          (*let binds = GC.gc (f = F.True && andl=[]) binds (!query::f::andl) in  TODO : RESTORE *)
-          match Term.as_formula f with
-             Term.And [] ->                  (* (True::andl)::orl *)
-              (match andl with
-                  [] -> Some (binds,orl)       (* (binds,[])::orl *)
-                  (* lvl-1 is because the body of a clause like a :- b,c.
-                     is represented as And(b,c) in the and list and not like
-                     b::c. Therefore an entry in the and list always
-                     is a stack frame for the body of a clause.
-                     An or expression is also to be thought as an anonymous
-                     clause invocation (with special handling of cut).
-                     Thus hd is the stack frame of the parent call, that was
-                     done at level lvl-1. *) 
-                | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *) 
-           | Term.Cut ->
-              let orl =
-               (* We filter out from the or list every frame whose lvl
-                  is >= then ours. *)
-               let rec filter =
-                function
-                   [] -> []
-                 | ((lvl',_,_,_)::_) as l when lvl' < lvl -> l
-                 | _::tl -> filter tl
-               in
-                filter orl
-              in
-              (* cut&paste from True case *)
-              (match andl with
-                  [] -> Some (binds,orl)       (* (binds,[])::orl *)
-                | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *)
-           | Term.Atom i ->         (*A::and)::orl)*)                       
-               (match Prog.backchain binds i prog with              
-                   [] ->
-                    (match orl with
-                        [] -> None
-                      | (lvl,bnd,f,andl)::tl -> aux lvl bnd andl tl f)
-                 | (bnd,f)::tl ->
-                     aux (lvl+1) bnd andl
-                      (List.append
-                        (List.map (fun (bnd,f) -> lvl+1, bnd,f,andl) tl)
-                        orl) f)
-           
-           (* TODO: OPTIMIZE AND UNIFY WITH TRUE *)   
-           | Term.And (f1::f2) ->             (* ((f1,f2)::andl)::orl *)
-              let f2 = Term.mkAnd f2 in
-              aux lvl binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
-
-           (* Because of the +2 vs +1, the semantics of (c,! ; d)
-              is to kill the alternatives for c, preserving the d one.
-              Note: this is incoherent with the semantics of ! w.r.t.
-              backchaining, but that's what Tejyus implements. *)
-           (* TODO: OPTIMIZE AND UNIFY WITH FALSE (maybe) *)
-           | Term.Or (f1::f2) ->              (* ((f1;f2)::andl)::orl) *)
-              let f2 = Term.mkOr f2 in
-              aux (lvl+2) binds andl ((lvl+1,binds,f2,andl)::orl) f1
-                                           (* (f1::andl)::(f2::andl)::orl *)
-           | Term.Or [] -> assert false (* TODO, backtrack *)
-         in
-          aux
-
-
-    let run_next prog lvl binds andl orl f =
-      let time0 = Unix.gettimeofday() in
-        let res =
-          match run0 prog lvl binds andl orl f with
-             Some (binds,orl) -> Some (binds,(prog,orl))
-           | None -> None in
-        let time1 = Unix.gettimeofday() in
-        prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-        (match res with
-          Some (binds,orl) ->
-            (* TODO restore Gc.full_major() ;*) let binds,size = Prog.Bind.cardinal binds in
-            prerr_endline ("Final bindings size: " ^ string_of_int size) ;
-              Some (binds,orl)
-           | None -> None)
-
-    let run prog f =
-      query := f ;
-      run_next prog 0 (Prog.Bind.empty_bindings) [] [] f
-
-    let next (prog,orl) =
-      match orl with
-        [] -> None
-      | (lvl,binds,f,andl)::orl -> run_next prog lvl binds andl orl f
-
-    let main_loop prog query =
-      let rec aux =
-        function
-          None -> prerr_endline "Fail"
-        | Some (l,cont) ->
-            prerr_endline ("Query: " ^ Term.pp query) ;
-            prerr_endline (Prog.Bind.pp_bindings l) ;
-            prerr_endline "More? (Y/n)";
-              if read_line() <> "n" then
-                aux (next cont)
-          in
-        aux (run prog query)
-
-     end;;
 
 module
  Implementation
@@ -502,33 +296,38 @@ module
  end
 ;;
 
-
 let implementations = 
   let impl1 =
     (* RUN with non indexed engine *)
+    let module IRTerm = Term(Lprun2.FuncS) in
     let module ITerm = RefreshableTerm(Lprun2.FuncS) in
-    let module IProgram = Program(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
-    let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
+    let module IBind = Bindings(Lprun2.FuncS) in
+    let module IProgram = Lprun2.Program(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
+    let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with no index, optimized imperative " end in
-    (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+    (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
      : Lprun2.Implementation) in
 
   let impl2 =
     (* RUN with hashtbl *)
-    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
-    let module IProgram = ProgramHash(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
-    let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
+    let module IRTerm = Term(Lprun2.FuncS) in
+    let module IBind = Bindings(Lprun2.FuncS) in
+    let module ITerm = HashableRefreshableTerm(Lprun2.FuncS)(IBind) in
+    let module IProgram = Lprun2.ProgramHash(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
+    let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with one level index, optimized imperative " end in
-    (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+    (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
      : Lprun2.Implementation) in
 
   let impl3 =
     (* RUN with two level inefficient index *)
-    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
-    let module IProgram = ProgramIndexL(ITerm)(Unify(Lprun2.FuncS)(Bindings(Lprun2.FuncS))) in
-    let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
+    let module IRTerm = Term(Lprun2.FuncS) in
+    let module IBind = Bindings(Lprun2.FuncS) in
+    let module ITerm = ApproximatableRefreshableTerm(Lprun2.FuncS)(IBind) in
+    let module IProgram = Lprun2.ProgramIndexL(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
+    let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with two level inefficient index, optimized imperative " end in
-    (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+    (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
      : Lprun2.Implementation) in
 
   [impl1; impl2; impl3]
