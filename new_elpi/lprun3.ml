@@ -10,46 +10,32 @@ let array_fold_left2 f a a1 a2 =
 
 (***** real code *****)
 
-module type TermT =
+module type ASTT =
   sig  
-    type vart
     type funct
     type term =
        Var of vart
      | App of funct * term array
-
-    type formula =
-       Cut
-     | Atom of term
-     | And of term list
-     | Or of term list
+    and vart = term array * int
 
     val eq_var : vart -> vart -> bool
+
+    val mkCut : term
+    val mkAnd : term list -> term
+    val mkOr : term list -> term
+    val mkEq : term -> term -> term
+
     type refresher
     val empty_refresher : refresher
     val refresh_var : refresher -> vart -> term array -> refresher * vart
 
     val deref : vart -> term
     val assign : vart -> term -> unit
-
-    val mkAnd : term list -> term
-    val mkOr : term list -> term
-    val mkCut : term
-    val mkEq : term -> term -> term
-
-    (* raise NotAFormula *)
-    val as_formula: term -> formula
-
-    val pp: term -> string
-
-    val query_of_ast : Lprun2.term -> term
-    val program_of_ast : (Lprun2.term * Lprun2.term) list -> (term * term) list
   end;;
 
-module Term(Func: Lprun2.FuncT) : TermT 
-    with type funct = Func.t 
- = 
-  struct
+module AST(Func: Lprun2.ASTFuncT) : ASTT
+ with type funct = Func.t = 
+ struct
     type funct = Func.t
 
     type term =
@@ -57,22 +43,10 @@ module Term(Func: Lprun2.FuncT) : TermT
      | App of Func.t * term array
     and vart = term array * int
 
-    let eq_var = (==);;
-
     let deref (args,i) = args.(i)
     let assign (args,i) t = args.(i) <- t
 
-    type formula =
-      Cut
-    | Atom of term
-    | And of term list
-    | Or of term list
-
-    let rec pp = 
-      function 
-        Var (_,i) -> "X" ^ string_of_int i
-      | App(f, args) -> 
-          Func.pp f ^ "(" ^ String.concat " " (List.map pp (Array.to_list args)) ^ ")"
+    let eq_var = (==);;
 
     (* TODO: mkAnd/mkOr is bugged when the array l is made of variables! *)
     let mkAnd = function [f] -> f | l -> App(Func.andf,Array.of_list l)
@@ -80,18 +54,6 @@ module Term(Func: Lprun2.FuncT) : TermT
     (* Next two never called: *)
     let mkCut = App(Func.cutf,[||])
     let mkEq _ _ = assert false
-    
-     (* raise NotAFormula *)
-    let as_formula =
-      function
-        Var _ -> raise (Lprun2.NotFormula (lazy "Trying to prove a variable"))
-      | App(f,l) as x->
-         (* And [] is interpreted as false *)
-         if Func.eq f Func.andf then And (Array.to_list l)
-         (* Or [] is interpreted as true *)
-         else if Func.eq f Func.orf then Or (Array.to_list l)
-         else if Func.eq f Func.cutf then Cut
-         else Atom x
 
     type refresher = (vart * vart) list
     let empty_refresher = []
@@ -101,43 +63,85 @@ module Term(Func: Lprun2.FuncT) : TermT
      with Not_found ->
       let v' = args,i0 in
       (v,v')::l, v'
+ end
 
-    let var_of_ast l v args i =
-     try l,snd (List.find (fun x -> Lprun2.Variable.eq v (fst x)) l)
-     with Not_found ->
-      let v' = args,i in
-      (v,v')::l, v'
+module Formula(Func: Lprun2.ASTFuncT) : Lprun2.FormulaT 
+    with type term = AST(Func).term
+ = 
+  struct
+    module AST = AST(Func)
+
+    type term = AST.term
+
+    type formula =
+      Cut
+    | Atom of term
+    | And of term list
+    | Or of term list
+
+    let mkAnd = AST.mkAnd
+    let mkOr  = AST.mkOr
+
+     (* raise NotAFormula *)
+    let as_formula =
+      function
+        AST.Var _ -> raise (Lprun2.NotFormula (lazy "Trying to prove a variable"))
+      | AST.App(f,l) as x->
+         (* And [] is interpreted as false *)
+         if Func.eq f Func.andf then And (Array.to_list l)
+         (* Or [] is interpreted as true *)
+         else if Func.eq f Func.orf then Or (Array.to_list l)
+         else if Func.eq f Func.cutf then Cut
+         else Atom x
+
+    let rec pp = 
+      function 
+        AST.Var (_,i) -> "X" ^ string_of_int i
+      | AST.App(f, args) -> 
+          Func.pp f ^ "(" ^ String.concat " " (List.map pp (Array.to_list args)) ^ ")"
+  end
+
+module Term(Func: Lprun2.FuncT) : Lprun2.TermT
+ with type term = AST(Func).term =
+ struct
+  module AST = AST(Func)
+  include Formula(Func)
+
+  let var_of_ast l v args i =
+   try l,snd (List.find (fun x -> Lprun2.Variable.eq v (fst x)) l)
+   with Not_found ->
+    let v' = args,i in
+    (v,v')::l, v'
 
 
-     let rec term_of_ast l =
-      let rec aux args i l =
-       function
-         Lprun2.Var v ->
-          let l,v = var_of_ast l v args i in
-          l, Var v
-       | Lprun2.App(f,tl) ->
-          let tl' = Array.make (List.length tl) (Obj.magic ()) (* dummy *) in
-          let l = ref l in
-          List.iteri (fun i t -> let l',t' = aux tl' i !l t in l := l' ; tl'.(i) <- t') tl ;
-          !l, App(Func.funct_of_ast f,tl')
-      in
-       aux [||] (-999) l
+   let rec term_of_ast l =
+    let rec aux args i l =
+     function
+       Lprun2.Var v ->
+        let l,v = var_of_ast l v args i in
+        l, AST.Var v
+     | Lprun2.App(f,tl) ->
+        let tl' = Array.make (List.length tl) (Obj.magic ()) (* dummy *) in
+        let l = ref l in
+        List.iteri (fun i t -> let l',t' = aux tl' i !l t in l := l' ; tl'.(i) <- t') tl ;
+        !l, AST.App(Func.funct_of_ast f,tl')
+    in
+     aux [||] (-999) l
 
-    let query_of_ast t = snd (term_of_ast [] t)
+  let query_of_ast t = snd (term_of_ast [] t)
 
-    let program_of_ast p =
-     List.map (fun (a,f) ->
-      let l,a = term_of_ast [] a in
-      let _,f = term_of_ast l f in
-      a,f) p
-  end;;
-
+  let program_of_ast p =
+   List.map (fun (a,f) ->
+    let l,a = term_of_ast [] a in
+    let _,f = term_of_ast l f in
+    a,f) p
+ end
 
 module RefreshableTerm(Func:Lprun2.FuncT) : Lprun2.RefreshableTermT
-  with type term = Term(Func).term 
+  with type term = AST(Func).term 
 =
  struct
-   include Term(Func)
+   include AST(Func)
   
    let refresh l =
     let rec aux args l =
@@ -164,8 +168,8 @@ module RefreshableTerm(Func:Lprun2.FuncT) : Lprun2.RefreshableTermT
 
  end;;
 
-module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with type termT = Term(Func).term) : Lprun2.HashableRefreshableTermT
-  with type term = Term(Func).term
+module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with type termT = AST(Func).term) : Lprun2.HashableRefreshableTermT
+  with type term = AST(Func).term
   and  type bindings = Bind.bindings
 =
  struct
@@ -177,7 +181,7 @@ module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with typ
        let hash = Hashtbl.hash
      end
    
-   module TermFO = Term(Func)
+   module TermFO = AST(Func)
 
    type bindings = Bind.bindings
    (* TODO: use the bindings here!*)
@@ -187,8 +191,8 @@ module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with typ
     | TermFO.Var _ -> raise (Failure "Ill formed program")
  end;;
 
-module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = Term(Func).term and type varT = Term(Func).vart) : Lprun2.ApproximatableRefreshableTermT 
-  with type term = Term(Func).term 
+module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term and type varT = AST(Func).vart) : Lprun2.ApproximatableRefreshableTermT 
+  with type term = AST(Func).term 
   and  type bindings = Bind.bindings
 =
  struct
@@ -198,7 +202,7 @@ module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT 
 
    type bindings = Bind.bindings
 
-   module TermFO = Term(Func)
+   module TermFO = AST(Func)
 
    let rec deref sub i =
      match i with
@@ -225,11 +229,11 @@ module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT 
   end;;
 
 module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT 
-  with type varT = Term(Func).vart
-  and type termT = Term(Func).term
+  with type varT = AST(Func).vart
+  and type termT = AST(Func).term
   =
    struct
-     module T = Term(Func)
+     module T = AST(Func)
      type varT = T.vart
      type termT = T.term
 
@@ -251,11 +255,11 @@ module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT
      let filter f _ = assert false (* TODO assign None *)
    end;;
 
-module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = Term(Func).term and type varT = Term(Func).vart) : Lprun2.UnifyT
+module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term and type varT = AST(Func).vart) : Lprun2.UnifyT
    with module Bind = Bind
 =
   struct
-    module T = Term(Func)
+    module T = AST(Func)
     module Bind = Bind
 
     let rec unify sub t1 t2 = 
@@ -273,29 +277,6 @@ module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = Term(F
             raise (Lprun2.NotUnifiable (lazy "Terms are not unifiable!"))
    end;;
 
-module
- Implementation
-  (ITerm: TermT)
-  (IProgram: Lprun2.ProgramT with type Bind.termT = ITerm.term
-                      (*and type bindings := ITerm.bindings*))
-  (IRun: Lprun2.RunT with type progT := IProgram.t
-              and type bindingsT := IProgram.Bind.bindings
-              and type term := ITerm.term)
-  (Descr : sig val descr : string end)
- : Lprun2.Implementation
-=
- struct
-  (* RUN with non indexed engine *)
-  type query = ITerm.term
-  type program = (ITerm.term * ITerm.term) list
-  let query_of_ast = ITerm.query_of_ast
-  let program_of_ast = ITerm.program_of_ast
-  let msg q = Descr.descr ^ ITerm.pp q
-  let execute_once p q = IRun.run (IProgram.make p) q = None
-  let execute_loop p q = IRun.main_loop (IProgram.make p) q
- end
-;;
-
 let implementations = 
   let impl1 =
     (* RUN with non indexed engine *)
@@ -305,7 +286,7 @@ let implementations =
     let module IProgram = Lprun2.Program(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
     let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with no index, optimized imperative " end in
-    (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
+    (module Lprun2.Implementation(IRTerm)(IProgram)(IRun)(Descr)
      : Lprun2.Implementation) in
 
   let impl2 =
@@ -316,7 +297,7 @@ let implementations =
     let module IProgram = Lprun2.ProgramHash(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
     let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with one level index, optimized imperative " end in
-    (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
+    (module Lprun2.Implementation(IRTerm)(IProgram)(IRun)(Descr)
      : Lprun2.Implementation) in
 
   let impl3 =
@@ -327,7 +308,7 @@ let implementations =
     let module IProgram = Lprun2.ProgramIndexL(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
     let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with two level inefficient index, optimized imperative " end in
-    (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
+    (module Lprun2.Implementation(IRTerm)(IProgram)(IRun)(Descr)
      : Lprun2.Implementation) in
 
   [impl1; impl2; impl3]
