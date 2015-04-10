@@ -397,11 +397,12 @@ module HashableRefreshableTerm(Var:VarT)(Func:FuncT)(Bind:BindingsT with type te
    module TermFO = AST(Var)(Func)
 
    type bindings = Bind.bindings
-   (* TODO: use the bindings here!*)
-   let index binds =
-   function
-      TermFO.App(f,_) -> f
-    | TermFO.Var _ -> raise (Failure "Ill formed program")
+
+   let index bind t =
+    (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+    match Bind.deref bind t with
+       TermFO.App(f,_) -> f
+     | TermFO.Var _ -> raise (Failure "Ill formed program")
  end;;
 
 
@@ -777,9 +778,9 @@ module HashableRefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with 
 
    type bindings = Bind.bindings
 
-(* TODO: use the bindings *)
-   let index bind =
-     function
+   let index bind t =
+    (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+     match Bind.deref bind t with
       TermFO.App(f,_) -> f
     | TermFO.Var _ -> raise (Failure "Ill formed program")
   end;;
