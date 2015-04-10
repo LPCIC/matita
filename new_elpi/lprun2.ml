@@ -344,16 +344,35 @@ module type HashableRefreshableTermT =
   sig
     include RefreshableTermT
     module IndexData : Hashtbl.HashedType 
-(* TODO: wrong, use the bindings here too as we did below *)
-    val index: term -> IndexData.t
+    type bindings
+    val index: bindings -> term -> IndexData.t
   end;;
 
+module type BindingsT =
+  sig
+    type varT
+    type termT
+    type bindings
+    val pp_bindings : bindings -> string
+    val cardinal : bindings -> bindings * int
+    val empty_bindings: bindings
 
-module HashableRefreshableTerm(Var:VarT)(Func:FuncT) : HashableRefreshableTermT
+    (** For Unification *)
+    (* bind sigma v t = sigma [v |-> t] *)
+    val bind : bindings -> varT -> termT -> bindings
+    (* lookup sigma v = Some t   iff  [v |-> t] \in sigma *)
+    val lookup : bindings -> varT -> termT option
+
+    (** For GC *)
+    val filter : (varT -> bool) -> bindings -> bindings
+  end;;
+
+module HashableRefreshableTerm(Var:VarT)(Func:FuncT)(Bind:BindingsT with type termT = Term(Var)(Func).term) : HashableRefreshableTermT
   with type vart = Var.t
   and  type funct = Func.t
   and  type term = Term(Var)(Func).term 
   and  type formula = Term(Var)(Func).formula
+  and  type bindings = Bind.bindings
 =
  struct
    include RefreshableTerm(Var)(Func)
@@ -366,49 +385,14 @@ module HashableRefreshableTerm(Var:VarT)(Func:FuncT) : HashableRefreshableTermT
    
    module TermFO = Term(Var)(Func)
 
-   let index =
+   type bindings = Bind.bindings
+
+   let index binds =
    function
       TermFO.App(f,_) -> f
     | TermFO.Var _ -> raise (Failure "Ill formed program")
  end;;
 
-
-module type ApproximatableRefreshableTermT =
-  sig
-    include RefreshableTermT
-(* TODO: fix me by adding the bindings as we did below *)
-    type approx
-    val approx: term -> approx
-    val matchp: approx -> approx -> bool
-  end;;
-
-module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT) :
- ApproximatableRefreshableTermT 
-  with type vart = Var.t
-  and  type funct = Func.t
-  and  type term = Term(Var)(Func).term 
-  and  type formula = Term(Var)(Func).formula
-=
- struct
-   include RefreshableTerm(Var)(Func) 
-
-   type approx = Func.t * (Func.t option)
-
-   module TermFO = Term(Var)(Func)
-
-   let approx =
-     function
-       TermFO.App(f,[])
-     | TermFO.App(f,TermFO.Var _::_) -> f,None
-     | TermFO.App(f,TermFO.App(g,_)::_) -> f, Some g
-     | TermFO.Var _ -> raise (Failure "Ill formed program")
-
-   let matchp app1 app2 =
-     match app1,app2 with
-       (f1,None),(f2,_)
-     | (f1,_),(f2,None)-> f1=f2
-     | (f1,Some g1),(f2,Some g2) -> f1=f2 && g1=g2
-  end;;
 
 
 module type MapableRefreshableTermT =
@@ -446,25 +430,6 @@ module MapableRefreshableTerm(Var: VarT)(Func: FuncT) : MapableRefreshableTermT
 
 (*------end-------*)
 
-module type BindingsT =
-  sig
-    type varT
-    type termT
-    type bindings
-    val pp_bindings : bindings -> string
-    val cardinal : bindings -> bindings * int
-    val empty_bindings: bindings
-
-    (** For Unification *)
-    (* bind sigma v t = sigma [v |-> t] *)
-    val bind : bindings -> varT -> termT -> bindings
-    (* lookup sigma v = Some t   iff  [v |-> t] \in sigma *)
-    val lookup : bindings -> varT -> termT option
-
-    (** For GC *)
-    val filter : (varT -> bool) -> bindings -> bindings
-  end;;
-
 module ImpBindings(Func: FuncT) : 
  BindingsT 
   with type varT = ImpVariable.t
@@ -490,7 +455,60 @@ module ImpBindings(Func: FuncT) :
      let pp_bindings _ = "<< no way to print >>"
         
      let filter f _ = assert false (* TODO assign None *)
-   end
+   end;;
+
+
+
+module type ApproximatableRefreshableTermT =
+  sig
+    include RefreshableTermT
+    type approx
+    type bindings
+    val approx: bindings -> term -> approx
+    val matchp: approx -> approx -> bool
+  end;;
+
+module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = Term(Var)(Func).term) :
+ ApproximatableRefreshableTermT 
+  with type vart = Var.t
+  and  type funct = Func.t
+  and  type term = Term(Var)(Func).term 
+  and  type formula = Term(Var)(Func).formula
+  and  type bindings = Bind.bindings
+=
+ struct
+   include RefreshableTerm(Var)(Func) 
+
+   type approx = Func.t * (Func.t option)
+
+   type bindings = Bind.bindings
+
+   module TermFO = Term(Var)(Func)
+
+   let rec deref sub i =
+     match i with
+       (Var v) ->
+         (match Bind.lookup sub v with
+            None -> i
+         | Some t -> deref sub t)
+     | App(_,_) -> i
+
+   let approx bind =
+     function
+       TermFO.App(f,[]) -> f,None
+     | TermFO.App(f,hd::_) -> 
+         (match deref bind hd with
+            Var _-> f,None
+          | App(g,_) -> f,Some g)
+     | TermFO.Var _ -> raise (Failure "Ill formed program")
+
+   let matchp app1 app2 =
+     match app1,app2 with
+       (f1,None),(f2,_)
+     | (f1,_),(f2,None)-> f1=f2
+     | (f1,Some g1),(f2,Some g2) -> f1=f2 && g1=g2
+  end;;
+
 
 module type DoubleMapIndexableRefreshableTermT =
  sig
@@ -737,6 +755,7 @@ module HashableRefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with 
   and  type funct = Func.t
   and  type term = Term(Var)(Func).term 
   and  type formula = Term(Var)(Func).formula
+  and  type bindings = Bind.bindings
 =
  struct
    include RefreshableFlatTerm(Var)(Func)(Bind)
@@ -749,7 +768,10 @@ module HashableRefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with 
 
    module TermFO = Term(Var)(Func)
 
-   let index =
+   type bindings = Bind.bindings
+
+(* TODO: use the bindings *)
+   let index bind =
      function
       TermFO.App(f,_) -> f
     | TermFO.Var _ -> raise (Failure "Ill formed program")
@@ -872,7 +894,7 @@ module Program(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term
    eagerly on all the clauses with the good head. Retrieving the
    clauses is O(n) where n is the number of clauses with the
    good head. *)
-module ProgramHash(Term: HashableRefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term) : ProgramT with module Bind = Unify.Bind 
+module ProgramHash(Term: HashableRefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term and type Bind.bindings = Term.bindings) : ProgramT with module Bind = Unify.Bind 
  =   
    struct
      module Bind = Unify.Bind
@@ -885,7 +907,7 @@ module ProgramHash(Term: HashableRefreshableTermT)(Unify: UnifyT with type Bind.
                          Form.formula Hash.t -> 
                             (bindings * formulaT) list           *)
      let backchain binds a h =
-       let l = List.rev (Hash.find_all h (Term.index a)) in
+       let l = List.rev (Hash.find_all h (Term.index binds a)) in
        filter_map (fun clause -> 
          let atom,f = Term.refresh_clause clause in
          try
@@ -897,7 +919,7 @@ module ProgramHash(Term: HashableRefreshableTermT)(Unify: UnifyT with type Bind.
      let make p =
        let h = Hash.create 199 in
        List.iter
-         (fun ((a,v) as clause) -> Hash.add h (Term.index a) clause) p;
+         (fun ((a,v) as clause) -> Hash.add h (Term.index Bind.empty_bindings a) clause) p;
        h
    end;; 
 
@@ -952,7 +974,7 @@ module ProgramDoubleInd(Term: DoubleMapIndexableRefreshableTermT)(Unify: UnifyT 
        just doing eager unification without approximated matching ***
    Retrieving the good clauses is O(n) where n is the size of the
    program. *)
-module ProgramIndexL(Term: ApproximatableRefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term) : ProgramT with module Bind = Unify.Bind  
+module ProgramIndexL(Term: ApproximatableRefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term and type Bind.bindings = Term.bindings) : ProgramT with module Bind = Unify.Bind  
  =
    struct
      module Bind = Unify.Bind
@@ -963,7 +985,7 @@ module ProgramIndexL(Term: ApproximatableRefreshableTermT)(Unify: UnifyT with ty
                          Form.formula Hash.t -> 
                             (bindings * formulaT) list           *)
      let backchain binds a l =
-       let app = Term.approx a in
+       let app = Term.approx binds a in
          let l = List.filter (fun (a',_) -> Term.matchp app a') l in
           filter_map (fun (_,clause) ->
            let atom,f = Term.refresh_clause clause in
@@ -975,7 +997,7 @@ module ProgramIndexL(Term: ApproximatableRefreshableTermT)(Unify: UnifyT with ty
         ;;
         
         let make =
-          List.map (fun ((a,_) as clause) -> Term.approx a,clause)
+          List.map (fun ((a,_) as clause) -> Term.approx Bind.empty_bindings a,clause)
    end;;
 
 
@@ -1314,7 +1336,7 @@ let implementations =
 
 let impl2 =
   (* RUN with indexed engine *)
-  let module ITerm = HashableRefreshableTerm(Variable)(FuncS) in
+  let module ITerm = HashableRefreshableTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
   let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with one level index hashtbl " end in
@@ -1323,7 +1345,7 @@ let impl2 =
 
 let impl3 =
   (* RUN with two levels inefficient indexed engine *)
-  let module ITerm = ApproximatableRefreshableTerm(Variable)(FuncS) in
+  let module ITerm = ApproximatableRefreshableTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module IProgram = ProgramIndexL(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
   let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with two level inefficient index " end in
@@ -1331,7 +1353,7 @@ let impl3 =
   : Implementation) in
 
 let impl4 =
-  let module ITerm = HashableRefreshableTerm(WeakVariable)(FuncS) in
+  let module ITerm = HashableRefreshableTerm(WeakVariable)(FuncS)(Bindings(WeakVariable)(FuncS)) in
 let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(Bindings(WeakVariable)(FuncS))) in
   let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with one level index hashtbl and automatic GC " end in
@@ -1342,7 +1364,7 @@ let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(Bindings(Wea
 let impl5 =
   (* RUN with indexed engine and automatic GC *)
   let module ITerm = HashableRefreshableFlatTerm(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
-  let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(Bindings(WeakVariable)(FuncS))) in
+  let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS))) in
   let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening and automatic GC " end in
   (module Implementation(ITerm)(IProgram)(IRun)(Descr)
@@ -1378,7 +1400,7 @@ let impl8 =
 
 let impl9 =
   (* RUN with indexed engine *)
-  let module ITerm = HashableRefreshableTerm(ImpVariable)(FuncS) in
+  let module ITerm = HashableRefreshableTerm(ImpVariable)(FuncS)(ImpBindings(FuncS)) in
   let module IProgram = ProgramHash(ITerm)(Unify(ImpVariable)(FuncS)(ImpBindings(FuncS))) in
   let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with imperative one level index hashtbl " end in
