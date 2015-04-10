@@ -364,6 +364,9 @@ module type BindingsT =
     type varT
     type termT
     type bindings
+
+    val deref : bindings -> termT -> termT
+
     val pp_bindings : bindings -> string
     val cardinal : bindings -> bindings * int
     val empty_bindings: bindings
@@ -441,8 +444,9 @@ module ImpBindings(Func: FuncT) :
   and type termT = AST(ImpVariable)(Func).term
   =
    struct
+     module T = AST(ImpVariable)(Func)
      type varT = ImpVariable.t
-     type termT = AST(ImpVariable)(Func).term
+     type termT = T.term
 
      (*module MapVars = Map.Make(Vars)
      module Terms = Term(Vars)(Func)
@@ -460,6 +464,17 @@ module ImpBindings(Func: FuncT) :
      let pp_bindings _ = "<< no way to print >>"
         
      let filter f _ = assert false (* TODO assign None *)
+
+     let deref _ =
+      let rec deref i =
+        match i with
+          (T.Var v) ->
+            (match Obj.magic !v (* Inlining of lookup! *) with
+               None -> i
+            | Some t -> deref t)
+        | T.App(_,_) -> i
+     in
+      deref
    end;;
 
 
@@ -488,19 +503,12 @@ module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT wit
 
    module TermFO = AST(Var)(Func)
 
-   let rec deref sub i =
-     match i with
-       (T.Var v) ->
-         (match Bind.lookup sub v with
-            None -> i
-         | Some t -> deref sub t)
-     | T.App(_,_) -> i
-
    let approx bind =
      function
        TermFO.App(f,[]) -> f,None
      | TermFO.App(f,hd::_) -> 
-         (match deref bind hd with
+         (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+         (match Bind.deref bind hd with
             T.Var _-> f,None
           | T.App(g,_) -> f,Some g)
      | TermFO.Var _ -> raise (Failure "Ill formed program")
@@ -535,21 +543,12 @@ module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT
 
    type approx = Func.t option
 
-   (* TODO cut&paste code: move deref to the Bindings module or
-      somewhere else... *)
-   let rec deref sub i =
-     match i with
-       (T.Var v) ->
-         (match Bind.lookup sub v with
-            None -> i
-         | Some t -> deref sub t)
-     | T.App(_,_) -> i
-
    let approx bind =
      function
        T.App(_,[]) -> None
      | T.App(_,hd::_) ->
-        (match deref bind hd with
+         (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+        (match Bind.deref bind hd with
             T.Var _-> None
           | T.App(g,_) -> Some g)
      | T.Var _ -> raise (Failure "Ill formed program")
@@ -594,6 +593,15 @@ module Bindings(Vars: VarT)(Func: FuncT) : BindingsT
          bind [])
 
      let filter f bind = MapVars.filter (fun k _ -> f k) bind 
+
+     (* TODO Cut&paste code :-( *)
+     let rec deref bind i =
+       match i with
+         (Terms.Var v) ->
+           (match lookup bind v with
+              None -> i
+           | Some t -> deref bind t)
+       | Terms.App(_,_) -> i
    end;;
 
 
@@ -648,6 +656,15 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT
         bind,MapVars.cardinal bind
 
     let filter f bind = MapVars.filter (fun k _ -> f (Vars.Box k)) bind 
+
+     (* TODO Cut&paste code :-( *)
+     let rec deref bind i =
+       match i with
+         (Terms.Var v) ->
+           (match lookup bind v with
+              None -> i
+           | Some t -> deref bind t)
+       | Terms.App(_,_) -> i
   end;;
 
 
@@ -697,23 +714,12 @@ module FlatUnify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = AST(V
      module Bind = Bind
      module T = AST(Var)(Func)
 
-     let rec deref sub i =
-       match i with
-         (T.Var v) ->
-           (match Bind.lookup sub v with
-              None -> i
-           | Some t -> deref sub t)
-       | T.App(_,_) -> i
-
      let rec flatten sub i =
        match i with
-         (T.Var _) -> deref sub i
+         (T.Var _) -> Bind.deref sub i
        | T.App(f,l) ->
           let l' = List.map (flatten sub) l in
            if l'==l then i else T.App(f, l')
-
-(*let flatten sub i =
-prerr_endline ("F: " ^ T.pp i); flatten sub i*)
 
      (* unify sub pattern query
         the query is only dereferences
@@ -730,8 +736,9 @@ prerr_endline ("F: " ^ T.pp i); flatten sub i*)
            raise (NotUnifiable (lazy "Terms are not unifiable!"))
      | (T.Var _, _)
      | (_, T.Var _) ->
-       let t1 = (if do_flatten then flatten else deref) sub t1 in
-       let t2 = (if do_flatten then flatten else deref) sub t2 in
+       (* TODO: COMPARE WITH THE ETA-EXPANSION OF DEREF BELOW *)
+       let t1 = (if do_flatten then flatten else Bind.deref) sub t1 in
+       let t2 = (if do_flatten then flatten else Bind.deref) sub t2 in
        match t1,t2 with
          (T.Var v1, T.Var v2) when Var.eq v1 v2 -> sub
        | (T.Var v1, _) -> Bind.bind sub v1 t2

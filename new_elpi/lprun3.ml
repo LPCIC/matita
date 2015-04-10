@@ -204,20 +204,13 @@ module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT 
 
    module TermFO = AST(Func)
 
-   let rec deref sub i =
-     match i with
-       (TermFO.Var v) ->
-         (match Bind.lookup sub v with
-            None -> i
-         | Some t -> deref sub t)
-     | TermFO.App(_,_) -> i
-
      let approx bind =
       function
          TermFO.App(f,[||]) -> f,None
        | TermFO.Var _ -> raise (Failure "Ill formed program")
        | TermFO.App(f,a) ->
-          match deref bind a.(0) with
+         (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+          match Bind.deref bind a.(0) with
              TermFO.Var _ -> f,None
            | TermFO.App(g,_) -> f, Some g
 
@@ -253,6 +246,19 @@ module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT
      let pp_bindings _ = "<< no way to print >>"
         
      let filter f _ = assert false (* TODO assign None *)
+
+     (* TODO Cut&paste code :-( *)
+     let deref _ =
+      let rec deref i =
+        match i with
+          (T.Var v) ->
+            (* Inlining of lookup! *)
+            (match T.deref v with
+               T.Var v' when T.eq_var v v' -> i
+             | t -> deref t)
+        | T.App(_,_) -> i
+     in
+      deref
    end;;
 
 module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term and type varT = AST(Func).vart) : Lprun2.UnifyT

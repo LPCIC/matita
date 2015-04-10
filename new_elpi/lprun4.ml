@@ -189,6 +189,19 @@ module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT
      let pp_bindings _ = "<< no way to print >>"
         
      let filter f _ = assert false (* TODO assign None *)
+
+     (* TODO Cut&paste code :-( *)
+     let deref _ =
+      let rec deref i =
+        match i with
+          (T.Var (args,v)) ->
+            (* Inlining of lookup! *)
+            (match T.deref (args,v) with
+               T.Var (args',v') when T.eq_var (args,v) (args',v') -> i
+             | t -> deref t)
+        | T.App(_,_) -> i
+     in
+      deref
    end;;
 
 exception NotUnifiable of string Lazy.t
