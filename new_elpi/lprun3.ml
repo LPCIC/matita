@@ -131,7 +131,7 @@ module Term(Func: Lprun2.FuncT) : TermT
 
 module type RefreshableTermT =
   sig
-    include TermT
+    type term (*include TermT*)
  (* How to distinguish Atom from formula? 
     type clause = atomT * formula *)
     type clause = term * term
@@ -139,8 +139,14 @@ module type RefreshableTermT =
     val refresh_clause : clause -> clause
   end;;
 
+(* TODO: wrong, redo as it was done in lprun.ml *)
+module type HashableRefreshableTermT =
+  sig
+    include TermT
+    include RefreshableTermT with type term := term
+  end;;
 
-module RefreshableTerm(Func:Lprun2.FuncT) : RefreshableTermT
+module RefreshableTerm(Func:Lprun2.FuncT) : HashableRefreshableTermT
   with type vart = Term(Func).vart
   and  type funct = Func.t
   and  type term = Term(Func).term 
@@ -260,10 +266,11 @@ module Program(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT
    eagerly on all the clauses with the good head. Retrieving the
    clauses is O(n) where n is the number of clauses with the
    good head. *)
-module ProgramHash(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind =
+module ProgramHash(Term: HashableRefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind =
   struct
      module Bind = Unify.Bind
 
+     (* TODO? This required the HashableRefreshable *)
      let index =
       function
          Term.Var _ -> raise (Failure "Ill formed program")
@@ -305,7 +312,7 @@ module ProgramHash(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.t
        just doing eager unification without approximated matching ***
    Retrieving the good clauses is O(n) where n is the size of the
    program. *)
-module ProgramIndexL(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind =
+module ProgramIndexL(Term: HashableRefreshableTermT)(Unify: Lprun2.UnifyT with type Bind.termT = Term.term) : Lprun2.ProgramT with module Bind = Unify.Bind =
    struct
         module Bind = Unify.Bind
 
@@ -350,7 +357,7 @@ module ProgramIndexL(Term: RefreshableTermT)(Unify: Lprun2.UnifyT with type Bind
           List.map (fun ((a,_) as clause) -> approx a,clause)
    end;;
 
-module Run(Term: RefreshableTermT)(Prog: Lprun2.ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
+module Run(Term: HashableRefreshableTermT)(Prog: Lprun2.ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
  Lprun2.RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
            and type progT := Prog.t
  = 

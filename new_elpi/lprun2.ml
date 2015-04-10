@@ -290,7 +290,7 @@ module Term(Var: VarT)(Func: FuncT) : TermT
 
 module type RefreshableTermT =
   sig
-    include TermT
+    type term
  (* How to distinguish Atom from formula? 
     type clause = atomT * formula *)
     type clause = term * term
@@ -300,10 +300,7 @@ module type RefreshableTermT =
 
 
 module RefreshableTerm(Var:VarT)(Func:FuncT) : RefreshableTermT
-  with type vart = Var.t
-  and  type funct = Func.t
-  and  type term = Term(Var)(Func).term 
-  and  type formula = Term(Var)(Func).formula
+  with type term = Term(Var)(Func).term 
 =
  struct
    include Term(Var)(Func)
@@ -368,10 +365,7 @@ module type BindingsT =
   end;;
 
 module HashableRefreshableTerm(Var:VarT)(Func:FuncT)(Bind:BindingsT with type termT = Term(Var)(Func).term) : HashableRefreshableTermT
-  with type vart = Var.t
-  and  type funct = Func.t
-  and  type term = Term(Var)(Func).term 
-  and  type formula = Term(Var)(Func).formula
+  with type term = Term(Var)(Func).term 
   and  type bindings = Bind.bindings
 =
  struct
@@ -406,10 +400,7 @@ module type MapableRefreshableTermT =
 
 
 module MapableRefreshableTerm(Var: VarT)(Func: FuncT) : MapableRefreshableTermT
-  with type vart = Var.t
-  and  type funct = Func.t
-  and  type term = Term(Var)(Func).term 
-  and  type formula = Term(Var)(Func).formula
+  with type term = Term(Var)(Func).term 
 =
  struct
   include RefreshableTerm(Var)(Func)
@@ -470,14 +461,12 @@ module type ApproximatableRefreshableTermT =
 
 module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = Term(Var)(Func).term) :
  ApproximatableRefreshableTermT 
-  with type vart = Var.t
-  and  type funct = Func.t
-  and  type term = Term(Var)(Func).term 
-  and  type formula = Term(Var)(Func).formula
+  with type term = Term(Var)(Func).term 
   and  type bindings = Bind.bindings
 =
  struct
    include RefreshableTerm(Var)(Func) 
+   module T = Term(Var)(Func)
 
    type approx = Func.t * (Func.t option)
 
@@ -487,19 +476,19 @@ module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT wit
 
    let rec deref sub i =
      match i with
-       (Var v) ->
+       (T.Var v) ->
          (match Bind.lookup sub v with
             None -> i
          | Some t -> deref sub t)
-     | App(_,_) -> i
+     | T.App(_,_) -> i
 
    let approx bind =
      function
        TermFO.App(f,[]) -> f,None
      | TermFO.App(f,hd::_) -> 
          (match deref bind hd with
-            Var _-> f,None
-          | App(g,_) -> f,Some g)
+            T.Var _-> f,None
+          | T.App(g,_) -> f,Some g)
      | TermFO.Var _ -> raise (Failure "Ill formed program")
 
    let matchp app1 app2 =
@@ -521,14 +510,12 @@ module type DoubleMapIndexableRefreshableTermT =
 ;;
 
 module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = Term(Var)(Func).term) : DoubleMapIndexableRefreshableTermT
-  with type vart = Var.t
-  and  type funct = Func.t
-  and  type term = Term(Var)(Func).term 
-  and  type formula = Term(Var)(Func).formula
-  and  type bindings = Bind.bindings
+  with type term = Term(Var)(Func).term 
+  and type bindings = Bind.bindings
 =
  struct
    include MapableRefreshableTerm(Var)(Func)
+   module T = Term(Var)(Func)
 
    type bindings = Bind.bindings
 
@@ -538,20 +525,20 @@ module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT
       somewhere else... *)
    let rec deref sub i =
      match i with
-       (Var v) ->
+       (T.Var v) ->
          (match Bind.lookup sub v with
             None -> i
          | Some t -> deref sub t)
-     | App(_,_) -> i
+     | T.App(_,_) -> i
 
    let approx bind =
      function
-       App(_,[]) -> None
-     | App(_,hd::_) ->
+       T.App(_,[]) -> None
+     | T.App(_,hd::_) ->
         (match deref bind hd with
-            Var _-> None
-          | App(g,_) -> Some g)
-     | Var _ -> raise (Failure "Ill formed program")
+            T.Var _-> None
+          | T.App(g,_) -> Some g)
+     | T.Var _ -> raise (Failure "Ill formed program")
 
    let matchp app1 app2 =
      match app1,app2 with
@@ -738,10 +725,7 @@ prerr_endline ("F: " ^ T.pp i); flatten sub i*)
 
 module RefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = Term(Var)(Func).term and type varT = Var.t) :
  RefreshableTermT
-  with type vart = Var.t
-  and  type funct = Func.t
-  and  type term = RefreshableTerm(Var)(Func).term
-  and  type formula = RefreshableTerm(Var)(Func).formula
+  with type term = RefreshableTerm(Var)(Func).term
 =
  struct
    include RefreshableTerm(Var)(Func)
@@ -751,10 +735,7 @@ module RefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type ter
 
 
 module HashableRefreshableFlatTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT with type varT = Var.t and type termT = Term(Var)(Func).term) : HashableRefreshableTermT
-  with type vart = Var.t
-  and  type funct = Func.t
-  and  type term = Term(Var)(Func).term 
-  and  type formula = Term(Var)(Func).formula
+  with type term = Term(Var)(Func).term 
   and  type bindings = Bind.bindings
 =
  struct
@@ -1046,7 +1027,7 @@ module type RunT =
   val main_loop: progT -> term -> unit
  end
 
-module Run(Term: RefreshableTermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
+module Run(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(*(GC : GCT type formula := Term.formula)*)(*TODO : RESTORE*) :
  RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
            and type progT := Prog.t
  = 
@@ -1168,7 +1149,7 @@ module Run(Term: RefreshableTermT)(Prog: ProgramT with type Bind.termT = Term.te
      end;;
 
 
-module RunGC(Term: RefreshableTermT)(Prog: ProgramT with type Bind.termT = Term.term)(GC : GCT with type term := Term.term and type bindings := Prog.Bind.bindings)(*TODO : RESTORE*) :
+module RunGC(Term: TermT)(Prog: ProgramT with type Bind.termT = Term.term)(GC : GCT with type term := Term.term and type bindings := Prog.Bind.bindings)(*TODO : RESTORE*) :
  RunT with type term := Term.term and type bindingsT := Prog.Bind.bindings
            and type progT := Prog.t
  = 
@@ -1303,8 +1284,7 @@ module type Implementation =
 module
  Implementation
   (ITerm: TermT)
-  (IProgram: ProgramT with type Bind.termT = ITerm.term
-                      (*and type bindings := ITerm.bindings*))
+  (IProgram: ProgramT with type Bind.termT = ITerm.term)
   (IRun: RunT with type progT := IProgram.t
               and type bindingsT := IProgram.Bind.bindings
               and type term := ITerm.term)
@@ -1327,93 +1307,103 @@ module
 let implementations = 
   let impl1 =
     (* RUN with non indexed engine *)
+    let module IRTerm = Term(Variable)(FuncS) in
     let module ITerm = RefreshableTerm(Variable)(FuncS) in
     let module IProgram = Program(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-    let module IRun = Run(ITerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
+    let module IRun = Run(IRTerm)(IProgram)(*(NoGC(FOAtomImpl))*) in
     let module Descr = struct let descr = "Testing with no index list " end in
-    (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+    (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
      : Implementation) in
 
 let impl2 =
   (* RUN with indexed engine *)
+  let module IRTerm = Term(Variable)(FuncS) in
   let module ITerm = HashableRefreshableTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with one level index hashtbl " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 let impl3 =
   (* RUN with two levels inefficient indexed engine *)
+  let module IRTerm = Term(Variable)(FuncS) in
   let module ITerm = ApproximatableRefreshableTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module IProgram = ProgramIndexL(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with two level inefficient index " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 let impl4 =
+  let module IRTerm = Term(WeakVariable)(FuncS) in
   let module ITerm = HashableRefreshableTerm(WeakVariable)(FuncS)(Bindings(WeakVariable)(FuncS)) in
 let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(Bindings(WeakVariable)(FuncS))) in
-  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with one level index hashtbl and automatic GC " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 
 let impl5 =
   (* RUN with indexed engine and automatic GC *)
+  let module IRTerm = Term(WeakVariable)(FuncS) in
   let module ITerm = HashableRefreshableFlatTerm(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS)) in
   let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(WeakBindings(WeakVariable)(FuncS))) in
-  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening and automatic GC " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 
 let impl6 =
   (* RUN with indexed engine *)
+  let module IRTerm = Term(Variable)(FuncS) in
   let module ITerm = HashableRefreshableFlatTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 
 let impl7 =
+  let module IRTerm = Term(Variable)(FuncS) in
   let module ITerm = HashableRefreshableFlatTerm(Variable)(FuncS)(Bindings(Variable)(FuncS)) in
   let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = RunGC(ITerm)(IProgram)(GC(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
+  let module IRun = RunGC(IRTerm)(IProgram)(GC(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening + manual GC " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 let impl8 =
   (* RUN with indexed engine and Map of clauses instead of Hash of clauses*)
+  let module IRTerm = Term(Variable)(FuncS) in
   let module ITerm = MapableRefreshableTerm(Variable)(FuncS) in
   let module IProgram = ProgramMap(ITerm)(Unify(Variable)(FuncS)(Bindings(Variable)(FuncS))) in
-  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with one level index map " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 let impl9 =
   (* RUN with indexed engine *)
+  let module IRTerm = Term(ImpVariable)(FuncS) in
   let module ITerm = HashableRefreshableTerm(ImpVariable)(FuncS)(ImpBindings(FuncS)) in
   let module IProgram = ProgramHash(ITerm)(Unify(ImpVariable)(FuncS)(ImpBindings(FuncS))) in
-  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with imperative one level index hashtbl " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
 let impl10 =
   (* RUN with indexed engine *)
+  let module IRTerm = Term(ImpVariable)(FuncS) in
   let module ITerm = DoubleMapIndexableRefreshableTerm(ImpVariable)(FuncS)(ImpBindings(FuncS)) in
   let module IProgram = ProgramDoubleInd(ITerm)(Unify(ImpVariable)(FuncS)(ImpBindings(FuncS))) in
-  let module IRun = Run(ITerm)(IProgram)(*(NoGC(IAtom))*) in
+  let module IRun = Run(IRTerm)(IProgram)(*(NoGC(IAtom))*) in
   let module Descr = struct let descr = "Testing with imperative two level efficient index " end in
-  (module Implementation(ITerm)(IProgram)(IRun)(Descr)
+  (module Implementation(IRTerm)(IProgram)(IRun)(Descr)
   : Implementation) in
 
   [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8;impl9;impl10]
