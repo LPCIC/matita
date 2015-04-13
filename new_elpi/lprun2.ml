@@ -209,7 +209,10 @@ module type FormulaT =
     val mkOr : term list -> term
 
     (* raise NotAFormula *)
-(* TODO: use the bindings! *)
+(* TODO: use the bindings!
+   since you don't have the type, add
+   type bindings here
+*)
     val as_formula: term -> formula
 
     val pp: term -> string
@@ -219,6 +222,9 @@ module Formula(Var: VarT)(Func: ASTFuncT) : FormulaT
     with type term = AST(Var)(Func).term
  = 
   struct
+(* TODO: use the bindings! You will have to take the (Bind:BindingsT...)
+   in input
+*)
     module AST = AST(Var)(Func)
 
     type term = AST.term
@@ -255,6 +261,9 @@ module Formula(Var: VarT)(Func: ASTFuncT) : FormulaT
          "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
   end;;
 
+(* TODO: here you will be asked for the bindings. But since this is
+   just for the just parsed things, you can pass a dummy implementation!
+*)
 module FOForm = Formula(Variable)(ASTFuncS)
 
 module type TermT =
@@ -269,6 +278,8 @@ module Term(Var: VarT)(Func: FuncT) : TermT
     with type term = AST(Var)(Func).term =
  struct
   module AST = AST(Var)(Func)
+  (* TODO: this is where we really need to pass the real implementation
+     of the bindings *)
   include Formula(Var)(Func)
 
   (* Note: converters from asts are the same as
@@ -346,10 +357,6 @@ module RefreshableTerm(Var:VarT)(Func:FuncT) : RefreshableTermT
 
  end;;
 
-
-
-
-(*------ being ------ *)
 
 module type HashableRefreshableTermT =
   sig
@@ -569,8 +576,9 @@ module Bindings(Vars: VarT)(Func: FuncT) : BindingsT
    struct
      type varT = Vars.t
      type termT = AST(Vars)(Func).term
-
-     module Form = Formula(Vars)(Func)
+ 
+     (* TODO: use the dummy implementation AND leave the TODO *)
+     module Form = Formula(Vars)(Func)(*(...)*)
 
      module MapVars = Map.Make(Vars)
      module VarSet = Set.Make(Vars)
@@ -613,7 +621,8 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT
     type varT = Vars.t
     type termT = AST(Vars)(Func).term
 
-    module Form = Formula(Vars)(Func)
+    (* TODO: use the dummy implementation AND leave the TODO *)
+    module Form = Formula(Vars)(Func) (*(...)*)
 
     module MapVars = Map.Make(struct type t = int let compare = compare let eq = (=) end)
     module Terms = AST(Vars)(Func)
