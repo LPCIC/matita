@@ -209,7 +209,10 @@ module type FormulaT =
     val mkOr : term list -> term
 
     (* raise NotAFormula *)
-(* TODO: use the bindings! *)
+(* TODO: use the bindings!
+   since you don't have the type, add
+   type bindings here
+*)
     val as_formula: term -> formula
 
     val pp: term -> string
@@ -219,6 +222,9 @@ module Formula(Var: VarT)(Func: ASTFuncT) : FormulaT
     with type term = AST(Var)(Func).term
  = 
   struct
+(* TODO: use the bindings! You will have to take the (Bind:BindingsT...)
+   in input
+*)
     module AST = AST(Var)(Func)
 
     type term = AST.term
@@ -255,6 +261,9 @@ module Formula(Var: VarT)(Func: ASTFuncT) : FormulaT
          "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
   end;;
 
+(* TODO: here you will be asked for the bindings. But since this is
+   just for the just parsed things, you can pass a dummy implementation!
+*)
 module FOForm = Formula(Variable)(ASTFuncS)
 
 module type TermT =
@@ -269,6 +278,8 @@ module Term(Var: VarT)(Func: FuncT) : TermT
     with type term = AST(Var)(Func).term =
  struct
   module AST = AST(Var)(Func)
+  (* TODO: this is where we really need to pass the real implementation
+     of the bindings *)
   include Formula(Var)(Func)
 
   (* Note: converters from asts are the same as
@@ -347,10 +358,6 @@ module RefreshableTerm(Var:VarT)(Func:FuncT) : RefreshableTermT
  end;;
 
 
-
-
-(*------ being ------ *)
-
 module type HashableRefreshableTermT =
   sig
     include RefreshableTermT
@@ -411,14 +418,15 @@ module type MapableRefreshableTermT =
  sig
   include RefreshableTermT
   module IndexData : Map.OrderedType 
-(* TODO : use bindings *)
-  val index: term -> IndexData.t
- end
-;;
+  type bindings
+  val index: bindings -> term -> IndexData.t
+  
+ end;;
 
 
-module MapableRefreshableTerm(Var: VarT)(Func: FuncT) : MapableRefreshableTermT
+module MapableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind:BindingsT with type termT = AST(Var)(Func).term) : MapableRefreshableTermT
   with type term = AST(Var)(Func).term 
+  and  type bindings = Bind.bindings
 =
  struct
   include RefreshableTerm(Var)(Func)
@@ -430,14 +438,15 @@ module MapableRefreshableTerm(Var: VarT)(Func: FuncT) : MapableRefreshableTermT
    end
 
   module TermFO = AST(Var)(Func)
+  type bindings = Bind.bindings
 
-  let index =
-   function
-      TermFO.App(f,_) -> f
-    | TermFO.Var _ -> raise (Failure "Ill formed program")
+  let index bind t =
+    (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+    match Bind.deref bind t with
+       TermFO.App(f,_) -> f
+     | TermFO.Var _ -> raise (Failure "Ill formed program")  
  end;;
 
-(*------end-------*)
 
 module ImpBindings(Func: FuncT) : 
  BindingsT 
@@ -525,7 +534,6 @@ module ApproximatableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT wit
 module type DoubleMapIndexableRefreshableTermT =
  sig
   include MapableRefreshableTermT
-  type bindings
   type approx (* 2nd layer approximation *)
   val approx: bindings -> term -> approx
   val matchp: approx -> approx -> bool
@@ -537,10 +545,8 @@ module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT
   and type bindings = Bind.bindings
 =
  struct
-   include MapableRefreshableTerm(Var)(Func)
-   module T = AST(Var)(Func)
-
-   type bindings = Bind.bindings
+   include MapableRefreshableTerm(Var)(Func)(Bind)
+   module T = AST(Var)(Func)	
 
    type approx = Func.t option
 
@@ -570,8 +576,9 @@ module Bindings(Vars: VarT)(Func: FuncT) : BindingsT
    struct
      type varT = Vars.t
      type termT = AST(Vars)(Func).term
-
-     module Form = Formula(Vars)(Func)
+ 
+     (* TODO: use the dummy implementation AND leave the TODO *)
+     module Form = Formula(Vars)(Func)(*(...)*)
 
      module MapVars = Map.Make(Vars)
      module VarSet = Set.Make(Vars)
@@ -614,7 +621,8 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT
     type varT = Vars.t
     type termT = AST(Vars)(Func).term
 
-    module Form = Formula(Vars)(Func)
+    (* TODO: use the dummy implementation AND leave the TODO *)
+    module Form = Formula(Vars)(Func) (*(...)*)
 
     module MapVars = Map.Make(struct type t = int let compare = compare let eq = (=) end)
     module Terms = AST(Vars)(Func)
@@ -956,7 +964,7 @@ module ProgramDoubleInd(Term: DoubleMapIndexableRefreshableTermT)(Unify: UnifyT 
                             (bindings * formulaT) list    *)
      let backchain binds a m =
        let app = Term.approx binds a in
-       let l = List.rev (ClauseMap.find (Term.index a) m) in
+       let l = List.rev (ClauseMap.find (Term.index binds a) m) in
        let l = List.filter (fun (a',_) -> Term.matchp app a') l in
        filter_map (fun (_,clause) ->
          let atom,f = Term.refresh_clause clause in
@@ -968,7 +976,7 @@ module ProgramDoubleInd(Term: DoubleMapIndexableRefreshableTermT)(Unify: UnifyT 
         
      let make p =       
        List.fold_left (fun m ((a,_) as clause) -> 
-         let ind = Term.index a in
+         let ind = Term.index Bind.empty_bindings a in
          let app = Term.approx Bind.empty_bindings a in
          try 
            let l = ClauseMap.find ind m in
@@ -1018,7 +1026,8 @@ module ProgramIndexL(Term: ApproximatableRefreshableTermT)(Unify: UnifyT with ty
 (* One level indexing; a program is a Map indexed on the
    predicate that is the head of the clause. Unification is used
    eagerly on all the clauses with the good head. *)
-module ProgramMap(Term: MapableRefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term) : ProgramT with module Bind = Unify.Bind =
+module ProgramMap(Term: MapableRefreshableTermT)(Unify: UnifyT with type Bind.termT = Term.term and type Bind.bindings = Term.bindings) : ProgramT with module Bind = Unify.Bind 
+ =
    struct
      module Bind = Unify.Bind
 
@@ -1029,7 +1038,7 @@ module ProgramMap(Term: MapableRefreshableTermT)(Unify: UnifyT with type Bind.te
                          Form.formula ClauseMap.t -> 
                             (bindings * formulaT) list    *)
      let backchain binds a m =
-       let l = List.rev (ClauseMap.find (Term.index a) m) in
+       let l = List.rev (ClauseMap.find (Term.index binds a) m) in
        filter_map (fun clause -> 
          let atom,f = Term.refresh_clause clause in
          try
@@ -1040,7 +1049,7 @@ module ProgramMap(Term: MapableRefreshableTermT)(Unify: UnifyT with type Bind.te
         
      let make p =       
        List.fold_left (fun m ((a,_) as clause) -> 
-         let ind = Term.index a in
+         let ind = Term.index Bind.empty_bindings a in
          try 
            let l = ClauseMap.find ind m in
            ClauseMap.add ind (clause :: l) m
@@ -1300,7 +1309,7 @@ let impl8 =
   (* RUN with indexed engine and Map of clauses instead of Hash of clauses*)
   let module IRTerm = Term(Variable)(FuncS) in
   let module IBind = Bindings(Variable)(FuncS) in
-  let module ITerm = MapableRefreshableTerm(Variable)(FuncS) in
+  let module ITerm = MapableRefreshableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramMap(ITerm)(Unify(Variable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index map " end in
