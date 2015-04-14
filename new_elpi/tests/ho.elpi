@@ -1,0 +1,5 @@
+% q(a): OK; q(b): FAIL
+
+q(X) :- X.
+
+a.
