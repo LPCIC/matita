@@ -205,7 +205,7 @@ module AST(Var: VarT)(Func: ASTFuncT) : ASTT
            "(" ^ String.concat "; " (List.map pp l) ^ ")"                 
            else if f = Func.cutf then
              "!" 
-             else String.concat " " (Func.pp f :: List.map pp l)
+             else "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
   end;;
 
 module FOAST = AST(Variable)(ASTFuncS)
