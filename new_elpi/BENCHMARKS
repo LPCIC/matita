@@ -11,3 +11,10 @@ log_b932037     0.73s
 log_3a3b835     0.73s
 log_99a19e6     1.07s
 log_de18270d    1.05s
+                0.77s   deterministm forced
+                
+                1.03s   without deref
+                1.025s  and without passing around deterministic
+                1.01s   and without checking deterministic in bind
+                1.01s   and without call to backtrack
+                0.75s   and forcing determinism

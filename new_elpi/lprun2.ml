@@ -1046,7 +1046,7 @@ module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(P
                      let atom,f = Term.refresh_clause clause in
                      (match
                        try
-                        let deterministic = false (* TODO ??? *) in
+                        let deterministic = true (* TODO ??? *) in
                         Some (Unify.unify ~deterministic bnd atom query)
                        with
                         NotUnifiable _ -> None
@@ -1189,17 +1189,7 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
                  | (lvl,bnd,f,andl)::tl_orl ->
                      let bnd =
                       Bind.backtrack ~current:binds ~previous:bnd in
-(*
-                     let atom,f = Term.refresh_clause clause in
-                     (match
-                       try
-                        let deterministic = false (* TODO ??? *) in
-                        Some (Unify.unify ~deterministic bnd atom query)
-                       with
-                        NotUnifiable _ -> None
-                      with
-                         Some bnd ->*) aux (lvl+1) bnd andl tl_orl f(*
-                       | None -> aux_orl bnd tl_orl)*)
+                     aux (lvl+1) bnd andl tl_orl f
               in
                let l = Prog.get_clauses binds q prog in
                let l =
@@ -1207,7 +1197,7 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
                  (fun clause ->
                    let atom,f = Term.refresh_clause clause in
                    try
-                    let deterministic = false (* TODO ??? *) in
+                    let deterministic = true (* TODO ??? *) in
                     Some (Unify.unify ~deterministic binds atom q,f)
                    with
                     NotUnifiable _ -> None
