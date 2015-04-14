@@ -20,6 +20,7 @@
 %   yap                          0.033s
 %   teyjus                       0.257s
 %   desperate                    0.36s
+%   defunct                      0.70s
 %   elpi                         4.72s (setting ulimit -s 81920)
 %                                lazy   eager   with formula       with terms
 %   no index                     4.77s  5.70s   4.49s              4.28s
