@@ -31,8 +31,8 @@
 %   one lvl hashtbl + flat       3.26s  3.26s   2.64s              2.27s
 %   one lvl hash+ flat + man GC  3.50s  3.48s   2.83s              2.37s
 %   one lvl index map main       2.99s  2.98s   2.40s              2.18s
-%I  one lvl hashtbl              0.81s  0.81s   0.63s              0.57s
-%I  two lvl efficient index      0.74s  0.75s
+%I  one lvl hashtbl              0.77s  0.78s   0.63s              0.57s
+%I  two lvl efficient index      0.71s  0.70s
 
 rev L RL  :- aux L xnil  RL .
 aux xnil  L  L .
