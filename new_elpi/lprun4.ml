@@ -46,7 +46,7 @@ module AST(Func: Lprun2.ASTFuncT) : ASTT
     let deref (args,i) = args.(i)
     let assign (args,i) t = args.(i) <- t
 
-    let eq_var = (==);;
+    let eq_var (args1,i1) (args2,i2) = args1==args2 && i1=i2;;
 
     (* TODO: mkAnd/mkOr is bugged when the array l is made of variables! *)
     let mkAnd = function [f] -> f | l -> App(Func.andf,Array.of_list l)
@@ -59,7 +59,7 @@ module AST(Func: Lprun2.ASTFuncT) : ASTT
     let empty_refresher = []
  
     let refresh_var l ((_,i0) as v) args =
-     try l,List.assq v l
+     try l,snd (List.find (fun (v',_) -> eq_var v v') l)
      with Not_found ->
       let v' = args,i0 in
       (v,v')::l, v'
