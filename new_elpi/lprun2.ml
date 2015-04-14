@@ -175,6 +175,8 @@ module type ASTT =
     val mkAnd : term list -> term
     val mkOr : term list -> term
     val mkEq : term -> term -> term
+
+    val pp: term -> string
   end;;
 
 module AST(Var: VarT)(Func: ASTFuncT) : ASTT 
@@ -191,6 +193,19 @@ module AST(Var: VarT)(Func: ASTFuncT) : ASTT
     let mkOr  = function [f] -> f | l -> App(Func.orf, l)
     let mkCut = App(Func.cutf,[]) 
     let mkEq l r = App(Func.eqf,[l;r]) 
+
+    
+    let rec pp =
+      function
+        Var v -> Var.pp v
+      | App (f,l) -> 
+          if f = Func.andf then
+          String.concat ", " (List.map pp l)
+         else if f = Func.orf then
+           "(" ^ String.concat "; " (List.map pp l) ^ ")"                 
+           else if f = Func.cutf then
+             "!" 
+             else String.concat " " (Func.pp f :: List.map pp l)
   end;;
 
 module FOAST = AST(Variable)(ASTFuncS)
@@ -198,6 +213,7 @@ module FOAST = AST(Variable)(ASTFuncS)
 module type FormulaT =
   sig  
     type term
+    type bindings
 
     type formula =
        Cut
@@ -209,25 +225,47 @@ module type FormulaT =
     val mkOr : term list -> term
 
     (* raise NotAFormula *)
-(* TODO: use the bindings!
-   since you don't have the type, add
-   type bindings here
-*)
-    val as_formula: term -> formula
+    val as_formula: bindings -> term -> formula
 
     val pp: term -> string
   end;;
 
-module Formula(Var: VarT)(Func: ASTFuncT) : FormulaT 
+
+module type BindingsT =
+  sig
+    type varT
+    type termT
+    type bindings
+
+    val deref : bindings -> termT -> termT
+
+    val pp_bindings : bindings -> string
+    val cardinal : bindings -> bindings * int
+    val empty_bindings: bindings
+
+    val backtrack: current:bindings -> previous:bindings -> bindings
+
+    (** For Unification *)
+    (* bind deterministic sigma v t = sigma [v |-> t] *)
+    val bind : deterministic:bool -> bindings -> varT -> termT -> bindings
+    (* lookup sigma v = Some t   iff  [v |-> t] \in sigma *)
+    val lookup : bindings -> varT -> termT option
+
+    (** For GC *)
+    val filter : (varT -> bool) -> bindings -> bindings
+  end;;
+
+module Formula(Var: VarT)(Func: ASTFuncT)(Bind: BindingsT with type termT = AST(Var)(Func).term) : FormulaT 
     with type term = AST(Var)(Func).term
+    and  type bindings = Bind.bindings
  = 
   struct
-(* TODO: use the bindings! You will have to take the (Bind:BindingsT...)
-   in input
-*)
     module AST = AST(Var)(Func)
 
     type term = AST.term
+    type bindings = Bind.bindings
+
+    let pp = AST.pp
 
     type formula =
        Cut
@@ -239,8 +277,9 @@ module Formula(Var: VarT)(Func: ASTFuncT) : FormulaT
     let mkOr  = AST.mkOr
     
      (* raise NotAFormula *)
-    let as_formula =
-      function
+    let as_formula binds t =
+     (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+     match Bind.deref binds t with
         AST.Var _ -> raise (NotFormula (lazy "Trying to prove a variable"))
       | AST.App(f,l) as x->
          (* And [] is interpreted as false *)
@@ -249,22 +288,51 @@ module Formula(Var: VarT)(Func: ASTFuncT) : FormulaT
          else if Func.eq f Func.orf then Or l
          else if Func.eq f Func.cutf then Cut
          else Atom x
-    
-    let rec pp =
-      function
-        AST.Var v -> Var.pp v
-      | AST.App (f,l) -> 
-          (*if f = Func.andf then
-          else if f = Func.orf then
-          else if f = Func.cut then*)
-         (* TODO: formulae should be pp as such *)
-         "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
   end;;
 
-(* TODO: here you will be asked for the bindings. But since this is
-   just for the just parsed things, you can pass a dummy implementation!
-*)
-module FOForm = Formula(Variable)(ASTFuncS)
+
+module Bindings(Vars: VarT)(Func: FuncT) : BindingsT 
+  with type varT = Vars.t
+  and type termT = AST(Vars)(Func).term
+  =
+   struct
+     type varT = Vars.t
+     type termT = AST(Vars)(Func).term
+
+     module MapVars = Map.Make(Vars)
+     module VarSet = Set.Make(Vars)
+     module Terms = AST(Vars)(Func)
+ 
+     type bindings = Terms.term MapVars.t
+     let empty_bindings = MapVars.empty
+     
+     let backtrack ~current ~previous = previous
+        
+     let lookup bind k =
+       try Some (MapVars.find k bind)
+       with Not_found -> None
+
+     let bind ~deterministic bind k v = MapVars.add k v bind
+
+     let cardinal bind = bind, MapVars.cardinal bind
+
+     let pp_bindings bind =
+      String.concat "\n"
+       (MapVars.fold
+         (fun k v s -> (Vars.pp k ^ " |-> " ^ Terms.pp v) :: s)
+         bind [])
+
+     let filter f bind = MapVars.filter (fun k _ -> f k) bind 
+
+     (* TODO Cut&paste code :-( *)
+     let rec deref bind i =
+       match i with
+         (Terms.Var v) ->
+           (match lookup bind v with
+              None -> i
+           | Some t -> deref bind t)
+       | Terms.App(_,_) -> i
+   end;;
 
 module type TermT =
  sig
@@ -274,13 +342,12 @@ module type TermT =
   val program_of_ast : (FOAST.term * FOAST.term) list -> (term * term) list
  end
 
-module Term(Var: VarT)(Func: FuncT) : TermT 
-    with type term = AST(Var)(Func).term =
+module Term(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = AST(Var)(Func).term) : TermT 
+    with type term = AST(Var)(Func).term
+    and  type bindings = Bind.bindings =
  struct
   module AST = AST(Var)(Func)
-  (* TODO: this is where we really need to pass the real implementation
-     of the bindings *)
-  include Formula(Var)(Func)
+  include Formula(Var)(Func)(Bind)
 
   (* Note: converters from asts are the same as
      refreshers, but both have fixed types :-(
@@ -366,27 +433,6 @@ module type HashableRefreshableTermT =
     val index: bindings -> term -> IndexData.t
   end;;
 
-module type BindingsT =
-  sig
-    type varT
-    type termT
-    type bindings
-
-    val deref : bindings -> termT -> termT
-
-    val pp_bindings : bindings -> string
-    val cardinal : bindings -> bindings * int
-    val empty_bindings: bindings
-
-    (** For Unification *)
-    (* bind sigma v t = sigma [v |-> t] *)
-    val bind : bindings -> varT -> termT -> bindings
-    (* lookup sigma v = Some t   iff  [v |-> t] \in sigma *)
-    val lookup : bindings -> varT -> termT option
-
-    (** For GC *)
-    val filter : (varT -> bool) -> bindings -> bindings
-  end;;
 
 module HashableRefreshableTerm(Var:VarT)(Func:FuncT)(Bind:BindingsT with type termT = AST(Var)(Func).term) : HashableRefreshableTermT
   with type term = AST(Var)(Func).term 
@@ -458,18 +504,16 @@ module ImpBindings(Func: FuncT) :
      type varT = ImpVariable.t
      type termT = T.term
 
-     (*module MapVars = Map.Make(Vars)
-     module Terms = Term(Vars)(Func)
-     module VarSet = Set.Make(Vars);;*)
-     type bindings = unit (* TODO Trail goes here *)
+     type bindings = varT list (* This is the trail *)
 
-     let empty_bindings = ()
+     let empty_bindings = []
         
      let lookup _ k = Obj.magic !k
 
-     let bind _ k v = k := Some (Obj.magic v)
+     let bind ~deterministic binds k v = k := Some (Obj.magic v);
+      if deterministic then binds else k::binds
 
-     let cardinal _ = (), (-1)
+     let cardinal binds = binds, (-1)
 
      let pp_bindings _ = "<< no way to print >>"
         
@@ -485,6 +529,18 @@ module ImpBindings(Func: FuncT) :
         | T.App(_,_) -> i
      in
       deref
+
+     let backtrack ~current ~previous =
+      let rec aux current =
+       if current == previous then previous
+       else
+        match current with
+           [] -> assert false        
+         | v::tl ->
+            v := None;
+            aux tl
+      in
+       aux current
    end;;
 
 
@@ -566,51 +622,9 @@ module DoubleMapIndexableRefreshableTerm(Var: VarT)(Func: FuncT)(Bind: BindingsT
      | _,None-> true
      | Some g1,Some g2 -> g1=g2
 
- end
+ end;;
 
 
-module Bindings(Vars: VarT)(Func: FuncT) : BindingsT 
-  with type varT = Vars.t
-  and type termT = AST(Vars)(Func).term
-  =
-   struct
-     type varT = Vars.t
-     type termT = AST(Vars)(Func).term
- 
-     (* TODO: use the dummy implementation AND leave the TODO *)
-     module Form = Formula(Vars)(Func)(*(...)*)
-
-     module MapVars = Map.Make(Vars)
-     module VarSet = Set.Make(Vars)
-     module Terms = AST(Vars)(Func)
-     type bindings = AST(Vars)(Func).term MapVars.t
-     let empty_bindings = MapVars.empty
-        
-     let lookup bind k =
-       try Some (MapVars.find k bind)
-       with Not_found -> None
-
-     let bind bind k v = MapVars.add k v bind
-
-     let cardinal bind = bind, MapVars.cardinal bind
-
-     let pp_bindings bind =
-      String.concat "\n"
-       (MapVars.fold
-         (fun k v s -> (Vars.pp k ^ " |-> " ^ Form.pp v) :: s)
-         bind [])
-
-     let filter f bind = MapVars.filter (fun k _ -> f k) bind 
-
-     (* TODO Cut&paste code :-( *)
-     let rec deref bind i =
-       match i with
-         (Terms.Var v) ->
-           (match lookup bind v with
-              None -> i
-           | Some t -> deref bind t)
-       | Terms.App(_,_) -> i
-   end;;
 
 
 module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT 
@@ -621,21 +635,20 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT
     type varT = Vars.t
     type termT = AST(Vars)(Func).term
 
-    (* TODO: use the dummy implementation AND leave the TODO *)
-    module Form = Formula(Vars)(Func) (*(...)*)
-
     module MapVars = Map.Make(struct type t = int let compare = compare let eq = (=) end)
     module Terms = AST(Vars)(Func)
     type bindings = Terms.term MapVars.t
 
     let empty_bindings = MapVars.empty
 
+    let backtrack ~current ~previous = previous
+
     let pp_bindings bind =
     (*Gc.compact();
       let bind = clean bind in*)
       String.concat "\n"
         (MapVars.fold
-          (fun k v s -> (Vars.pp (Vars.Box k) ^ " |-> " ^ Form.pp v) :: s)
+          (fun k v s -> (Vars.pp (Vars.Box k) ^ " |-> " ^ Terms.pp v) :: s)
             bind [])
 
     let rec clean bind =
@@ -658,7 +671,7 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT
       try Some (MapVars.find k bind)
         with Not_found -> None
 
-    let bind bind (Vars.Box k) v = MapVars.add k v (clean bind)
+    let bind ~deterministic bind (Vars.Box k) v = MapVars.add k v (clean bind)
 
     let cardinal bind =
       let bind = clean bind in
@@ -683,7 +696,8 @@ module type UnifyT =
     module Bind : BindingsT
    (* unify sub t1 t2 = sub'  iff  t1 sub' = t2 sub' and sub <= sub' *)
     val unify:
-     Bind.bindings -> Bind.termT -> Bind.termT -> Bind.bindings         
+     deterministic:bool -> Bind.bindings -> Bind.termT -> Bind.termT ->
+      Bind.bindings         
   end;;
 
 exception NotUnifiable of string Lazy.t
@@ -700,17 +714,17 @@ module Unify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = AST(Var)(
     module T = AST(Var)(Func)
     module Bind = Bind
 
-    let rec unify sub t1 t2 = 
+    let rec unify ~deterministic sub t1 t2 = 
       match t1,t2 with
         (T.Var v1, T.Var v2) when Var.eq v1 v2 -> sub
       | (T.Var v1, _) ->
           (match Bind.lookup sub v1 with
-             None -> Bind.bind sub v1 t2
-           | Some t -> unify sub t t2)
-      | (_, T.Var _) -> unify sub t2 t1
+             None -> Bind.bind ~deterministic sub v1 t2
+           | Some t -> unify ~deterministic sub t t2)
+      | (_, T.Var _) -> unify ~deterministic sub t2 t1
       | (T.App (f1,l1), T.App (f2,l2)) -> 
           if Func.eq f1 f2 && List.length l1 = List.length l2 then
-            List.fold_left2 unify sub l1 l2
+            List.fold_left2 (unify ~deterministic) sub l1 l2
           else
             raise (NotUnifiable (lazy "Terms are not unifiable!"))
    end;;
@@ -736,11 +750,11 @@ module FlatUnify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = AST(V
         the rationale is that patterns are small, queries can be huge
         flattening queries leads to quadratic complexity on our example
         because the same input can be flattened multiple times *)
-     let rec unify ~do_flatten sub t1 t2 = match t1,t2 with
+     let rec unify ~deterministic ~do_flatten sub t1 t2 = match t1,t2 with
        (T.Var v1, T.Var v2) when Var.eq v1 v2 -> sub
      | (T.App (f1,l1), T.App (f2,l2)) -> 
          if Func.eq f1 f2 && List.length l1 = List.length l2 then
-           List.fold_left2 (unify ~do_flatten) sub l1 l2
+           List.fold_left2 (unify ~deterministic ~do_flatten) sub l1 l2
          else
            raise (NotUnifiable (lazy "Terms are not unifiable!"))
      | (T.Var _, _)
@@ -750,9 +764,9 @@ module FlatUnify(Var: VarT)(Func: FuncT)(Bind: BindingsT with type termT = AST(V
        let t2 = (if do_flatten then flatten else Bind.deref) sub t2 in
        match t1,t2 with
          (T.Var v1, T.Var v2) when Var.eq v1 v2 -> sub
-       | (T.Var v1, _) -> Bind.bind sub v1 t2
-       | (_, T.Var v2) -> Bind.bind sub v2 t1
-       | (T.App _, T.App _) -> unify ~do_flatten:false sub t1 t2
+       | (T.Var v1, _) -> Bind.bind ~deterministic sub v1 t2
+       | (_, T.Var v2) -> Bind.bind ~deterministic sub v2 t1
+       | (T.App _, T.App _) -> unify ~deterministic ~do_flatten:false sub t1 t2
 
      let unify = unify ~do_flatten:true
    end;;
@@ -902,7 +916,9 @@ module Program(Term: RefreshableTermT)(Unify: UnifyT with type Bind.termT = Term
       filter_map (fun clause -> 
         let atom,f = Term.refresh_clause clause in
           try
-            let binds = Unify.unify binds atom a in 
+(* TODO: eager + imperative = BAD! *)
+let deterministic = false in
+            let binds = Unify.unify ~deterministic binds atom a in 
             Some (binds,f)
           with NotUnifiable _ -> None) l                
 
@@ -933,7 +949,9 @@ module ProgramHash(Term: HashableRefreshableTermT)(Unify: UnifyT with type Bind.
        filter_map (fun clause -> 
          let atom,f = Term.refresh_clause clause in
          try
-           let binds = Unify.unify binds atom a in 
+(* TODO: eager + imperative = BAD! *)
+let deterministic = false in
+           let binds = Unify.unify ~deterministic binds atom a in 
              Some (binds,f)
            with NotUnifiable _ -> None) 
          l                       
@@ -969,7 +987,9 @@ module ProgramDoubleInd(Term: DoubleMapIndexableRefreshableTermT)(Unify: UnifyT 
        filter_map (fun (_,clause) ->
          let atom,f = Term.refresh_clause clause in
          try
-           let binds = Unify.unify binds atom a in 
+(* TODO: eager + imperative = BAD! *)
+let deterministic = false in
+           let binds = Unify.unify ~deterministic binds atom a in 
              Some (binds,f)
            with NotUnifiable _ -> None) 
          l                       
@@ -1012,7 +1032,9 @@ module ProgramIndexL(Term: ApproximatableRefreshableTermT)(Unify: UnifyT with ty
           filter_map (fun (_,clause) ->
            let atom,f = Term.refresh_clause clause in
            try
-            let binds = Unify.unify binds atom a in 
+(* TODO: eager + imperative = BAD! *)
+let deterministic = false in
+            let binds = Unify.unify ~deterministic binds atom a in 
             Some (binds,f)
            with NotUnifiable _ -> None
            ) l
@@ -1042,7 +1064,9 @@ module ProgramMap(Term: MapableRefreshableTermT)(Unify: UnifyT with type Bind.te
        filter_map (fun clause -> 
          let atom,f = Term.refresh_clause clause in
          try
-           let binds = Unify.unify binds atom a in 
+(* TODO: eager + imperative = BAD! *)
+let deterministic = false in
+           let binds = Unify.unify ~deterministic binds atom a in 
              Some (binds,f)
            with NotUnifiable _ -> None) 
          l                       
@@ -1069,7 +1093,7 @@ module type RunT =
   val main_loop: progT -> term -> unit
  end
 
-module Run(Form: FormulaT)(Prog: ProgramT with type Bind.termT = Form.term)(GC : GCT with type term := Form.term and type bindings := Prog.Bind.bindings) :
+module Run(Form: FormulaT)(Prog: ProgramT with type Bind.termT = Form.term and type Bind.bindings = Form.bindings)(GC : GCT with type term := Form.term and type bindings := Form.bindings) :
  RunT with type term := Form.term and type bindingsT := Prog.Bind.bindings
            and type progT := Prog.t
  = 
@@ -1091,7 +1115,7 @@ module Run(Form: FormulaT)(Prog: ProgramT with type Bind.termT = Form.term)(GC :
            (lvl,binds,(f::andl))::orl) *)
          let rec aux lvl binds andl orl f =
           let binds = GC.gc false binds (!query::f::andl) in
-          match Form.as_formula f with
+          match Form.as_formula binds f with
              Form.And [] ->                  (* (True::andl)::orl *)
               (match andl with
                   [] ->
@@ -1125,9 +1149,14 @@ module Run(Form: FormulaT)(Prog: ProgramT with type Bind.termT = Form.term)(GC :
            | Form.Atom i ->         (*A::and)::orl)*)                       
                (match Prog.backchain binds i prog with              
                    [] ->
+                    (* Backtracking code *)
                     (match orl with
                         [] -> None
-                      | (lvl,bnd,f,andl)::tl -> aux lvl bnd andl tl f)
+                      | (lvl,bnd,f,andl)::tl ->
+                          let bnd =
+                           Prog.Bind.backtrack ~current:binds ~previous:bnd
+                          in
+                           aux lvl bnd andl tl f)
                  | (bnd,f)::tl ->
                      aux (lvl+1) bnd andl
                       (List.append
@@ -1173,9 +1202,16 @@ module Run(Form: FormulaT)(Prog: ProgramT with type Bind.termT = Form.term)(GC :
       run_next prog 0 (Prog.Bind.empty_bindings) [] [] f
 
     let next (prog,orl) =
+      (* Backtracking code (cut & paste) *)
       match orl with
         [] -> None
-      | (lvl,binds,f,andl)::orl -> run_next prog lvl binds andl orl f
+      | (lvl,bnd,f,andl)::orl ->
+(* TODO: add binds to the (prog,orl) thing returned when run0 ends
+   and use the binds here; then do the same with backtrack in lprn{3,4}.ml*)
+assert false (*
+          let bnd =
+           Prog.Bind.backtrack ~current:binds ~previous:bnd in
+          run_next prog lvl bnd andl orl f*)
 
     let main_loop prog query =
       let rec aux =
@@ -1229,9 +1265,9 @@ module
 let implementations = 
   let impl1 =
     (* RUN with non indexed engine *)
-    let module IRTerm = Term(Variable)(FuncS) in
-    let module ITerm = RefreshableTerm(Variable)(FuncS) in
     let module IBind = Bindings(Variable)(FuncS) in
+    let module IRTerm = Term(Variable)(FuncS)(IBind) in
+    let module ITerm = RefreshableTerm(Variable)(FuncS) in
     let module IProgram = Program(ITerm)(Unify(Variable)(FuncS)(IBind)) in
     let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with no index list " end in
@@ -1240,8 +1276,8 @@ let implementations =
 
 let impl2 =
   (* RUN with indexed engine *)
-  let module IRTerm = Term(Variable)(FuncS) in
   let module IBind = Bindings(Variable)(FuncS) in
+  let module IRTerm = Term(Variable)(FuncS)(IBind) in
   let module ITerm = HashableRefreshableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
@@ -1251,8 +1287,8 @@ let impl2 =
 
 let impl3 =
   (* RUN with two levels inefficient indexed engine *)
-  let module IRTerm = Term(Variable)(FuncS) in
   let module IBind = Bindings(Variable)(FuncS) in
+  let module IRTerm = Term(Variable)(FuncS)(IBind) in
   let module ITerm = ApproximatableRefreshableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramIndexL(ITerm)(Unify(Variable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
@@ -1261,8 +1297,8 @@ let impl3 =
   : Implementation) in
 
 let impl4 =
-  let module IRTerm = Term(WeakVariable)(FuncS) in
   let module IBind = Bindings(WeakVariable)(FuncS) in
+  let module IRTerm = Term(WeakVariable)(FuncS)(IBind) in
   let module ITerm = HashableRefreshableTerm(WeakVariable)(FuncS)(IBind) in
 let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
@@ -1273,8 +1309,8 @@ let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(IBind)) in
 
 let impl5 =
   (* RUN with indexed engine and automatic GC *)
-  let module IRTerm = Term(WeakVariable)(FuncS) in
   let module IBind = WeakBindings(WeakVariable)(FuncS) in
+  let module IRTerm = Term(WeakVariable)(FuncS)(IBind) in
   let module ITerm = HashableRefreshableFlatTerm(WeakVariable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(ITerm)(Unify(WeakVariable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
@@ -1285,8 +1321,8 @@ let impl5 =
 
 let impl6 =
   (* RUN with indexed engine *)
-  let module IRTerm = Term(Variable)(FuncS) in
   let module IBind = Bindings(Variable)(FuncS) in
+  let module IRTerm = Term(Variable)(FuncS)(IBind) in
   let module ITerm = HashableRefreshableFlatTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
@@ -1296,8 +1332,8 @@ let impl6 =
 
 
 let impl7 =
-  let module IRTerm = Term(Variable)(FuncS) in
   let module IBind = Bindings(Variable)(FuncS) in
+  let module IRTerm = Term(Variable)(FuncS)(IBind) in
   let module ITerm = HashableRefreshableFlatTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(ITerm)(Unify(Variable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(GC(Variable)(FuncS)(IBind)) in
@@ -1307,8 +1343,8 @@ let impl7 =
 
 let impl8 =
   (* RUN with indexed engine and Map of clauses instead of Hash of clauses*)
-  let module IRTerm = Term(Variable)(FuncS) in
   let module IBind = Bindings(Variable)(FuncS) in
+  let module IRTerm = Term(Variable)(FuncS)(IBind) in
   let module ITerm = MapableRefreshableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramMap(ITerm)(Unify(Variable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
@@ -1318,8 +1354,8 @@ let impl8 =
 
 let impl9 =
   (* RUN with indexed engine *)
-  let module IRTerm = Term(ImpVariable)(FuncS) in
   let module IBind = ImpBindings(FuncS) in
+  let module IRTerm = Term(ImpVariable)(FuncS)(IBind) in
   let module ITerm = HashableRefreshableTerm(ImpVariable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(ITerm)(Unify(ImpVariable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
@@ -1329,8 +1365,8 @@ let impl9 =
 
 let impl10 =
   (* RUN with indexed engine *)
-  let module IRTerm = Term(ImpVariable)(FuncS) in
   let module IBind = ImpBindings(FuncS) in
+  let module IRTerm = Term(ImpVariable)(FuncS)(IBind) in
   let module ITerm = DoubleMapIndexableRefreshableTerm(ImpVariable)(FuncS)(IBind) in
   let module IProgram = ProgramDoubleInd(ITerm)(Unify(ImpVariable)(FuncS)(IBind)) in
   let module IRun = Run(IRTerm)(IProgram)(NoGC(IBind)) in
