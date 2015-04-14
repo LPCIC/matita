@@ -530,7 +530,7 @@ module ImpBindings(Func: FuncT) :
        if current == previous then previous
        else
         match current with
-           [] -> assert false        
+           [] -> [](*assert false*)
          | v::tl ->
             v := None;
             aux tl
