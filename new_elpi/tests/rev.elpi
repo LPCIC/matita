@@ -20,16 +20,17 @@
 %   yap                          0.033s
 %   teyjus                       0.257s
 %   elpi                         4.72s (setting ulimit -s 81920)
-%                                with formula       with terms
-%   no index                     4.49s              4.28s
-%   one level index hashtbl      2.29s              2.28s
-%   two level inefficient index  2.30s              2.34s
-%   one level hashtbl + auto GC  3.39s              3.88s
-%   one lvl hash+flat+ auto GC   3.38s              3.14s
-%   one lvl hashtbl + flat       2.64s              2.27s
-%   one lvl hash+ flat + man GC  2.83s              2.37s
-%   one lvl index map main       2.40s              2.18s
-%I  one lvl hashtbl              0.63s              0.57s
+%                                lazy    with formula       with terms
+%   no index                     4.79s   4.49s              4.28s
+%   one level index hashtbl      2.93s   2.29s              2.28s
+%   two level inefficient index  2.95s   2.30s              2.34s
+%   one level hashtbl + auto GC  5.26s   3.39s              3.88s
+%   one lvl hash+flat+ auto GC   4.27s   3.38s              3.14s
+%   one lvl hashtbl + flat       3.26s   2.64s              2.27s
+%   one lvl hash+ flat + man GC  3.50s   2.83s              2.37s
+%   one lvl index map main       2.96s   2.40s              2.18s
+%I  one lvl hashtbl              1.02s   0.63s              0.57s
+%I  two lvl efficient index      0.96s
 
 rev L RL  :- aux L xnil  RL .
 aux xnil  L  L .
