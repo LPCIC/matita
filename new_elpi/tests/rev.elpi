@@ -19,18 +19,19 @@
 %   ocamlc                       0.024s
 %   yap                          0.033s
 %   teyjus                       0.257s
+%   desperate                    0.36s
 %   elpi                         4.72s (setting ulimit -s 81920)
 %                                lazy   eager   with formula       with terms
-%   no index                     4.79s  5.76s   4.49s              4.28s
-%   one level index hashtbl      2.93s  2.97s   2.29s              2.28s
-%   two level inefficient index  2.95s  3.00s   2.30s              2.34s
-%   one level hashtbl + auto GC  5.26s  5.35s   3.39s              3.88s
-%   one lvl hash+flat+ auto GC   4.27s  4.33s   3.38s              3.14s
-%   one lvl hashtbl + flat       3.26s  3.29s   2.64s              2.27s
-%   one lvl hash+ flat + man GC  3.50s  3.49s   2.83s              2.37s
-%   one lvl index map main       2.96s  3.00s   2.40s              2.18s
-%I  one lvl hashtbl              1.02s  0.80s   0.63s              0.57s
-%I  two lvl efficient index      0.96s  0.76s
+%   no index                     4.77s  5.70s   4.49s              4.28s
+%   one level index hashtbl      2.94s  2.95s   2.29s              2.28s
+%   two level inefficient index  2.96s  2.98s   2.30s              2.34s
+%   one level hashtbl + auto GC  5.24s  5.16s   3.39s              3.88s
+%   one lvl hash+flat+ auto GC   4.27s  4.29s   3.38s              3.14s
+%   one lvl hashtbl + flat       3.26s  3.26s   2.64s              2.27s
+%   one lvl hash+ flat + man GC  3.50s  3.48s   2.83s              2.37s
+%   one lvl index map main       2.99s  2.98s   2.40s              2.18s
+%I  one lvl hashtbl              0.81s  0.81s   0.63s              0.57s
+%I  two lvl efficient index      0.74s  0.75s
 
 rev L RL  :- aux L xnil  RL .
 aux xnil  L  L .
