@@ -1,3 +1,4 @@
+(*
 (***** library functions *****)
         
 (* precondition: the length of the two arrays must be the same *)
@@ -334,3 +335,4 @@ let implementations =
      : Lprun2.Implementation) in
 
   [impl1; impl2; impl3]
+*)
