@@ -1046,7 +1046,7 @@ module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(P
                      let atom,f = Term.refresh_clause clause in
                      (match
                        try
-                        let deterministic = true (* TODO ??? *) in
+                        let deterministic = tl_orl=[] in
                         Some (Unify.unify ~deterministic bnd atom query)
                        with
                         NotUnifiable _ -> None
