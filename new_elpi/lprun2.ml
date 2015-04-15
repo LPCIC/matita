@@ -524,7 +524,8 @@ module ImpBindings(Func: FuncT) :
         
      let lookup _ k = Obj.magic !k
 
-     let bind ~deterministic binds k v = k := Some (Obj.magic v);
+     let bind ~deterministic binds k v =
+      k := Some (Obj.magic v) ;
       if deterministic then binds else k::binds
 
      let cardinal binds = binds, (-1)
