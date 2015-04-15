@@ -35,11 +35,11 @@
 %I  two lvl efficient index      0.55s  0.62s
 
 rev L RL  :- aux L xnil  RL .
-aux xnil  L  L .
 aux (xcons X XS)  ACC  R :- aux XS (xcons X ACC) R . 
+aux xnil  L  L .
 
-append xnil L L .
 append (xcons X XS) L (xcons X L1)  :- append XS L L1 .
+append xnil L L .
 
 main :-
     X1 =  (xcons x1 (xcons x2 (xcons x3 (xcons x4 (xcons x5 (xcons x6 (xcons x7 (xcons x8 (xcons x9 (xcons x10 xnil)))))))))),
