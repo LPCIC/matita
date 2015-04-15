@@ -101,7 +101,26 @@ module ImpVariable : VarT with type t = Obj.t option ref =
    struct
         type t = Obj.t option ref
 
-        let pp _ = "??"
+        (* Extremely dirt hack to implement the pp *)
+        type term =
+           Var of t 
+         | App of FuncS.t * term list
+        let rec pp_term =  (* cut&paste code *)
+          function
+            Var v -> pp v
+          | App (f,l) -> 
+              if f = FuncS.andf then
+              String.concat ", " (List.map pp_term l)
+             else if f = FuncS.orf then
+               "(" ^ String.concat "; " (List.map pp_term l) ^ ")"
+             else if f = FuncS.cutf then "!" 
+             else "(" ^ String.concat " "
+              (FuncS.pp f :: List.map pp_term l) ^ ")"
+        and pp v =
+         match !v with
+            None -> "?" ^ string_of_int (Obj.magic v)
+          | Some t -> "<" ^ pp_term (Obj.magic t) ^ ">"
+
         let compare x y = assert false
         let eq = (==)
 
