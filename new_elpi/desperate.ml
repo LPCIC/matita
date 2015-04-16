@@ -43,12 +43,19 @@ type clause = { hd : term; hyps : term list; vars : int; key : key }
 
 let dummyk = "dummy"
 
-let key_of = function
-  | (App (Const w,Const z, _) | Struct (Const w,Const z, _)) -> w, z
-  | (App (Const w,App(Const z,_,_), _)
-    |Struct (Const w,App(Const z,_,_), _)) -> w, z
-  | (App (Const w,_, _) | Struct (Const w,_, _)) -> w, dummyk
-  | _ -> dummyk, dummyk
+let rec skey_of = function
+   Const k -> k
+ | UVar {contents=t} when t != dummy -> skey_of t
+ | Struct (arg1,_,_)
+ | App (arg1,_,_) -> skey_of arg1
+ | _ -> dummyk
+
+let rec key_of = function
+   Const k -> k, dummyk
+ | UVar {contents=t} when t != dummy -> key_of t
+ | App (arg1,arg2,_)
+ | Struct (arg1,arg2,_) -> skey_of arg1, skey_of arg2
+ | _ -> dummyk,dummyk
 
 let clause_match_key (j1,j2) { key = (k1,k2) } =
   j1 == dummyk || k1 == dummyk ||
