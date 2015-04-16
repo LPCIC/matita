@@ -1421,10 +1421,10 @@ let impl11 =
   let module IFormula = Formula(ImpVariable)(FuncS)(IBind) in
   let module IParsable = Parsable(ImpVariable)(FuncS) in
   let module ITerm = RefreshableTerm(ImpVariable)(FuncS) in
-  let module IIndTerm = HashableTerm(ImpVariable)(FuncS)(IBind) in
-  let module IProgram = ProgramHash(IIndTerm)(IBind) in
+  let module IIndTerm = DoubleMapIndexableTerm(ImpVariable)(FuncS)(IBind) in
+  let module IProgram = ProgramDoubleInd(IIndTerm)(IBind) in
   let module IRun = EagerRun(ITerm)(IFormula)(IProgram)(IBind)(Unify(ImpVariable)(FuncS)(IBind))(NoGC(IBind)) in
-  let module Descr = struct let descr = "Testing with eager imperative one level index hashtbl " end in
+  let module Descr = struct let descr = "Testing with eager imperative two level efficient index " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
   : Implementation) in
 
