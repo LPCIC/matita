@@ -1164,7 +1164,6 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
                      done at level lvl-1. *) 
                 | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *) 
            | Form.Cut ->
-        (* TODO: fix Cut wrt the trail *)
               let orl =
                (* We filter out from the or list every frame whose lvl
                   is >= then ours. *)
