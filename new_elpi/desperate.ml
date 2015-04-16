@@ -359,7 +359,10 @@ let impl =
   let execute_loop p q =
    let run, cont = make_runtime p in
    let rec top = { goals = [ q ]; next = top } in
+   let time0 = Unix.gettimeofday() in
    let k = ref (run top) in
+   let time1 = Unix.gettimeofday() in
+   prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
    Format.eprintf "Result: %a\n%!" ppterm q ;
    while !k <> [] do k := cont !k; done
  end : Lprun2.Implementation)
