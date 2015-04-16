@@ -75,7 +75,7 @@ let to_heap e t =
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
 let unif trail last_call a e b =
  let rec unif a b =
-   (* Format.eprintf "unif: %a = %a\n%!" ppterm a ppterm b; *)
+(*    Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
    a == b || match a,b with
    | _, Arg i when e.(i) != dummy -> unif a e.(i)
    | UVar { contents = t }, _ when t != dummy -> unif t b
@@ -127,6 +127,7 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
     match stack.goals with
     | [] -> if lvl == 0 then alts else run p stack.next alts (lvl - 1)
     | g :: gs ->
+(*    Format.eprintf "goal: %a\n%!" ppterm g; *)
         let cp = List.filter (clause_match_key (key_of g)) cp in
         backchain g gs cp stack alts lvl
 
@@ -136,6 +137,7 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
     | [] -> next_alt alts
     | c :: cs ->
         let old_trail = !trail in
+        let last_call = last_call && cs = [] in
         let env = Array.create c.vars dummy in
         match unif trail last_call g env c.hd with
         | false -> undo_trail old_trail trail; select cs
