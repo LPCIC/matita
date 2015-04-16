@@ -255,6 +255,8 @@ module type BindingsT =
     type term
     type bindings
 
+    val imperative : bool
+
     val deref : bindings -> term -> term
 
     val pp_bindings : bindings -> string
@@ -319,6 +321,8 @@ module Bindings(Vars: VarT)(Func: FuncT) : BindingsT
    struct
      type var = Vars.t
      type term = AST(Vars)(Func).term
+
+     let imperative = false
 
      module MapVars = Map.Make(Vars)
      module VarSet = Set.Make(Vars)
@@ -522,6 +526,8 @@ module ImpBindings(Func: FuncT) :
      type var = ImpVariable.t
      type term = T.term
 
+     let imperative = true
+
      type bindings = var list (* This is the trail *)
 
      let empty_bindings = []
@@ -654,6 +660,8 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT
   struct
     type var = Vars.t
     type term = AST(Vars)(Func).term
+
+    let imperative = false
 
     module MapVars = Map.Make(struct type t = int let compare = compare let eq = (=) end)
     module Terms = AST(Vars)(Func)
@@ -1130,6 +1138,10 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
  and type progT := Prog.t
  = 
   struct 
+
+    if Bind.imperative then
+     prerr_endline ("WARNING: imperative implementation + eager unification is unsound.\n The interpreter will crash on non deterministic programs.")
+
     (* A cont is just the program plus the or list,
        i.e. a list of level * bindings * head of and_list * tl of and_list 
        The level is incremented when there is a *)
@@ -1173,24 +1185,25 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
             | _::tl -> filter tl
           in
            filter orl in
-         let binds= if orl=[] then Bind.clean_trail binds else binds in
          (* cut&paste from True case *)
          (match andl with
              [] -> Some (prog,binds,orl)       (* (binds,[])::orl *)
            | hd::tl -> run0 prog (lvl-1) binds tl orl hd) (* (hd::tl)::orl *)
       | Form.Atom q ->         (*A::and)::orl)*)                       
           let l = Prog.get_clauses binds q prog in
-          let l =
+          let already_kept = ref false in
+          let orl =
            filter_map
             (fun clause ->
+              if Bind.imperative && !already_kept then assert false ;
               let atom,f = Term.refresh_clause clause in
               try
-               let deterministic = true (* TODO ??? *) in
-               Some (Unify.unify ~deterministic binds atom q,f)
+               let bnd = Unify.unify ~deterministic:true binds atom q in
+               if Bind.imperative then already_kept := true ;
+               Some (lvl+1,bnd,f,andl)
               with
                NotUnifiable _ -> None
-            ) l in
-          let orl = List.map (fun (bnd,f) -> lvl+1,bnd,f,andl) l @ orl in
+            ) l @ orl in
           next prog binds orl
       
       (* TODO: OPTIMIZE AND UNIFY WITH TRUE *)   
@@ -1201,9 +1214,7 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
      and next prog binds =
       function
           [] -> None
-        | (lvl,bnd,f,andl)::tl_orl ->
-           let bnd = Bind.backtrack ~current:binds ~previous:bnd in
-           run0 prog lvl bnd andl tl_orl f
+        | (lvl,bnd,f,andl)::tl_orl -> run0 prog lvl bnd andl tl_orl f
 
     let run_next prog lvl binds andl orl f =
       let time0 = Unix.gettimeofday() in
