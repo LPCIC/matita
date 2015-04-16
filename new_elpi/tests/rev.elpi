@@ -33,6 +33,7 @@
 %   one lvl index map main       2.44s  2.60s   2.40s              2.18s
 %I  one lvl hashtbl              0.61s  -----   0.63s              0.57s
 %I  two lvl efficient index      0.55s  0.62s
+%I  desperate                    0.14s
 
 rev L RL  :- aux L xnil  RL .
 aux (xcons X XS)  ACC  R :- aux XS (xcons X ACC) R . 
