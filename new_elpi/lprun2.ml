@@ -238,7 +238,6 @@ module type FormulaT =
        Cut
      | Atom of term
      | And of term list
-     | Or of term list
 
     val mkAnd : term list -> term
     val mkOr : term list -> term
@@ -295,7 +294,6 @@ module Formula(Var: VarT)(Func: ASTFuncT)(Bind: BindingsT with type term = AST(V
        Cut
      | Atom of term
      | And of term list
-     | Or of term list
 
     let mkAnd = AST.mkAnd
     let mkOr  = AST.mkOr
@@ -309,7 +307,6 @@ module Formula(Var: VarT)(Func: ASTFuncT)(Bind: BindingsT with type term = AST(V
          (* And [] is interpreted as false *)
          if Func.eq f Func.andf then And l
          (* Or [] is interpreted as true *)
-         else if Func.eq f Func.orf then Or l
          else if Func.eq f Func.cutf then Cut
          else Atom x
   end;;
@@ -1078,19 +1075,6 @@ module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(P
          let f2 = Form.mkAnd f2 in
          run0 prog lvl binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
 
-      (* Because of the +2 vs +1, the semantics of (c,! ; d)
-         is to kill the alternatives for c, preserving the d one.
-         Note: this is incoherent with the semantics of ! w.r.t.
-         backchaining, but that's what Tejyus implements. *)
-      (* TODO: OPTIMIZE AND UNIFY WITH FALSE (maybe) *)
-      | Form.Or (f1::f2) ->              (* ((f1;f2)::andl)::orl) *)
-assert false (*
-         let f2 = Form.mkOr f2 in
-         run0 prog (lvl+2) binds andl ((lvl+1,binds,f2,andl)::orl) f1
-*)
-                                      (* (f1::andl)::(f2::andl)::orl *)
-      | Form.Or [] -> assert false (* TODO, backtrack *)
-
     and next prog binds =
      function
          [] -> None
@@ -1224,18 +1208,6 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
               let f2 = Form.mkAnd f2 in
               aux lvl binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
 
-           (* Because of the +2 vs +1, the semantics of (c,! ; d)
-              is to kill the alternatives for c, preserving the d one.
-              Note: this is incoherent with the semantics of ! w.r.t.
-              backchaining, but that's what Tejyus implements. *)
-           (* TODO: OPTIMIZE AND UNIFY WITH FALSE (maybe) *)
-           | Form.Or (f1::f2) ->              (* ((f1;f2)::andl)::orl) *)
-assert false (*
-              let f2 = Form.mkOr f2 in
-              aux (lvl+2) binds andl ((lvl+1,binds,f2,andl)::orl) f1
-*)
-                                           (* (f1::andl)::(f2::andl)::orl *)
-           | Form.Or [] -> assert false (* TODO, backtrack *)
          in
           aux
 

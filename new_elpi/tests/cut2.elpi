@@ -1,11 +1,15 @@
-/* To test run q X; the only expected results are X=ok1 and X=ok2.
-   This is the brain-damaged semantics of Teyjus */
+/* To test run q X; the only expected result is X=ok.
+   This is different from the brain-damaged semantics of Teyjus
+   and consistent with the implicit declaration
+   ; A B :- A.
+   ; A B :- B
+*/
 q X :- c Y, !, x Y X ; e X.
-q ok2.
+q ok.
 
 c one.
 c two.
 
-x two ko.
+x two ko1.
 
-e ok1.
+e ko2.

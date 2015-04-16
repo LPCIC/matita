@@ -16,6 +16,12 @@ let eq_clause =
  let v = Lprun2.Var (Lprun2.Variable.fresh ()) in
   mkAtomBiUnif v v, mkConj []
 
+let or_clauses =
+ let v1 = Lprun2.Var (Lprun2.Variable.fresh ()) in
+ let v2 = Lprun2.Var (Lprun2.Variable.fresh ()) in
+  [ mkDisj [v1;v2], v1
+  ; mkDisj [v1;v2], v2 ]
+
 let mkApp =
  function
     Lprun2.App(c,l1)::l2 -> Lprun2.App(c,l1@l2)
@@ -195,7 +201,7 @@ let () =
 
 EXTEND
   GLOBAL: lp premise atom goal;
-  lp: [ [ cl = LIST0 clause; EOF -> eq_clause::cl ] ];
+  lp: [ [ cl = LIST0 clause; EOF -> eq_clause::or_clauses@cl ] ];
 (*  name : [ [ c = CONSTANT -> c | u = UVAR -> u | FRESHUV -> "_" ] ];
   label : [ [ COLON;
               n = name;
