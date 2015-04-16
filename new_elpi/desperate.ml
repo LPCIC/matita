@@ -367,7 +367,10 @@ let impl =
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
    Format.eprintf "Result: %a\n%!" ppterm q ;
    while !k <> [] do
+     let time0 = Unix.gettimeofday() in
      k := cont !k;
+     let time1 = Unix.gettimeofday() in
+     prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
      Format.eprintf "Result: %a\n%!" ppterm q ;
   done
  end : Lprun2.Implementation)
