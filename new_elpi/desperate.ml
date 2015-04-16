@@ -65,6 +65,7 @@ let clause_match_key (j1,j2) { key = (k1,k2) } =
 
 let to_heap e t =
   let rec aux = function
+    | UVar {contents = t} when t != dummy -> aux t
     | (Const _ | UVar _ | App _) as x -> x (* heap term *)
     | Struct(hd,b,bs) -> App (aux hd, aux b, List.map aux bs)
     | Arg i ->
