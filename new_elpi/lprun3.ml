@@ -66,7 +66,7 @@ module AST(Func: Lprun2.ASTFuncT) : ASTT
       (v,v')::l, v'
  end
 
-module Formula(Func: Lprun2.ASTFuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term) : Lprun2.FormulaT 
+module Formula(Func: Lprun2.ASTFuncT)(Bind: Lprun2.BindingsT with type term = AST(Func).term) : Lprun2.FormulaT 
     with type term = AST(Func).term
     and  type bindings = Bind.bindings
  = 
@@ -105,7 +105,7 @@ module Formula(Func: Lprun2.ASTFuncT)(Bind: Lprun2.BindingsT with type termT = A
           Func.pp f ^ "(" ^ String.concat " " (List.map pp (Array.to_list args)) ^ ")"
   end
 
-module Term(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term) : Lprun2.TermT
+module Term(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type term = AST(Func).term) : Lprun2.TermT
  with type term = AST(Func).term
  and  type bindings = Bind.bindings =
  struct
@@ -173,7 +173,7 @@ module RefreshableTerm(Func:Lprun2.FuncT) : Lprun2.RefreshableTermT
 
  end;;
 
-module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with type termT = AST(Func).term) : Lprun2.HashableRefreshableTermT
+module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with type term = AST(Func).term) : Lprun2.HashableRefreshableTermT
   with type term = AST(Func).term
   and  type bindings = Bind.bindings
 =
@@ -196,7 +196,7 @@ module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with typ
     | TermFO.Var _ -> raise (Failure "Ill formed program")
  end;;
 
-module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term and type varT = AST(Func).vart) : Lprun2.ApproximatableRefreshableTermT 
+module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type term = AST(Func).term and type varT = AST(Func).vart) : Lprun2.ApproximatableRefreshableTermT 
   with type term = AST(Func).term 
   and  type bindings = Bind.bindings
 =
@@ -228,12 +228,12 @@ module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT 
 
 module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT 
   with type varT = AST(Func).vart
-  and type termT = AST(Func).term
+  and type term = AST(Func).term
   =
    struct
      module T = AST(Func)
-     type varT = T.vart
-     type termT = T.term
+     type var = T.vart
+     type term = T.term
 
      type bindings = varT list (* Trail *)
 
@@ -278,7 +278,7 @@ module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT
        aux current
    end;;
 
-module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term and type varT = AST(Func).vart) : Lprun2.UnifyT
+module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type term = AST(Func).term and type varT = AST(Func).vart) : Lprun2.UnifyT
    with module Bind = Bind
 =
   struct

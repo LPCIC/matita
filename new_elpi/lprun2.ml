@@ -262,6 +262,11 @@ module type BindingsT =
     val cardinal : bindings -> bindings * int
     val empty_bindings: bindings
 
+    (* clean_trail is called by cut when the orl becomes empty.
+       If the bindings contain the trail, the trail can be forgot
+       because no backtracking will occur. *)
+    val clean_trail : bindings -> bindings
+
     val backtrack: current:bindings -> previous:bindings -> bindings
 
     (** For Unification *)
@@ -324,6 +329,8 @@ module Bindings(Vars: VarT)(Func: FuncT) : BindingsT
  
      type bindings = Terms.term MapVars.t
      let empty_bindings = MapVars.empty
+
+     let clean_trail bind = bind
      
      let backtrack ~current ~previous = previous
         
@@ -521,6 +528,8 @@ module ImpBindings(Func: FuncT) :
      type bindings = var list (* This is the trail *)
 
      let empty_bindings = []
+
+     let clean_trail _ = empty_bindings
         
      let lookup _ k = Obj.magic !k
 
@@ -654,6 +663,8 @@ module WeakBindings(Vars: WeakVarT)(Func: FuncT) : BindingsT
     type bindings = Terms.term MapVars.t
 
     let empty_bindings = MapVars.empty
+
+    let clean_trail bind = bind
 
     let backtrack ~current ~previous = previous
 
@@ -994,163 +1005,144 @@ module ProgramMap(Term: MapableTermT)(Bind : BindingsT with type term = Term.ter
 module type RunT =
  sig
   type term
-  type bindings
   type progT
   type cont (* continuation *)
-  val run: progT -> term -> (bindings * cont) option
-  val next: cont -> (bindings * cont) option
+  val run: progT -> term -> cont option
+  val next: cont -> cont option
   val main_loop: progT -> term -> unit
  end
 
 module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(Prog: ProgramT with type term := Term.term and type bindings := Form.bindings)(Bind : BindingsT with type term := Term.term and type bindings := Form.bindings)(Unify: UnifyT with type bindings := Form.bindings and type term := Term.term)(GC : GCT with type term := Term.term and type bindings := Form.bindings) : RunT
  with type term := Term.term
- and type bindings := Form.bindings
  and type progT := Prog.t
  = 
   struct 
     (* A cont is just the program plus the or list,
        i.e. a list of level * bindings * head of and_list * tl of and_list 
-       The level is incremented when there is a *)
+       The level is incremented when there is a backchain. *)
     type cont = 
-      Prog.t * (int * Form.bindings * Term.term * Term.clause * Term.term list) list
+      Prog.t * Form.bindings *
+       (int * Form.bindings * Term.term * Term.clause * Term.term list) list
 
         (* WARNING: bad non reentrant imperative code here
            At least query should go into the continuation for next
            to work!
         *)
-        let query = ref (Form.mkAnd [] (* True *))
+    let query = ref (Form.mkAnd [] (* True *))
 
-        let run0 prog =
-         (* aux lvl binds andl orl f
-           (lvl,binds,(f::andl))::orl) *)
-         let rec aux lvl binds andl orl f =
-          let binds = GC.gc false binds (!query::f::andl) in
-          match Form.as_formula binds f with
-             Form.And [] ->                  (* (True::andl)::orl *)
-              (match andl with
-                  [] ->
-                    let binds = GC.gc true binds (!query::f::andl) in
-                    Some (binds,orl)       (* (binds,[])::orl *)
-                  (* lvl-1 is because the body of a clause like a :- b,c.
-                     is represented as And(b,c) in the and list and not like
-                     b::c. Therefore an entry in the and list always
-                     is a stack frame for the body of a clause.
-                     An or expression is also to be thought as an anonymous
-                     clause invocation (with special handling of cut).
-                     Thus hd is the stack frame of the parent call, that was
-                     done at level lvl-1. *) 
-                | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *) 
-           | Form.Cut ->
-              let orl =
-               (* We filter out from the or list every frame whose lvl
-                  is >= then ours. *)
-               let rec filter =
-                function
-                   [] -> []
-                 | ((lvl',_,_,_,_)::_) as l when lvl' < lvl -> l
-                 | _::tl -> filter tl
-               in
-                filter orl
-              in
-              (* cut&paste from True case *)
-              (match andl with
-                  [] -> Some (binds,orl)       (* (binds,[])::orl *)
-                | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *)
-           | Form.Atom q ->         (*A::and)::orl)*)                       
-              let rec aux_orl binds =
-               function
-                   [] -> None
-                 | (lvl,bnd,query,clause,andl)::tl_orl ->
-                     let bnd =
-                      Bind.backtrack ~current:binds ~previous:bnd in
-                     let atom,f = Term.refresh_clause clause in
-                     (match
-                       try
-                        let deterministic = tl_orl=[] in
-                        Some (Unify.unify ~deterministic bnd atom query)
-                       with
-                        NotUnifiable _ -> None
-                      with
-                         Some bnd -> aux (lvl+1) bnd andl tl_orl f
-                       | None -> aux_orl bnd tl_orl)
-              in
-               let l = Prog.get_clauses binds q prog in
-               let orl =
-                List.map
-                 (fun clause -> lvl+1,binds,q,clause,andl) l
-                 @ orl in
-               aux_orl binds orl
-           
-           (* TODO: OPTIMIZE AND UNIFY WITH TRUE *)   
-           | Form.And (f1::f2) ->             (* ((f1,f2)::andl)::orl *)
-              let f2 = Form.mkAnd f2 in
-              aux lvl binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
+     (* run0 lvl binds andl orl f
+       (lvl,binds,(f::andl))::orl) *)
+    let rec run0 prog lvl binds andl orl f =
+     let binds = GC.gc false binds (!query::f::andl) in
+     match Form.as_formula binds f with
+        Form.And [] ->                  (* (True::andl)::orl *)
+         (match andl with
+             [] ->
+               let binds = GC.gc true binds (!query::f::andl) in
+               Some (prog,binds,orl)       (* (binds,[])::orl *)
+             (* lvl-1 is because the body of a clause like a :- b,c.
+                is represented as And(b,c) in the and list and not like
+                b::c. Therefore an entry in the and list always
+                is a stack frame for the body of a clause.
+                An or expression is also to be thought as an anonymous
+                clause invocation (with special handling of cut).
+                Thus hd is the stack frame of the parent call, that was
+                done at level lvl-1. *) 
+           | hd::tl ->run0 prog (lvl-1) binds tl orl hd) (* (hd::tl)::orl *) 
+      | Form.Cut ->
+         let orl =
+          (* We filter out from the or list every frame whose lvl
+             is >= then ours. *)
+          let rec filter =
+           function
+              [] -> []
+            | ((lvl',_,_,_,_)::_) as l when lvl' < lvl -> l
+            | _::tl -> filter tl
+          in
+           filter orl in
+         let binds= if orl=[] then Bind.clean_trail binds else binds in
+         (* cut&paste from True case *)
+         (match andl with
+             [] -> Some (prog,binds,orl)       (* (binds,[])::orl *)
+           | hd::tl-> run0 prog (lvl-1) binds tl orl hd) (* (hd::tl)::orl *)
+      | Form.Atom q ->         (*A::and)::orl)*)                       
+          let l = Prog.get_clauses binds q prog in
+          let orl =
+           List.map
+            (fun clause -> lvl+1,binds,q,clause,andl) l
+            @ orl in
+          next prog binds orl
+      
+      (* TODO: OPTIMIZE AND UNIFY WITH TRUE *)   
+      | Form.And (f1::f2) ->             (* ((f1,f2)::andl)::orl *)
+         let f2 = Form.mkAnd f2 in
+         run0 prog lvl binds (f2::andl) orl f1  (* (f1::(f2::andl))::orl *)
 
-           (* Because of the +2 vs +1, the semantics of (c,! ; d)
-              is to kill the alternatives for c, preserving the d one.
-              Note: this is incoherent with the semantics of ! w.r.t.
-              backchaining, but that's what Tejyus implements. *)
-           (* TODO: OPTIMIZE AND UNIFY WITH FALSE (maybe) *)
-           | Form.Or (f1::f2) ->              (* ((f1;f2)::andl)::orl) *)
+      (* Because of the +2 vs +1, the semantics of (c,! ; d)
+         is to kill the alternatives for c, preserving the d one.
+         Note: this is incoherent with the semantics of ! w.r.t.
+         backchaining, but that's what Tejyus implements. *)
+      (* TODO: OPTIMIZE AND UNIFY WITH FALSE (maybe) *)
+      | Form.Or (f1::f2) ->              (* ((f1;f2)::andl)::orl) *)
 assert false (*
-              let f2 = Form.mkOr f2 in
-              aux (lvl+2) binds andl ((lvl+1,binds,f2,andl)::orl) f1
+         let f2 = Form.mkOr f2 in
+         run0 prog (lvl+2) binds andl ((lvl+1,binds,f2,andl)::orl) f1
 *)
-                                           (* (f1::andl)::(f2::andl)::orl *)
-           | Form.Or [] -> assert false (* TODO, backtrack *)
-         in
-          aux
+                                      (* (f1::andl)::(f2::andl)::orl *)
+      | Form.Or [] -> assert false (* TODO, backtrack *)
 
+    and next prog binds =
+     function
+         [] -> None
+       | (lvl,bnd,query,clause,andl)::tl_orl ->
+           let bnd =
+            Bind.backtrack ~current:binds ~previous:bnd in
+           let atom,f = Term.refresh_clause clause in
+           (match
+             try
+              let deterministic = tl_orl=[] in
+              Some (Unify.unify ~deterministic bnd atom query)
+             with
+              NotUnifiable _ -> None
+            with
+               Some bnd -> run0 prog lvl bnd andl tl_orl f
+             | None -> next prog bnd tl_orl)
 
     let run_next prog lvl binds andl orl f =
       let time0 = Unix.gettimeofday() in
-        let res =
-          match run0 prog lvl binds andl orl f with
-             Some (binds,orl) -> Some (binds,(prog,orl))
-           | None -> None in
+        let res = run0 prog lvl binds andl orl f in
         let time1 = Unix.gettimeofday() in
         prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
         (match res with
-          Some (binds,orl) ->
+          Some (prog,binds,orl) ->
             Gc.full_major() ; let binds,size = Bind.cardinal binds in
             prerr_endline ("Final bindings size: " ^ string_of_int size) ;
-              Some (binds,orl)
+              Some (prog,binds,orl)
            | None -> None)
 
     let run prog f =
       query := f ;
       run_next prog 0 (Bind.empty_bindings) [] [] f
 
-    let next (prog,orl) =
-      (* Backtracking code (cut & paste) *)
-      match orl with
-        [] -> None
-      | (lvl,bnd,q,clause,andl)::orl ->
-(* TODO: add binds to the (prog,orl) thing returned when run0 ends
-   and use the binds here; then do the same with backtrack in lprn{3,4}.ml*)
-assert false (*
-          let bnd =
-           Prog.Bind.backtrack ~current:binds ~previous:bnd in
-          run_next prog lvl bnd andl orl f*)
-
     let main_loop prog query =
       let rec aux =
         function
           None -> prerr_endline "Fail"
-        | Some (l,cont) ->
+        | Some (prog,bind,orl) ->
             prerr_endline ("Query: " ^ Form.pp query) ;
-            prerr_endline (Bind.pp_bindings l) ;
+            prerr_endline (Bind.pp_bindings bind) ;
             prerr_endline "More? (Y/n)";
               if read_line() <> "n" then
-                aux (next cont)
+                aux (next prog bind orl)
           in
         aux (run prog query)
+
+     let next (prog,bind,orl) = next prog bind orl
 
      end;;
 
 module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(Prog: ProgramT with type term := Term.term and type bindings := Form.bindings)(Bind : BindingsT with type term := Term.term and type bindings := Form.bindings)(Unify: UnifyT with type bindings := Form.bindings and type term := Term.term)(GC : GCT with type term := Term.term and type bindings := Form.bindings) : RunT
  with type term := Term.term
- and type bindings := Form.bindings
  and type progT := Prog.t
  = 
   struct 
@@ -1158,7 +1150,8 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
        i.e. a list of level * bindings * head of and_list * tl of and_list 
        The level is incremented when there is a *)
     type cont = 
-      Prog.t * (int * Form.bindings * Term.term (** Term.clause*) * Term.term list) list
+      Prog.t * Form.bindings *
+       (int * Form.bindings * Term.term * Term.term list) list
 
         (* WARNING: bad non reentrant imperative code here
            At least query should go into the continuation for next
@@ -1176,7 +1169,7 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
               (match andl with
                   [] ->
                     let binds = GC.gc true binds (!query::f::andl) in
-                    Some (binds,orl)       (* (binds,[])::orl *)
+                    Some (prog,binds,orl)       (* (binds,[])::orl *)
                   (* lvl-1 is because the body of a clause like a :- b,c.
                      is represented as And(b,c) in the and list and not like
                      b::c. Therefore an entry in the and list always
@@ -1187,6 +1180,7 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
                      done at level lvl-1. *) 
                 | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *) 
            | Form.Cut ->
+        (* TODO: fix Cut wrt the trail *)
               let orl =
                (* We filter out from the or list every frame whose lvl
                   is >= then ours. *)
@@ -1196,11 +1190,11 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
                  | ((lvl',_,_,(*_,*)_)::_) as l when lvl' < lvl -> l
                  | _::tl -> filter tl
                in
-                filter orl
-              in
+                filter orl in
+              let binds= if orl=[] then Bind.clean_trail binds else binds in
               (* cut&paste from True case *)
               (match andl with
-                  [] -> Some (binds,orl)       (* (binds,[])::orl *)
+                  [] -> Some (prog,binds,orl)       (* (binds,[])::orl *)
                 | hd::tl -> aux (lvl-1) binds tl orl hd) (* (hd::tl)::orl *)
            | Form.Atom q ->         (*A::and)::orl)*)                       
               let (*rec*) aux_orl binds =
@@ -1209,7 +1203,7 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
                  | (lvl,bnd,f,andl)::tl_orl ->
                      let bnd =
                       Bind.backtrack ~current:binds ~previous:bnd in
-                     aux (lvl+1) bnd andl tl_orl f
+                     aux lvl bnd andl tl_orl f
               in
                let l = Prog.get_clauses binds q prog in
                let l =
@@ -1248,24 +1242,21 @@ assert false (*
 
     let run_next prog lvl binds andl orl f =
       let time0 = Unix.gettimeofday() in
-        let res =
-          match run0 prog lvl binds andl orl f with
-             Some (binds,orl) -> Some (binds,(prog,orl))
-           | None -> None in
+        let res = run0 prog lvl binds andl orl f in
         let time1 = Unix.gettimeofday() in
         prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
         (match res with
-          Some (binds,orl) ->
+          Some (prog,binds,orl) ->
             Gc.full_major() ; let binds,size = Bind.cardinal binds in
             prerr_endline ("Final bindings size: " ^ string_of_int size) ;
-              Some (binds,orl)
+              Some (prog,binds,orl)
            | None -> None)
 
     let run prog f =
       query := f ;
       run_next prog 0 (Bind.empty_bindings) [] [] f
 
-    let next (prog,orl) =
+    let next (prog,binds,orl) =
       (* Backtracking code (cut & paste) *)
       match orl with
         [] -> None
@@ -1281,12 +1272,12 @@ assert false (*
       let rec aux =
         function
           None -> prerr_endline "Fail"
-        | Some (l,cont) ->
+        | Some (prog,binds,orl) ->
             prerr_endline ("Query: " ^ Form.pp query) ;
-            prerr_endline (Bind.pp_bindings l) ;
+            prerr_endline (Bind.pp_bindings binds) ;
             prerr_endline "More? (Y/n)";
               if read_line() <> "n" then
-                aux (next cont)
+                aux (next (prog,binds,orl))
           in
         aux (run prog query)
 
@@ -1310,8 +1301,7 @@ module
   (IProgram: ProgramT with type term := IFormula.term
                       and  type bindings := IFormula.bindings)
   (IRun: RunT with type progT := IProgram.t
-              and  type term := IFormula.term
-              and  type bindings := IFormula.bindings)
+              and  type term := IFormula.term)
   (Descr : sig val descr : string end)
  : Implementation
 =
