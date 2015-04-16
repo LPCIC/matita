@@ -1,4 +1,4 @@
-let implementations = Lprun2.implementations (*@ Lprun3.implementations @ Lprun4.implementations*)
+let implementations = Lprun2.implementations (*@ Lprun3.implementations @ Lprun4.implementations*) @ [ Desperate.impl ]
 
 (*
 let _ =
