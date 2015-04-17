@@ -1,250 +1,167 @@
-(*
-(***** library functions *****)
-        
-(* precondition: the length of the two arrays must be the same *)
-let array_fold_left2 f a a1 a2 =
- let a = ref a in
- for i=0 to Array.length a1 - 1 do
-  a := f !a a1.(i) a2.(i)
- done ;
- !a
-
 (***** real code *****)
 
 module type ASTT =
   sig  
-    type funct
+    (* TODO: The Struct vs App is just to save a boolean like Enrico does.
+       Is that important? *)
     type term =
-       Var of term array * int
-     | App of funct * term array
-    and vart = term array * int
+      (* Query terms *)
+      | Struct of Lprun2.FuncS.t * term list
+      | Arg of int
+      (* Heap terms *)
+      | App of Lprun2.FuncS.t * term list
+      | Var of term ref
 
-    val eq_var : vart -> vart -> bool
+    type vart = term ref (* Can be hidden merging bindings with ASTT *)
 
-    val mkCut : term
+    val dummy: term (* TODO: hide this detail? *)
+
     val mkAnd : term list -> term
-    val mkOr : term list -> term
-    val mkEq : term -> term -> term
 
-    type refresher
-    val empty_refresher : refresher
-    val refresh_var : refresher -> vart -> term array -> refresher * vart
-
-    val deref : vart -> term
-    val assign : vart -> term -> unit
+    val pp: term -> string
   end;;
 
-module AST(Func: Lprun2.ASTFuncT) : ASTT
- with type funct = Func.t = 
- struct
-    type funct = Func.t
+module AST : ASTT = 
+  struct
 
+    (* Invariant: a Heap term never points to a Query term *)
     type term =
-       Var of term array * int
-     | App of Func.t * term array
-    and vart = term array * int
+      (* Query terms *)
+      | Struct of Lprun2.FuncS.t * term list
+      | Arg of int
+      (* Heap terms *)
+      | App of Lprun2.FuncS.t * term list
+      | Var of term ref
 
-    let deref (args,i) = args.(i)
-    let assign (args,i) t = args.(i) <- t
+    let dummy = Obj.magic ()
 
-    let eq_var (args1,i1) (args2,i2) = args1==args2 && i1=i2;;
+    type vart = term ref
 
-    (* TODO: mkAnd/mkOr is bugged when the array l is made of variables! *)
-    let mkAnd = function [f] -> f | l -> App(Func.andf,Array.of_list l)
-    let mkOr  = function [f] -> f | l -> App(Func.orf,Array.of_list l)
-    (* Next two never called: *)
-    let mkCut = App(Func.cutf,[||])
-    let mkEq _ _ = assert false
+    let mkAnd = function [f] -> f | l -> App(Lprun2.FuncS.andf,l)
 
-    type refresher = (vart * vart) list
-    let empty_refresher = []
- 
-    let refresh_var l ((_,i0) as v) args =
-     try l,snd (List.find (fun (v',_) -> eq_var v v') l)
-     with Not_found ->
-      let v' = args,i0 in
-      (v,v')::l, v'
- end
+    let rec pp =
+      function
+        t when t == dummy -> "dummy"
+      | Var { contents = t } -> "<" ^ pp t ^ ">"
+      | Arg i -> "A" ^ string_of_int i
+      | App (f,l) | Struct (f,l) -> 
+          if f = Lprun2.FuncS.andf then
+          String.concat ", " (List.map pp l)
+         else if f = Lprun2.FuncS.orf then
+           "(" ^ String.concat "; " (List.map pp l) ^ ")"                 
+           else if f = Lprun2.FuncS.cutf then
+             "!" 
+             else "(" ^ String.concat " " (Lprun2.FuncS.pp f :: List.map pp l) ^ ")"
+  end;;
 
-module Formula(Func: Lprun2.ASTFuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term) : Lprun2.FormulaT 
-    with type term = AST(Func).term
+module Formula(Bind: Lprun2.BindingsT with type term = AST.term) : Lprun2.FormulaT 
+    with type term = AST.term
     and  type bindings = Bind.bindings
  = 
   struct
-    module AST = AST(Func)
-
     type term = AST.term
     type bindings = Bind.bindings
 
+    let pp = AST.pp
+
     type formula =
-      Cut
-    | Atom of term
-    | And of term list
-    | Or of term list
+       Cut
+     | Atom of term
+     | And of term list
 
     let mkAnd = AST.mkAnd
-    let mkOr  = AST.mkOr
-
-     (* raise NotAFormula *)
+    
     let as_formula binds t =
      (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
      match Bind.deref binds t with
         AST.Var _ -> raise (Lprun2.NotFormula (lazy "Trying to prove a variable"))
       | AST.App(f,l) as x->
          (* And [] is interpreted as false *)
-         if Func.eq f Func.andf then And (Array.to_list l)
+         if Lprun2.FuncS.eq f Lprun2.FuncS.andf then And l
          (* Or [] is interpreted as true *)
-         else if Func.eq f Func.orf then Or (Array.to_list l)
-         else if Func.eq f Func.cutf then Cut
+         else if Lprun2.FuncS.eq f Lprun2.FuncS.cutf then Cut
          else Atom x
+      | _ -> assert false (* A query is always an heap term *)
+  end;;
 
-    let rec pp = 
-      function 
-        AST.Var (_,i) -> "X" ^ string_of_int i
-      | AST.App(f, args) -> 
-          Func.pp f ^ "(" ^ String.concat " " (List.map pp (Array.to_list args)) ^ ")"
-  end
-
-module Term(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term) : Lprun2.TermT
- with type term = AST(Func).term
- and  type bindings = Bind.bindings =
+module Parsable: Lprun2.ParsableT
+ with type term := AST.term
+ and  type clause = int * AST.term * AST.term =
  struct
-  module AST = AST(Func)
-  include Formula(Func)(Bind)
 
-  let var_of_ast l v args i =
-   try l,snd (List.find (fun x -> Lprun2.Variable.eq v (fst x)) l)
+  type clause = int * AST.term * AST.term
+
+  let heap_var_of_ast l n =
+   try l,List.assoc n l
    with Not_found ->
-    let v' = args,i in
-    (v,v')::l, v'
-
-
-   let rec term_of_ast l =
-    let rec aux args i l =
-     function
-       Lprun2.Var v ->
-        let l,(args,i) = var_of_ast l v args i in
-        l, AST.Var (args,i)
-     | Lprun2.App(f,tl) ->
-        let tl' = Array.make (List.length tl) (Obj.magic ()) (* dummy *) in
-        let l = ref l in
-        List.iteri (fun i t -> let l',t' = aux tl' i !l t in l := l' ; tl'.(i) <- t') tl ;
-        !l, AST.App(Func.funct_of_ast f,tl')
-    in
-     aux [||] (-999) l
-
-  let query_of_ast t = snd (term_of_ast [] t)
+    let n' = AST.Var (ref AST.dummy) in
+    (n,n')::l,n'
+  
+  let rec heap_term_of_ast l =
+   function
+      Lprun2.FOAST.Var v ->
+       let l,v = heap_var_of_ast l v in
+       l, v
+    | Lprun2.FOAST.App(f,tl) ->
+       let l,rev_tl =
+         List.fold_left
+          (fun (l,tl) t -> let l,t = heap_term_of_ast l t in (l,t::tl))
+          (l,[]) tl in
+       l, AST.App(Lprun2.FuncS.funct_of_ast f,List.rev rev_tl)
+  
+  let stack_var_of_ast (f,l) n =
+   try (f,l),List.assoc n l
+   with Not_found ->
+    let n' = AST.Arg f in
+    (f+1,(n,n')::l),n'
+  
+  let rec stack_term_of_ast l =
+   function
+      Lprun2.FOAST.Var v ->
+       let l,v = stack_var_of_ast l v in
+       l, v
+    | Lprun2.FOAST.App(f,tl) ->
+       let l,rev_tl =
+         List.fold_left
+          (fun (l,tl) t -> let l,t = stack_term_of_ast l t in (l,t::tl))
+          (l,[]) tl in
+       l, AST.Struct(Lprun2.FuncS.funct_of_ast f,List.rev rev_tl)
+  
+  let query_of_ast t = snd (heap_term_of_ast [] t)
 
   let program_of_ast p =
    List.map (fun (a,f) ->
-    let l,a = term_of_ast [] a in
-    let _,f = term_of_ast l f in
-    a,f) p
+    let l,a = stack_term_of_ast (0,[]) a in
+    let (max,_),f = stack_term_of_ast l f in
+     max,a,f
+    ) p
+
  end
 
-module RefreshableTerm(Func:Lprun2.FuncT) : Lprun2.RefreshableTermT
-  with type term = AST(Func).term 
-=
- struct
-   include AST(Func)
-  
-   let refresh l =
-    let rec aux args l =
-     function
-       Var (args',i') ->
-        let l,(args,i) = refresh_var l (args',i') args in
-        l, Var (args,i)
-     | App(f,tl) ->
-        let tl = Array.copy tl in
-        let l = ref l in
-        Array.iteri (fun i t -> let l',t' = aux tl !l t in l := l' ; tl.(i) <- t') tl ;
-        !l, App(f,tl)
-    in
-     aux [||] l
-   
-   type clause = term * term
-
-   let refresh_clause (hd,bo) =
-     let l,hd = refresh empty_refresher hd in
-     let _,bo = refresh l bo in
-     (hd,bo)
-
-   let refresh_query q = snd (refresh empty_refresher q)
-
- end;;
-
-module HashableRefreshableTerm(Func:Lprun2.FuncT)(Bind:Lprun2.BindingsT with type termT = AST(Func).term) : Lprun2.HashableRefreshableTermT
-  with type term = AST(Func).term
-  and  type bindings = Bind.bindings
-=
- struct
-   include RefreshableTerm(Func)
-   module IndexData =
-     struct
-       type t = Func.t
-       let equal = Func.eq
-       let hash = Hashtbl.hash
-     end
-   
-   module TermFO = AST(Func)
-
-   type bindings = Bind.bindings
-   (* TODO: use the bindings here!*)
-   let index binds =
-   function
-      TermFO.App(f,_) -> f
-    | TermFO.Var _ -> raise (Failure "Ill formed program")
- end;;
-
-module ApproximatableRefreshableTerm(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term and type varT = AST(Func).vart) : Lprun2.ApproximatableRefreshableTermT 
-  with type term = AST(Func).term 
-  and  type bindings = Bind.bindings
-=
- struct
-   include RefreshableTerm(Func) 
-
-   type approx = Func.t * (Func.t option)
-
-   type bindings = Bind.bindings
-
-   module TermFO = AST(Func)
-
-     let approx bind =
-      function
-         TermFO.App(f,[||]) -> f,None
-       | TermFO.Var _ -> raise (Failure "Ill formed program")
-       | TermFO.App(f,a) ->
-         (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
-          match Bind.deref bind a.(0) with
-             TermFO.Var _ -> f,None
-           | TermFO.App(g,_) -> f, Some g
-
-     let matchp app1 app2 =
-      match app1,app2 with
-         (f1,None),(f2,_)
-       | (f1,_),(f2,None)-> f1=f2
-       | (f1,Some g1),(f2,Some g2) -> f1=f2 && g1=g2
-  end;;
-
-module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT 
-  with type varT = AST(Func).vart
-  and type termT = AST(Func).term
+module ImpBindings : 
+ Lprun2.BindingsT 
+  with type var = AST.vart
+  and type term = AST.term
   =
    struct
-     module T = AST(Func)
-     type varT = T.vart
-     type termT = T.term
+     type var = AST.vart
+     type term = AST.term
 
-     type bindings = varT list (* Trail *)
+     let imperative = true
+
+     type bindings = var list (* This is the trail *)
 
      let empty_bindings = []
-        
-     let lookup _ v =
-      match T.deref v with
-         T.Var (args',v') when T.eq_var v (args',v') -> None
-       | t -> Some t
 
-     let bind ~deterministic binds v t = T.assign v t; v::binds
+     let clean_trail _ = empty_bindings
+        
+     (* TODO: Enrico would return the term and test it against dummy
+        later. Is that important? *)
+     let lookup _ k = if !k == AST.dummy then None else Some !k
+
+     let bind ~deterministic binds k v =
+      k := v ;
+      if deterministic then binds else k::binds
 
      let cardinal binds = binds, (-1)
 
@@ -252,16 +169,13 @@ module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT
         
      let filter f _ = assert false (* TODO assign None *)
 
-     (* TODO Cut&paste code :-( *)
      let deref _ =
       let rec deref i =
         match i with
-          (T.Var (args,v)) ->
+          AST.Var v ->
             (* Inlining of lookup! *)
-            (match T.deref (args,v) with
-               T.Var (args',v') when T.eq_var (args,v) (args',v') -> i
-             | t -> deref t)
-        | T.App(_,_) -> i
+            if !v == AST.dummy then i else deref !v
+        | _ -> i
      in
       deref
 
@@ -270,69 +184,151 @@ module Bindings(Func: Lprun2.FuncT) : Lprun2.BindingsT
        if current == previous then previous
        else
         match current with
-           [] -> assert false        
-         | (args,i)::tl ->
-            args.(i) <- T.Var (args,i);
+           [] -> [](*assert false*)
+         | v::tl ->
+            v := AST.dummy;
             aux tl
       in
        aux current
    end;;
 
-module Unify(Func: Lprun2.FuncT)(Bind: Lprun2.BindingsT with type termT = AST(Func).term and type varT = AST(Func).vart) : Lprun2.UnifyT
-   with module Bind = Bind
+module RefreshableTerm : Lprun2.RefreshableTermT
+ with type term = AST.term
+ and  type refresher = AST.term array
+ and  type clause = int * AST.term * AST.term =
+ struct
+   include AST
+   type clause = int * term * term
+   type refresher = AST.term array
+
+   let to_heap e t =
+     let rec aux = function
+      | (AST.Var _ | AST.App _) as x -> x (* heap term *)
+      | AST.Struct(hd,bs) -> App (hd, List.map aux bs)
+      | Arg i ->
+          let a = e.(i) in
+          if a == dummy then
+              let v = AST.Var(ref AST.dummy) in
+              e.(i) <- v;
+              v
+          else aux a
+    in aux t
+
+   let refresh_head_of_clause (varsno,a,f) =
+    let e = Array.create varsno AST.dummy in
+    let a = to_heap e a in
+     e,(varsno,a,f)
+    
+   let refresh_body_of_clause e f = e,to_heap e f
+ end
+
+module MapableTerm(Bind:Lprun2.BindingsT with type term = AST.term) : Lprun2.MapableTermT
+  with type term = AST.term 
+  and  type bindings = Bind.bindings
+  and type clause = int * AST.term * AST.term
+=
+ struct
+  type term = AST.term
+  type clause = int * AST.term * AST.term
+  let head (_,h,_) = h
+  let body (_,_,b) = b
+  module IndexData =
+   struct
+    type t = Lprun2.FuncS.t
+    let equal = Lprun2.FuncS.eq
+    let compare n1 n2 = String.compare (Lprun2.FuncS.pp n1) (Lprun2.FuncS.pp n2)
+   end
+
+  type bindings = Bind.bindings
+
+  let index bind t =
+    (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+    match Bind.deref bind t with
+       AST.App(f,_) | AST.Struct(f,_) -> f
+     | AST.Arg _ | AST.Var _ -> raise (Failure "Ill formed program")  
+ end;;
+
+module DoubleMapIndexableTerm(Bind: Lprun2.BindingsT with type var = AST.vart and type term = AST.term) : Lprun2.DoubleMapIndexableTermT
+  with type term = AST.term 
+  and type bindings = Bind.bindings
+  and type clause = MapableTerm(Bind).clause
+=
+ struct
+   include MapableTerm(Bind)
+   module AST = AST
+
+   (* TODO: Enrico is using a dummyt in place of option. Is that
+      important? *)
+   type approx = Lprun2.FuncS.t option
+
+   let approx bind =
+     function
+       AST.App(_,[]) | AST.Struct(_,[]) -> None
+     | AST.App(_,hd::_) | AST.Struct(_,hd::_) ->
+         (* TODO: COMPARE WITH THE ETA-EXPANSION OF THE CODE BELOW *)
+        (match Bind.deref bind hd with
+            AST.Var _ | AST.Arg _ -> None
+          | AST.App(g,_) | AST.Struct(g,_) -> Some g)
+     | AST.Arg _ | AST.Var _ -> raise (Failure "Ill formed program")
+
+   let matchp app1 app2 =
+     match app1,app2 with
+       None,_
+     | _,None-> true
+     | Some g1,Some g2 -> g1=g2
+
+ end;;
+
+module Unify(Term: Lprun2.RefreshableTermT with type term = AST.term and type refresher = AST.term array)(Bind: Lprun2.BindingsT with type term = AST.term and type var = AST.vart) : Lprun2.UnifyT
+   with type term := AST.term
+   and type bindings = Term.refresher * Bind.bindings
 =
   struct
-    module T = AST(Func)
-    module Bind = Bind
+    type bindings = Term.refresher * Bind.bindings
 
-    let rec unify ~deterministic sub t1 t2 = 
+    (* Invariant: LSH is a heap term, the RHS is a query in env e *)
+    let rec unify ~deterministic (e,sub) t1 t2 = 
+      if t1 == t2 then e,sub else
       match t1,t2 with
-        (T.Var (args1,i1), T.Var (args2,i2)) when T.eq_var (args1,i1) (args2,i2) -> sub
-      | (T.Var (args1,i1), _) ->
-          (match Bind.lookup sub (args1,i1) with
-             None -> Bind.bind ~deterministic sub (args1,i1) t2
-           | Some t -> unify ~deterministic sub t t2)
-      | (_, T.Var _) -> unify ~deterministic sub t2 t1
-      | (T.App (f1,l1), T.App (f2,l2)) -> 
-          if Func.eq f1 f2 && Array.length l1 = Array.length l2 then
-            array_fold_left2 (unify ~deterministic) sub l1 l2
+      (*  (AST.Var v1, AST.Var v2) when Var.eq v1 v2 -> sub*)
+      | _, AST.Arg i when e.(i) != AST.dummy -> unify ~deterministic (e,sub) t1 e.(i)
+      | (AST.Var v1, _) ->
+          (match Bind.lookup sub v1 with
+             None ->
+              (match t2 with
+                  AST.Arg i -> e.(i) <- t1; e,sub
+                      (* TODO: Enrico is more aggressive in dereferencing.
+                         It dereferences t2 as well before binding it *)
+                | _ ->
+                 let e,t2 = Term.refresh_body_of_clause e t2 in
+                  e,Bind.bind ~deterministic sub v1 t2)
+           | Some t -> unify ~deterministic (e,sub) t t2)
+      | (_,AST.Var v2) ->
+          (match Bind.lookup sub v2 with
+             None -> e,Bind.bind ~deterministic sub v2 t1 
+           | Some t -> unify ~deterministic (e,sub) t1 t)
+      | _, AST.Arg i -> e.(i) <- t1; e,sub
+      | (AST.App (f1,l1), (AST.App (f2,l2) | AST.Struct (f2,l2))) -> 
+          if Lprun2.FuncS.eq f1 f2 && List.length l1 = List.length l2 then
+            List.fold_left2 (unify ~deterministic) (e,sub) l1 l2
           else
             raise (Lprun2.NotUnifiable (lazy "Terms are not unifiable!"))
+      | AST.Arg _,_ | AST.Struct _,_ -> assert false (* Invariant violation *)
    end;;
 
+(* implement the rest of the cases *)
 let implementations = 
-  let impl1 =
-    (* RUN with non indexed engine *)
-    let module IBind = Bindings(Lprun2.FuncS) in
-    let module IRTerm = Term(Lprun2.FuncS)(IBind) in
-    let module ITerm = RefreshableTerm(Lprun2.FuncS) in
-    let module IProgram = Lprun2.Program(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
-    let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
-    let module Descr = struct let descr = "Testing with no index, optimized imperative " end in
-    (module Lprun2.Implementation(IRTerm)(IProgram)(IRun)(Descr)
-     : Lprun2.Implementation) in
+ let impl1 =
+  (* RUN with indexed engine *)
+  let module IBind = ImpBindings in
+  let module IFormula = Formula(IBind) in
+  let module IParsable = Parsable in
+  let module ITerm = RefreshableTerm in
+  let module IIndTerm = DoubleMapIndexableTerm(IBind) in
+  let module IProgram = Lprun2.ProgramDoubleInd(IIndTerm)(IBind) in
+  let module IRun = Lprun2.Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(ITerm)(IBind))(Lprun2.NoGC(IBind)) in
+  let module Descr = struct let descr = "Testing with desperate two level efficient index " end in
+  (module Lprun2.Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
+  : Lprun2.Implementation) in
 
-  let impl2 =
-    (* RUN with hashtbl *)
-    let module IBind = Bindings(Lprun2.FuncS) in
-    let module IRTerm = Term(Lprun2.FuncS)(IBind) in
-    let module ITerm = HashableRefreshableTerm(Lprun2.FuncS)(IBind) in
-    let module IProgram = Lprun2.ProgramHash(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
-    let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
-    let module Descr = struct let descr = "Testing with one level index, optimized imperative " end in
-    (module Lprun2.Implementation(IRTerm)(IProgram)(IRun)(Descr)
-     : Lprun2.Implementation) in
-
-  let impl3 =
-    (* RUN with two level inefficient index *)
-    let module IBind = Bindings(Lprun2.FuncS) in
-    let module IRTerm = Term(Lprun2.FuncS)(IBind) in
-    let module ITerm = ApproximatableRefreshableTerm(Lprun2.FuncS)(IBind) in
-    let module IProgram = Lprun2.ProgramIndexL(ITerm)(Unify(Lprun2.FuncS)(IBind)) in
-    let module IRun = Lprun2.Run(IRTerm)(IProgram)(Lprun2.NoGC(IBind)) in
-    let module Descr = struct let descr = "Testing with two level inefficient index, optimized imperative " end in
-    (module Lprun2.Implementation(IRTerm)(IProgram)(IRun)(Descr)
-     : Lprun2.Implementation) in
-
-  [impl1; impl2; impl3]
-*)
+  [impl1]
