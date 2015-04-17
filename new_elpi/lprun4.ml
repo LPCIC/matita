@@ -157,6 +157,9 @@ module ImpBindings :
         
      (* TODO: Enrico would return the term and test it against dummy
         later. Is that important? *)
+     (* Yes, this way you allocate "Some" (in memory are 2 words, 1 for the
+      * pointer to the contents of Some and one for tag + gc infos), also you
+      * need to follow 2 pointers to get to the term *)
      let lookup _ k = if !k == AST.dummy then None else Some !k
 
      let bind ~deterministic binds k v =
