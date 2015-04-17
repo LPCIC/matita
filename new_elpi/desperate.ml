@@ -153,6 +153,8 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
             let next, next_lvl =
               if gs = [] then old_stack.next, lvl
               else { old_stack with goals = gs }, lvl + 1 in
+(* TODO: make to_heap lazy adding the env to unify and making the env
+   survive longer. It may be slower or faster, who knows *)
             let stack = { goals = List.map (to_heap env) c.hyps; next } in
             let alts = if cs = [] then alts else
               { stack=old_stack; trail=old_trail; clauses=cs; lvl } :: alts in
@@ -169,104 +171,6 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
    (fun s -> run p s [] 0), next_alt
 ;;
   
-
-(*
-(* Test *)
-
-(* Hashconsed constants *)
-let appk = "app"
-let nilk = "nil"
-let revk = "rev"
-let eqk = "eq"
-let consk = "cons"
-let ak = "a"
-let bk = "b"
-
-let cak = Const ak
-let cbk = Const bk
-let cconsk = Const consk
-let cnilk = Const nilk
-let cappk = Const appk
-let crevk = Const revk
-let ceqk = Const eqk
-
-(* Program *)
-let app1 = { hd = Struct (cappk, cnilk, [Arg 0; Arg 0 ]); hyps = []; vars = 1; key = (appk,nilk) };;
-let app2 = { hd = Struct (cappk, Struct(cconsk, Arg 0, [Arg 1]), [Arg 2; Struct (cconsk, Arg 0, [Arg 3 ]) ]); hyps = [ Struct (cappk, Arg 1, [Arg 2; Arg 3]) ]; vars = 4; key = (appk,consk) };;
-
-let rev1 = { hd = Struct( crevk, cnilk, [Arg 0; Arg 0 ]); hyps = []; vars = 1; key = (revk,nilk) };;
-let rev2 = { hd = Struct( crevk, Struct(cconsk, Arg 0, [Arg 1]), [Arg 2; Arg 3 ]);
-             hyps = [Struct(crevk, Arg 1, [Struct ( cconsk, Arg 0, [Arg 2]); Arg 3])];
-             vars = 4; key = (revk,consk) };;
-let refl = { hd = Struct(ceqk, Arg 0, [Arg 0]); hyps = []; vars = 1; key = (eqk,dummyk) };;
-
-let l1 =
-   App (cconsk, cak, [App (cconsk, cbk, [ 
-   App (cconsk, cak, [App (cconsk, cbk, [ 
-   App (cconsk, cak, [App (cconsk, cbk, [ 
-   App (cconsk, cak, [App (cconsk, cbk, [ 
-   App (cconsk, cak, [App (cconsk, cbk, [ 
-   cnilk ])])])])])])])])])]);;
-let gs =
-  let v1 = UVar (ref dummy) in
-  let v2 = UVar (ref dummy) in
-  let v3 = UVar (ref dummy) in
-  let v4 = UVar (ref dummy) in
-  let v5 = UVar (ref dummy) in
-  let v6 = UVar (ref dummy) in
-  let v7 = UVar (ref dummy) in
-  let v8 = UVar (ref dummy) in
-  let v9 = UVar (ref dummy) in
-  let v10 = UVar (ref dummy) in
-  let v11 = UVar (ref dummy) in
-  let v12 = UVar (ref dummy) in
-  let v13 = UVar (ref dummy) in
-  let v14 = UVar (ref dummy) in
-  let r1 = UVar (ref dummy) in
-  let r2 = UVar (ref dummy) in
-  let a1 = App (cappk, l1, [ l1; v1] ) in
-  let a2 = App (cappk, v1, [ v1; v2] ) in
-  let a3 = App (cappk, v2, [ v2; v3] ) in
-  let a4 = App (cappk, v3, [ v3; v4] ) in
-  let a5 = App (cappk, v4, [ v4; v5] ) in
-  let a6 = App (cappk, v5, [ v5; v6] ) in
-  let a7 = App (cappk, v6, [ v6; v7] ) in
-  let a8 = App (cappk, v7, [ v7; v8] ) in
-  let a9 = App (cappk, v8, [v8; v9] ) in
-  let a10 = App (cappk, v9, [v9; v10] ) in
-  let a11 = App (cappk, v10, [ v10; v11] ) in
-  let a12 = App (cappk, v11, [ v11; v12] ) in
-  let a13 = App (cappk, v12, [ v12; v13] ) in
-  let a14 = App (cappk, v13, [ v13; v14] ) in
-  let aR1 = App (crevk, v14, [ cnilk; r1] ) in
-  let aR2 = App (crevk, r1, [cnilk; r2] ) in
-  [
-          a1;
-          a2;
-          a3;
-          a4;
-          a5;
-          a6;
-          a7;
-          a8;
-          a9;
-          a10;
-          a11;
-          a12;
-          a13;
-          a14;
-          aR1;
-          aR2;
-          App (ceqk, v14, [r2]) 
-  ];;
-
-let p = [app1;app2;rev1;rev2;refl];;
-let run, cont = make_runtime p;;
-let rec top = { goals = gs; next = top; };;
-let k = ref (run top);;
-while !k <> [] do k := cont !k; done
-*)
-
 (* Hash re-consing :-( *)
 let funct_of_ast =
  let h = Hashtbl.create 37 in
