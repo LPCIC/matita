@@ -198,11 +198,13 @@ module ImpBindings :
 module RefreshableTerm : Lprun2.RefreshableTermT
  with type term = AST.term
  and  type refresher = AST.term array
- and  type clause = int * AST.term * AST.term =
+ and  type clause = int * AST.term * AST.term
+ and  type bindings = ImpBindings.bindings =
  struct
    include AST
    type clause = int * term * term
    type refresher = AST.term array
+   type bindings = ImpBindings.bindings
 
    let to_heap e t =
      let rec aux = function
@@ -222,7 +224,7 @@ module RefreshableTerm : Lprun2.RefreshableTermT
     let a = to_heap e a in
      e,(varsno,a,f)
     
-   let refresh_body_of_clause e f = e,to_heap e f
+   let refresh_body_of_clause _ e f = e,to_heap e f
  end
 
 module MapableTerm(Bind:Lprun2.BindingsT with type term = AST.term) : Lprun2.MapableTermT
@@ -282,7 +284,7 @@ module DoubleMapIndexableTerm(Bind: Lprun2.BindingsT with type var = AST.vart an
 
  end;;
 
-module Unify(Term: Lprun2.RefreshableTermT with type term = AST.term and type refresher = AST.term array)(Bind: Lprun2.BindingsT with type term = AST.term and type var = AST.vart) : Lprun2.UnifyT
+module Unify(Term: Lprun2.RefreshableTermT with type term = AST.term and type refresher = AST.term array)(Bind: Lprun2.BindingsT with type term = AST.term and type var = AST.vart and type bindings = Term.bindings) : Lprun2.UnifyT
    with type term := AST.term
    and type bindings = Term.refresher * Bind.bindings
 =
@@ -303,7 +305,7 @@ module Unify(Term: Lprun2.RefreshableTermT with type term = AST.term and type re
                       (* TODO: Enrico is more aggressive in dereferencing.
                          It dereferences t2 as well before binding it *)
                 | _ ->
-                 let e,t2 = Term.refresh_body_of_clause e t2 in
+                 let e,t2 = Term.refresh_body_of_clause sub e t2 in
                   e,Bind.bind ~deterministic sub v1 t2)
            | Some t -> unify ~deterministic (e,sub) t t2)
       | (_,AST.Var v2) ->

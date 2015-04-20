@@ -411,41 +411,54 @@ module type RefreshableTermT =
     type term
     type clause
     type refresher
+    type bindings
 
     val refresh_head_of_clause : clause -> refresher * clause
-    val refresh_body_of_clause : refresher -> term -> refresher * term
+    val refresh_body_of_clause :
+     bindings -> refresher -> term -> refresher * term
   end
 
-module RefreshableTerm(Var:VarT)(Func:FuncT) : RefreshableTermT
-  with type term = AST(Var)(Func).term and type clause = AST(Var)(Func).term * AST(Var)(Func).term
+
+
+module RefreshableTerm(Var:VarT)(Func:FuncT)(Bind:BindingsT with type term = AST(Var)(Func).term) : RefreshableTermT
+  with type term = AST(Var)(Func).term 
+  and  type clause = AST(Var)(Func).term * AST(Var)(Func).term
+  and  type bindings = Bind.bindings
 =
  struct
    include AST(Var)(Func)
    type refresher = Var.refresher
+   type bindings = Bind.bindings
    let empty_refresher = Var.empty_refresher
  
-   let rec refresh l =
+   (* TODO possible optimization: have two refreshes, with
+      and without bindings *)
+   let rec refresh ?binds l =
      function
        Var v ->
         let l,v = Var.refresh l v in
-        l, Var v
+        let t =
+         match binds with
+            None -> Var v
+          | Some binds -> Bind.deref binds (Var v) in
+        l, t
      | App(f,tl) ->
         let l,rev_tl =
           List.fold_left
-           (fun (l,tl) t -> let l,t = refresh l t in (l,t::tl))
+           (fun (l,tl) t -> let l,t = refresh ?binds l t in (l,t::tl))
            (l,[]) tl
         in
         l, App(f,List.rev rev_tl)
-   
-  
+
+
    type clause = term * term
 
    let refresh_head_of_clause (hd,bo) =
      let l,hd = refresh empty_refresher hd in
      l,(hd,bo)
 
-   let refresh_body_of_clause l bo =
-     let _,bo =  refresh l bo in
+   let refresh_body_of_clause binds l bo =
+     let _,bo = refresh ~binds l bo in
      l,bo
 
  end;;
@@ -1074,7 +1087,7 @@ module type RunT =
   val main_loop: progT -> term -> unit
  end
 
-module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(Prog: ProgramT with type term := Term.term and type clause = Term.clause and type bindings := Form.bindings)(Bind : BindingsT with type term := Term.term and type bindings := Form.bindings)(Unify: UnifyT with type bindings = Term.refresher * Form.bindings and type term := Term.term)(GC : GCT with type term := Term.term and type bindings := Form.bindings) : RunT
+module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term and type bindings := Term.bindings)(Prog: ProgramT with type term := Term.term and type clause = Term.clause and type bindings := Term.bindings)(Bind : BindingsT with type term := Term.term and type bindings := Term.bindings)(Unify: UnifyT with type bindings = Term.refresher * Term.bindings and type term := Term.term)(GC : GCT with type term := Term.term and type bindings := Term.bindings) : RunT
  with type term := Term.term
  and type progT := Prog.t
  = 
@@ -1083,8 +1096,8 @@ module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(P
        i.e. a list of level * bindings * head of and_list * tl of and_list 
        The level is incremented when there is a backchain. *)
     type cont = 
-      Prog.t * Form.bindings *
-       (int * Form.bindings * Term.term * Term.clause * Term.term list) list
+      Prog.t * Term.bindings *
+       (int * Term.bindings * Term.term * Term.clause * Term.term list) list
 
         (* WARNING: bad non reentrant imperative code here
            At least query should go into the continuation for next
@@ -1154,7 +1167,7 @@ module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(P
               let deterministic = tl_orl=[] in
               let refresher,bnd =
                Unify.unify ~deterministic (refresher,bnd) query atom in
-              let _,f = Term.refresh_body_of_clause refresher f in
+              let _,f = Term.refresh_body_of_clause bnd refresher f in
               Some (f,bnd)
              with
               NotUnifiable _ -> None
@@ -1195,7 +1208,7 @@ module Run(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(P
 
      end;;
 
-module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term)(Prog: ProgramT with type term := Term.term and type clause = Term.clause and type bindings := Form.bindings)(Bind : BindingsT with type term := Term.term and type bindings := Form.bindings)(Unify: UnifyT with type bindings = Term.refresher * Form.bindings and type term := Term.term)(GC : GCT with type term := Term.term and type bindings := Form.bindings) : RunT
+module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.term and type bindings := Term.bindings)(Prog: ProgramT with type term := Term.term and type clause = Term.clause and type bindings := Term.bindings)(Bind : BindingsT with type term := Term.term and type bindings := Term.bindings)(Unify: UnifyT with type bindings = Term.refresher * Term.bindings and type term := Term.term)(GC : GCT with type term := Term.term and type bindings := Term.bindings) : RunT
  with type term := Term.term
  and type progT := Prog.t
  = 
@@ -1208,8 +1221,8 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
        i.e. a list of level * bindings * head of and_list * tl of and_list 
        The level is incremented when there is a *)
     type cont = 
-      Prog.t * Form.bindings *
-       (int * Form.bindings * Term.term * Term.term list) list
+      Prog.t * Term.bindings *
+       (int * Term.bindings * Term.term * Term.term list) list
 
         (* WARNING: bad non reentrant imperative code here
            At least query should go into the continuation for next
@@ -1264,7 +1277,7 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
               try
                let refresher,bnd =
                 Unify.unify ~deterministic:true (refresher,binds) atom q in
-               let _,f = Term.refresh_body_of_clause refresher f in
+               let _,f = Term.refresh_body_of_clause bnd refresher f in
                if Bind.imperative then already_kept := true ;
                Some (lvl+1,bnd,f,andl)
               with
@@ -1357,7 +1370,7 @@ let implementations =
     let module IBind = Bindings(Variable)(FuncS) in
     let module IFormula = Formula(Variable)(FuncS)(IBind) in
     let module IParsable = Parsable(Variable)(FuncS) in
-    let module ITerm = RefreshableTerm(Variable)(FuncS) in
+    let module ITerm = RefreshableTerm(Variable)(FuncS)(IBind) in
     let module IProgram = Program(IBind) in
     let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with no index list " end in
@@ -1369,7 +1382,7 @@ let impl2 =
   let module IBind = Bindings(Variable)(FuncS) in
   let module IFormula = Formula(Variable)(FuncS)(IBind) in
   let module IParsable = Parsable(Variable)(FuncS) in
-  let module ITerm = RefreshableTerm(Variable)(FuncS) in
+  let module ITerm = RefreshableTerm(Variable)(FuncS)(IBind) in
   let module IIndTerm = HashableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
@@ -1382,7 +1395,7 @@ let impl3 =
   let module IBind = Bindings(Variable)(FuncS) in
   let module IFormula = Formula(Variable)(FuncS)(IBind) in
   let module IParsable = Parsable(Variable)(FuncS) in
-  let module ITerm = RefreshableTerm(Variable)(FuncS) in
+  let module ITerm = RefreshableTerm(Variable)(FuncS)(IBind) in
   let module IIndTerm = ApproximatableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramIndexL(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
@@ -1394,7 +1407,7 @@ let impl4 =
   let module IBind = Bindings(WeakVariable)(FuncS) in
   let module IFormula = Formula(WeakVariable)(FuncS)(IBind) in
   let module IParsable = Parsable(WeakVariable)(FuncS) in
-  let module ITerm = RefreshableTerm(WeakVariable)(FuncS) in
+  let module ITerm = RefreshableTerm(WeakVariable)(FuncS)(IBind) in
   let module IIndTerm = HashableTerm(WeakVariable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(WeakVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
@@ -1408,7 +1421,7 @@ let impl5 =
   let module IBind = WeakBindings(WeakVariable)(FuncS) in
   let module IFormula = Formula(WeakVariable)(FuncS)(IBind) in
   let module IParsable = Parsable(WeakVariable)(FuncS) in
-  let module ITerm = RefreshableTerm(WeakVariable)(FuncS) in
+  let module ITerm = RefreshableTerm(WeakVariable)(FuncS)(IBind) in
   let module IIndTerm = HashableTerm(WeakVariable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(FlatUnify(WeakVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
@@ -1422,7 +1435,7 @@ let impl6 =
   let module IBind = Bindings(Variable)(FuncS) in
   let module IFormula = Formula(Variable)(FuncS)(IBind) in
   let module IParsable = Parsable(Variable)(FuncS) in
-  let module ITerm = RefreshableTerm(Variable)(FuncS) in
+  let module ITerm = RefreshableTerm(Variable)(FuncS)(IBind) in
   let module IIndTerm = HashableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(FlatUnify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
@@ -1435,7 +1448,7 @@ let impl7 =
   let module IBind = Bindings(Variable)(FuncS) in
   let module IFormula = Formula(Variable)(FuncS)(IBind) in
   let module IParsable = Parsable(Variable)(FuncS) in
-  let module ITerm = RefreshableTerm(Variable)(FuncS) in
+  let module ITerm = RefreshableTerm(Variable)(FuncS)(IBind) in
   let module IIndTerm = HashableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(FlatUnify(Variable)(FuncS)(ITerm)(IBind))(GC(Variable)(FuncS)(IBind)) in
@@ -1448,7 +1461,7 @@ let impl8 =
   let module IBind = Bindings(Variable)(FuncS) in
   let module IFormula = Formula(Variable)(FuncS)(IBind) in
   let module IParsable = Parsable(Variable)(FuncS) in
-  let module ITerm = RefreshableTerm(Variable)(FuncS) in
+  let module ITerm = RefreshableTerm(Variable)(FuncS)(IBind) in
   let module IIndTerm = MapableTerm(Variable)(FuncS)(IBind) in
   let module IProgram = ProgramMap(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
@@ -1461,7 +1474,7 @@ let impl9 =
   let module IBind = ImpBindings(FuncS) in
   let module IFormula = Formula(ImpVariable)(FuncS)(IBind) in
   let module IParsable = Parsable(ImpVariable)(FuncS) in
-  let module ITerm = RefreshableTerm(ImpVariable)(FuncS) in
+  let module ITerm = RefreshableTerm(ImpVariable)(FuncS)(IBind) in
   let module IIndTerm = HashableTerm(ImpVariable)(FuncS)(IBind) in
   let module IProgram = ProgramHash(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(ImpVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
@@ -1474,7 +1487,7 @@ let impl10 =
   let module IBind = ImpBindings(FuncS) in
   let module IFormula = Formula(ImpVariable)(FuncS)(IBind) in
   let module IParsable = Parsable(ImpVariable)(FuncS) in
-  let module ITerm = RefreshableTerm(ImpVariable)(FuncS) in
+  let module ITerm = RefreshableTerm(ImpVariable)(FuncS)(IBind) in
   let module IIndTerm = DoubleMapIndexableTerm(ImpVariable)(FuncS)(IBind) in
   let module IProgram = ProgramDoubleInd(IIndTerm)(IBind) in
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(ImpVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
@@ -1487,7 +1500,7 @@ let impl11 =
   let module IBind = ImpBindings(FuncS) in
   let module IFormula = Formula(ImpVariable)(FuncS)(IBind) in
   let module IParsable = Parsable(ImpVariable)(FuncS) in
-  let module ITerm = RefreshableTerm(ImpVariable)(FuncS) in
+  let module ITerm = RefreshableTerm(ImpVariable)(FuncS)(IBind) in
   let module IIndTerm = DoubleMapIndexableTerm(ImpVariable)(FuncS)(IBind) in
   let module IProgram = ProgramDoubleInd(IIndTerm)(IBind) in
   let module IRun = EagerRun(ITerm)(IFormula)(IProgram)(IBind)(Unify(ImpVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
