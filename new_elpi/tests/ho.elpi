@@ -1,4 +1,4 @@
-% q(a): OK; q(b): FAIL
+% q(a): OK; q(b): FAIL; q(X): exception; q(a,a): OK
 
 q(X) :- X.
 
