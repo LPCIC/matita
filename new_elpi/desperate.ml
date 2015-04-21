@@ -132,10 +132,13 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
   let trail = ref [] in
 
   let rec run cp (stack : frame) alts lvl =
+    (*Format.eprintf "<";
+    List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
+    Format.eprintf ">";*)
     match stack.goals with
     | [] -> if lvl == 0 then alts else run p stack.next alts (lvl - 1)
     | g :: gs ->
-(*    Format.eprintf "goal: %a\n%!" ppterm g; *)
+    (* Format.eprintf "goal: %a\n%!" ppterm g; *)
         let cp = List.filter (clause_match_key (key_of g)) cp in
         backchain g gs cp stack alts lvl
 
@@ -231,6 +234,9 @@ let rec chop =
     Struct(Const f,hd2,tl) when
      Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.andf
      -> chop hd2 @ List.flatten (List.map chop tl)
+  | Const f when
+     Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.truef
+     -> []
   | Const f when
      Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.andf
      -> []

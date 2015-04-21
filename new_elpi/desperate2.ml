@@ -39,7 +39,7 @@ let ppterm f t =
 
 type key = string * string
 
-type clause = { hd : term; hyps : term ; vars : int; key : key }
+type clause = { hd : term; hyps : term list; vars : int; key : key }
 
 let dummyk = "dummy"
 
@@ -117,7 +117,7 @@ let undo_trail old_trail trail =
 
 (* Loop *)
 
-type frame = { goals : term ; next : frame; }
+type frame = { goals : term list; next : frame; }
 type alternative = { lvl : int;
   stack : frame;
   trail : term ref list;
@@ -126,8 +126,7 @@ type alternative = { lvl : int;
 
 let set_goals s gs = { s with goals = gs }
 
-(* TODO: to be moved to Lprun2.ASTFuncS.truef *)
-let truec = "true"
+let truef = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.truef
 let andf = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.andf
 
 (* The block of recursive functions spares the allocation of a Some/None
@@ -136,22 +135,21 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
   let trail = ref [] in
 
   let rec run cp (stack : frame) alts lvl =
-    (*Format.eprintf "RUN %a\n%!" ppterm (stack.goals);*)
+    (*Format.eprintf "<";
+    List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
+    Format.eprintf ">";*)
     match stack.goals with
+      [] -> if lvl == 0 then alts else run p stack.next alts (lvl - 1)
       (* TODO: the == could be Lprun2.ASTFuncS.eq if it is not expensive *)
-    | Const c when c == truec (*Lprun2.ASTFuncS.truef*) ->
-       if lvl == 0 then alts else run p stack.next alts (lvl - 1)
-    | App(Const c, g, gs) when c == andf -> (* TODO: wrong if g is not an atom *)
-(*    Format.eprintf "goal: %a\n%!" ppterm g; *)
+    | App(Const c, g, gs)::gs' when c == andf ->
+       run cp { stack with goals=g::gs@gs' } alts lvl
+    | UVar { contents=g }::_ when g == dummy ->
+       assert false (* Flexible goal, we give up *)
+    | UVar { contents=g }::gs ->
+       run cp { stack with goals = g::gs } alts lvl
+    | g::gs -> (* Atom case *)
         let cp = List.filter (clause_match_key (key_of g)) cp in
         backchain g gs cp stack alts lvl
-    (* TODO: HO case missing (no deref) *)
-    | UVar { contents=g } when g == dummy ->
-       assert false (* Flexible goal, we give up *)
-    | UVar { contents=g } -> run cp { stack with goals = g } alts lvl
-    | g -> (* Atom case *)
-        let cp = List.filter (clause_match_key (key_of g)) cp in
-        backchain g [] cp stack alts lvl
 
   and backchain g gs cp old_stack alts lvl =
     (*Format.eprintf "BACKCHAIN %a\n%!" ppterm g;*)
@@ -166,15 +164,11 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
         | false -> undo_trail old_trail trail; select cs
         | true ->
             let next, next_lvl =
-             match gs with
-                [] -> old_stack.next, lvl
-              | [g] -> { old_stack with goals = g },lvl + 1
-              | g::gs ->
-                 { old_stack with goals = App (Const andf, g, gs) },lvl + 1
-            in
+              if gs = [] then old_stack.next, lvl
+              else { old_stack with goals = gs }, lvl + 1 in
 (* TODO: make to_heap lazy adding the env to unify and making the env
    survive longer. It may be slower or faster, who knows *)
-            let stack = { goals = to_heap env c.hyps; next } in
+            let stack = { goals = List.map (to_heap env) c.hyps; next } in
             let alts = if cs = [] then alts else
               { stack=old_stack; trail=old_trail; clauses=cs; lvl } :: alts in
             run p stack alts next_lvl
@@ -211,7 +205,7 @@ let rec heap_term_of_ast l =
      let l,v = heap_var_of_ast l v in
      l, v
   | Lprun2.FOAST.App(f,[]) when Lprun2.ASTFuncS.eq f Lprun2.ASTFuncS.andf ->
-     l, Const truec
+     l, Const truef
   | Lprun2.FOAST.App(f,[]) ->
      l, funct_of_ast f
   | Lprun2.FOAST.App(f,tl) ->
@@ -235,7 +229,7 @@ let rec stack_term_of_ast l =
      let l,v = stack_var_of_ast l v in
      l, v
   | Lprun2.FOAST.App(f,[]) when Lprun2.ASTFuncS.eq f Lprun2.ASTFuncS.andf ->
-     l, Const truec
+     l, Const truef
   | Lprun2.FOAST.App(f,[]) ->
      l, funct_of_ast f
   | Lprun2.FOAST.App(f,tl) ->
@@ -249,15 +243,26 @@ let rec stack_term_of_ast l =
 
 let query_of_ast t = snd (heap_term_of_ast [] t)
 
+let rec chop =
+ function
+    Struct(Const f,hd2,tl) when
+     Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.andf
+     -> chop hd2 @ List.flatten (List.map chop tl)
+  | Const f when f==truef -> []
+  | Const f when
+     Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.cutf
+     -> assert false
+  | _ as f -> [ f ]
+
 let program_of_ast p =
  List.map (fun (a,f) ->
   let l,a = stack_term_of_ast (0,[]) a in
   let (max,_),f = stack_term_of_ast l f in
 Format.eprintf "%a :- " ppterm a;
-Format.eprintf "%a, " ppterm f;
+List.iter (Format.eprintf "%a, " ppterm) (chop f);
 Format.eprintf ".\n%!";
   { hd = a
-  ; hyps = f
+  ; hyps = chop f
   ; vars = max
   ; key = key_of a
   }) p
@@ -276,13 +281,13 @@ let impl =
 
   let execute_once p q =
    let run, cont = make_runtime p in
-   let rec top = { goals = q; next = top } in
+   let rec top = { goals = [ q ]; next = top } in
    try ignore (run top) ; true
    with Failure _ -> false
 
   let execute_loop p q =
    let run, cont = make_runtime p in
-   let rec top = { goals = q; next = top } in
+   let rec top = { goals = [ q ]; next = top } in
    let time0 = Unix.gettimeofday() in
    let k = ref (run top) in
    let time1 = Unix.gettimeofday() in

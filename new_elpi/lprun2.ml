@@ -26,6 +26,7 @@ module type ASTFuncT =
     type t
     val pp : t -> string
     val eq : t -> t -> bool
+    val truef : t
     val andf : t
     val orf : t
     val cutf : t
@@ -46,6 +47,7 @@ module ASTFuncS : ASTFuncT =
 
     let pp n = n
     let eq = (==)
+    let truef = from_string "true"
     let andf = from_string ","
     let orf = from_string ";"
     let cutf = from_string "!"
@@ -190,6 +192,7 @@ module type ASTT =
     type term = Var of vart 
               | App of funct * term list
 
+    val mkTrue : term
     val mkCut : term
     val mkAnd : term list -> term
     val mkOr : term list -> term
@@ -210,10 +213,11 @@ module AST(Var: VarT)(Func: ASTFuncT) : ASTT
 
     let mkAnd = function [f] -> f | l -> App(Func.andf,l)
     let mkOr  = function [f] -> f | l -> App(Func.orf, l)
+    let mkTrue = App(Func.truef,[])
     let mkCut = App(Func.cutf,[]) 
     let mkEq l r = App(Func.eqf,[l;r]) 
 
-    
+     
     let rec pp =
       function
         Var v -> Var.pp v
