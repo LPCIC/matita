@@ -128,6 +128,7 @@ let set_goals s gs = { s with goals = gs }
 
 let truef = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.truef
 let andf = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.andf
+let implf = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.implf
 
 (* The block of recursive functions spares the allocation of a Some/None
  * at each iteration in order to know if one needs to backtrack or continue *)
@@ -143,6 +144,8 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
       (* TODO: the == could be Lprun2.ASTFuncS.eq if it is not expensive *)
     | App(Const c, g, gs)::gs' when c == andf ->
        run cp { stack with goals=g::gs@gs' } alts lvl
+    (* TODO: implement implication *)
+    | App(Const c, g, gs)::gs' when c == implf -> assert false
     | UVar { contents=g }::_ when g == dummy ->
        assert false (* Flexible goal, we give up *)
     | UVar { contents=g }::gs ->

@@ -78,6 +78,8 @@ module Formula(Bind: Lprun2.BindingsT with type term = AST.term) : Lprun2.Formul
       | AST.App(f,l) as x->
          (* And [] is interpreted as false *)
          if Lprun2.FuncS.eq f Lprun2.FuncS.andf then And l
+         (* TODO: implement implication *)
+         else if Lprun2.FuncS.eq f Lprun2.FuncS.implf then assert false
          (* Or [] is interpreted as true *)
          else if Lprun2.FuncS.eq f Lprun2.FuncS.cutf then Cut
          else Atom x

@@ -29,6 +29,7 @@ module type ASTFuncT =
     val truef : t
     val andf : t
     val orf : t
+    val implf : t
     val cutf : t
     val eqf : t
     val from_string : string -> t
@@ -50,6 +51,7 @@ module ASTFuncS : ASTFuncT =
     let truef = from_string "true"
     let andf = from_string ","
     let orf = from_string ";"
+    let implf = from_string "=>"
     let cutf = from_string "!"
     let eqf = from_string "="
 
@@ -115,6 +117,10 @@ module ImpVariable : VarT with type t = Obj.t option ref =
               String.concat ", " (List.map pp_term l)
              else if f = FuncS.orf then
                "(" ^ String.concat "; " (List.map pp_term l) ^ ")"
+             else if f = FuncS.implf then
+              (match l with
+                  [f1;f2] -> "(" ^ pp_term f1 ^ " => " ^ pp_term f2 ^ ")"
+                | _ -> assert false)
              else if f = FuncS.cutf then "!" 
              else "(" ^ String.concat " "
               (FuncS.pp f :: List.map pp_term l) ^ ")"
@@ -196,6 +202,7 @@ module type ASTT =
     val mkCut : term
     val mkAnd : term list -> term
     val mkOr : term list -> term
+    val mkImpl : term -> term -> term
     val mkEq : term -> term -> term
 
     val pp: term -> string
@@ -213,6 +220,7 @@ module AST(Var: VarT)(Func: ASTFuncT) : ASTT
 
     let mkAnd = function [f] -> f | l -> App(Func.andf,l)
     let mkOr  = function [f] -> f | l -> App(Func.orf, l)
+    let mkImpl f1 f2 = App(Func.implf,[f1;f2])
     let mkTrue = App(Func.truef,[])
     let mkCut = App(Func.cutf,[]) 
     let mkEq l r = App(Func.eqf,[l;r]) 
@@ -310,6 +318,8 @@ module Formula(Var: VarT)(Func: ASTFuncT)(Bind: BindingsT with type term = AST(V
       | AST.App(f,l) as x->
          (* And [] is interpreted as false *)
          if Func.eq f Func.andf then And l
+         (* TODO: implement implication *)
+         else if Func.eq f Func.implf then assert false
          (* Or [] is interpreted as true *)
          else if Func.eq f Func.cutf then Cut
          else Atom x

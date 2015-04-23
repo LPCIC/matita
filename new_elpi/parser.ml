@@ -10,6 +10,8 @@ let rec mkConj = Lprun2.mkAnd
 
 let rec mkDisj = Lprun2.mkOr
 
+let rec mkImpl = Lprun2.mkImpl
+
 let mkAtomBiUnif a b = Lprun2.mkEq a b
 
 let true_clause = Lprun2.mkTrue, mkConj []
@@ -267,10 +269,10 @@ EXTEND
   atom : LEVEL "conjunction"
      [[ l = LIST1 atom LEVEL "implication" SEP COMMA -> mkConj l ]];
   atom : LEVEL "implication"
-     [[ (*a = atom; IMPL; p = atom LEVEL "implication" ->
-          mkImpl (mkAtom a) (mkAtom p)
+     [[ a = atom; IMPL; p = atom LEVEL "implication" ->
+          mkImpl a p
       | a = atom; ENTAILS; p = premise ->
-          mkImpl (mkAtom p) (mkAtom a)*) ]];
+          mkImpl p a ]];
   atom : LEVEL "equality"
      [[ a = atom; EQUAL; b = atom LEVEL "term" ->
           mkAtomBiUnif a b ]];
