@@ -223,7 +223,6 @@ module RefreshableTerm : Lprun2.RefreshableTermT
 
    let refresh_head_of_clause (varsno,a,f) =
     let e = Array.create varsno AST.dummy in
-    let a = to_heap e a in
      e,(varsno,a,f)
     
    let refresh_body_of_clause _ e f = e,to_heap e f
