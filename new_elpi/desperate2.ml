@@ -252,9 +252,6 @@ let rec chop =
      Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.andf
      -> chop hd2 @ List.flatten (List.map chop tl)
   | Const f when f==truef -> []
-  | Const f when
-     Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.cutf
-     -> assert false
   | _ as f -> [ f ]
 
 let program_of_ast p =

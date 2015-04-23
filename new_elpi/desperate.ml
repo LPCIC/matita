@@ -240,9 +240,6 @@ let rec chop =
   | Const f when
      Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.andf
      -> []
-  | Const f when
-     Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.cutf
-     -> assert false
   | _ as f -> [ f ]
 
 let program_of_ast p =
