@@ -83,7 +83,7 @@ let to_heap e t =
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
 let unif trail last_call a e b =
  let rec unif a b =
-(*    Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
+    (* Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
    a == b || match a,b with
    | _, Arg i when e.(i) != dummy -> unif a e.(i)
    | UVar { contents = t }, _ when t != dummy -> unif t b
@@ -117,16 +117,15 @@ let undo_trail old_trail trail =
 
 (* Loop *)
 type program = clause list
-type frame = { goals : (program * term) list; next : frame; }
+type frame = (program * term) list list
 type alternative = { lvl : int;
   program : program;
   goal : term;
+  goals : (program * term) list;
   stack : frame;
   trail : term ref list;
   clauses : clause list
 }
-
-let set_goals s gs = { s with goals = gs }
 
 let truef = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.truef
 let andf = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.andf
@@ -154,33 +153,31 @@ let rec clausify =
 
 (* The block of recursive functions spares the allocation of a Some/None
  * at each iteration in order to know if one needs to backtrack or continue *)
-let make_runtime : (frame -> 'k) * ('k -> 'k) =
+let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
   let trail = ref [] in
 
-  let rec run (stack : frame) alts lvl =
+  let rec run p g gs (next : frame) alts lvl =
     (*Format.eprintf "<";
     List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
     Format.eprintf ">";*)
-    match stack.goals with
-      [] -> if lvl == 0 then alts else run stack.next alts (lvl - 1)
-      (* TODO: the == could be Lprun2.ASTFuncS.eq if it is not expensive *)
-    | (p,App(Const c, g, gs))::gs' when c == andf ->
-       run { stack with goals=(p,g)::List.map (fun x -> p,x) gs@gs' } alts lvl
+    match g with
+    | App(Const c, g, gs') when c == andf ->
+       run p g (List.map(fun x -> p,x) gs'@gs) next alts lvl
     (* We do not check the case of implication applied to
        multiple arguments *)
-    | (p,App(Const c, g1, [g2]))::gs' when c == implf ->
+    | App(Const c, g1, [g2]) when c == implf ->
        let clauses = clausify g1 in
-       run { stack with goals=(clauses@p,g2)::gs' } alts lvl
-    | (_,UVar { contents=g })::_ when g == dummy ->
+       run (clauses@p) g2 gs next alts lvl
+    | UVar { contents=g } when g == dummy ->
        assert false (* Flexible goal, we give up *)
-    | (p,UVar { contents=g })::gs ->
-       run { stack with goals = (p,g)::gs } alts lvl
-    | (p,g)::gs -> (* Atom case *)
+    | UVar { contents=g } ->
+       run p g gs next alts lvl
+    | _ -> (* Atom case *)
         let cp =
          List.filter (clause_match_key (key_of g)) p in
-        backchain p g gs cp stack alts lvl
+        backchain p g gs cp next alts lvl
 
-  and backchain p g gs cp old_stack alts lvl =
+  and backchain p g gs cp next alts lvl =
     (*Format.eprintf "BACKCHAIN %a\n%!" ppterm g;*)
     let last_call = alts = [] in
     let rec select = function
@@ -192,27 +189,33 @@ let make_runtime : (frame -> 'k) * ('k -> 'k) =
         match unif trail last_call g env c.hd with
         | false -> undo_trail old_trail trail; select cs
         | true ->
-            let next, next_lvl =
-              (* TODO : ask Enrico about lvl in place of lvl-1
-                 Is it bugged? It seems so to me *)
-              if gs = [] then old_stack.next, lvl
-              else { old_stack with goals = gs }, lvl + 1 in
 (* TODO: make to_heap lazy adding the env to unify and making the env
    survive longer. It may be slower or faster, who knows *)
-            let stack = { goals = List.map (fun x -> p,to_heap env x) c.hyps; next } in
             let alts = if cs = [] then alts else
-              { program=p; goal=g; stack={old_stack with goals=gs}; trail=old_trail; clauses=cs; lvl } :: alts in
-            run stack alts next_lvl
+              { program=p; goal=g; goals=gs; stack=next; trail=old_trail; clauses=cs; lvl=lvl } :: alts in
+            let next = if gs = [] then next else gs::next in
+            match c.hyps with
+               [] -> pop_andl alts (lvl-1) next
+             | g::gs ->
+                let g = to_heap env g in
+                let gs=List.map (fun x -> p,to_heap env x) gs in
+                run p g gs next alts lvl
     in
       select cp
 
+  and pop_andl alts lvl =
+   function
+      [] -> alts
+    | []::_next -> assert false (* run next alts (lvl - 1) *)
+    | ((p,g)::gs)::next -> run p g gs next alts lvl
+
   and next_alt = function
     | [] -> raise (Failure "no clause")
-    | { program = p; goal = g; stack; trail = old_trail; clauses; lvl } :: alts ->
+    | { program = p; goal = g; goals = gs; stack=next; trail = old_trail; clauses; lvl } :: alts ->
         undo_trail old_trail trail;
-        backchain p g stack.goals clauses stack alts lvl
+        backchain p g gs clauses next alts lvl
   in
-   (fun s -> run s [] 0), next_alt
+   (fun p q -> run p q [] [] [] 0), next_alt
 ;;
   
 (* Hash re-consing :-( *)
@@ -301,15 +304,13 @@ let impl =
 
   let execute_once p q =
    let run, cont = make_runtime in
-   let rec top = { goals = [ p,q ]; next = top } in
-   try ignore (run top) ; true
+   try ignore (run p q) ; true
    with Failure _ -> false
 
   let execute_loop p q =
    let run, cont = make_runtime in
-   let rec top = { goals = [ p,q ]; next = top } in
    let time0 = Unix.gettimeofday() in
-   let k = ref (run top) in
+   let k = ref (run p q) in
    let time1 = Unix.gettimeofday() in
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
    Format.eprintf "Result: %a\n%!" ppterm q ;
