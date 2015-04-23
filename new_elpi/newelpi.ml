@@ -35,12 +35,22 @@ let run_prog impl prog query =
  Impl.execute_loop prog query
 ;;
 
+let print_implementations () =
+ List.iteri (
+  fun i (module Impl : Lprun2.Implementation) ->
+   prerr_string ("Implementation #" ^ string_of_int (i+1) ^ ": ");
+   prerr_endline (Impl.msg (Impl.query_of_ast Lprun2.mkTrue)) ;
+ ) implementations
+;;
+
 let _ =
   let argv = Sys.argv in
   (* j=1 iff -test is not passed *)
   let j,test,impl =
    if argv.(1) = "-test" then 2,true,0
    else if argv.(1) = "-impl" then 3,false,int_of_string (argv.(2))
+   else if argv.(1) = "-list" then
+    (print_implementations (); exit 0)
    else 1,false,1 in
   let b = Buffer.create 1024 in
   for i=j to Array.length argv - 1 do
