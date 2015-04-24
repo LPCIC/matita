@@ -127,14 +127,17 @@ type alternative = { lvl : int;
   clauses : clause list
 }
 
-let truef = Const (Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.truef)
-let andf = Const (Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.andf)
-let implf = Const (Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.implf)
+module F = Lprun2.ASTFuncS
+module AST = Lprun2.FOAST
+
+let truef = Const (F.pp F.truef)
+let andf = Const (F.pp F.andf)
+let implf = Const (F.pp F.implf)
 
 let rec chop =
  function
     Struct(Const f,hd2,tl) when
-     Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.andf
+     F.eq (F.from_string f) F.andf
      -> chop hd2 @ List.flatten (List.map chop tl)
   | f when f == truef -> []
   | f -> [ f ]
@@ -224,7 +227,7 @@ let funct_of_ast =
  function x ->
   try Hashtbl.find h x
   with Not_found ->
-   let xx = Const (Lprun2.ASTFuncS.pp x) in
+   let xx = Const (F.pp x) in
    Hashtbl.add h x xx ; xx
 
 let heap_var_of_ast l n =
@@ -235,14 +238,14 @@ let heap_var_of_ast l n =
 
 let rec heap_term_of_ast l =
  function
-    Lprun2.FOAST.Var v ->
+    AST.Var v ->
      let l,v = heap_var_of_ast l v in
      l, v
-  | Lprun2.FOAST.App(f,[]) when Lprun2.ASTFuncS.eq f Lprun2.ASTFuncS.andf ->
+  | AST.App(f,[]) when F.eq f F.andf ->
      l, truef
-  | Lprun2.FOAST.App(f,[]) ->
+  | AST.App(f,[]) ->
      l, funct_of_ast f
-  | Lprun2.FOAST.App(f,tl) ->
+  | AST.App(f,tl) ->
      let l,rev_tl =
        List.fold_left
         (fun (l,tl) t -> let l,t = heap_term_of_ast l t in (l,t::tl))
@@ -259,14 +262,14 @@ let stack_var_of_ast (f,l) n =
 
 let rec stack_term_of_ast l =
  function
-    Lprun2.FOAST.Var v ->
+    AST.Var v ->
      let l,v = stack_var_of_ast l v in
      l, v
-  | Lprun2.FOAST.App(f,[]) when Lprun2.ASTFuncS.eq f Lprun2.ASTFuncS.andf ->
+  | AST.App(f,[]) when F.eq f F.andf ->
      l, truef
-  | Lprun2.FOAST.App(f,[]) ->
+  | AST.App(f,[]) ->
      l, funct_of_ast f
-  | Lprun2.FOAST.App(f,tl) ->
+  | AST.App(f,tl) ->
      let l,rev_tl =
        List.fold_left
         (fun (l,tl) t -> let l,t = stack_term_of_ast l t in (l,t::tl))
