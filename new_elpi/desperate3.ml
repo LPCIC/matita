@@ -41,6 +41,8 @@ type key = string * string
 
 type clause = { hd : term; hyps : term list; vars : int; key : key }
 
+(****** Indexing ******)
+
 let dummyk = "dummy"
 
 let rec skey_of = function
@@ -57,9 +59,43 @@ let rec key_of = function
  | Struct (arg1,arg2,_) -> skey_of arg1, skey_of arg2
  | _ -> dummyk,dummyk
 
-let clause_match_key (j1,j2) { key = (k1,k2) } =
-  j1 == dummyk || k1 == dummyk ||
-  (j1 == k1 && (j2 == dummyk || k2 == dummyk || j2 == k2))
+let clause_match_key j k =
+  (j == dummyk || k == dummyk || j == k)
+
+module IndexData =
+ struct
+  type t = string
+  let equal = (==)
+  (* TODO: hash cons strings together with numbers to be
+     used for fast comparison *)
+  let compare = String.compare
+end
+module ClauseMap = Map.Make(IndexData)
+
+let get_clauses a m =
+ let ind,app = key_of a in
+ let l = List.rev (ClauseMap.find ind m) in
+ let rec filter_map =
+  function
+     [] -> []
+   | (a',cl)::tl when clause_match_key app a' ->
+       cl::filter_map tl
+   | _::tl -> filter_map tl in
+ filter_map l
+   
+let add_clauses clauses p =       
+  List.fold_left (fun m clause -> 
+    let ind,app = clause.key in
+    try 
+      let l = ClauseMap.find ind m in
+      ClauseMap.add ind ((app,clause) :: l) m
+    with Not_found -> 
+      ClauseMap.add ind [app,clause] m
+    ) p clauses
+
+let make p = add_clauses p ClauseMap.empty
+
+(****** End of Indexing ******)
 
 (* The environment of a clause and stack frame *)
 
@@ -116,7 +152,7 @@ let undo_trail old_trail trail =
 ;;
 
 (* Loop *)
-type program = clause list
+type program = (string * clause) list ClauseMap.t
 (* The int is the lvl because we do not store empty
    sublists (tailcall optimization) and thus we need to
    remember how many we skipped to decrease the current
@@ -193,14 +229,13 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
        multiple arguments *)
     | App(c, g1, [g2]) when c == implc ->
        let clauses = clausify g1 in
-       run (clauses@p) g2 gs next alts lvl
+       run (add_clauses clauses p) g2 gs next alts lvl
     | UVar { contents=g } when g == dummy ->
        assert false (* Flexible goal, we give up *)
     | UVar { contents=g } ->
        run p g gs next alts lvl
     | _ -> (* Atom case *)
-        let cp =
-         List.filter (clause_match_key (key_of g)) p in
+        let cp = get_clauses g p in
         backchain p g gs cp next alts lvl
 
   and backchain p g gs cp next alts lvl =
@@ -301,23 +336,27 @@ let rec stack_term_of_ast l =
 let query_of_ast t = snd (heap_term_of_ast [] t)
 
 let program_of_ast p =
- List.map (fun (a,f) ->
-  let l,a = stack_term_of_ast (0,[]) a in
-  let (max,_),f = stack_term_of_ast l f in
+ let clauses =
+  List.map (fun (a,f) ->
+   let l,a = stack_term_of_ast (0,[]) a in
+   let (max,_),f = stack_term_of_ast l f in
 Format.eprintf "%a :- " ppterm a;
 List.iter (Format.eprintf "%a, " ppterm) (chop f);
 Format.eprintf ".\n%!";
-  { hd = a
-  ; hyps = chop f
-  ; vars = max
-  ; key = key_of a
-  }) p
+   { hd = a
+   ; hyps = chop f
+   ; vars = max
+   ; key = key_of a
+   }) p
+ in
+  make clauses
 
 let impl =
  (module struct
   (* RUN with non indexed engine *)
   type query = term
-  type program = clause list
+  type program_ = program
+  type program = program_
   let query_of_ast = query_of_ast
   let program_of_ast = program_of_ast
 
