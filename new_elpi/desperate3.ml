@@ -117,7 +117,11 @@ let undo_trail old_trail trail =
 
 (* Loop *)
 type program = clause list
-type frame = (program * term) list list
+(* The int is the lvl because we do not store empty
+   sublists (tailcall optimization) and thus we need to
+   remember how many we skipped to decrease the current
+   lvl when popping from the outer list. *)
+type frame = FCons of int * (program * term) list * frame | FNil
 type alternative = { lvl : int;
   program : program;
   goal : term;
@@ -168,12 +172,22 @@ let rec clausify =
 let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
   let trail = ref [] in
 
+  (* Input to be read as the orl (((p,g)::gs)::next)::alts *)
   let rec run p g gs (next : frame) alts lvl =
+    (*Format.eprintf "goal: %a @ %d\n%!" ppterm g lvl;*)
     (*Format.eprintf "<";
     List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
     Format.eprintf ">";*)
     match g with
-    | App(c, g, gs') when c == andf ->
+    | c when c == cutc ->
+         (* We filter out from the or list every frame whose
+            lvl is >= then ours. *)
+         let alts = List.filter (fun x -> x.lvl < lvl-1) alts in
+         if alts=[] then trail := [] ;
+         (match gs with
+             [] -> pop_andl alts next
+           | (p,g)::gs -> run p g gs next alts lvl)
+    | App(c, g, gs') when c == andc ->
        run p g (List.map(fun x -> p,x) gs'@gs) next alts lvl
     (* We do not check the case of implication applied to
        multiple arguments *)
@@ -190,7 +204,8 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
         backchain p g gs cp next alts lvl
 
   and backchain p g gs cp next alts lvl =
-    (*Format.eprintf "BACKCHAIN %a\n%!" ppterm g;*)
+    (*Format.eprintf "BACKCHAIN %a @ %d\n%!" ppterm g lvl;
+List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
     let last_call = alts = [] in
     let rec select = function
     | [] -> next_alt alts
@@ -205,21 +220,26 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
    survive longer. It may be slower or faster, who knows *)
             let alts = if cs = [] then alts else
               { program=p; goal=g; goals=gs; stack=next; trail=old_trail; clauses=cs; lvl=lvl } :: alts in
-            let next = if gs = [] then next else gs::next in
-            match c.hyps with
-               [] -> pop_andl alts (lvl-1) next
-             | g::gs ->
-                let g = to_heap env g in
-                let gs=List.map (fun x -> p,to_heap env x) gs in
-                run p g gs next alts lvl
+            (match c.hyps with
+               [] ->
+                (match gs with
+                    [] -> pop_andl alts next
+                  | (p,g)::gs -> run p g gs next alts lvl)
+             | g'::gs' ->
+                let next =
+                 if gs = [] then next
+                 else FCons (lvl,gs,next) in
+                let g' = to_heap env g' in
+                let gs'=List.map (fun x->p,to_heap env x) gs' in
+                run p g' gs' next alts (lvl+1))
     in
       select cp
 
-  and pop_andl alts lvl =
+  and pop_andl alts =
    function
-      [] -> alts
-    | []::_next -> assert false (* run next alts (lvl - 1) *)
-    | ((p,g)::gs)::next -> run p g gs next alts lvl
+      FNil -> alts
+    | FCons (_,[],_) -> assert false
+    | FCons(lvl,(p,g)::gs,next) -> run p g gs next alts lvl
 
   and next_alt = function
     | [] -> raise (Failure "no clause")
@@ -227,7 +247,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
         undo_trail old_trail trail;
         backchain p g gs clauses next alts lvl
   in
-   (fun p q -> run p q [] [] [] 0), next_alt
+   (fun p q -> run p q [] FNil [] 0), next_alt
 ;;
   
 let heap_var_of_ast l n =
