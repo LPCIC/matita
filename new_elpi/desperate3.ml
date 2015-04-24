@@ -127,23 +127,23 @@ type alternative = { lvl : int;
   clauses : clause list
 }
 
-let truef = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.truef
-let andf = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.andf
-let implf = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.implf
+let truef = Const (Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.truef)
+let andf = Const (Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.andf)
+let implf = Const (Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.implf)
 
 let rec chop =
  function
     Struct(Const f,hd2,tl) when
      Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.andf
      -> chop hd2 @ List.flatten (List.map chop tl)
-  | Const f when f==truef -> []
-  | _ as f -> [ f ]
+  | f when f == truef -> []
+  | f -> [ f ]
 
 let rec clausify =
  function
-    App(Const c, g, gs) when c == andf ->
+    App(c, g, gs) when c == andf ->
      clausify g @ List.flatten (List.map clausify gs)
-  | App(Const c, g1, [g2]) when c == implf ->
+  | App(c, g1, [g2]) when c == implf ->
      [ { hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of g2 } ]
   | UVar { contents=g } when g == dummy ->
      assert false (* Flexible axiom, we give up *)
@@ -161,11 +161,11 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
     Format.eprintf ">";*)
     match g with
-    | App(Const c, g, gs') when c == andf ->
+    | App(c, g, gs') when c == andf ->
        run p g (List.map(fun x -> p,x) gs'@gs) next alts lvl
     (* We do not check the case of implication applied to
        multiple arguments *)
-    | App(Const c, g1, [g2]) when c == implf ->
+    | App(c, g1, [g2]) when c == implf ->
        let clauses = clausify g1 in
        run (clauses@p) g2 gs next alts lvl
     | UVar { contents=g } when g == dummy ->
@@ -239,7 +239,7 @@ let rec heap_term_of_ast l =
      let l,v = heap_var_of_ast l v in
      l, v
   | Lprun2.FOAST.App(f,[]) when Lprun2.ASTFuncS.eq f Lprun2.ASTFuncS.andf ->
-     l, Const truef
+     l, truef
   | Lprun2.FOAST.App(f,[]) ->
      l, funct_of_ast f
   | Lprun2.FOAST.App(f,tl) ->
@@ -263,7 +263,7 @@ let rec stack_term_of_ast l =
      let l,v = stack_var_of_ast l v in
      l, v
   | Lprun2.FOAST.App(f,[]) when Lprun2.ASTFuncS.eq f Lprun2.ASTFuncS.andf ->
-     l, Const truef
+     l, truef
   | Lprun2.FOAST.App(f,[]) ->
      l, funct_of_ast f
   | Lprun2.FOAST.App(f,tl) ->
