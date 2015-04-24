@@ -130,23 +130,32 @@ type alternative = { lvl : int;
 module F = Lprun2.ASTFuncS
 module AST = Lprun2.FOAST
 
-let truef = Const (F.pp F.truef)
-let andf = Const (F.pp F.andf)
-let implf = Const (F.pp F.implf)
+(* Hash re-consing :-( *)
+let funct_of_ast =
+ let h = Hashtbl.create 37 in
+ function x ->
+  try Hashtbl.find h x
+  with Not_found ->
+   let xx = Const (F.pp x) in
+   Hashtbl.add h x xx ; xx
+
+let cutc = funct_of_ast F.cutf
+let truec = funct_of_ast F.truef
+let andc = funct_of_ast F.andf
+let implc = funct_of_ast F.implf
 
 let rec chop =
  function
-    Struct(Const f,hd2,tl) when
-     F.eq (F.from_string f) F.andf
-     -> chop hd2 @ List.flatten (List.map chop tl)
-  | f when f == truef -> []
-  | f -> [ f ]
+    Struct(c,hd2,tl) when c == andc ->
+     chop hd2 @ List.flatten (List.map chop tl)
+  | f when f==truec -> []
+  | _ as f -> [ f ]
 
 let rec clausify =
  function
-    App(c, g, gs) when c == andf ->
+    App(c, g, gs) when c == andc ->
      clausify g @ List.flatten (List.map clausify gs)
-  | App(c, g1, [g2]) when c == implf ->
+  | App(c, g1, [g2]) when c == implc ->
      [ { hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of g2 } ]
   | UVar { contents=g } when g == dummy ->
      assert false (* Flexible axiom, we give up *)
@@ -168,7 +177,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
        run p g (List.map(fun x -> p,x) gs'@gs) next alts lvl
     (* We do not check the case of implication applied to
        multiple arguments *)
-    | App(c, g1, [g2]) when c == implf ->
+    | App(c, g1, [g2]) when c == implc ->
        let clauses = clausify g1 in
        run (clauses@p) g2 gs next alts lvl
     | UVar { contents=g } when g == dummy ->
@@ -221,15 +230,6 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
    (fun p q -> run p q [] [] [] 0), next_alt
 ;;
   
-(* Hash re-consing :-( *)
-let funct_of_ast =
- let h = Hashtbl.create 37 in
- function x ->
-  try Hashtbl.find h x
-  with Not_found ->
-   let xx = Const (F.pp x) in
-   Hashtbl.add h x xx ; xx
-
 let heap_var_of_ast l n =
  try l,List.assoc n l
  with Not_found ->
@@ -242,7 +242,7 @@ let rec heap_term_of_ast l =
      let l,v = heap_var_of_ast l v in
      l, v
   | AST.App(f,[]) when F.eq f F.andf ->
-     l, truef
+     l, truec
   | AST.App(f,[]) ->
      l, funct_of_ast f
   | AST.App(f,tl) ->
@@ -266,7 +266,7 @@ let rec stack_term_of_ast l =
      let l,v = stack_var_of_ast l v in
      l, v
   | AST.App(f,[]) when F.eq f F.andf ->
-     l, truef
+     l, truec
   | AST.App(f,[]) ->
      l, funct_of_ast f
   | AST.App(f,tl) ->
