@@ -5,25 +5,42 @@ let dbg x = if debug then fprintf err_formatter x else ifprintf err_formatter x
 (* Experiment with De Bruijn levels *)
 
 (* Things understood (code not necessarily there):
-   - caching the max level in a lambda term is possible. Unclear (untested) if
-     it is really useful to avoid lift/subst
+   - caching the max level in a lambda term is possible.
    - closed term needs to be lifted, and UVar are in LP closed terms
      E.g. \x.x at top level is \1.1, at depth n-1 is \n.n
      hence whenever you deref, you need to know the current depth (context
      length)
+   - original clauses are closed terms, hence at each application need
+     to be lifted at the level d (length of the current ctx), but
+     the head rarely contains a lambda, hence nothing to be done
+   - hypothetical clauses are open terms, only their closed subterms (typically
+     there are none) need to be lifted.
+   In short, by caching the max rel in term one can avoid lifting the heads.
+   - the body of clauses (original ones) do contain binders (thing at the
+     lambda typing rule) so turning "hyps" into the new goals needs a new
+     combination of
+     - to_heap (as in desperate)
+     - lift at depth d: this mean that the premise (pi 1\of (F 1)) is turned
+       into (pi d\of (F d))
+     - goals with a pi increment d, and pop the lambda: Rel d is bound
+       in the new context, nothing to be done.
+   The optimization that should save us:
+   - if we continue with the goal (of (F d)) and we unify it with
+     the head of the next clause to be tried, we whnd (F d)
+   - (F d), after deref is (App [Lam k,t; Rel d]), if d=k no beta is needed
+     and we just return t
+   So the term assigned to F need not be lifted (i.e. the solutions of
+   Uv are closed w.r.t. the context of Uv.  What I'm saying is that if
+   we destructure (lam 1\ lam 2\f 1 2) using the of rule twice we must
+   assign to the F1 (the F of the first rule, that is of level 1)
+   (1\lam 2\f 1 2) and to the F2 (level 2) directly (2\f 1 2), that is an open
+   term, but closed in the context of F2 (i.e. deref F2, in its orig context
+   does nothing).
 
-   Things yet to be fully understood:
-   - having the name in the lambda (i.e. the level it binds) is simple and
-     I think needed in order to make the following optimization safe:
-
-                                G |- pi (x\w  as t)
-                                     
-                                     |
-                                     v
-
-        G; x |- subst (DbL |G|+1) (pop_lam (lift 1 t)) ===== G; x |- pop_lam t
-
-     You need to check that the lambda you pop binds variable at level |G|+1
+   I think that what should be the invariant is that the linguistic construct
+   that model pattern matching of the input should not alter the input, just
+   refresh the clauses.  (In elpi, they substitute fresh 'c' in place of
+   the bound variables)
 
    Speculation on the representation of Uvar in HO case:
    - Matita 0.5 has (X (DbL 1) .. (DbL d) a1 .. an)
@@ -37,9 +54,11 @@ let dbg x = if debug then fprintf err_formatter x else ifprintf err_formatter x
    so lift can go.  What is left is the length, that is the depth/level
    of a LP unif variable.
 
+   The code below is like matita 0.5
+
    I'd try with the Matita 1.0 approach, without the lift (since irl are
    made of "constants" in DBL) and expand on the fly when you exit the
-   fragment.
+   fragment.  
 *)
 
 (* Input data in De Bruijn Level format, starting from 1 *)
