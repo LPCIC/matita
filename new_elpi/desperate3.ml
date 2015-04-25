@@ -123,7 +123,7 @@ let unif trail last_call a e b =
     | [],[] -> true
     | [] :: xs, [] :: ys -> next xs ys
     | (x :: xs) :: l1, (y :: ys) :: l2 -> unif x y (xs :: l1) (ys :: l2)
-    | _ -> assert false
+    | _ -> false
  and unif a b todo1 todo2 =
    (* Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
    if a == b then next todo1 todo2
@@ -144,7 +144,6 @@ let unif trail last_call a e b =
    | App (x1,x2,xs), (Struct (y1,y2,ys) | App (y1,y2,ys)) ->
        (x1 == y1 || unif x1 y1 [] []) &&
        (x2 == y2 || unif x2 y2 [] []) &&
-       List.length xs = List.length ys &&
        next (xs :: todo1) (ys :: todo2)
          
    | _ -> false in
