@@ -118,27 +118,37 @@ let to_heap e t =
 
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
 let unif trail last_call a e b =
- let rec unif a b =
-    (* Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
-   a == b || match a,b with
-   | _, Arg i when e.(i) != dummy -> unif a e.(i)
-   | UVar { contents = t }, _ when t != dummy -> unif t b
-   | _, UVar { contents = t } when t != dummy -> unif a t
-   | UVar _, Arg j -> e.(j) <- a; true
-   | t, Arg i -> e.(i) <- t; true
+  let rec next l1 l2 =
+    match l1,l2 with
+    | [],[] -> true
+    | [] :: xs, [] :: ys -> next xs ys
+    | (x :: xs) :: l1, (y :: ys) :: l2 -> unif x y (xs :: l1) (ys :: l2)
+    | _ -> assert false
+ and unif a b todo1 todo2 =
+   (* Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
+   if a == b then next todo1 todo2
+   else match a,b with
+   | _, Arg i when e.(i) != dummy -> unif a e.(i) todo1 todo2
+   | UVar { contents = t }, _ when t != dummy -> unif t b todo1 todo2
+   | _, UVar { contents = t } when t != dummy -> unif a t todo1 todo2
+   | UVar _, Arg j -> e.(j) <- a; next todo1 todo2
+   | t, Arg i -> e.(i) <- t; next todo1 todo2
    | UVar r, t ->
        if not last_call then trail := r :: !trail;
        r := to_heap e t;
-       true
+       next todo1 todo2
    | t, UVar r ->
        if not last_call then trail := r :: !trail;
        r := t;
-       true
+       next todo1 todo2
    | App (x1,x2,xs), (Struct (y1,y2,ys) | App (y1,y2,ys)) ->
-       (x1 == y1 || unif x1 y1) && (x2 == y2 || unif x2 y2) &&
-       List.for_all2 unif xs ys
+       (x1 == y1 || unif x1 y1 [] []) &&
+       (x2 == y2 || unif x2 y2 [] []) &&
+       List.length xs = List.length ys &&
+       next (xs :: todo1) (ys :: todo2)
+         
    | _ -> false in
- unif a b
+ unif a b [] []
 ;;
 
 (* Backtracking *)
