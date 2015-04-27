@@ -19,21 +19,23 @@
 %   ocamlc                       0.024s
 %   yap                          0.033s
 %   teyjus                       0.257s
-%   desperate                    0.36s
-%   defunct                      0.70s
 %   elpi                         4.72s (setting ulimit -s 81920)
-%                                lazy   eager   with formula       with terms
-%   no index                     3.85s  4.74s   4.49s              4.28s
-%   one level index hashtbl      2.37s  2.35s   2.29s              2.28s
-%   two level inefficient index  2.19s  3.00s   2.30s              2.34s
-%   one level hashtbl + auto GC  3.97s  4.67s   3.39s              3.88s
-%   one lvl hash+flat+ auto GC   3.22s  3.40s   3.38s              3.14s
-%   one lvl hashtbl + flat       2.42s  2.43s   2.64s              2.27s
-%   one lvl hash+ flat + man GC  2.99s  2.80s   2.83s              2.37s
-%   one lvl index map main       2.44s  2.60s   2.40s              2.18s
-%I  one lvl hashtbl              0.61s  -----   0.63s              0.57s
-%I  two lvl efficient index      0.55s  0.62s
-%I  desperate                    0.14s
+%                                newlazy  lazy   eager   with formula       with terms
+%   no index                     2.90s  3.85s  4.74s   4.49s              4.28s
+%   one level index hashtbl      2.51s  2.37s  2.35s   2.29s              2.28s
+%   two level inefficient index  1.78s  2.19s  3.00s   2.30s              2.34s
+%   one level hashtbl + auto GC  3.78s  3.97s  4.67s   3.39s              3.88s
+%   one lvl hash+flat+ auto GC   3.10s  3.22s  3.40s   3.38s              3.14s
+%   one lvl hashtbl + flat              2.42s  2.43s   2.64s              2.27s
+%   one lvl hash+ flat + man GC         2.99s  2.80s   2.83s              2.37s
+%   one lvl index map main       2.61s  2.44s  2.60s   2.40s              2.18s
+%I  one lvl hashtbl              0.72s  0.61s  -----   0.63s              0.57s
+%I  two lvl efficient index      0.36s  0.55s  0.62s
+%II two lvl inefficient index    0.70s
+%I  desperate two lvl effici     0.19s
+%I  desperate.ml                 0.11s  0.14s
+%I  desperate2.ml                0.11s
+%I  desperate3.ml                0.12s
 
 rev L RL  :- aux L xnil  RL .
 aux (xcons X XS)  ACC  R :- aux XS (xcons X ACC) R . 
