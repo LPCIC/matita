@@ -200,19 +200,24 @@ let undo_trail old_trail trail =
 
 (* Loop *)
 type program = (key1 * clause) list ClauseMap.t
-(* The int is the lvl because we do not store empty
-   sublists (tailcall optimization) and thus we need to
-   remember how many we skipped to decrease the current
-   lvl when popping from the outer list. *)
-type frame = FCons of int * (program * term) list * frame | FNil
-type alternative = { lvl : int;
+(* The activation frames point to the choice point that
+   cut should backtrack to, i.e. the first one not to be
+   removed. For bad reasons, we call it lvl in the code. *)
+type frame =
+ | FNil
+ | FCons of (*lvl:*)alternative * (program * term) list * frame
+and alternative = {
+  lvl : alternative;
   program : program;
   goal : term;
   goals : (program * term) list;
   stack : frame;
   trail : term ref list;
-  clauses : clause list
+  clauses : clause list;
+  next : alternative
 }
+
+let emptyalts = Obj.magic 0
 
 module F = Lprun2.ASTFuncS
 module AST = Lprun2.FOAST
@@ -265,10 +270,15 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     Format.eprintf ">";*)
     match g with
     | c when c == cutc ->
-         (* We filter out from the or list every frame whose
-            lvl is >= then ours. *)
-         let alts = List.filter (fun x -> x.lvl < lvl-1) alts in
-         if alts=[] then trail := [] ;
+         (* We filter out from the or list until we find the
+            last frame not to be removed (called lvl). *)
+         let alts =
+          let rec prune alts =
+           if alts == lvl then alts
+           else prune alts.next
+          in
+           prune alts in
+         if alts=emptyalts then trail := [] ;
          (match gs with
              [] -> pop_andl alts next
            | (p,g)::gs -> run p g gs next alts lvl)
@@ -290,7 +300,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
   and backchain p g gs cp next alts lvl =
     (*Format.eprintf "BACKCHAIN %a @ %d\n%!" ppterm g lvl;
 List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
-    let last_call = alts = [] in
+    let last_call = alts = emptyalts in
     let rec select = function
     | [] -> next_alt alts
     | c :: cs ->
@@ -302,8 +312,13 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
         | true ->
 (* TODO: make to_heap lazy adding the env to unify and making the env
    survive longer. It may be slower or faster, who knows *)
-            let alts = if cs = [] then alts else
-              { program=p; goal=g; goals=gs; stack=next; trail=old_trail; clauses=cs; lvl=lvl } :: alts in
+            let oldalts = alts in
+            let alts =
+             if cs = [] then alts
+             else
+              { program=p; goal=g; goals=gs; stack=next;
+                trail=old_trail; clauses=cs; lvl=lvl ;
+                next=alts} in
             (match c.hyps with
                [] ->
                 (match gs with
@@ -315,7 +330,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
                  else FCons (lvl,gs,next) in
                 let g' = to_heap env g' in
                 let gs'=List.map (fun x->p,to_heap env x) gs' in
-                run p g' gs' next alts (lvl+1))
+                run p g' gs' next alts oldalts)
     in
       select cp
 
@@ -325,13 +340,16 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
     | FCons (_,[],_) -> assert false
     | FCons(lvl,(p,g)::gs,next) -> run p g gs next alts lvl
 
-  and next_alt = function
-    | [] -> raise (Failure "no clause")
-    | { program = p; goal = g; goals = gs; stack=next; trail = old_trail; clauses; lvl } :: alts ->
-        undo_trail old_trail trail;
-        backchain p g gs clauses next alts lvl
+  and next_alt alts =
+   if alts == emptyalts then raise (Failure "no clause")
+   else begin
+    let { program = p; goal = g; goals = gs; stack=next;
+          trail = old_trail; clauses; lvl ; next=alts} = alts in
+    undo_trail old_trail trail;
+    backchain p g gs clauses next alts lvl
+   end
   in
-   (fun p q -> run p q [] FNil [] 0), next_alt
+   (fun p q -> run p q [] FNil emptyalts emptyalts), next_alt
 ;;
   
 let heap_var_of_ast l n =
@@ -425,7 +443,7 @@ let impl =
    let time1 = Unix.gettimeofday() in
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
    Format.eprintf "Result: %a\n%!" ppterm q ;
-   while !k <> [] do
+   while !k <> emptyalts do
      let time0 = Unix.gettimeofday() in
      k := cont !k;
      let time1 = Unix.gettimeofday() in

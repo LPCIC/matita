@@ -1,0 +1,3 @@
+% Test: q. Should not fail.
+
+q :- !.
