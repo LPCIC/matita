@@ -1,3 +1,32 @@
+X18: 2.28s
+commit bf51f8c6e5de5b80385420f7b01a555aae3eebbb
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Tue Apr 28 14:10:31 2015 +0200
+
+    Semantics of cut fixed and many more tests for cut added.
+    
+    NOTE: we used to implement cut using an integer lvl. But
+    such an implementation is probably not possible because
+    alternatives with the same lvl could be related to different
+    choice points. Indeed, both our old implementations and the
+    original elpi failed on some of the new tests. The new
+    implementation replaces indexes with pointers to previous
+    alts (i.e. pointers in the or-list), so that we are sure where
+    we need to stop (like the WAM does btw).
+
+X18: 2.28s
+commit c79d0e3007f66eb553b6d50338faca1e09d8d064
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Tue Apr 28 12:11:04 2015 +0200
+
+    Using pairs string*uniq-int for constants.
+    
+    Pros: saves up string comparison time when indexing
+    Cons: requires a snd during indexing.
+    
+    Outcome: to be tested on CSC's laptop. We expect this
+    version to be slighly faster, but who knows.
+
 X18: 2.23s
 commit 0687444c4930dfec4f625af05f3f6137a1ad1330
 Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>

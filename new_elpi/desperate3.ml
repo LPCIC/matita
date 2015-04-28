@@ -278,7 +278,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
            else prune alts.next
           in
            prune alts in
-         if alts=emptyalts then trail := [] ;
+         if alts==emptyalts then trail := [] ;
          (match gs with
              [] -> pop_andl alts next
            | (p,g)::gs -> run p g gs next alts lvl)
@@ -300,7 +300,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
   and backchain p g gs cp next alts lvl =
     (*Format.eprintf "BACKCHAIN %a @ %d\n%!" ppterm g lvl;
 List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
-    let last_call = alts = emptyalts in
+    let last_call = alts == emptyalts in
     let rec select = function
     | [] -> next_alt alts
     | c :: cs ->
@@ -443,7 +443,7 @@ let impl =
    let time1 = Unix.gettimeofday() in
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
    Format.eprintf "Result: %a\n%!" ppterm q ;
-   while !k <> emptyalts do
+   while !k != emptyalts do
      let time0 = Unix.gettimeofday() in
      k := cont !k;
      let time1 = Unix.gettimeofday() in
