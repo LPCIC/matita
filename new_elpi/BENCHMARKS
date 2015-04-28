@@ -1,0 +1,41 @@
+X18: 2.23s
+commit 0687444c4930dfec4f625af05f3f6137a1ad1330
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Tue Apr 28 11:31:20 2015 +0200
+
+    Enrico's partially tail recursive, slow unification reverted.
+    
+    Previous non tail recursive unification made "more tail recursive" in the
+    case of binary applications. The test does not require more stack space,
+    but this is obviously test dependent. This version is the fastest we
+    tried so far.
+
+X18: 2.65s
+commit b329967c0b88dd143524a0fde8bca9f7acc80123
+Author: Enrico Tassi <gares@fettunta.org>
+Date:   Sat Apr 25 14:38:07 2015 +0200
+
+    small change, should be closer to the for_all2 semantics
+
+X18: 2.68s
+commit f135f9dbc6f8bd6d326de0f9bc9108e6907c82d5
+Author: Enrico Tassi <gares@fettunta.org>
+Date:   Sat Apr 25 14:35:16 2015 +0200
+
+    tail recursive unif: here same speed for x14, no overflow for x16
+
+X18: 2.33s
+commit e8840ad8e7dca60243af88bad4cdbe7d0fcb99b6
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Fri Apr 24 18:07:08 2015 +0200
+
+    Functional two level indexing implemented.
+
+commit eed17f20ffb9a812fe374e4c08689b1840cebe7d
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Fri Apr 24 17:33:33 2015 +0200
+
+    Cut implemented & code refactored.
+
+X18: 2.40s
+desperate2.ml
