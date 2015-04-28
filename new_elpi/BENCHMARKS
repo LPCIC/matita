@@ -1,3 +1,16 @@
+X16: 2.21s
+commit 136be0e5b8e3b3a8e1f47eb572e778463bfba287
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Wed Apr 29 00:16:48 2015 +0200
+
+    Commit c79d0e3007f66eb553b6d50338faca1e09d8d064 reverted.
+    
+    Incredibly, systematically projecting out of a pair when looking for
+    clauses is slower (on our example??) than comparing strings using
+    String.compare. This is probably sensitive to the name of the constants
+    used in the program, but for the time being I revert the commit.
+
+
 X18: 2.28s
 commit bf51f8c6e5de5b80385420f7b01a555aae3eebbb
 Author: Cvetan Dunchev <cdunchev@hotmail.com>
