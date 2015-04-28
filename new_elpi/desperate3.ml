@@ -9,9 +9,11 @@ let _ =
 *)
 
 (* Invariant: a Heap term never points to a Query term *)
+type constant = string * int
+
 type term =
   (* Pure terms *)
-  | Const of string
+  | Const of constant
   (* Query terms *)
   | Struct of term * term * term list
   | Arg of int
@@ -31,29 +33,31 @@ let ppterm f t =
     | App (hd,x,xs)-> ppapp (hd::x::xs) '(' ')'
     | Struct (hd,x,xs) -> ppapp (hd::x::xs) '{' '}'
     | UVar { contents = t } -> ppapp [t] '<' '>'
-    | Const s -> Format.fprintf f "%s" s
+    | Const s -> Format.fprintf f "%s" (fst s)
     | Arg i -> Format.fprintf f "A%d" i
   in
     aux t
 ;;
 
-type key = string * string
+type key1 = int
+type key2 = int
+type key = key1 * key2
 
 type clause = { hd : term; hyps : term list; vars : int; key : key }
 
 (****** Indexing ******)
 
-let dummyk = "dummy"
+let dummyk = -1
 
 let rec skey_of = function
-   Const k -> k
+   Const (_,k) -> k
  | UVar {contents=t} when t != dummy -> skey_of t
  | Struct (arg1,_,_)
  | App (arg1,_,_) -> skey_of arg1
  | _ -> dummyk
 
 let rec key_of = function
-   Const k -> k, dummyk
+   Const (_,k) -> k, dummyk
  | UVar {contents=t} when t != dummy -> key_of t
  | App (arg1,arg2,_)
  | Struct (arg1,arg2,_) -> skey_of arg1, skey_of arg2
@@ -64,11 +68,9 @@ let clause_match_key j k =
 
 module IndexData =
  struct
-  type t = string
-  let equal = (==)
-  (* TODO: hash cons strings together with numbers to be
-     used for fast comparison *)
-  let compare = String.compare
+  type t = int
+  let equal = (=)
+  let compare = compare
 end
 module ClauseMap = Map.Make(IndexData)
 
@@ -197,7 +199,7 @@ let undo_trail old_trail trail =
 ;;
 
 (* Loop *)
-type program = (string * clause) list ClauseMap.t
+type program = (key1 * clause) list ClauseMap.t
 (* The int is the lvl because we do not store empty
    sublists (tailcall optimization) and thus we need to
    remember how many we skipped to decrease the current
@@ -218,10 +220,12 @@ module AST = Lprun2.FOAST
 (* Hash re-consing :-( *)
 let funct_of_ast =
  let h = Hashtbl.create 37 in
+ let fresh = ref 0 in
  function x ->
   try Hashtbl.find h x
   with Not_found ->
-   let xx = Const (F.pp x) in
+   let xx = Const (F.pp x,!fresh) in
+   incr fresh;
    Hashtbl.add h x xx ; xx
 
 let cutc = funct_of_ast F.cutf
