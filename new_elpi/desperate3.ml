@@ -8,7 +8,7 @@ let _ =
 ;;
 *)
 
-type constant = string
+type constant = int
 
 (* Invariant: a Heap term never points to a Query term *)
 type term =
@@ -23,6 +23,24 @@ type term =
 
 let rec dummy = App (dummy,dummy,[])
 
+module F = Lprun2.ASTFuncS
+module AST = Lprun2.FOAST
+
+(* Hash re-consing :-( *)
+let funct_of_ast, string_of_constant =
+ let h = Hashtbl.create 37 in
+ let h' = Hashtbl.create 37 in
+ let fresh = ref 0 in
+ (function x ->
+  try Hashtbl.find h x
+  with Not_found ->
+   let n = !fresh in
+   let xx = Const n in
+   incr fresh;
+   Hashtbl.add h' n (F.pp x);
+   Hashtbl.add h x xx ; xx),
+ Hashtbl.find h'
+
 let ppterm f t =
   let rec ppapp a c1 c2 = 
     Format.fprintf f "%c@[<hov 1>" c1;
@@ -33,21 +51,21 @@ let ppterm f t =
     | App (hd,x,xs)-> ppapp (hd::x::xs) '(' ')'
     | Struct (hd,x,xs) -> ppapp (hd::x::xs) '{' '}'
     | UVar { contents = t } -> ppapp [t] '<' '>'
-    | Const s -> Format.fprintf f "%s" s
+    | Const s -> Format.fprintf f "%s" (string_of_constant s)
     | Arg i -> Format.fprintf f "A%d" i
   in
     aux t
 ;;
 
-type key1 = string
-type key2 = string
+type key1 = int
+type key2 = int
 type key = key1 * key2
 
 type clause = { hd : term; hyps : term list; vars : int; key : key }
 
 (****** Indexing ******)
 
-let dummyk = "dummy"
+let dummyk = -1
 
 let rec skey_of = function
    Const k -> k
@@ -73,9 +91,9 @@ module IndexData =
      speed up comparison w.r.t. String.compare. But it seems that always
      projecting out the integer from the pair during indexing for clause
      retrieval makes the example program slower. *)
-  type t = string
+  type t = key1
   let equal = (==)
-  let compare = String.compare
+  let compare = compare
 end
 module ClauseMap = Map.Make(IndexData)
 
@@ -223,18 +241,6 @@ and alternative = {
 }
 
 let emptyalts = Obj.magic 0
-
-module F = Lprun2.ASTFuncS
-module AST = Lprun2.FOAST
-
-(* Hash re-consing :-( *)
-let funct_of_ast =
- let h = Hashtbl.create 37 in
- function x ->
-  try Hashtbl.find h x
-  with Not_found ->
-   let xx = Const (F.pp x) in
-   Hashtbl.add h x xx ; xx
 
 let cutc = funct_of_ast F.cutf
 let truec = funct_of_ast F.truef
