@@ -1,50 +1,100 @@
+module type ASTFuncT =
+  sig
+    type t
+    val pp : t -> string
+    val eq : t -> t -> bool
+    val truef : t
+    val andf : t
+    val orf : t
+    val implf : t
+    val cutf : t
+    val eqf : t
+    val from_string : string -> t
+  end;;
+
+module ASTFuncS : ASTFuncT = 
+  struct
+    type t = string
+
+    (* Hash consing *)
+    let from_string =
+     let h = Hashtbl.create 37 in
+     function x ->
+      try Hashtbl.find h x
+      with Not_found -> Hashtbl.add h x x ; x
+
+    let pp n = n
+    let eq = (==)
+    let truef = from_string "true"
+    let andf = from_string ","
+    let orf = from_string ";"
+    let implf = from_string "=>"
+    let cutf = from_string "!"
+    let eqf = from_string "="
+
+  end;;
+
+(* Note: Appl(",",[]) is allowed in r.h.s. of clauses to represent
+   axioms. Const "true" would not work because the definition of true
+   would become true :- true. *)
+
+type term =
+   Var of string 
+ | Const of ASTFuncS.t
+ | App of term * term list
+ | Lam of ASTFuncS.t * term
+
+(* TODO: to be moved elsewhere, obviously *)
+module type Implementation =
+ sig
+  type query
+  type program
+  val query_of_ast : term -> query
+  val program_of_ast : (term * term) list -> program
+  val msg : query -> string
+  val execute_once : program -> query -> bool
+  val execute_loop : program -> query -> unit
+ end
+
+let mkConj = function [f] -> f | l -> App(Const ASTFuncS.andf,l)
+let mkDisj  = function [f] -> f | l -> App(Const ASTFuncS.orf, l)
+let mkImpl f1 f2 = App(Const ASTFuncS.implf,[f1;f2])
+let mkTrue = Const ASTFuncS.truef
+let mkCut = Const ASTFuncS.cutf
+let mkEq l r = App(Const ASTFuncS.eqf,[l;r]) 
+let mkLam x t = Lam (ASTFuncS.from_string x,t)
+
 exception NotInProlog;;
 
-type formula = Lprun2.term
-type program = (Lprun2.term * Lprun2.term) list
-type goal = Lprun2.term
+type formula = term
+type program = (term * term) list
+type goal = term
 
 let mkClause lhs rhs = lhs,rhs
 
-let rec mkConj = Lprun2.mkAnd
-
-let rec mkDisj = Lprun2.mkOr
-
-let rec mkImpl = Lprun2.mkImpl
-
-let mkAtomBiUnif a b = Lprun2.mkEq a b
-
-let true_clause = Lprun2.mkTrue, mkConj []
+let true_clause = mkTrue, mkConj []
 
 let eq_clause =
- let v = Lprun2.Var (Lprun2.Variable.fresh ()) in
-  mkAtomBiUnif v v, mkConj []
+ let v = Var "X" in
+  mkEq v v, mkConj []
 
 let or_clauses =
- let v1 = Lprun2.Var (Lprun2.Variable.fresh ()) in
- let v2 = Lprun2.Var (Lprun2.Variable.fresh ()) in
+ let v1 = Var "A" in
+ let v2 = Var "B" in
   [ mkDisj [v1;v2], v1
   ; mkDisj [v1;v2], v2 ]
 
 let mkApp =
  function
-    Lprun2.App(c,l1)::l2 -> Lprun2.App(c,l1@l2)
+    App(c,l1)::l2 -> App(c,l1@l2)
+  | Const _ as c::l2 -> App(c,l2)
   | _ -> raise NotInProlog
-
-let mkAtomBiCut = Lprun2.mkCut
 
 let uvmap = ref [];;
 let reset () = uvmap := []
 
-let get_uv u =
-  if List.mem_assoc u !uvmap then List.assoc u !uvmap
-  else
-    let n = Lprun2.Variable.fresh () in
-    uvmap := (u,n) :: !uvmap;
-    n
-
-let mkUVar u = Lprun2.Var (get_uv u)
-let mkCon c = Lprun2.App(Lprun2.ASTFuncS.from_string c,[])
+let mkUVar u = Var u
+let mkCon c = Const (ASTFuncS.from_string c)
 
 let rec number = lexer [ '0'-'9' number ]
 let rec ident =
@@ -275,7 +325,7 @@ EXTEND
           mkImpl p a ]];
   atom : LEVEL "equality"
      [[ a = atom; EQUAL; b = atom LEVEL "term" ->
-          mkAtomBiUnif a b ]];
+          mkEq a b ]];
   atom : LEVEL "term"
      [(*[ l = LIST1 atom LEVEL "app" SEP CONS ->
           if List.length l = 1 then List.hd l
@@ -290,13 +340,15 @@ EXTEND
           | [tl;x] when equal x sentinel -> mkVApp `Rev tl hd None
           | _ ->*) mkApp (hd::args) (*(L.of_list (hd :: args))*) ]];
   atom : LEVEL "simple" 
-     [[ c = CONSTANT(*; b = OPT [ BIND; a = atom LEVEL "term" -> a ]*) ->
+     [[ c = CONSTANT; b = OPT [ BIND; a = atom LEVEL "term" -> a ] ->
           (*let c, lvl = lvl_name_of c in 
           let x = mkConN c lvl in
           (match b with
           | None -> check_con c lvl; x
           | Some b ->  mkBin 1 (grab x 1 b))*)
-          mkCon c
+          (match b with
+              None -> mkCon c
+            | Some b -> mkLam c b)
       | u = UVAR -> (*let u, lvl = lvl_name_of u in mkUv (get_uv u) lvl*) mkUVar u
       | u = FRESHUV -> (*let u, lvl = fresh_lvl_name () in mkUv (get_uv u) lvl*) mkUVar u
       (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))
@@ -312,7 +364,7 @@ EXTEND
         info = OPT atom LEVEL "simple" ->
           mkVApp `Frozen hd args info
       | bt = BUILTIN; a = atom LEVEL "simple" -> mkAtomBiCustom bt a*)
-      | BANG -> mkAtomBiCut
+      | BANG -> mkCut
       (*| DELAY; t = atom LEVEL "simple"; p = atom LEVEL "simple";
         vars = OPT [ IN; x = atom LEVEL "simple" -> x ];
         info = OPT [ WITH; x = atom LEVEL "simple" -> x ] ->

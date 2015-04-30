@@ -25,13 +25,14 @@ type term =
 
 let rec dummy = App (-9999,dummy,[])
 
-module F = Lprun2.ASTFuncS
-module AST = Lprun2.FOAST
+module F = Parser.ASTFuncS
+module AST = Parser
 
 (* Hash re-consing :-( *)
-let funct_of_ast, string_of_constant =
+let funct_of_ast, constant_of_dbl, string_of_constant =
  let h = Hashtbl.create 37 in
  let h' = Hashtbl.create 37 in
+ let h'' = Hashtbl.create 17 in
  let fresh = ref 0 in
  (function x ->
   try Hashtbl.find h x
@@ -42,6 +43,12 @@ let funct_of_ast, string_of_constant =
    let p = n,xx in
    Hashtbl.add h' n (F.pp x);
    Hashtbl.add h x p; p),
+ (function x ->
+  try Hashtbl.find h'' x
+  with Not_found ->
+   let xx = Const x in
+   Hashtbl.add h' x (string_of_int x);
+   Hashtbl.add h'' x xx; xx),
  Hashtbl.find h'
 
 let ppterm f t =
@@ -161,7 +168,7 @@ let to_heap e t =
     | UVar ({contents = t},args) when t != dummy -> aux (deref args t)
     | (Const _ | UVar _ | App _ | Lam _) as x -> x (* heap term *)
     | Struct(hd,b,bs) -> App (hd, aux b, List.map aux bs)
-    | CLam t -> CLam (aux t)
+    | CLam t -> Lam (aux t)
     | Arg (i,args) ->
         let a = e.(i) in
         if a == dummy then
@@ -187,7 +194,7 @@ let rec for_all2 p l1 l2 =
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
 let unif trail last_call a e b =
  let rec unif a b =
-   (*Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b;*)
+   Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b;
    a == b || match a,b with
 (* TODO OOOOOOOOOOOOOOOOOOOOOOOOOOO *)
    | _, Arg (i,[]) when e.(i) != dummy -> unif a e.(i)
@@ -404,24 +411,33 @@ let heap_var_of_ast l n =
   let n' = UVar (ref dummy,[]) in
   (n,n')::l,n'
 
-let rec heap_term_of_ast l =
+let rec heap_term_of_ast lvl l l' =
  function
-    AST.Var v ->
-     let l,v = heap_var_of_ast l v in
-     l, v
-  | AST.App(f,[]) when F.eq f F.andf ->
-     l, truec
-  | AST.App(f,[]) ->
-     l, snd (funct_of_ast f)
-  | AST.App(f,tl) ->
-     let l,rev_tl =
+    AST.Var v -> let l,v = heap_var_of_ast l v in l,l',v
+  | AST.App(AST.Const f,[]) when F.eq f F.andf ->
+     l,l',truec
+  | AST.Const f ->
+     (try l,l',List.assoc f l'
+      with Not_found -> l,l',snd (funct_of_ast f))
+  | AST.App(AST.Const f,tl) ->
+     let l,l',rev_tl =
        List.fold_left
-        (fun (l,tl) t -> let l,t = heap_term_of_ast l t in (l,t::tl))
-        (l,[]) tl in
+        (fun (l,l',tl) t ->
+          let l,l',t = heap_term_of_ast lvl l l' t in (l,l',t::tl))
+        (l,l',[]) tl in
      let f = fst (funct_of_ast f) in
-     match List.rev rev_tl with
-        hd2::tl -> l, App(f,hd2,tl)
-      | _ -> assert false
+     (match List.rev rev_tl with
+         hd2::tl -> l,l',App(f,hd2,tl)
+       | _ -> assert false)
+  | AST.Lam (x,t) ->
+     let c = constant_of_dbl lvl in
+     let l,l',t' = heap_term_of_ast (lvl+1) l ((x,c)::l') t in
+     l,l',Lam t'
+  | AST.App (AST.Var _,_) -> assert false  (* TODO *)
+  | AST.App (AST.App (f,l1),l2) ->
+     heap_term_of_ast lvl l l' (AST.App (f, l1@l2))
+  | AST.App (AST.Lam _,_) ->
+     (* Beta-redexes not in our language *) assert false
 
 let stack_var_of_ast (f,l) n =
  try (f,l),List.assoc n l
@@ -429,32 +445,42 @@ let stack_var_of_ast (f,l) n =
   let n' = Arg (f,[]) in
   (f+1,(n,n')::l),n'
 
-let rec stack_term_of_ast l =
+let rec stack_term_of_ast lvl l l' =
  function
     AST.Var v ->
      let l,v = stack_var_of_ast l v in
-     l, v
-  | AST.App(f,[]) when F.eq f F.andf ->
-     l, truec
-  | AST.App(f,[]) ->
-     l, snd (funct_of_ast f)
-  | AST.App(f,tl) ->
-     let l,rev_tl =
+     l,l',v
+  | AST.App(AST.Const f,[]) when F.eq f F.andf ->
+     l,l',truec
+  | AST.Const f ->
+     (try l,l',List.assoc f l'
+      with Not_found -> l,l',snd (funct_of_ast f))
+  | AST.App(AST.Const f,tl) ->
+     let l,l',rev_tl =
        List.fold_left
-        (fun (l,tl) t -> let l,t = stack_term_of_ast l t in (l,t::tl))
-        (l,[]) tl in
+        (fun (l,l',tl) t ->
+          let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
+        (l,l',[]) tl in
      let f = fst (funct_of_ast f) in
-     match List.rev rev_tl with
-        hd2::tl -> l, Struct(f,hd2,tl)
-      | _ -> assert false
+     (match List.rev rev_tl with
+         hd2::tl -> l,l',Struct(f,hd2,tl)
+       | _ -> assert false)
+  | AST.Lam (x,t) ->
+     let c = constant_of_dbl lvl in
+     let l,l',t' = stack_term_of_ast (lvl+1) l ((x,c)::l') t in
+     l,l',CLam t'
+  | AST.App (AST.Var _,_) -> assert false  (* TODO *)
+  | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
+  | AST.App (AST.Lam _,_) ->
+     (* Beta-redexes not in our language *) assert false
 
-let query_of_ast t = snd (heap_term_of_ast [] t)
+let query_of_ast t = let _,_,t = heap_term_of_ast 0 [] [] t in t
 
 let program_of_ast p =
  let clauses =
   List.map (fun (a,f) ->
-   let l,a = stack_term_of_ast (0,[]) a in
-   let (max,_),f = stack_term_of_ast l f in
+   let l,_,a = stack_term_of_ast 0 (0,[]) [] a in
+   let (max,_),_,f = stack_term_of_ast 0 l [] f in
 Format.eprintf "%a :- " ppterm a;
 List.iter (Format.eprintf "%a, " ppterm) (chop f);
 Format.eprintf ".\n%!";
@@ -498,4 +524,4 @@ let impl =
      prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
      Format.eprintf "Result: %a\n%!" ppterm q ;
   done
- end : Lprun2.Implementation)
+ end : Parser.Implementation)

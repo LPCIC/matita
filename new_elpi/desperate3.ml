@@ -1,3 +1,4 @@
+(*
 (* GC off
 let _ =
   let control = Gc.get () in
@@ -460,3 +461,4 @@ let impl =
      Format.eprintf "Result: %a\n%!" ppterm q ;
   done
  end : Lprun2.Implementation)
+*)

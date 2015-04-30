@@ -21,52 +21,16 @@ module type Refreshable =
     val refresh : refresher -> r -> refresher * r
   end;;
 
-module type ASTFuncT =
-  sig
-    type t
-    val pp : t -> string
-    val eq : t -> t -> bool
-    val truef : t
-    val andf : t
-    val orf : t
-    val implf : t
-    val cutf : t
-    val eqf : t
-    val from_string : string -> t
-  end;;
-
-module ASTFuncS : ASTFuncT = 
-  struct
-    type t = string
-
-    (* Hash consing *)
-    let from_string =
-     let h = Hashtbl.create 37 in
-     function x ->
-      try Hashtbl.find h x
-      with Not_found -> Hashtbl.add h x x ; x
-
-    let pp n = n
-    let eq = (==)
-    let truef = from_string "true"
-    let andf = from_string ","
-    let orf = from_string ";"
-    let implf = from_string "=>"
-    let cutf = from_string "!"
-    let eqf = from_string "="
-
-  end;;
-
 module type FuncT =
  sig
-  include ASTFuncT
+  include Parser.ASTFuncT
 
-  val funct_of_ast : ASTFuncS.t -> t
+  val funct_of_ast : Parser.ASTFuncS.t -> t
  end
 
 module FuncS : FuncT = 
  struct
-  include ASTFuncS
+  include Parser.ASTFuncS
 
   let funct_of_ast x = x
  end
@@ -208,7 +172,7 @@ module type ASTT =
     val pp: term -> string
   end;;
 
-module AST(Var: VarT)(Func: ASTFuncT) : ASTT 
+module AST(Var: VarT)(Func: Parser.ASTFuncT) : ASTT 
     with type vart = Var.t and type funct = Func.t 
  = 
   struct
@@ -238,8 +202,6 @@ module AST(Var: VarT)(Func: ASTFuncT) : ASTT
              "!" 
              else "(" ^ String.concat " " (Func.pp f :: List.map pp l) ^ ")"
   end;;
-
-module FOAST = AST(Variable)(ASTFuncS)
 
 module type FormulaT =
   sig  
@@ -291,7 +253,7 @@ module type BindingsT =
     val filter : (var -> bool) -> bindings -> bindings
   end;;
 
-module Formula(Var: VarT)(Func: ASTFuncT)(Bind: BindingsT with type term = AST(Var)(Func).term) : FormulaT 
+module Formula(Var: VarT)(Func: Parser.ASTFuncT)(Bind: BindingsT with type term = AST(Var)(Func).term) : FormulaT 
     with type term = AST(Var)(Func).term
     and  type bindings = Bind.bindings
  = 
@@ -377,8 +339,8 @@ module type ParsableT =
  sig
   type term
   type clause
-  val query_of_ast : FOAST.term -> term
-  val program_of_ast : (FOAST.term * FOAST.term) list -> clause list
+  val query_of_ast : Parser.term -> term
+  val program_of_ast : (Parser.term * Parser.term) list -> clause list
  end
 
 module Parsable(Var: VarT)(Func: FuncT): ParsableT
@@ -400,16 +362,18 @@ module Parsable(Var: VarT)(Func: FuncT): ParsableT
 
   let rec term_of_ast l =
    function
-      FOAST.Var v ->
+      Parser.Var v ->
        let l,v = var_of_ast l v in
        l, AST.Var v
-    | FOAST.App(f,tl) ->
+    | Parser.Const f -> l, AST.App(Func.funct_of_ast f,[])
+    | Parser.App(Parser.Const f,tl) ->
        let l,rev_tl =
          List.fold_left
           (fun (l,tl) t -> let l,t = term_of_ast l t in (l,t::tl))
           (l,[]) tl
        in
        l, AST.App(Func.funct_of_ast f,List.rev rev_tl)
+    | Parser.Lam _ | Parser.App(_,_) -> (* Not in Prolog *) assert false
 
   let query_of_ast t = snd (term_of_ast [] t)
 
@@ -1342,17 +1306,6 @@ module EagerRun(Term: RefreshableTermT)(Form: FormulaT with type term := Term.te
 
      end;;
 
-module type Implementation =
- sig
-  type query
-  type program
-  val query_of_ast : FOAST.term -> query
-  val program_of_ast : (FOAST.term * FOAST.term) list -> program
-  val msg : query -> string
-  val execute_once : program -> query -> bool
-  val execute_loop : program -> query -> unit
- end
-
 module
  Implementation
   (IFormula: FormulaT)
@@ -1363,7 +1316,7 @@ module
   (IRun: RunT with type progT := IProgram.t
               and  type term := IFormula.term)
   (Descr : sig val descr : string end)
- : Implementation
+ : Parser.Implementation
 =
  struct
   (* RUN with non indexed engine *)
@@ -1389,7 +1342,7 @@ let implementations =
     let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with no index list " end in
     (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-     : Implementation) in
+     : Parser.Implementation) in
 
 let impl2 =
   (* RUN with indexed engine *)
@@ -1402,7 +1355,7 @@ let impl2 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 let impl3 =
   (* RUN with two levels inefficient indexed engine *)
@@ -1415,7 +1368,7 @@ let impl3 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with two level inefficient index " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 let impl4 =
   let module IBind = Bindings(WeakVariable)(FuncS) in
@@ -1427,7 +1380,7 @@ let impl4 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(WeakVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl and automatic GC " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 
 let impl5 =
@@ -1441,7 +1394,7 @@ let impl5 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(FlatUnify(WeakVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening and automatic GC " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 
 let impl6 =
@@ -1455,7 +1408,7 @@ let impl6 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(FlatUnify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 
 let impl7 =
@@ -1468,7 +1421,7 @@ let impl7 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(FlatUnify(Variable)(FuncS)(ITerm)(IBind))(GC(Variable)(FuncS)(IBind)) in
   let module Descr = struct let descr = "Testing with one level index hashtbl + flattening + manual GC " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 let impl8 =
   (* RUN with indexed engine and Map of clauses instead of Hash of clauses*)
@@ -1481,7 +1434,7 @@ let impl8 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Variable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with one level index map " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 let impl9 =
   (* RUN with indexed engine *)
@@ -1494,7 +1447,7 @@ let impl9 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(ImpVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with imperative one level index hashtbl " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 let impl10 =
   (* RUN with indexed engine *)
@@ -1507,7 +1460,7 @@ let impl10 =
   let module IRun = Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(ImpVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with imperative two level efficient index " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 let impl11 =
   (* RUN with indexed engine *)
@@ -1520,9 +1473,7 @@ let impl11 =
   let module IRun = EagerRun(ITerm)(IFormula)(IProgram)(IBind)(Unify(ImpVariable)(FuncS)(ITerm)(IBind))(NoGC(IBind)) in
   let module Descr = struct let descr = "Testing with eager imperative two level efficient index " end in
   (module Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-  : Implementation) in
+  : Parser.Implementation) in
 
 
   [impl1;impl2;impl3;impl4;impl5;impl6;impl7;impl8;impl9;impl10;impl11]
-
-include FOAST

@@ -33,7 +33,7 @@ module type ASTT =
     val assign : vart -> term -> unit
   end;;
 
-module AST(Func: Lprun2.ASTFuncT) : ASTT
+module AST(Func: Parser.ASTFuncT) : ASTT
  with type funct = Func.t = 
  struct
     type funct = Func.t
@@ -65,7 +65,7 @@ module AST(Func: Lprun2.ASTFuncT) : ASTT
       (v,v')::l, v'
  end
 
-module Formula(Func: Lprun2.ASTFuncT)(Bind: Lprun2.BindingsT with type term = AST(Func).term) : Lprun2.FormulaT 
+module Formula(Func: Parser.ASTFuncT)(Bind: Lprun2.BindingsT with type term = AST(Func).term) : Lprun2.FormulaT 
     with type term = AST(Func).term
     and  type bindings = Bind.bindings
  = 
@@ -113,7 +113,7 @@ module Parsable(Func: Lprun2.FuncT) : Lprun2.ParsableT
   type clause = AST.term * AST.term
 
   let var_of_ast l v args i =
-   try l,snd (List.find (fun x -> Lprun2.Variable.eq v (fst x)) l)
+   try l,List.assoc v l
    with Not_found ->
     let v' = args,i in
     (v,v')::l, v'
@@ -122,14 +122,16 @@ module Parsable(Func: Lprun2.FuncT) : Lprun2.ParsableT
    let rec term_of_ast l =
     let rec aux args i l =
      function
-       Lprun2.Var v ->
+       Parser.Var v ->
         let l,v = var_of_ast l v args i in
         l, AST.Var v
-     | Lprun2.App(f,tl) ->
+     | Parser.Const f -> l, AST.App(Func.funct_of_ast f,[||])
+     | Parser.App(Parser.Const f,tl) ->
         let tl' = Array.make (List.length tl) (Obj.magic ()) (* dummy *) in
         let l = ref l in
         List.iteri (fun i t -> let l',t' = aux tl' i !l t in l := l' ; tl'.(i) <- t') tl ;
         !l, AST.App(Func.funct_of_ast f,tl')
+     | Parser.Lam _ | Parser.App(_,_) -> (* Not in Prolog *) assert false
     in
      aux [||] (-999) l
 
@@ -341,7 +343,7 @@ let implementations =
     let module IRun = Lprun2.Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Lprun2.FuncS)(ITerm)(IBind))(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with no index, optimized imperative " end in
     (module Lprun2.Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-     : Lprun2.Implementation) in
+     : Parser.Implementation) in
 
 
   let impl2 =
@@ -355,7 +357,7 @@ let implementations =
     let module IRun = Lprun2.Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Lprun2.FuncS)(ITerm)(IBind))(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with one level index, optimized imperative " end in
     (module Lprun2.Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-     : Lprun2.Implementation) in
+     : Parser.Implementation) in
 
   let impl3 =
     (* RUN with two level inefficient index *)
@@ -368,6 +370,6 @@ let implementations =
     let module IRun = Lprun2.Run(ITerm)(IFormula)(IProgram)(IBind)(Unify(Lprun2.FuncS)(ITerm)(IBind))(Lprun2.NoGC(IBind)) in
     let module Descr = struct let descr = "Testing with two level inefficient index, optimized imperative " end in
     (module Lprun2.Implementation(IFormula)(IParsable)(IProgram)(IRun)(Descr)
-     : Lprun2.Implementation) in
+     : Parser.Implementation) in
 
   [impl1; impl2; impl3]

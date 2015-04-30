@@ -1,3 +1,4 @@
+(*
 (***** real code *****)
 
 module type ASTT =
@@ -338,3 +339,4 @@ let implementations =
   : Lprun2.Implementation) in
 
   [impl1]
+*)

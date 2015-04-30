@@ -1,4 +1,4 @@
-let implementations = Lprun2.implementations @ Lprun3.implementations @ Lprun4.implementations @ [ Desperate2.impl ] @ [ Desperate3.impl ] @ [ Patternunif.impl ] 
+let implementations = Lprun2.implementations @ Lprun3.implementations (*@ Lprun4.implementations @ [ Desperate2.impl ] @ [ Desperate3.impl ]*) @ [ Patternunif.impl ] 
 
 (*
 let _ =
@@ -14,7 +14,7 @@ let _ =
 let test_prog prog query =
  let i = ref 0 in
  List.iter
-  (fun (module Impl : Lprun2.Implementation) ->
+  (fun (module Impl : Parser.Implementation) ->
     let query = Impl.query_of_ast query in
     let prog = Impl.program_of_ast prog in
     Gc.compact();
@@ -27,7 +27,7 @@ let test_prog prog query =
 ;;
 
 let run_prog impl prog query =
- let (module Impl : Lprun2.Implementation) =
+ let (module Impl : Parser.Implementation) =
   List.nth implementations (impl-1) in
  let query = Impl.query_of_ast query in
  let prog = Impl.program_of_ast prog in
@@ -37,9 +37,9 @@ let run_prog impl prog query =
 
 let print_implementations () =
  List.iteri (
-  fun i (module Impl : Lprun2.Implementation) ->
+  fun i (module Impl : Parser.Implementation) ->
    prerr_string ("Implementation #" ^ string_of_int (i+1) ^ ": ");
-   prerr_endline (Impl.msg (Impl.query_of_ast Lprun2.mkTrue)) ;
+   prerr_endline (Impl.msg (Impl.query_of_ast (Parser.Const Parser.ASTFuncS.truef))) ;
  ) implementations
 ;;
 
