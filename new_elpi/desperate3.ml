@@ -126,7 +126,7 @@ let make p = add_clauses p ClauseMap.empty
 
 let to_heap e t =
   let rec aux = function
-    | UVar {contents = t} when t != dummy -> aux t
+    | UVar {contents = t} when t != dummy -> (* TODO: is aux necessary? can chains of length gretar than 1 be formed? *)aux t
     | (Const _ | UVar _ | App _) as x -> x (* heap term *)
     | Struct(hd,b,bs) -> App (aux hd, aux b, List.map aux bs)
     | Arg i ->
