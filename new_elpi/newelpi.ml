@@ -1,4 +1,4 @@
-let implementations = Lprun2.implementations @ Lprun3.implementations @ Lprun4.implementations @ [ Desperate.impl ] @ [ Desperate2.impl ] @ [ Desperate3.impl ]
+let implementations = Lprun2.implementations @ Lprun3.implementations @ Lprun4.implementations @ [ Desperate2.impl ] @ [ Desperate3.impl ] @ [ Patternunif.impl ] 
 
 (*
 let _ =

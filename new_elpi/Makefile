@@ -10,17 +10,17 @@ OC=ocamlopt
 #CMXA=cma
 #OC=ocamlc
 
-newelpi: newelpi.$(CMX) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) desperate.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX)
-	$(OC) $(OCAMLOPTIONS) $(FLAGS) -o newelpi camlp5.$(CMXA) unix.$(CMXA) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) desperate.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX) newelpi.$(CMX)
+newelpi: newelpi.$(CMX) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) patternunif.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX)
+	$(OC) $(OCAMLOPTIONS) $(FLAGS) -o newelpi camlp5.$(CMXA) unix.$(CMXA) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) patternunif.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX) newelpi.$(CMX)
 
-newelpi.$(CMX): newelpi.ml lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) desperate.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX)
+newelpi.$(CMX): newelpi.ml lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) patternunif.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX)
 	$(OC) $(OCAMLOPTIONS) -c newelpi.ml
 
 lprun2.$(CMX) lprun2.cmi: lprun2.ml
 	$(OC) $(OCAMLOPTIONS) -c lprun2.ml
 
-desperate.$(CMX) desperate.cmi: desperate.ml lprun2.cmi
-	$(OC) $(OCAMLOPTIONS) -c desperate.ml
+patternunif.$(CMX) patternunif.cmi: patternunif.ml lprun2.cmi
+	$(OC) $(OCAMLOPTIONS) -c patternunif.ml
 
 desperate2.$(CMX) desperate2.cmi: desperate2.ml lprun2.cmi
 	$(OC) $(OCAMLOPTIONS) -c desperate2.ml
