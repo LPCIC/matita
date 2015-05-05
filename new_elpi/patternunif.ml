@@ -13,6 +13,7 @@ let _ =
    - Non delifting case:         unsafedepth=delta
    - Delifting/restriction case: unsafedepth!=delta
    TODOS:
+   - Fix the TODO: BUG case
    - Use deref everywhere and implement deref correctly using the depth
    - Implement delifting/restriction when unsafedepth!=delta *)
 
@@ -175,21 +176,25 @@ exception RestrictionFailure
 
 (* To_heap performs at once:
    1) refreshing of the variables
-   2) lifting of the non heap term to lvl depth
+   2) lifting of the non heap term to the current depth that is >= liftdepth
       In practice, 2 is not performed because of 3, and 3 is perfomed
       instead.
-   3) delifting (including eventual restriction) to depth unsafedepth.
-      The visible variables are those < unsafedepth or >= safedepth
+   3) delifting (including eventual restriction) to depth liftdepth.
+      The visible variables are the constants (< 0) and those >= unsafedepth
 
-   Invariant: 0 <= unsafedepth <= depth <= depth+safedelta *)
-let to_heap unsafedepth depth safedelta e t =
+   Mapping:  (-infty,0)          -> (-infty,0)
+             [0,unsafedepth)     -> error
+             [unsafedepth,+infy) -> [liftdepth,+infty) *)
+let to_heap liftdepth unsafedepth e t =
+  let delta = liftdepth - unsafedepth in
   let rec aux = function
     | UVar ({contents = t},_,args) when t != dummy-> aux (deref args t)
-    | (Const d) as x when d < unsafedepth -> x
-    | (Const d) as x when d >= safedelta ->
-       if unsafedepth-safedelta=0 then x
-       else constant_of_dbl (unsafedepth+d-safedelta)
-    | Const _ -> raise RestrictionFailure
+    | (Const d) as x when d < 0 -> x
+    | Const d when d < unsafedepth -> raise RestrictionFailure
+    | (Const d) as x (* when d >= unsafedepth *) ->
+       if delta=0 then x
+       else constant_of_dbl (d+delta)
+(* TODO: BUG likely wrong, if a Const > 0 occurs inside and delta != 0 *)
     | (UVar _ | App _ | Lam _) as x -> x (* heap term *)
     | Struct(hd,b,bs) -> App (hd, aux b, List.map aux bs)
     | CLam t -> Lam (aux t)
@@ -197,9 +202,9 @@ let to_heap unsafedepth depth safedelta e t =
         let a = e.(i) in
         if a == dummy then
             let r = ref dummy in
-            let v = UVar(r,unsafedepth,[]) in
+            let v = UVar(r,liftdepth,[]) in
             e.(i) <- v;
-            UVar(r,unsafedepth,args)
+            UVar(r,liftdepth,args)
         else aux a
   in aux t
 ;;
@@ -216,9 +221,9 @@ let rec for_all2 p l1 l2 =
   | (_, _) -> false
 
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
-let unif unifdepth trail last_call a e b =
+let unif trail last_call a e b =
  let rec unif depth a b =
-   Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b;
+   (*Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b;*)
    a == b || match a,b with
    | _, Arg (i,[]) when e.(i) != dummy -> unif depth a e.(i)
 (* TODO: use deref in next two lines *)
@@ -229,8 +234,8 @@ let unif unifdepth trail last_call a e b =
    | UVar (r,vardepth,[]), t when vardepth=0 ->
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
-       Format.eprintf "to_heap %d,%d,%d: %a\n%!" vardepth unifdepth depth ppterm t;
-       (try r := to_heap vardepth unifdepth depth e t; true
+       (*Format.eprintf "to_heap %d,%d: %a\n%!" vardepth depth ppterm t;*)
+       (try r := to_heap vardepth depth e t; true
         with RestrictionFailure -> false)
    | t, UVar (r,0,[]) ->
        if not last_call then trail := r :: !trail;
@@ -400,7 +405,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
         let old_trail = !trail in
         let last_call = last_call && cs = [] in
         let env = Array.create c.vars dummy in
-        match unif depth trail last_call g env c.hd with
+        match unif trail last_call g env c.hd with
         | false -> undo_trail old_trail trail; select cs
         | true ->
 (* TODO: make to_heap lazy adding the env to unify and making the env
@@ -421,10 +426,10 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
                 let next =
                  if gs = [] then next
                  else FCons (lvl,gs,next) in
-                let g' = to_heap depth depth 0 env g' in
+                let g' = to_heap depth 0 env g' in
                 let gs' =
                  List.map
-                  (fun x->depth,p,to_heap depth depth 0 env x) gs' in
+                  (fun x->depth,p,to_heap depth 0 env x) gs' in
                 run depth p g' gs' next alts oldalts)
     in
       select cp
