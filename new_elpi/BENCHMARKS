@@ -1,4 +1,64 @@
-X16: 2.21s
+X18, impl15, patternunif: 1.80s
+commit ffba14dba49e209024229f83ddbcf82b2c203157
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Thu Apr 30 18:51:48 2015 +0200
+
+    Partial commit, many changes.
+    
+    1. AST moved from Lprun2 to the parser and generalized to lambdas,
+     etc. Several files are now broken and commented out because of this.
+    2. the parser now parses lambda-abstractions correctly
+    3. patternunif is now able to unify abstractions
+
+commit 67229a9b81bed955d8cef28e43e0cfcfff08befa
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Thu Apr 30 18:48:19 2015 +0200
+
+    Some bugs in the Makefile fixed + new test for unification of lambdas.
+
+commit 4a2be7b841d1fc7c0ecd79a7fc162c3cc1dad4f4
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Thu Apr 30 16:22:32 2015 +0200
+
+    New TODO (just an idea).
+
+X18, impl17, Desperate HO + Impl: 1.85s
+X18, impl18, patternunif: 1.81s
+commit ca9f3a8095bb7607c3c4352c05404d3aae048150
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Thu Apr 30 16:22:11 2015 +0200
+
+    Partial commit that implements pattern-unification.
+    
+    So far:
+    1. type of terms generalized to accomodate lambda-abstractions
+       and metavariables applied to a list of variables
+    2. variables and constants unified. Constants are given negative
+       numbers, variables will be given non negative ones.
+    3. ad-hoc Prolog case implemented everywhere to make our tests pass.
+    
+    TODO: do the benchmarks on CSC's laptop.
+
+X18, impl18, Desperate HO + Impl: 1.74s
+commit c7ff0aad144b1fa35c18b033a82041d56b0700ff
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Wed Apr 29 10:59:41 2015 +0200
+
+    Yet another implementation to save String.compare.
+    
+    strings mapped in 1-1 correspondence to integers and integers
+    used. The reverse mapping is only used during pretty-printing.
+    Concretely, it does seem to have no effect (to be better tested
+    on CSC's laptop).
+
+commit 479eb59fef7985d36801de92a3a56dd269900729
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Wed Apr 29 00:17:31 2015 +0200
+
+    New timings.
+
+
+X18, impl18, Desperate HO + Impl: 1.73s
 commit 136be0e5b8e3b3a8e1f47eb572e778463bfba287
 Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
 Date:   Wed Apr 29 00:16:48 2015 +0200
@@ -10,6 +70,8 @@ Date:   Wed Apr 29 00:16:48 2015 +0200
     String.compare. This is probably sensitive to the name of the constants
     used in the program, but for the time being I revert the commit.
 
+============ FROM NOW ON THE TESTS NEED TO BE REDONE BECAUSE AFTER A COMMIT
+============ MY LAPTOP IS NOW 31% FASTER :-(
 
 X18: 2.28s
 commit bf51f8c6e5de5b80385420f7b01a555aae3eebbb
