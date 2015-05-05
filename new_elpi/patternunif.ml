@@ -292,7 +292,7 @@ let implc = fst (funct_of_ast F.implf)
 
 let rec chop =
  function
-    Struct(c,hd2,tl) when c == andc ->
+    (Struct(c,hd2,tl) | App(c,hd2,tl)) when c == andc ->
      chop hd2 @ List.flatten (List.map chop tl)
   | f when f==truec -> []
   | _ as f -> [ f ]
