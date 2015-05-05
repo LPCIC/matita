@@ -14,6 +14,9 @@ let _ =
    - Delifting/restriction case: unsafedepth!=delta
    TODOS:
    - Fix the TODO: BUG case
+   - Unification and consts: probably bugged because lifting is missing
+   - Unification/to_heap/restrict: probably bugged because implication can
+     put in the program clauses that are not at depth 0
    - Use deref everywhere and implement deref correctly using the depth
    - Implement delifting/restriction when unsafedepth!=delta *)
 
