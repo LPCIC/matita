@@ -1,0 +1,3 @@
+% q should fail.
+
+q :- (x\ x) = (x\ X).
