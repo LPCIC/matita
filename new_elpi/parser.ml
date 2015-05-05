@@ -8,6 +8,7 @@ module type ASTFuncT =
     val orf : t
     val implf : t
     val cutf : t
+    val pif : t
     val eqf : t
     val from_string : string -> t
   end;;
@@ -30,6 +31,7 @@ module ASTFuncS : ASTFuncT =
     let orf = from_string ";"
     let implf = from_string "=>"
     let cutf = from_string "!"
+    let pif = from_string "pi"
     let eqf = from_string "="
 
   end;;
@@ -63,6 +65,7 @@ let mkTrue = Const ASTFuncS.truef
 let mkCut = Const ASTFuncS.cutf
 let mkEq l r = App(Const ASTFuncS.eqf,[l;r]) 
 let mkLam x t = Lam (ASTFuncS.from_string x,t)
+let mkPi x t = App(Const ASTFuncS.pif,[mkLam x t])
 
 exception NotInProlog;;
 
@@ -294,11 +297,13 @@ EXTEND
   premise : [[ a = atom -> a ]];
   concl : [[ a = atom LEVEL "term" -> a ]];
   atom : LEVEL "pi"
-     [(*[ PI; x = bound; BIND; p = atom LEVEL "disjuction" ->
-         let (x, is_uv), annot = x, None in
-         let bind = if is_uv then mkSigma1 else mkPi1 annot in
-         bind (grab x 1 p)
-      | PI; annot = bound; x = bound; BIND; p = atom LEVEL "disjuction" ->
+     [[ PI; x = CONSTANT; BIND; p = atom LEVEL "disjunction" ->
+         (* TODO: Here we are:
+            1) restricting the syntax to pis only in negative position.
+               This NEED to be relaxed.
+            2) trusting the user in only using pis in negative position. *)
+         mkPi x p
+      (*| PI; annot = bound; x = bound; BIND; p = atom LEVEL "disjuction" ->
          let (x, is_uv), annot = x, Some (fst annot) in
          let bind = if is_uv then mkSigma1 else mkPi1 annot in
          bind (grab x 1 p)
@@ -313,7 +318,7 @@ EXTEND
          let bind = if is_uv then mkSigma1 else mkPi1 annot in
          bind (grab x 1 p)
       | SIGMA; x = bound; BIND; p = atom LEVEL "disjuction" ->
-         mkSigma1 (grab (fst x) 1 p) ]*)];
+         mkSigma1 (grab (fst x) 1 p)*) ]];
   atom : LEVEL "disjunction"
      [[ l = LIST1 atom LEVEL "conjunction" SEP SEMICOLON -> mkDisj l ]];
   atom : LEVEL "conjunction"
@@ -380,8 +385,9 @@ EXTEND
           if List.length xs = 0 then mkNil
           else mkSeq (L.of_list xs) tl ]*)];
   (*bound : 
-    [[ c = CONSTANT -> let c, lvl = lvl_name_of c in mkConN c lvl, false
-      | u = UVAR -> let u, lvl = lvl_name_of u in mkUv (get_uv u) lvl, true ]
+    NOTE: IT WAS RETURNING A BOOLEAN TOO TO DISCRIMINATE THE TWO CASES
+    [[ c = CONSTANT -> c
+     | u = UVAR -> u ]
     ];*)
 END
 

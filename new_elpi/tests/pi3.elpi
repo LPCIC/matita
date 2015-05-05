@@ -1,0 +1,6 @@
+% q X yields X=b\b
+
+q X :- pi x\ pi y\ z (w\ X).
+
+z (a\ a).
+z (a\ b\ b).

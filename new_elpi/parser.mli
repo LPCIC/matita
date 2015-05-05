@@ -8,6 +8,7 @@ module type ASTFuncT =
     val orf : t
     val implf : t
     val cutf : t
+    val pif : t
     val eqf : t
     val from_string : string -> t
   end;;
