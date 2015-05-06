@@ -198,6 +198,8 @@ let to_heap liftdepth unsafedepth e t =
        if delta=0 then x
        else constant_of_dbl (d+delta)
 (* TODO: BUG likely wrong, if a Const > 0 occurs inside and delta != 0 *)
+(* IDEA: like in dbl.ml, cache in the terms the max DBL, so that you know if
+         the terms contains a lambda an needs lifting *)
     | (UVar _ | App _ | Lam _) as x -> x (* heap term *)
     | Struct(hd,b,bs) -> App (hd, aux b, List.map aux bs)
     | CLam t -> Lam (aux t)
@@ -224,10 +226,12 @@ let rec for_all2 p l1 l2 =
   | (_, _) -> false
 
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
-let unif trail last_call a e b =
+let unif trail last_call a e lift_b b =
  let rec unif depth a b =
    (*Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b;*)
-   a == b || match a,b with
+   match a,b with
+   | Const x, Const y when y >= 0 (* + clause_depth *) -> x == y+lift_b
+   | Const x, Const y -> x == y
    | _, Arg (i,[]) when e.(i) != dummy -> unif depth a e.(i)
 (* TODO: use deref in next two lines *)
    | UVar ({ contents = t },0,[]), _ when t != dummy -> unif depth t b
@@ -247,8 +251,7 @@ let unif trail last_call a e b =
        true
    | UVar (_,_,_),_ | _, UVar (_,_,_) | _, Arg (_,_) -> assert false
    | App (x1,x2,xs), (Struct (y1,y2,ys) | App (y1,y2,ys)) ->
-       x1 == y1 && (x2 == y2 || unif depth x2 y2) &&
-       for_all2 (unif depth) xs ys
+       unif depth (Const x1) (Const y1) && unif depth x2 y2 && for_all2 (unif depth) xs ys
    | Lam t1, (Lam t2 | CLam t2) -> unif (depth+1) t1 t2
    | _ -> false in
  unif 0 a b
@@ -408,7 +411,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
         let old_trail = !trail in
         let last_call = last_call && cs = [] in
         let env = Array.create c.vars dummy in
-        match unif trail last_call g env c.hd with
+        match unif trail last_call g env (depth (* - c.depth *)) c.hd with
         | false -> undo_trail old_trail trail; select cs
         | true ->
 (* TODO: make to_heap lazy adding the env to unify and making the env
