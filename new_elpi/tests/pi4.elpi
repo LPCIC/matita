@@ -1,0 +1,10 @@
+% r and s work
+% q no, IMO because of a missing lift in clause head (unif takes no depth arg)
+
+of stop.
+of (bam x\x).
+of (lam x\F) :- pi w\ of F.
+
+q X :- of (lam x\ bam y\ y), X=ok.
+r X :- of (bam y\ y), X=ok.
+s X :- of (lam x\ lam y\ stop), X=ok.
