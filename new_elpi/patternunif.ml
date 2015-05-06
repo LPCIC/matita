@@ -127,7 +127,7 @@ exception RestrictionFailure
      [from,+infty) -> [to,+infty)     bound variables *)
 let rec to_heap argsdepth last_call trail ~from ~to_ e t =
   let delta = from - to_ in
-  let rec aux = function
+  let rec aux depth = function
       (Const c) as x ->
         if delta=0 || (c < from && c < to_) then x
         else if c < from && c >= to_ then raise RestrictionFailure
@@ -136,15 +136,16 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        or is it better to cut&paste the if-then-else in those branches? *)
     | (Lam _ | App _ | UVar _) as x when delta=0 -> x
     | (Lam f) as x ->
-       let f' = aux f in
+       let f' = aux (depth+1) f in
        if f==f' then x else Lam f'
     | App (c,t,l) as x when c < to_ ->
-       let t' = aux t in
-       let l' = smart_map aux l in
+       let t' = aux depth t in
+       let l' = smart_map (aux depth) l in
        if t==t' && l==l' then x else App (c,t',l')
     | App _ -> raise RestrictionFailure
     | UVar ({contents=t},depth,args) when t != dummy ->
-       full_deref argsdepth last_call trail ~from:depth ~to_ args e t
+       full_deref argsdepth last_call trail ~from:depth ~to_:(to_+depth)
+        args e t
     | UVar (r,depth,[]) when delta > 0 ->
        let fresh = UVar(ref dummy,to_,[]) in
        if not last_call then trail := r :: !trail;
@@ -155,9 +156,10 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        fresh
     | UVar (_,_,_) as x when delta < 0 -> x
     | UVar (_,depth,_) -> assert false (* TO BE IMPLEMENTED *)
-    | Struct(c,t,l) when c < to_ -> App (c,aux t,List.map aux l)
+    | Struct(c,t,l) when c < to_ ->
+       App (c,aux depth t,List.map (aux depth) l)
     | Struct _ -> raise RestrictionFailure
-    | CLam f -> Lam (aux f)
+    | CLam f -> Lam (aux (depth+1) f)
     | Arg (i,args) when argsdepth >= to_ ->
         let a = e.(i) in
         if a == dummy then
@@ -165,9 +167,11 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
             let v = UVar(r,to_,[]) in
             e.(i) <- v;
             UVar(r,to_,args)
-        else aux a
+        else
+         full_deref argsdepth last_call trail ~from:argsdepth
+          ~to_:(to_+depth) args e a
     | Arg _ -> assert false (* I believe this case to be impossible *)
-  in aux t
+  in aux 0 t
 
 and full_deref argsdepth last_call trail ~from ~to_ args e t =
  if args = [] then
@@ -275,13 +279,14 @@ let rec for_all2 p l1 l2 =
    [adepth,+infty) = [bdepth,+infy)   bound variables *)
 let unif trail last_call adepth a e bdepth b =
  let rec unif depth a bdepth b =
-   (*Format.eprintf "unif %b: ^%d:%a = ^%d:%a\n%!" last_call adepth ppterm a bdepth ppterm b;*)
+   (*Format.eprintf "unif %b: ^%d:%a =%d= ^%d:%a\n%!" last_call adepth ppterm a depth bdepth ppterm b;*)
    let cdepth = min adepth bdepth in
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
    | _, Arg (i,[]) when e.(i) == dummy ->
      e.(i) <-
       restrict adepth last_call trail ~from:(adepth+depth) ~to_:adepth e a;
+     (*Format.eprintf "<- %a\n%!" ppterm e.(i);*)
      true
    | UVar (r,origdepth,[]), _ when !r == dummy ->
        if not last_call then trail := r :: !trail;
@@ -462,6 +467,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
                  if gs = [] then next
                  else FCons (lvl,gs,next) in
                 let g' =
+                 (*Format.eprintf "to_heap ~from:%d ~to:%d %a\n%!" depth depth ppterm g';*)
                  to_heap depth last_call trail ~from:depth ~to_:depth
                   env g' in
                 let gs' =
