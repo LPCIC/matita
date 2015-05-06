@@ -8,17 +8,18 @@ let _ =
 ;;
 *)
 
-(* NOTES:
-   - Prolog case:                unsafedepth=delta=0
-   - Non delifting case:         unsafedepth=delta
-   - Delifting/restriction case: unsafedepth!=delta
-   TODOS:
-   - Fix the TODO: BUG case
-   - Unification and consts: probably bugged because lifting is missing
-   - Unification/to_heap/restrict: probably bugged because implication can
-     put in the program clauses that are not at depth 0
-   - Use deref everywhere and implement deref correctly using the depth
-   - Implement delifting/restriction when unsafedepth!=delta *)
+let rec smart_map f =
+ function
+    [] -> []
+  | (hd::tl) as l ->
+     let hd' = f hd in
+     let tl' = smart_map f tl in
+     if hd==hd' && tl==tl' then l else hd'::tl'
+
+(* TODOS:
+   - Do the TODO: optimization for indexing
+   - There are a few TODOs with different implementative choices to
+     be benchmarked *)
 
 type constant = int (* De Brujin levels *)
 
@@ -103,34 +104,112 @@ type key1 = int
 type key2 = int
 type key = key1 * key2
 
-type clause = { hd : term; hyps : term list; vars : int; key : key }
+type clause =
+ { depth : int; hd : term; hyps : term list; vars : int; key : key }
 
-(******* Reduction & friends ********)
+(************************* to_heap/restrict/deref ******************)
 
-let deref args t =
- match args with
-    [] -> t
-  | _ -> assert false (* TODO: delta-beta *)
+exception RestrictionFailure
+
+(* To_heap performs at once:
+   1) refreshing of the arguments into variables (heapifycation)
+      (and Structs/CLam into App/Lam)
+   2) restriction (see restrict function below)
+
+   when from = to, i.e. delta = 0:
+     (-infty,+infty) -> (-infty,+infty)
+   when from < to, i.e. delta < 0:
+     (-infty,from) -> (-infty,from)   free variables
+     [from,+infty) -> [to,+infty)     bound variables
+   when from > to, i.e. delta > 0:
+     (-infty,to)   -> (-infty,to)     free variables
+     [to,from)     -> error           free restricted variables
+     [from,+infty) -> [to,+infty)     bound variables *)
+let rec to_heap argsdepth last_call trail ~from ~to_ e t =
+  let delta = from - to_ in
+  let rec aux = function
+      (Const c) as x ->
+        if delta=0 || (c < from && c < to_) then x
+        else if c < from && c >= to_ then raise RestrictionFailure
+        else constant_of_dbl (c - delta)
+    (* TODO: is the next guarded pattern compiled efficienty by OCaml
+       or is it better to cut&paste the if-then-else in those branches? *)
+    | (Lam _ | App _ | UVar _) as x when delta=0 -> x
+    | (Lam f) as x ->
+       let f' = aux f in
+       if f==f' then x else Lam f'
+    | App (c,t,l) as x when c < to_ ->
+       let t' = aux t in
+       let l' = smart_map aux l in
+       if t==t' && l==l' then x else App (c,t',l')
+    | App _ -> raise RestrictionFailure
+    | UVar ({contents=t},depth,args) when t != dummy ->
+       full_deref argsdepth last_call trail ~from:depth ~to_ args e t
+    | UVar (r,depth,[]) when delta > 0 ->
+       let fresh = UVar(ref dummy,to_,[]) in
+       if not last_call then trail := r :: !trail;
+       r := fresh;
+       (* TODO: test if it is more efficient here to return fresh or
+          the original, imperatively changed, term. The current solution
+          avoids dereference chains, but puts more pressure on the GC. *)
+       fresh
+    | UVar (_,_,_) as x when delta < 0 -> x
+    | UVar (_,depth,_) -> assert false (* TO BE IMPLEMENTED *)
+    | Struct(c,t,l) when c < to_ -> App (c,aux t,List.map aux l)
+    | Struct _ -> raise RestrictionFailure
+    | CLam f -> Lam (aux f)
+    | Arg (i,args) when argsdepth >= to_ ->
+        let a = e.(i) in
+        if a == dummy then
+            let r = ref dummy in
+            let v = UVar(r,to_,[]) in
+            e.(i) <- v;
+            UVar(r,to_,args)
+        else aux a
+    | Arg _ -> assert false (* I believe this case to be impossible *)
+  in aux t
+
+and full_deref argsdepth last_call trail ~from ~to_ args e t =
+ if args = [] then
+  to_heap argsdepth last_call trail ~from ~to_ e t
+ else assert false (* TODO: Implement beta-reduction here *)
+;;
+
+let restrict = to_heap;;
+
+(* Deref is to be called only on heap terms and with from <= to *)
+let deref ~from ~to_ args t =
+ (* TODO: Remove the assertion when we are sure *)
+ assert (from <= to_);
+ (* Dummy trail, argsdepth and e: they won't be used *)
+ full_deref 0 false (ref []) ~from ~to_ args [||] t
+;;
+
 
 (****** Indexing ******)
 
 let variablek =    -99999999
 let abstractionk = -99999998
 
-let rec skey_of = function
-   Const k -> k
- | UVar ({contents=t},_,args) when t != dummy -> skey_of (deref args t)
- | Struct (k,_,_)
- | App (k,_,_) -> k
- | Lam _ | CLam _ -> abstractionk
- | Arg _ | UVar _ -> variablek
-
-let rec key_of = function
+let key_of depth =
+ let rec skey_of = function
+    Const k -> k
+  | UVar ({contents=t},origdepth,args) when t != dummy ->
+     skey_of (deref ~from:origdepth ~to_:depth args t)
+  | Struct (k,_,_)
+  | App (k,_,_) -> k
+  | Lam _ | CLam _ -> abstractionk
+  | Arg _ | UVar _ -> variablek in
+ let rec key_of_depth = function
    Const k -> k, variablek
- | UVar ({contents=t},_,args) when t != dummy -> key_of (deref args t)
+ | UVar ({contents=t},origdepth,args) when t != dummy ->
+    (* TODO: optimization: avoid dereferencing *)
+    key_of_depth (deref ~from:origdepth ~to_:depth args t)
  | App (k,arg2,_)
  | Struct (k,arg2,_) -> k, skey_of arg2
  | Arg _ | Lam _ | CLam _ | UVar _ -> raise (Failure "Not a predicate")
+ in
+  key_of_depth
 
 let clause_match_key j k =
   (j == variablek || k == variablek || j == k)
@@ -148,8 +227,8 @@ module IndexData =
 end
 module ClauseMap = Map.Make(IndexData)
 
-let get_clauses a m =
- let ind,app = key_of a in
+let get_clauses depth a m =
+ let ind,app = key_of depth a in
  let l = List.rev (ClauseMap.find ind m) in
  let rec filter_map =
   function
@@ -173,45 +252,6 @@ let make p = add_clauses p ClauseMap.empty
 
 (****** End of Indexing ******)
 
-(* The environment of a clause and stack frame *)
-
-exception RestrictionFailure
-
-(* To_heap performs at once:
-   1) refreshing of the variables
-   2) lifting of the non heap term to the current depth that is >= liftdepth
-      In practice, 2 is not performed because of 3, and 3 is perfomed
-      instead.
-   3) delifting (including eventual restriction) to depth liftdepth.
-      The visible variables are the constants (< 0) and those >= unsafedepth
-
-   Mapping:  (-infty,0)          -> (-infty,0)
-             [0,unsafedepth)     -> error
-             [unsafedepth,+infy) -> [liftdepth,+infty) *)
-let to_heap liftdepth unsafedepth e t =
-  let delta = liftdepth - unsafedepth in
-  let rec aux = function
-    | UVar ({contents = t},_,args) when t != dummy-> aux (deref args t)
-    | (Const d) as x when d < 0 -> x
-    | Const d when d < unsafedepth -> raise RestrictionFailure
-    | (Const d) as x (* when d >= unsafedepth *) ->
-       if delta=0 then x
-       else constant_of_dbl (d+delta)
-(* TODO: BUG likely wrong, if a Const > 0 occurs inside and delta != 0 *)
-    | (UVar _ | App _ | Lam _) as x -> x (* heap term *)
-    | Struct(hd,b,bs) -> App (hd, aux b, List.map aux bs)
-    | CLam t -> Lam (aux t)
-    | Arg (i,args) ->
-        let a = e.(i) in
-        if a == dummy then
-            let r = ref dummy in
-            let v = UVar(r,liftdepth,[]) in
-            e.(i) <- v;
-            UVar(r,liftdepth,args)
-        else aux a
-  in aux t
-;;
-
 (* Unification *)
 
 (* This for_all2 is tail recursive when the two lists have length 1.
@@ -223,72 +263,62 @@ let rec for_all2 p l1 l2 =
   | (a1::l1, a2::l2) -> p a1 a2 && for_all2 p l1 l2
   | (_, _) -> false
 
-(* Invariant: LSH is a heap term, the RHS is a query in env e *)
-let unif trail last_call a e b =
- let rec unif depth a b =
-   (*Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b;*)
-   a == b || match a,b with
-   | _, Arg (i,[]) when e.(i) != dummy -> unif depth a e.(i)
-(* TODO: use deref in next two lines *)
-   | UVar ({ contents = t },0,[]), _ when t != dummy -> unif depth t b
-   | _, UVar ({ contents = t },0,[]) when t != dummy -> unif depth a t
-   | UVar _, Arg (j,[]) -> e.(j) <- a; true
-   | t, Arg (i,[]) -> e.(i) <- t; true
-   | UVar (r,vardepth,[]), t when vardepth=0 ->
+(* Invariants:
+   adepth is the depth of a (the query), which is an heap term
+   bdepth is the depth of b (the clause hd), which is a stack term in env e
+   adepth >= bdepth
+
+   Let cdepth = min{adepth,bdepth}
+   (-infy,cdepth) = (-infty,cdepth)   common free variables
+   [cdepth,adepth)                    free variable only visible by one:fail
+                     [cdepth,bdepth)  free variable only visible by one:fail
+   [adepth,+infty) = [bdepth,+infy)   bound variables *)
+let unif trail last_call adepth a e bdepth b =
+ let rec unif depth a bdepth b =
+   (*Format.eprintf "unif %b: ^%d:%a = ^%d:%a\n%!" last_call adepth ppterm a bdepth ppterm b;*)
+   let cdepth = min adepth bdepth in
+   let delta = adepth - bdepth in
+   (delta=0 && a == b) || match a,b with
+   | _, Arg (i,[]) when e.(i) == dummy ->
+     e.(i) <-
+      restrict adepth last_call trail ~from:(adepth+depth) ~to_:adepth e a;
+     true
+   | UVar (r,origdepth,[]), _ when !r == dummy ->
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
-       (*Format.eprintf "to_heap %d,%d: %a\n%!" vardepth depth ppterm t;*)
-       (try r := to_heap vardepth depth e t; true
+       (try r :=
+         to_heap adepth last_call trail ~from:(bdepth+depth)
+          ~to_:origdepth e b;
+         true
         with RestrictionFailure -> false)
-   | t, UVar (r,0,[]) ->
+   | _, UVar (r,origdepth,[]) when !r == dummy ->
        if not last_call then trail := r :: !trail;
-       (* TODO: use restriction here! *)
-       r := t;
-       true
-   | UVar (_,_,_),_ | _, UVar (_,_,_) | _, Arg (_,_) -> assert false
+       (* TODO: are exceptions efficient here? *)
+       (try r :=
+         restrict adepth last_call trail ~from:(adepth+depth)
+          ~to_:origdepth e a;
+         true
+        with RestrictionFailure -> false)
+   | _, Arg (i,args) ->
+      unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args e.(i))
+   | _, UVar ({ contents = t },origdepth,args) ->
+      unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
+   | UVar ({ contents = t },origdepth,args), _ ->
+      unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
    | App (x1,x2,xs), (Struct (y1,y2,ys) | App (y1,y2,ys)) ->
-       x1 == y1 && (x2 == y2 || unif depth x2 y2) &&
-       for_all2 (unif depth) xs ys
-   | Lam t1, (Lam t2 | CLam t2) -> unif (depth+1) t1 t2
+       x1 == y1 && (x2 == y2 || unif depth x2 bdepth y2) &&
+       for_all2 (fun x y -> unif depth x bdepth y) xs ys
+   | Lam t1, (Lam t2 | CLam t2) -> unif (depth+1) t1 bdepth t2
+   | Const c1, Const c2 when c1=c2 && c1 < cdepth -> true
+   | Const c, _ when c >= cdepth && c < adepth -> false
+   | _,Const c  when c >= cdepth && c < bdepth -> false
+   | Const c1, Const c2 when c1 = c2 + delta -> true
    | _ -> false in
- unif 0 a b
+ unif 0 a bdepth b
 ;;
 
-(* Enrico's partially tail recursive but slow unification.
-   The tail recursive version is even slower.
-(* Invariant: LSH is a heap term, the RHS is a query in env e *)
-let unif trail last_call a e b =
-  let rec next l1 l2 =
-    match l1,l2 with
-    | [],[] -> true
-    | [] :: xs, [] :: ys -> next xs ys
-    | (x :: xs) :: l1, (y :: ys) :: l2 -> unif x y (xs :: l1) (ys :: l2)
-    | _ -> false
- and unif a b todo1 todo2 =
-   (* Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
-   if a == b then next todo1 todo2
-   else match a,b with
-   | _, Arg i when e.(i) != dummy -> unif a e.(i) todo1 todo2
-   | UVar { contents = t }, _ when t != dummy -> unif t b todo1 todo2
-   | _, UVar { contents = t } when t != dummy -> unif a t todo1 todo2
-   | UVar _, Arg j -> e.(j) <- a; next todo1 todo2
-   | t, Arg i -> e.(i) <- t; next todo1 todo2
-   | UVar r, t ->
-       if not last_call then trail := r :: !trail;
-       r := to_heap e t;
-       next todo1 todo2
-   | t, UVar r ->
-       if not last_call then trail := r :: !trail;
-       r := t;
-       next todo1 todo2
-   | App (x1,x2,xs), (Struct (y1,y2,ys) | App (y1,y2,ys)) ->
-       (x1 == y1 || unif x1 y1 [] []) &&
-       (x2 == y2 || unif x2 y2 [] []) &&
-       next (xs :: todo1) (ys :: todo2)
-         
-   | _ -> false in
- unif a b [] []
-;;*)
+(* Look in Git for Enrico's partially tail recursive but slow unification.
+   The tail recursive version is even slower. *)
 
 (* Backtracking *)
 
@@ -335,12 +365,12 @@ let rec chop =
   | f when f==truec -> []
   | _ as f -> [ f ]
 
-let rec clausify =
+let rec clausify depth =
  function
     App(c, g, gs) when c == andc ->
-     clausify g @ List.flatten (List.map clausify gs)
+     clausify depth g @ List.flatten (List.map (clausify depth) gs)
   | App(c, g1, [g2]) when c == implc ->
-     [ { hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of g2 } ]
+     [ { depth ; hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of depth g2 } ]
   | App(c, Lam b, []) when c == pic ->
      (* TODO: this should be allowed! But the parser needs to be
         fixed to parse pis in positive position correctly, binding
@@ -348,8 +378,9 @@ let rec clausify =
      assert false
   | UVar ({ contents=g },_,_) when g == dummy ->
      raise (Failure "Not a predicate in clausify")
-  | UVar ({ contents=g },_,args) -> clausify (deref args g)
-  | g -> [ { hd=g ; hyps=[] ; vars=0 ; key = key_of g } ]
+  | UVar ({ contents=g },origdepth,args) ->
+     clausify depth (deref ~from:origdepth ~to_:depth args g)
+  | g -> [ { depth ; hd=g ; hyps=[] ; vars=0 ; key = key_of depth g } ]
 ;;
 
 (* The block of recursive functions spares the allocation of a Some/None
@@ -384,17 +415,18 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     (* We do not check the case of implication applied to
        multiple arguments *)
     | App(c, g1, [g2]) when c == implc ->
-       let clauses = clausify g1 in
+       let clauses = clausify depth g1 in
        run depth (add_clauses clauses p) g2 gs next alts lvl
     | App(c, Lam f, []) when c == pic ->
        run (depth+1) p f gs next alts lvl
     | UVar ({ contents=g },_,_) when g == dummy ->
        raise (Failure "Not a predicate")
-    | UVar ({ contents=g },_,args) ->
-       run depth p (deref args g) gs next alts lvl
+    | UVar ({ contents=g },origdepth,args) ->
+       run depth p (deref ~from:origdepth ~to_:origdepth args g)
+        gs next alts lvl
     | Lam _ -> raise (Failure "Not a predicate")
     | Const _ | App _ -> (* Atom case *)
-        let cp = get_clauses g p in
+        let cp = get_clauses depth g p in
         backchain depth p g gs cp next alts lvl
     | CLam _ | Struct _ | Arg _ -> assert false (* Not an heap term *)
 
@@ -408,7 +440,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
         let old_trail = !trail in
         let last_call = last_call && cs = [] in
         let env = Array.create c.vars dummy in
-        match unif trail last_call g env c.hd with
+        match unif trail last_call depth g env c.depth c.hd with
         | false -> undo_trail old_trail trail; select cs
         | true ->
 (* TODO: make to_heap lazy adding the env to unify and making the env
@@ -429,11 +461,17 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
                 let next =
                  if gs = [] then next
                  else FCons (lvl,gs,next) in
-                let g' = to_heap depth 0 env g' in
+                let g' =
+                 to_heap depth last_call trail ~from:depth ~to_:depth
+                  env g' in
                 let gs' =
                  List.map
-                  (fun x->depth,p,to_heap depth 0 env x) gs' in
-                run depth p g' gs' next alts oldalts)
+                  (fun x->
+                    depth,p,
+                     to_heap depth last_call trail ~from:depth ~to_:depth
+                      env x) gs'
+                in
+                 run depth p g' gs' next alts oldalts)
     in
       select cp
 
@@ -534,10 +572,11 @@ let program_of_ast p =
 Format.eprintf "%a :- " ppterm a;
 List.iter (Format.eprintf "%a, " ppterm) (chop f);
 Format.eprintf ".\n%!";
-   { hd = a
+   { depth = 0
+   ; hd = a
    ; hyps = chop f
    ; vars = max
-   ; key = key_of a
+   ; key = key_of 0 a
    }) p
  in
   make clauses
