@@ -28,9 +28,7 @@ type term =
   (* Pure terms *)
   | Const of constant
   (* Clause terms *)
-  | Struct of constant * term * term list
   | Arg of int * constant list
-  | CLam of term
   (* Heap terms *)
   | App of constant * term * term list
   | UVar of term ref * (*depth:*)int * constant list
@@ -75,7 +73,6 @@ let ppterm f t =
   and aux = function
       t when t == dummy -> Format.fprintf f "dummy"
     | App (hd,x,xs)-> ppapp hd (x::xs) '(' ')'
-    | Struct (hd,x,xs) -> ppapp hd (x::xs) '{' '}'
     | UVar ({ contents = t },depth,args) ->
        Format.fprintf f "(<@[<hov 1>";
        aux t;
@@ -92,10 +89,6 @@ let ppterm f t =
        Format.fprintf f "\\(";
        aux t;
        Format.fprintf f ")";
-    | CLam t ->
-       Format.fprintf f "\\[";
-       aux t;
-       Format.fprintf f "]";
   in
     aux t
 ;;
@@ -125,27 +118,27 @@ exception RestrictionFailure
      (-infty,to)   -> (-infty,to)     free variables
      [to,from)     -> error           free restricted variables
      [from,+infty) -> [to,+infty)     bound variables *)
+(* when from=to, to_heap is to be called only for terms that are not in the heap*)
 let rec to_heap argsdepth last_call trail ~from ~to_ e t =
   let delta = from - to_ in
-  let rec aux depth = function
-      (Const c) as x ->
+  let rec aux depth x =
+   match x with
+      Const c ->
         if delta=0 then x else (* optimization *)
         if c >= from then constant_of_dbl (c - delta)
         else if c < to_ then x
         else raise RestrictionFailure
-    (* TODO: is the next guarded pattern compiled efficienty by OCaml
-       or is it better to cut&paste the if-then-else in those branches? *)
-    | (Lam _ | App _ | UVar _) as x when delta=0 -> x
-    | (Lam f) as x ->
+    | Lam f ->
        let f' = aux (depth+1) f in
        if f==f' then x else Lam f'
-    | App (c,t,l) as x when c < from && c < to_ ->
+    | App (c,t,l) when delta=0 || c < from && c < to_ ->
        let t' = aux depth t in
        let l' = smart_map (aux depth) l in
        if t==t' && l==l' then x else App (c,t',l')
     | App (c,t,l) when c >= from ->
        App(c-delta,aux depth t,smart_map (aux depth) l)
     | App _ -> raise RestrictionFailure
+    | UVar _ when delta=0 -> x
     | UVar ({contents=t},depth,args) when t != dummy ->
        full_deref argsdepth last_call trail ~from:depth ~to_:(to_+depth)
         args e t
@@ -157,14 +150,8 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
           the original, imperatively changed, term. The current solution
           avoids dereference chains, but puts more pressure on the GC. *)
        fresh
-    | UVar (_,_,_) as x when delta < 0 -> x
+    | UVar (_,_,_) when delta < 0 -> x
     | UVar (_,depth,_) -> assert false (* TO BE IMPLEMENTED *)
-    | Struct(c,t,l) when delta=0 || c < to_ ->
-       App (c,aux depth t,List.map (aux depth) l)
-    | Struct(c,t,l) when c >= from ->
-       App (c - delta,aux depth t,List.map (aux depth) l)
-    | Struct _ -> raise RestrictionFailure
-    | CLam f -> Lam (aux (depth+1) f)
     | Arg (i,args) when argsdepth >= to_ ->
         let a = e.(i) in
         if a == dummy then
@@ -212,18 +199,16 @@ let key_of depth =
     Const k -> k
   | UVar ({contents=t},origdepth,args) when t != dummy ->
      skey_of (deref ~from:origdepth ~to_:depth args t)
-  | Struct (k,_,_)
   | App (k,_,_) -> k
-  | Lam _ | CLam _ -> abstractionk
+  | Lam _ -> abstractionk
   | Arg _ | UVar _ -> variablek in
  let rec key_of_depth = function
    Const k -> k, variablek
  | UVar ({contents=t},origdepth,args) when t != dummy ->
     (* TODO: optimization: avoid dereferencing *)
     key_of_depth (deref ~from:origdepth ~to_:depth args t)
- | App (k,arg2,_)
- | Struct (k,arg2,_) -> k, skey_of arg2
- | Arg _ | Lam _ | CLam _ | UVar _ -> raise (Failure "Not a predicate")
+ | App (k,arg2,_) -> k, skey_of arg2
+ | Arg _ | Lam _ | UVar _ -> raise (Failure "Not a predicate")
  in
   key_of_depth
 
@@ -292,7 +277,7 @@ let rec for_all2 p l1 l2 =
                      [cdepth,bdepth)  free variable only visible by one:fail
    [adepth,+infty) = [bdepth,+infy)   bound variables *)
 let unif trail last_call adepth a e bdepth b =
- let rec unif depth a bdepth b =
+ let rec unif depth a bdepth b heap =
    (*Format.eprintf "unif %b: ^%d:%a =%d= ^%d:%a\n%!" last_call adepth ppterm a depth bdepth ppterm b;*)
    let cdepth = min adepth bdepth in
    let delta = adepth - bdepth in
@@ -306,8 +291,9 @@ let unif trail last_call adepth a e bdepth b =
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
        (try r :=
-         to_heap adepth last_call trail ~from:(bdepth+depth)
-          ~to_:origdepth e b;
+         if heap && depth=0 then b else
+          to_heap adepth last_call trail ~from:(bdepth+depth)
+           ~to_:origdepth e b;
          true
         with RestrictionFailure -> false)
    | _, UVar (r,origdepth,[]) when !r == dummy ->
@@ -320,25 +306,28 @@ let unif trail last_call adepth a e bdepth b =
         with RestrictionFailure -> false)
    | _, Arg (i,args) ->
       unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args e.(i))
+       true
    | _, UVar ({ contents = t },origdepth,args) ->
       unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
+       true
    | UVar ({ contents = t },origdepth,args), _ ->
       unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
-   | App (c1,x2,xs), (Struct (c2,y2,ys) | App (c2,y2,ys)) ->
+       true
+   | App (c1,x2,xs), App (c2,y2,ys) ->
       (* Compressed cut&past from Const vs Const case below +
          delta=0 optimization for <c1,c2> and <x2,y2> *)
       ((delta=0 || c1 < cdepth) && c1=c2
        || c1 >= adepth && c2 >= bdepth && c1 = c2 + delta)
        &&
-       (delta=0 && x2 == y2 || unif depth x2 bdepth y2) &&
-       for_all2 (fun x y -> unif depth x bdepth y) xs ys
-   | Lam t1, (Lam t2 | CLam t2) -> unif (depth+1) t1 bdepth t2
+       (delta=0 && x2 == y2 || unif depth x2 bdepth y2 heap) &&
+       for_all2 (fun x y -> unif depth x bdepth y heap) xs ys
+   | Lam t1, Lam t2 -> unif (depth+1) t1 bdepth t2 heap
    | Const c1, Const c2 when c1=c2 && c1 < cdepth -> true
    | Const c, _ when c >= cdepth && c < adepth -> false
    | _,Const c  when c >= cdepth && c < bdepth -> false
    | Const c1, Const c2 when c1 = c2 + delta -> true
    | _ -> false in
- unif 0 a bdepth b
+ unif 0 a bdepth b false
 ;;
 
 (* Look in Git for Enrico's partially tail recursive but slow unification.
@@ -384,7 +373,7 @@ let pic = fst (funct_of_ast F.pif)
 
 let rec chop =
  function
-    (Struct(c,hd2,tl) | App(c,hd2,tl)) when c == andc ->
+    App(c,hd2,tl) when c == andc ->
      chop hd2 @ List.flatten (List.map chop tl)
   | f when f==truec -> []
   | _ as f -> [ f ]
@@ -452,7 +441,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     | Const _ | App _ -> (* Atom case *)
         let cp = get_clauses depth g p in
         backchain depth p g gs cp next alts lvl
-    | CLam _ | Struct _ | Arg _ -> assert false (* Not an heap term *)
+    | Arg _ -> assert false (* Not an heap term *)
 
   and backchain depth p g gs cp next alts lvl =
     (*Format.eprintf "BACKCHAIN %a @ %d\n%!" ppterm g lvl;
@@ -558,11 +547,6 @@ let stack_var_of_ast (f,l) n =
   let n' = Arg (f,[]) in
   (f+1,(n,n')::l),n'
 
-let is_heap_term =
- function
-    App _ | Lam _ | Const _ | UVar _ -> true
-  | Struct _ | CLam _ | Arg _ -> false
-
 let rec stack_term_of_ast lvl l l' =
  function
     AST.Var v ->
@@ -581,16 +565,12 @@ let rec stack_term_of_ast lvl l l' =
         (l,l',[]) tl in
      let f = fst (funct_of_ast f) in
      (match List.rev rev_tl with
-         hd2::tl ->
-          if List.for_all is_heap_term (hd2::tl) then
-           l,l',App(f,hd2,tl)
-          else
-           l,l',Struct(f,hd2,tl)
+         hd2::tl -> l,l',App(f,hd2,tl)
        | _ -> assert false)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
      let l,l',t' = stack_term_of_ast (lvl+1) l ((x,c)::l') t in
-     if is_heap_term t' then l,l',Lam t' else l,l',CLam t'
+     l,l',Lam t'
   | AST.App (AST.Var _,_) -> assert false  (* TODO *)
   | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
   | AST.App (AST.Lam _,_) ->
