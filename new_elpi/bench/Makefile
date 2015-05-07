@@ -2,6 +2,7 @@
 #   make
 #   make JOBS=newelpi-impl16
 #   make RUNNERS=newelpi
+#   make only JOB=newelpi-impl16/ok/rev14.elpi
 
 export TOP=$(abspath ..)
 
@@ -40,11 +41,20 @@ $(foreach ok,$(sort $(wildcard jobs/$(2)/ok/*)), $(call run,ok,$(1),$(ok)))
 $(foreach ko,$(sort $(wildcard jobs/$(2)/ko/*)), $(call run,ko,$(1),$(ko))) 
 endef
 
-all:
-	@make -C ..
-	@make -C ../../elpi plain-all
+all: prepare
 	@$(foreach r,$(RUNNERS),\
 	  $(foreach j,$(filter $(r)%,$(JOBS)),\
 	   $(call run-all,$(r),$(j))))
 
-.PHONY: all
+PARSED_JOB=$(subst /, ,$(JOB))
+only: prepare
+	@$(foreach r,$(RUNNERS),\
+	  $(foreach j,$(filter $(r)%,$(JOB)),\
+	   $(call run,$(word 2,$(PARSED_JOB)),$(r),jobs/$(JOB))))
+
+prepare:
+	@make -C ..
+	@make -C ../../elpi plain-all
+
+
+.PHONY: all prepare only
