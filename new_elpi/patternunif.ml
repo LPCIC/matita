@@ -129,19 +129,21 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
   let delta = from - to_ in
   let rec aux depth = function
       (Const c) as x ->
-        if delta=0 || (c < from && c < to_) then x
-        else if c < from && c >= to_ then raise RestrictionFailure
-        else constant_of_dbl (c - delta)
+        if c >= from then constant_of_dbl (c - delta)
+        else if c < to_ then x
+        else raise RestrictionFailure
     (* TODO: is the next guarded pattern compiled efficienty by OCaml
        or is it better to cut&paste the if-then-else in those branches? *)
     | (Lam _ | App _ | UVar _) as x when delta=0 -> x
     | (Lam f) as x ->
        let f' = aux (depth+1) f in
        if f==f' then x else Lam f'
-    | App (c,t,l) as x when c < to_ ->
+    | App (c,t,l) as x when c < from && c < to_ ->
        let t' = aux depth t in
        let l' = smart_map (aux depth) l in
        if t==t' && l==l' then x else App (c,t',l')
+    | App (c,t,l) when c >= from ->
+       App(c-delta,aux depth t,smart_map (aux depth) l)
     | App _ -> raise RestrictionFailure
     | UVar ({contents=t},depth,args) when t != dummy ->
        full_deref argsdepth last_call trail ~from:depth ~to_:(to_+depth)
@@ -156,8 +158,10 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        fresh
     | UVar (_,_,_) as x when delta < 0 -> x
     | UVar (_,depth,_) -> assert false (* TO BE IMPLEMENTED *)
-    | Struct(c,t,l) when c < to_ ->
+    | Struct(c,t,l) when delta=0 || c < to_ ->
        App (c,aux depth t,List.map (aux depth) l)
+    | Struct(c,t,l) when c >= from ->
+       App (c - delta,aux depth t,List.map (aux depth) l)
     | Struct _ -> raise RestrictionFailure
     | CLam f -> Lam (aux (depth+1) f)
     | Arg (i,args) when argsdepth >= to_ ->
@@ -310,8 +314,13 @@ let unif trail last_call adepth a e bdepth b =
       unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
    | UVar ({ contents = t },origdepth,args), _ ->
       unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
-   | App (x1,x2,xs), (Struct (y1,y2,ys) | App (y1,y2,ys)) ->
-       x1 == y1 && (x2 == y2 || unif depth x2 bdepth y2) &&
+   | App (c1,x2,xs), (Struct (c2,y2,ys) | App (c2,y2,ys)) ->
+      (* Compressed cut&past from Const vs Const case below +
+         delta=0 optimization for <c1,c2> and <x2,y2> *)
+      ((delta=0 || c1 < cdepth) && c1=c2
+       || c1 >= adepth && c2 >= bdepth && c1 = c2 + delta)
+       &&
+       (delta=0 && x2 == y2 || unif depth x2 bdepth y2) &&
        for_all2 (fun x y -> unif depth x bdepth y) xs ys
    | Lam t1, (Lam t2 | CLam t2) -> unif (depth+1) t1 bdepth t2
    | Const c1, Const c2 when c1=c2 && c1 < cdepth -> true

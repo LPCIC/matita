@@ -1,6 +1,6 @@
 X17, teyjus: 1.58s
 X17, impl16, patternunif: 1.48s
-X18, impl16, patternunif: 2.98s
+X18, impl16, patternunif: 3.00s
 commit c00b4389d7d21c0ae9c012eed41c6ef937fae26a
 Author: Cvetan Dunchev <cdunchev@hotmail.com>
 Date:   Wed May 6 20:11:53 2015 +0200
