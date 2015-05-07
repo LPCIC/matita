@@ -237,14 +237,16 @@ module ClauseMap = Map.Make(IndexData)
 
 let get_clauses depth a m =
  let ind,app = key_of depth a in
- let l = List.rev (ClauseMap.find ind m) in
- let rec filter_map =
-  function
-     [] -> []
-   | (a',cl)::tl when clause_match_key app a' ->
-       cl::filter_map tl
-   | _::tl -> filter_map tl in
- filter_map l
+ try
+  let l = List.rev (ClauseMap.find ind m) in
+  let rec filter_map =
+   function
+      [] -> []
+    | (a',cl)::tl when clause_match_key app a' ->
+        cl::filter_map tl
+    | _::tl -> filter_map tl in
+  filter_map l
+ with Not_found -> []
    
 let add_clauses clauses p =       
   List.fold_left (fun m clause -> 
