@@ -558,6 +558,11 @@ let stack_var_of_ast (f,l) n =
   let n' = Arg (f,[]) in
   (f+1,(n,n')::l),n'
 
+let is_heap_term =
+ function
+    App _ | Lam _ | Const _ | UVar _ -> true
+  | Struct _ | CLam _ | Arg _ -> false
+
 let rec stack_term_of_ast lvl l l' =
  function
     AST.Var v ->
@@ -576,12 +581,16 @@ let rec stack_term_of_ast lvl l l' =
         (l,l',[]) tl in
      let f = fst (funct_of_ast f) in
      (match List.rev rev_tl with
-         hd2::tl -> l,l',Struct(f,hd2,tl)
+         hd2::tl ->
+          if List.for_all is_heap_term (hd2::tl) then
+           l,l',App(f,hd2,tl)
+          else
+           l,l',Struct(f,hd2,tl)
        | _ -> assert false)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
      let l,l',t' = stack_term_of_ast (lvl+1) l ((x,c)::l') t in
-     l,l',CLam t'
+     if is_heap_term t' then l,l',Lam t' else l,l',CLam t'
   | AST.App (AST.Var _,_) -> assert false  (* TODO *)
   | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
   | AST.App (AST.Lam _,_) ->
