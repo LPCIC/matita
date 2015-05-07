@@ -129,6 +129,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
   let delta = from - to_ in
   let rec aux depth = function
       (Const c) as x ->
+        if delta=0 then x else (* optimization *)
         if c >= from then constant_of_dbl (c - delta)
         else if c < to_ then x
         else raise RestrictionFailure
@@ -187,7 +188,10 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
  else assert false (* TODO: Implement beta-reduction here *)
 ;;
 
-let restrict = to_heap;;
+(* Restrict is to be called only on heap terms *)
+let restrict argsdepth last_call trail ~from ~to_ e t =
+ if from=to_ then t
+ else to_heap argsdepth last_call trail ~from ~to_ e t
 
 (* Deref is to be called only on heap terms and with from <= to *)
 let deref ~from ~to_ args t =
