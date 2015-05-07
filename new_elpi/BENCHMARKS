@@ -1,3 +1,35 @@
+X17, teyjus: 1.58s
+X17, impl16, patternunif: 1.48s
+X18, impl16, patternunif: 2.98s
+commit c00b4389d7d21c0ae9c012eed41c6ef937fae26a
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Wed May 6 20:11:53 2015 +0200
+
+    Bug fixed.
+    
+    This is the fixing of the bug found by Enrico's test.
+    When a UVar/Arg is dereferenced, we must remember to consider
+    the number of bindings we crossed in the destination depth.
+
+commit a8f6642244da6113dbff67bf7ba91c278d3ce2ac
+Merge: fcd2351 d6b6a1e
+Author: Cvetan Dunchev <cdunchev@hotmail.com>
+Date:   Wed May 6 19:40:14 2015 +0200
+
+    Merge branch 'performance' of git+ssh://scm.gforge.inria.fr//gitroot/lpcic/lpcic into performance
+    
+    1. we both added at same time tests/pi4.elpi
+       The one by Enrico is called pi5.elpi now.
+    2. Enrico fixed a bug but our code changed so much that
+       I think it is better to throw away Enrico's patch and
+       fix the bug from scratch. pi5.elpi still shows a problem.
+    
+    Conflicts:
+        new_elpi/patternunif.ml
+        new_elpi/tests/pi4.elpi
+
+---------------------
+
 X18, impl15, patternunif: 1.80s
 commit ffba14dba49e209024229f83ddbcf82b2c203157
 Author: Cvetan Dunchev <cdunchev@hotmail.com>
