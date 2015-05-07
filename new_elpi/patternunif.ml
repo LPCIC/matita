@@ -177,9 +177,13 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
     | Arg _ -> assert false (* I believe this case to be impossible *)
   in aux 0 t
 
+(* full_deref is to be called only on heap terms and with from <= to *)
 and full_deref argsdepth last_call trail ~from ~to_ args e t =
+ (* TODO: Remove the assertion when we are sure *)
+ assert (from <= to_);
  if args = [] then
-  to_heap argsdepth last_call trail ~from ~to_ e t
+  if from=to_ then t
+  else to_heap argsdepth last_call trail ~from ~to_ e t
  else assert false (* TODO: Implement beta-reduction here *)
 ;;
 
