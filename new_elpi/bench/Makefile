@@ -1,3 +1,8 @@
+# Examples of usage:
+#   make
+#   make JOBS=newelpi-impl16
+#   make RUNNERS=newelpi
+
 export TOP=$(abspath ..)
 
 JOBS=$(sort $(notdir $(wildcard jobs/*)))
