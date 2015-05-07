@@ -621,8 +621,8 @@ let impl =
 
   let execute_once p q =
    let run, cont = make_runtime in
-   try ignore (run p q) ; true
-   with Failure _ -> false
+   try ignore (run p q) ; false
+   with Failure _ -> true
 
   let execute_loop p q =
    let run, cont = make_runtime in
