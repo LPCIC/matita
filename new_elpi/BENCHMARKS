@@ -1,3 +1,148 @@
+commit 65fa36e595a7f9131b6e050ea80ff74939747645
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Fri May 8 17:07:06 2015 +0200
+
+    The polymorphic version of Pervasive.compare and min are sloooow!
+    
+    Explicit typing + replacing min with an if-then-else seems to speed up
+    things a lot (like 4% faster according to perf).
+
+commit 760c93d1dac0ee8b85e25360cbe043e7db25b4a2
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Fri May 8 01:17:54 2015 +0200
+
+    Tentative commit: Struct/CLam removed.
+    
+    A boolean is used in unif to remember if the second input is in the
+    heap. The code seems to run 1% slower after a few optimizations.
+
+commit 7a0a17daa1b1fe314cc8bff7dcf749edd492ccf7
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Thu May 7 21:53:28 2015 +0200
+
+    App/Lam used in stack_term_of_ when appropriate.
+    
+    It does not seem to speed up things.
+
+commit 96c87b14957e9cd5b3643026766e9a93d5fe2a73
+Author: Enrico Tassi <gares@fettunta.org>
+Date:   Thu May 7 17:54:55 2015 +0200
+
+    more make power
+
+commit 418410204a7334ad4b106242f020e2a7baad3695
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Thu May 7 17:20:41 2015 +0200
+
+    Added examples of usage.
+
+commit c26e97efdc5865ef8ca98051fdf02a3c789eda95
+Author: Enrico Tassi <gares@fettunta.org>
+Date:   Thu May 7 16:42:59 2015 +0200
+
+    simple bench system
+    
+    for each runner/$r
+    runs all jobs in in jobs/$r*/$result/*
+    with $result in: ok ko
+    
+    jobs are in the end symlinks to sources/, so adding a test
+    for a runner is just adding a symlink.
+    
+    the newelpi runner accepts jobs like newelpi-implX and calls
+    newelpi with the right impl
+    the teyjus runner compiles and runs with tjsim, embeded in the sources
+    to ease testing
+    the elpi runner runs with elpi
+    
+    timeout is 10s
+    
+    each runners/$r has its preferred stack size in runners/$r.ulimit
+    
+    output is in CSV, no visualization yet.
+    
+    result,job,time-as-measured-by-elpi,wall-clock,user-time,memory
+    ---------------------------------------------------------------
+    OK,jobs/elpi/ok/rev14.elpi,6.073,0:06.11,5.94,887628k,
+    OK,jobs/newelpi-impl1/ok/rev14.elpi,2.999,0:03.01,2.90,409288k,
+    OK,jobs/newelpi-impl10/ok/rev14.elpi,0.348,0:00.34,0.33,44784k,
+    OK,jobs/newelpi-impl11/ok/rev14.elpi,0.354,0:00.35,0.34,36460k,
+    OK,jobs/newelpi-impl12/ok/rev14.elpi,1.205,0:01.21,1.16,189184k,
+    OK,jobs/newelpi-impl13/ok/rev14.elpi,0.871,0:00.87,0.82,143740k,
+    OK,jobs/newelpi-impl14/ok/rev14.elpi,0.743,0:00.74,0.72,107080k,
+    OK,jobs/newelpi-impl15/ok/rev14.elpi,0.167,0:00.16,0.15,28692k,
+    OK,jobs/newelpi-impl16/ok/rev14.elpi,0.142,0:00.14,0.14,22400k,
+    OK,jobs/newelpi-impl16/ok/rev15.elpi,0.270,0:00.27,0.27,39956k,
+    OK,jobs/newelpi-impl16/ok/rev16.elpi,0.543,0:00.54,0.52,74348k,
+    OK,jobs/newelpi-impl16/ok/rev17.elpi,1.079,0:01.08,1.04,141184k,
+    OK,jobs/newelpi-impl16/ok/rev18.elpi,2.151,0:02.16,2.09,280676k,
+    OK,jobs/newelpi-impl2/ok/rev14.elpi,2.822,0:02.84,2.73,364084k,
+    OK,jobs/newelpi-impl3/ok/rev14.elpi,1.733,0:01.73,1.71,81076k,
+    OK,jobs/newelpi-impl4/ok/rev14.elpi,4.099,0:04.12,3.98,439572k,
+    KO,jobs/newelpi-impl5/ok/rev14.elpi,10.00,0:10.00,10.00,0k
+    KO,jobs/newelpi-impl6/ok/rev14.elpi,10.00,0:10.00,10.00,0k
+    KO,jobs/newelpi-impl7/ok/rev14.elpi,10.00,0:10.00,10.00,0k
+    OK,jobs/newelpi-impl8/ok/rev14.elpi,2.930,0:02.94,2.88,364292k,
+    OK,jobs/newelpi-impl9/ok/rev14.elpi,0.803,0:00.81,0.78,138088k,
+    OK,jobs/teyjus/ok/rev14,?,0:00.17,0.16,39756k,
+
+commit 0b6cfe82cb0918c9b117e032ec648c28b70667ff
+Author: Enrico Tassi <gares@fettunta.org>
+Date:   Thu May 7 16:17:42 2015 +0200
+
+    newelpi: -test <impl> option
+
+commit afc30cc7370d678aac6e21ccb7b4b524e228f6ea
+Author: Enrico Tassi <gares@fettunta.org>
+Date:   Thu May 7 16:17:23 2015 +0200
+
+    elpi: -goal option
+
+commit 0eba07c7e4dd01c45dbcc198f7f95865f70858d9
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Thu May 7 13:57:20 2015 +0200
+
+    Restrict optimized.
+    
+    New optimization for the generalized Prolog case of restrict.
+    This saves some more.
+
+commit 92970995a4cd86940ebf96b197248445ccfc6b6a
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Thu May 7 11:11:13 2015 +0200
+
+    full_deref optimized to recognize the Prolog-like case.
+    
+    Gives an 8% speedup.
+
+commit 2af96875b10e59e5df8f2057b9033204d728cd85
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Thu May 7 10:49:17 2015 +0200
+
+    Bug fixed.
+    
+    Not finding any clause instead of backtracking raised an escaping exception.
+
+commit b03070ab6b1545c8fe23f2ada559159a79e8fec5
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Thu May 7 10:29:52 2015 +0200
+
+    Bugs fixed.
+    
+    Constants hidden in the heads of Appl/Struct should be handled in
+    the same way as Const. Fixed.
+    
+    NOTE: all tests pass, but impl.elpi. To be fixed.
+
+commit f08fc8de8b1e600a2886a56d09b89f8bffb352c6
+Author: Claudio Sacerdoti Coen <claudio@zenone.casamia.org>
+Date:   Thu May 7 09:57:28 2015 +0200
+
+    New benchmarks.
+    
+    We have lost really a lot on the Prolog fragment and we are now
+    very close to Teyjus performance (still a tiny bit faster).
+
 X17, teyjus: 1.58s
 X17, impl16, patternunif: 1.48s
 X18, impl16, patternunif: 3.00s

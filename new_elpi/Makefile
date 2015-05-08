@@ -6,10 +6,13 @@ OCAMLOPTIONS= -g
 #OCAMLOPTIONS= -g # for byte 
 CMX=cmx
 CMXA=cmxa
+#OC=ocamloptp
 OC=ocamlopt
+OCP=ocamlopt
 #CMX=cmo
 #CMXA=cma
 #OC=ocamlcp
+#OCP=ocamlc
 
 newelpi: newelpi.$(CMX) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) patternunif.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX)
 	$(OC) $(OCAMLOPTIONS) $(FLAGS) -o newelpi camlp5.$(CMXA) unix.$(CMXA) parser.$(CMX) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) patternunif.$(CMX) desperate2.$(CMX) desperate3.$(CMX) newelpi.$(CMX)
@@ -39,7 +42,7 @@ parser.cmi: parser.mli
 	$(OC) $(OCAMLOPTIONS) -c parser.mli
 
 parser.$(CMX): parser.ml parser.cmi 
-	$(OC) $(OCAMLOPTIONS) -pp '$(PPPARSE)' $(FLAGS) -o $@ -c $<
+	$(OCP) $(OCAMLOPTIONS) -pp '$(PPPARSE)' $(FLAGS) -o $@ -c $<
 
 clean:
 	rm -f *.cmo *.cma *.cmx *.cmxa *.cmi *.o
