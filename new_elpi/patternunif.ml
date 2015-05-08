@@ -224,7 +224,7 @@ module IndexData =
      retrieval makes the example program slower. *)
   type t = key1
   let equal = (==)
-  let compare = compare
+  let compare (x:int) (y:int) = y - x
 end
 module ClauseMap = Map.Make(IndexData)
 
@@ -279,7 +279,7 @@ let rec for_all2 p l1 l2 =
 let unif trail last_call adepth a e bdepth b =
  let rec unif depth a bdepth b heap =
    (*Format.eprintf "unif %b: ^%d:%a =%d= ^%d:%a\n%!" last_call adepth ppterm a depth bdepth ppterm b;*)
-   let cdepth = min adepth bdepth in
+   let cdepth = if adepth < bdepth then adepth else bdepth (*min adepth bdepth*) in
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
    | _, Arg (i,[]) when e.(i) == dummy ->

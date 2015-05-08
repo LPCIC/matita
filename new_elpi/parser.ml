@@ -187,8 +187,8 @@ let lex_fun s =
      Some tok)),
   (fun id -> try Hashtbl.find tab id with Not_found -> !last)
 
-let tok_match (s1,_) = (); function
-  | (s2,v) when Pervasives.compare s1 s2 == 0 -> v
+let tok_match ((s1:string),_) = (); function
+  | ((s2:string),v) when Pervasives.compare s1 s2 == 0 -> v
   | (s2,v) -> raise Stream.Failure
 
 let lex = {
