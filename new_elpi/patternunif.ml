@@ -336,7 +336,7 @@ let unif trail last_call adepth a e bdepth b =
        true
    | UVar ({ contents = t },origdepth,args), _ ->
       unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
-       true
+       heap
    | App (c1,x2,xs), App (c2,y2,ys) ->
       (* Compressed cut&past from Const vs Const case below +
          delta=0 optimization for <c1,c2> and <x2,y2> *)
