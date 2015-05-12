@@ -149,8 +149,8 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        App(c-delta,aux depth t,smart_map (aux depth) l)
     | App _ -> raise RestrictionFailure
     | UVar _ when delta=0 -> x
-    | UVar ({contents=t},depth,args) when t != dummy ->
-       full_deref argsdepth last_call trail ~from:depth ~to_:(to_+depth)
+    | UVar ({contents=t},vardepth,args) when t != dummy ->
+       full_deref argsdepth last_call trail ~from:vardepth ~to_:(to_+depth)
         args e t
     | UVar (r,depth,[]) when delta > 0 ->
        let fresh = UVar(ref dummy,to_,[]) in
