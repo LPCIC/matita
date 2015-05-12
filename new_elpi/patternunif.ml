@@ -372,6 +372,7 @@ type program = (key1 * clause) list ClauseMap.t
    removed. For bad reasons, we call it lvl in the code. *)
 type frame =
  | FNil
+(* TODO: to save memory, introduce a list of triples *)
  | FCons of (*lvl:*)alternative * ((*depth:*)int * program * term) list * frame
 and alternative = {
   lvl : alternative;
