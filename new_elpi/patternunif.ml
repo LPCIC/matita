@@ -60,7 +60,9 @@ let funct_of_ast, constant_of_dbl, string_of_constant =
    let xx = Const x in
    Hashtbl.add h' x (string_of_int x);
    Hashtbl.add h'' x xx; xx),
- Hashtbl.find h'
+ (function n ->
+   try Hashtbl.find h' n
+   with Not_found -> string_of_int n)
 
 let ppterm f t =
   let rec ppapp hd a c1 c2 = 
