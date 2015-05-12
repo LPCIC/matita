@@ -104,6 +104,14 @@ type clause =
 
 exception RestrictionFailure
 
+(* eat_args n [n ; ... ; n+k] (Lam_0 ... (Lam_k t)...) = n+k+1,[],t
+   eat_args n [n ; ... ; n+k]@l (Lam_0 ... (Lam_k t)...) =
+     n+k+1,l,t if t != Lam or List.hd l != n+k+1 *)
+let rec eat_args from l t =
+ match l,t with
+    hd::tl,Lam t' when hd=from -> eat_args (from+1) tl t'
+  | _,_ -> from,l,t
+
 (* To_heap performs at once:
    1) refreshing of the arguments into variables (heapifycation)
       (and Structs/CLam into App/Lam)
@@ -153,6 +161,12 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
     | UVar (_,_,_) when delta < 0 -> x
     | UVar (_,depth,_) -> assert false (* TO BE IMPLEMENTED *)
     | Arg (i,args) when argsdepth >= to_ ->
+        let args =
+         smart_map (fun c ->
+          if c >= from then (c - delta)
+          else if c < to_ then c
+          else raise RestrictionFailure
+         ) args in
         let a = e.(i) in
         if a == dummy then
             let r = ref dummy in
@@ -172,7 +186,15 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
  if args = [] then
   if from=to_ then t
   else to_heap argsdepth last_call trail ~from ~to_ e t
- else assert false (* TODO: Implement beta-reduction here *)
+ else (* O(1) reduction fragment tested here *)
+begin
+  (*Format.eprintf "betaXX ^%d:%a\n%!" from ppterm t;
+  List.iter (Format.eprintf "betaArg: %d\n%!") args;*)
+  match eat_args from args t with
+     from,[],t -> full_deref argsdepth last_call trail ~from ~to_ [] e t
+   | _,_,Lam _ -> assert false (* TODO: Implement beta-reduction here *)
+   | _,_,_ -> assert false (* TODO: not a beta-redex *)
+end
 ;;
 
 (* Restrict is to be called only on heap terms *)
@@ -572,7 +594,24 @@ let rec stack_term_of_ast lvl l l' =
      let c = constant_of_dbl lvl in
      let l,l',t' = stack_term_of_ast (lvl+1) l ((x,c)::l') t in
      l,l',Lam t'
-  | AST.App (AST.Var _,_) -> assert false  (* TODO *)
+  | AST.App (AST.Var v,tl) ->
+     let l,l',rev_tl =
+       List.fold_left
+        (fun (l,l',tl) t ->
+          let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
+        (l,l',[]) tl in
+     let tl = List.rev rev_tl in
+     let tl =
+      let rec aux =
+       function
+         [] -> []
+       | Const c::tl -> c::aux tl
+       | _ -> assert false (* Not in Pattern Fragment *)
+      in
+       aux tl in
+     (match stack_var_of_ast l v with
+         l,Arg (v,[]) -> l,l',Arg(v,tl)
+       | _,_ -> assert false)
   | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
   | AST.App (AST.Lam _,_) ->
      (* Beta-redexes not in our language *) assert false

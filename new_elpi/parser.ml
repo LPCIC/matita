@@ -90,7 +90,7 @@ let or_clauses =
 let mkApp =
  function
     App(c,l1)::l2 -> App(c,l1@l2)
-  | Const _ as c::l2 -> App(c,l2)
+  | (Const _ | Var _) as c::l2 -> App(c,l2)
   | _ -> raise NotInProlog
 
 let uvmap = ref [];;
