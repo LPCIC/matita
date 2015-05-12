@@ -1,4 +1,3 @@
-(*
 (* GC off
 let _ =
   let control = Gc.get () in
@@ -24,8 +23,7 @@ type term =
 
 let rec dummy = App (dummy,dummy,[])
 
-module F = Lprun2.ASTFuncS
-module AST = Lprun2.FOAST
+module F = Parser.ASTFuncS
 
 (* Hash re-consing :-( *)
 let funct_of_ast, string_of_constant =
@@ -154,7 +152,7 @@ let rec for_all2 p l1 l2 =
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
 let unif trail last_call a e b =
  let rec unif a b =
-    (* Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
+   (* Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
    a == b || match a,b with
    | _, Arg i when e.(i) != dummy -> unif a e.(i)
    | UVar { contents = t }, _ when t != dummy -> unif t b
@@ -250,10 +248,10 @@ let implc = funct_of_ast F.implf
 
 let rec chop =
  function
-    Struct(c,hd2,tl) when c == andc ->
+    (Struct(c,hd2,tl) | App(c,hd2,tl)) when c == andc ->
      chop hd2 @ List.flatten (List.map chop tl)
   | f when f==truec -> []
-  | _ as f -> [ f ]
+  | f -> [ f ]
 
 let rec clausify =
  function
@@ -371,21 +369,28 @@ let heap_var_of_ast l n =
 
 let rec heap_term_of_ast l =
  function
-    AST.Var v ->
+    Parser.Var v ->
      let l,v = heap_var_of_ast l v in
      l, v
-  | AST.App(f,[]) when F.eq f F.andf ->
+  | Parser.App(Parser.Const f,[]) when F.eq f F.andf ->
      l, truec
-  | AST.App(f,[]) ->
+  | Parser.App(Parser.Const f,[]) ->
      l, funct_of_ast f
-  | AST.App(f,tl) ->
+  | Parser.App(Parser.Const f,tl) ->
      let l,rev_tl =
        List.fold_left
         (fun (l,tl) t -> let l,t = heap_term_of_ast l t in (l,t::tl))
         (l,[]) tl in
-     match funct_of_ast f :: List.rev rev_tl with
+     (match funct_of_ast f :: List.rev rev_tl with
         hd1::hd2::tl -> l, App(hd1,hd2,tl)
-      | _ -> assert false
+      | _ -> assert false)
+  | Parser.Const f -> l, funct_of_ast f
+  | Parser.Lam _ -> assert false
+  | Parser.App(Parser.Var v, _) -> assert false
+  | Parser.App(Parser.App(term1,tl1), tl) ->
+     heap_term_of_ast l (Parser.App(term1,tl1@tl))
+  | Parser.App(Parser.Lam (_,_), _) -> assert false
+
 
 let stack_var_of_ast (f,l) n =
  try (f,l),List.assoc n l
@@ -395,21 +400,30 @@ let stack_var_of_ast (f,l) n =
 
 let rec stack_term_of_ast l =
  function
-    AST.Var v ->
+    Parser.Var v ->
      let l,v = stack_var_of_ast l v in
      l, v
-  | AST.App(f,[]) when F.eq f F.andf ->
+  | Parser.App(Parser.Const f,[]) when F.eq f F.andf ->
      l, truec
-  | AST.App(f,[]) ->
+  | Parser.App(Parser.Const f,[]) ->
      l, funct_of_ast f
-  | AST.App(f,tl) ->
+  | Parser.App(Parser.Const f,tl) ->
      let l,rev_tl =
        List.fold_left
         (fun (l,tl) t -> let l,t = stack_term_of_ast l t in (l,t::tl))
         (l,[]) tl in
-     match funct_of_ast f :: List.rev rev_tl with
+     (match funct_of_ast f :: List.rev rev_tl with
         hd1::hd2::tl -> l, Struct(hd1,hd2,tl)
-      | _ -> assert false
+      | _ -> assert false)
+
+  | Parser.Const f -> l, funct_of_ast f
+  | Parser.Lam _ -> assert false
+
+  | Parser.App(Parser.Var v, _) -> assert false
+  | Parser.App(Parser.App(term1,tl1), tl) ->
+     stack_term_of_ast l (Parser.App(term1,tl1@tl))
+  | Parser.App(Parser.Lam (_,_), _) -> assert false
+
 
 let query_of_ast t = snd (heap_term_of_ast [] t)
 
@@ -421,11 +435,11 @@ let program_of_ast p =
 Format.eprintf "%a :- " ppterm a;
 List.iter (Format.eprintf "%a, " ppterm) (chop f);
 Format.eprintf ".\n%!";
-   { hd = a
-   ; hyps = chop f
-   ; vars = max
-   ; key = key_of a
-   }) p
+  { hd = a
+  ; hyps = chop f
+  ; vars = max
+  ; key = key_of a
+  }) p
  in
   make clauses
 
@@ -461,5 +475,4 @@ let impl =
      prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
      Format.eprintf "Result: %a\n%!" ppterm q ;
   done
- end : Lprun2.Implementation)
-*)
+ end : Parser.Implementation)

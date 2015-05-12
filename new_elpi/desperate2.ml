@@ -1,4 +1,3 @@
-(*
 (* GC off
 let _ =
   let control = Gc.get () in
@@ -138,32 +137,65 @@ type alternative = { lvl : int;
 
 let set_goals s gs = { s with goals = gs }
 
-let truef = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.truef
-let andf = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.andf
-let implf = Lprun2.ASTFuncS.pp Lprun2.ASTFuncS.implf
+(* Hash re-consing :-( *)
+let funct_of_ast =
+ let h = Hashtbl.create 37 in
+ function x ->
+  try Hashtbl.find h x
+  with Not_found ->
+   let xx = Const (Parser.ASTFuncS.pp x) in
+   Hashtbl.add h x xx ; xx
+
+let truec = funct_of_ast Parser.ASTFuncS.truef
+let andc = funct_of_ast Parser.ASTFuncS.andf
+let implc = funct_of_ast Parser.ASTFuncS.implf
 
 (* The block of recursive functions spares the allocation of a Some/None
  * at each iteration in order to know if one needs to backtrack or continue *)
+
+let rec chop =
+ function
+    (Struct(c,hd2,tl) | App(c,hd2,tl)) when c == andc ->
+     chop hd2 @ List.flatten (List.map chop tl)
+  | f when f==truec -> []
+  | f -> [ f ]
+
+let rec clausify =
+ function
+    App(c, g, gs) when c == andc ->
+     clausify g @ List.flatten (List.map clausify gs)
+(* TODO: BUG the semantics of implc is wrong when g2 is not an atom. *)
+  | App(c, g1, [g2]) when c == implc ->
+     [ { hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of g2 } ]
+  | UVar { contents=g } when g == dummy ->
+     assert false (* Flexible axiom, we give up *)
+  | UVar { contents=g } -> clausify g
+  | g -> [ { hd=g ; hyps=[] ; vars=0 ; key = key_of g } ]
+;;
+
+
 let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
   let trail = ref [] in
 
-  let rec run cp (stack : frame) alts lvl =
+  let rec run p (stack : frame) alts lvl =
     (*Format.eprintf "<";
     List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
     Format.eprintf ">";*)
     match stack.goals with
       [] -> if lvl == 0 then alts else run p stack.next alts (lvl - 1)
       (* TODO: the == could be Lprun2.ASTFuncS.eq if it is not expensive *)
-    | App(Const c, g, gs)::gs' when c == andf ->
-       run cp { stack with goals=g::gs@gs' } alts lvl
+    | App(c, g, gs)::gs' when c == andc ->
+       run p { stack with goals=g::gs@gs' } alts lvl
     (* TODO: implement implication *)
-    | App(Const c, g, gs)::gs' when c == implf -> assert false
+    | App(c, g1, [g2])::gs' when c == implc ->
+       let clauses = clausify g1 in
+       run (clauses@p) { stack with goals=[g2]@gs' } alts lvl  
     | UVar { contents=g }::_ when g == dummy ->
        assert false (* Flexible goal, we give up *)
     | UVar { contents=g }::gs ->
-       run cp { stack with goals = g::gs } alts lvl
+       run p { stack with goals = g::gs } alts lvl
     | g::gs -> (* Atom case *)
-        let cp = List.filter (clause_match_key (key_of g)) cp in
+        let cp = List.filter (clause_match_key (key_of g)) p in
         backchain g gs cp stack alts lvl
 
   and backchain g gs cp old_stack alts lvl =
@@ -199,15 +231,6 @@ let make_runtime (p : clause list) : (frame -> 'k) * ('k -> 'k) =
    (fun s -> run p s [] 0), next_alt
 ;;
   
-(* Hash re-consing :-( *)
-let funct_of_ast =
- let h = Hashtbl.create 37 in
- function x ->
-  try Hashtbl.find h x
-  with Not_found ->
-   let xx = Const (Lprun2.ASTFuncS.pp x) in
-   Hashtbl.add h x xx ; xx
-
 let heap_var_of_ast l n =
  try l,List.assoc n l
  with Not_found ->
@@ -216,21 +239,28 @@ let heap_var_of_ast l n =
 
 let rec heap_term_of_ast l =
  function
-    Lprun2.FOAST.Var v ->
+    Parser.Var v ->
      let l,v = heap_var_of_ast l v in
      l, v
-  | Lprun2.FOAST.App(f,[]) when Lprun2.ASTFuncS.eq f Lprun2.ASTFuncS.andf ->
-     l, Const truef
-  | Lprun2.FOAST.App(f,[]) ->
+  | Parser.App(Parser.Const f,[]) when Parser.ASTFuncS.eq f Parser.ASTFuncS.andf ->
+     l, truec
+  | Parser.App(Parser.Const f,[]) ->
      l, funct_of_ast f
-  | Lprun2.FOAST.App(f,tl) ->
+  | Parser.App(Parser.Const f,tl) ->
      let l,rev_tl =
        List.fold_left
         (fun (l,tl) t -> let l,t = heap_term_of_ast l t in (l,t::tl))
         (l,[]) tl in
-     match funct_of_ast f :: List.rev rev_tl with
+     (match funct_of_ast f :: List.rev rev_tl with
         hd1::hd2::tl -> l, App(hd1,hd2,tl)
-      | _ -> assert false
+      | _ -> assert false)
+  | Parser.Const f -> l, funct_of_ast f
+  | Parser.Lam _ -> assert false
+  | Parser.App(Parser.Var v, _) -> assert false
+  | Parser.App(Parser.App(term1,tl1), tl) ->
+     heap_term_of_ast l (Parser.App(term1,tl1@tl))
+  | Parser.App(Parser.Lam (_,_), _) -> assert false
+
 
 let stack_var_of_ast (f,l) n =
  try (f,l),List.assoc n l
@@ -240,31 +270,33 @@ let stack_var_of_ast (f,l) n =
 
 let rec stack_term_of_ast l =
  function
-    Lprun2.FOAST.Var v ->
+    Parser.Var v ->
      let l,v = stack_var_of_ast l v in
      l, v
-  | Lprun2.FOAST.App(f,[]) when Lprun2.ASTFuncS.eq f Lprun2.ASTFuncS.andf ->
-     l, Const truef
-  | Lprun2.FOAST.App(f,[]) ->
+  | Parser.App(Parser.Const f,[]) when Parser.ASTFuncS.eq f Parser.ASTFuncS.andf ->
+     l, truec
+  | Parser.App(Parser.Const f,[]) ->
      l, funct_of_ast f
-  | Lprun2.FOAST.App(f,tl) ->
+  | Parser.App(Parser.Const f,tl) ->
      let l,rev_tl =
        List.fold_left
         (fun (l,tl) t -> let l,t = stack_term_of_ast l t in (l,t::tl))
         (l,[]) tl in
-     match funct_of_ast f :: List.rev rev_tl with
+     (match funct_of_ast f :: List.rev rev_tl with
         hd1::hd2::tl -> l, Struct(hd1,hd2,tl)
-      | _ -> assert false
+      | _ -> assert false)
+
+  | Parser.Const f -> l, funct_of_ast f
+  | Parser.Lam _ -> assert false
+
+  | Parser.App(Parser.Var v, _) -> assert false
+  | Parser.App(Parser.App(term1,tl1), tl) ->
+     stack_term_of_ast l (Parser.App(term1,tl1@tl))
+  | Parser.App(Parser.Lam (_,_), _) -> assert false
+
+
 
 let query_of_ast t = snd (heap_term_of_ast [] t)
-
-let rec chop =
- function
-    Struct(Const f,hd2,tl) when
-     Lprun2.ASTFuncS.eq (Lprun2.ASTFuncS.from_string f) Lprun2.ASTFuncS.andf
-     -> chop hd2 @ List.flatten (List.map chop tl)
-  | Const f when f==truef -> []
-  | _ as f -> [ f ]
 
 let program_of_ast p =
  List.map (fun (a,f) ->
@@ -312,5 +344,5 @@ let impl =
      prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
      Format.eprintf "Result: %a\n%!" ppterm q ;
   done
- end : Lprun2.Implementation)
-*)
+ end : Parser.Implementation)
+
