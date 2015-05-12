@@ -82,7 +82,7 @@ let ppterm f t =
     | Const s -> ppconstant s
     | Arg (i,args) ->
        Format.fprintf f "{@[<hov 1>";
-       Format.fprintf f "A%d" i;
+       Format.fprintf f "A%d " i;
        List.iter (fun x -> ppconstant x; Format.fprintf f "@ ") args;
        Format.fprintf f "@]}"
     | Lam t ->
