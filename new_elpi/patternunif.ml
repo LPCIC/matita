@@ -499,13 +499,13 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
                  else FCons (lvl,gs,next) in
                 let g' =
                  (*Format.eprintf "to_heap ~from:%d ~to:%d %a\n%!" depth depth ppterm g';*)
-                 to_heap depth last_call trail ~from:depth ~to_:depth
+                 to_heap depth last_call trail ~from:c.depth ~to_:depth
                   env g' in
                 let gs' =
                  List.map
                   (fun x->
                     depth,p,
-                     to_heap depth last_call trail ~from:depth ~to_:depth
+                     to_heap depth last_call trail ~from:c.depth ~to_:depth
                       env x) gs'
                 in
                  run depth p g' gs' next alts oldalts)
