@@ -42,6 +42,8 @@ type key = string * string
 
 type clause = { hd : term; hyps : term list; vars : int; key : key }
 
+(****** Indexing ******)
+
 let dummyk = "dummy"
 
 let rec skey_of = function
@@ -66,7 +68,7 @@ let clause_match_key (j1,j2) { key = (k1,k2) } =
 
 let to_heap e t =
   let rec aux = function
-    | UVar {contents = t} when t != dummy -> aux t
+    | UVar {contents = t} when t != dummy -> (* TODO: is aux necessary? can chains of length gretar than 1 be formed? *)aux t
     | (Const _ | UVar _ | App _) as x -> x (* heap term *)
     | Struct(hd,b,bs) -> App (aux hd, aux b, List.map aux bs)
     | Arg i ->
@@ -84,7 +86,7 @@ let to_heap e t =
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
 let unif trail last_call a e b =
  let rec unif a b =
-(*    Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
+   (* Format.eprintf "unif %b: %a = %a\n%!" last_call ppterm a ppterm b; *)
    a == b || match a,b with
    | _, Arg i when e.(i) != dummy -> unif a e.(i)
    | UVar { contents = t }, _ when t != dummy -> unif t b

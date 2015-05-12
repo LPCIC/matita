@@ -382,6 +382,7 @@ let rec clausify depth =
  function
     App(c, g, gs) when c == andc ->
      clausify depth g @ List.flatten (List.map (clausify depth) gs)
+(* TODO: BUG the semantics of implc is wrong when g2 is not an atom. *)
   | App(c, g1, [g2]) when c == implc ->
      [ { depth ; hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of depth g2 } ]
   | App(c, Lam b, []) when c == pic ->

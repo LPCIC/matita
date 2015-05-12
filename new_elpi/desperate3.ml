@@ -259,6 +259,7 @@ let rec clausify =
  function
     App(c, g, gs) when c == andc ->
      clausify g @ List.flatten (List.map clausify gs)
+(* TODO: BUG the semantics of implc is wrong when g2 is not an atom. *)
   | App(c, g1, [g2]) when c == implc ->
      [ { hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of g2 } ]
   | UVar { contents=g } when g == dummy ->
