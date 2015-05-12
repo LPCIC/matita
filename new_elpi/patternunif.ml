@@ -132,6 +132,7 @@ let rec eat_args from l t =
 let rec to_heap argsdepth last_call trail ~from ~to_ e t =
   let delta = from - to_ in
   let rec aux depth x =
+   (*Format.eprintf "to_heap(%d): %a\n%!" delta ppterm x;*)
    match x with
       Const c ->
         if delta=0 then x else (* optimization *)
@@ -189,14 +190,22 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
   if from=to_ then t
   else to_heap argsdepth last_call trail ~from ~to_ e t
  else (* O(1) reduction fragment tested here *)
-begin
-  (*Format.eprintf "betaXX ^%d:%a\n%!" from ppterm t;
-  List.iter (Format.eprintf "betaArg: %d\n%!") args;*)
-  match eat_args from args t with
-     from,[],t -> full_deref argsdepth last_call trail ~from ~to_ [] e t
-   | _,_,Lam _ -> assert false (* TODO: Implement beta-reduction here *)
-   | _,_,_ -> assert false (* TODO: not a beta-redex *)
-end
+  let from,args,t = eat_args from args t in
+  let t =
+   match args,t with
+      [],t -> t
+    | _,Lam _ -> assert false (* TODO: Implement beta-reduction here *)
+    | hd::args,Const c ->
+       (App (c,constant_of_dbl hd,List.map constant_of_dbl args))
+    | hd::args,App (c,arg,args2) ->
+       (App (c,arg,args2 @ List.map constant_of_dbl args))
+    (* TODO: when the UVar/Arg is not dummy, we call full_deref that
+       will call to_heap that will call_full_deref again. Optimize the
+       path *)
+    | args,UVar(t,depth,args2) -> UVar(t,depth,args2@args)
+    | args,Arg(i,args2) -> Arg(i,args2@args)
+   in
+    full_deref argsdepth last_call trail ~from ~to_ [] e t
 ;;
 
 (* Restrict is to be called only on heap terms *)
@@ -281,6 +290,13 @@ let make p = add_clauses p ClauseMap.empty
 
 (* Unification *)
 
+let rec make_lambdas depth =
+ function
+    hd::tl when hd=depth ->
+     let args,body = make_lambdas (depth+1) tl in
+      args,Lam body
+  | args -> args,UVar(ref dummy,depth,[])
+
 (* This for_all2 is tail recursive when the two lists have length 1.
    It also raises no exception. *)
 let rec for_all2 p l1 l2 =
@@ -302,7 +318,7 @@ let rec for_all2 p l1 l2 =
    [adepth,+infty) = [bdepth,+infy)   bound variables *)
 let unif trail last_call adepth a e bdepth b =
  let rec unif depth a bdepth b heap =
-   (*Format.eprintf "unif %b: ^%d:%a =%d= ^%d:%a\n%!" last_call adepth ppterm a depth bdepth ppterm b;*)
+   (*Format.eprintf "unif %b,%b: ^%d:%a =%d= ^%d:%a\n%!" last_call heap adepth ppterm a depth bdepth ppterm b;*)
    let cdepth = if adepth < bdepth then adepth else bdepth (*min adepth bdepth*) in
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
@@ -320,6 +336,16 @@ let unif trail last_call adepth a e bdepth b =
            ~to_:origdepth e b;
          true
         with RestrictionFailure -> false)
+   | UVar (r,origdepth,args), _ when !r == dummy ->
+      if not last_call then trail := r :: !trail;
+      (* Here I am doing for the O(1) unification fragment *)
+      let args,body = make_lambdas origdepth args in
+      r := body;
+      if args = [] then
+       (* TODO: unif goes into the UVar when !r != dummy case below.
+          Rewrite the code to do the job directly? *)
+       unif depth a bdepth b heap
+      else assert false (* TODO: h.o. unification not implemented *)
    | _, UVar (r,origdepth,[]) when !r == dummy ->
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
@@ -328,9 +354,13 @@ let unif trail last_call adepth a e bdepth b =
           ~to_:origdepth e a;
          true
         with RestrictionFailure -> false)
+   | _, Arg (i,args) when e.(i) == dummy ->
+      assert false (* TODO: h.o. unification not implemented *)
+   | _, UVar (r,origdepth,args) when !r == dummy ->
+      assert false (* TODO: h.o. unification not implemented *)
    | _, Arg (i,args) ->
-      unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args e.(i))
-       true
+      unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args
+       e.(i)) true
    | _, UVar ({ contents = t },origdepth,args) ->
       unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
        true
@@ -431,7 +461,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
      Depth >= 0 is the number of variables in the context.
   *)
   let rec run depth p g gs (next : frame) alts lvl =
-    (*Format.eprintf "goal: %a\n%!" ppterm g; *)
+    (*Format.eprintf "goal^%d: %a\n%!" depth ppterm g;*)
     (*Format.eprintf "<";
     List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
     Format.eprintf ">";*)
