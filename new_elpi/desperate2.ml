@@ -283,8 +283,8 @@ let impl =
   let execute_once p q =
    let run, cont = make_runtime p in
    let rec top = { goals = [ q ]; next = top } in
-   try ignore (run top) ; true
-   with Failure _ -> false
+   try ignore (run top) ; false
+   with Failure _ -> true
 
   let execute_loop p q =
    let run, cont = make_runtime p in

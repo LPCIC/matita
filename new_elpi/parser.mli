@@ -32,6 +32,6 @@ module type Implementation =
   val query_of_ast : term -> query
   val program_of_ast : (term * term) list -> program
   val msg : query -> string
-  val execute_once : program -> query -> bool
+  val execute_once : program -> query -> bool  (* true means error *)
   val execute_loop : program -> query -> unit
  end
