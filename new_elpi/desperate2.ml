@@ -83,6 +83,15 @@ let to_heap e t =
 
 (* Unification *)
 
+(* This for_all2 is tail recursive when the two lists have length 1.
+   It also raises no exception. *)
+let rec for_all2 p l1 l2 =
+  match (l1, l2) with
+    ([], []) -> true
+  | ([a1], [a2]) -> p a1 a2
+  | (a1::l1, a2::l2) -> p a1 a2 && for_all2 p l1 l2
+  | (_, _) -> false
+
 (* Invariant: LSH is a heap term, the RHS is a query in env e *)
 let unif trail last_call a e b =
  let rec unif a b =
@@ -103,7 +112,7 @@ let unif trail last_call a e b =
        true
    | App (x1,x2,xs), (Struct (y1,y2,ys) | App (y1,y2,ys)) ->
        (x1 == y1 || unif x1 y1) && (x2 == y2 || unif x2 y2) &&
-       List.for_all2 unif xs ys
+       for_all2 unif xs ys
    | _ -> false in
  unif a b
 ;;
