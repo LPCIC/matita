@@ -1,7 +1,8 @@
-*.cm*
 *.o
-.depend
-.*.swp
-.*.un*
+*.a
+*.cmx
+*.cmxa
+*.cmo
+*.cmi
 *.lp
 *.lpo
