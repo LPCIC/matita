@@ -132,9 +132,10 @@ let rec eat_args from l t =
      [from,+infty) -> [to,+infty)     bound variables *)
 (* when from=to, to_heap is to be called only for terms that are not in the heap*)
 let rec to_heap argsdepth last_call trail ~from ~to_ e t =
+  (*Format.eprintf "to_heap: argsdepth=%d, from=%d, to=%d\n%!" argsdepth from to_;*)
   let delta = from - to_ in
   let rec aux depth x =
-   (*Format.eprintf "to_heap(%d): %a\n%!" delta ppterm x;*)
+   (*Format.eprintf "to_heap(%d,%d): %a\n%!" depth delta ppterm x;*)
    match x with
       Const c ->
         if delta=0 then x else (* optimization *)
@@ -156,9 +157,12 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
     | App _ -> raise RestrictionFailure
     | UVar _ when delta=0 -> x
     | UVar ({contents=t},vardepth,args) when t != dummy ->
-       full_deref argsdepth last_call trail ~from:vardepth ~to_:(to_+depth)
+(* TODO: POTENTIAL BUG. I am not passing depth to full_deref ... to_heap.
+   Therefore next time I get here I will subtract a depth that could be
+   uncorrect. We need to find a test to be sure if the bug is there *)
+       full_deref argsdepth last_call trail ~from:(vardepth-depth) ~to_
         args e t
-    | UVar (r,depth,[]) when delta > 0 ->
+    | UVar (r,_,[]) when delta > 0 ->
        let fresh = UVar(ref dummy,to_,[]) in
        if not last_call then trail := r :: !trail;
        r := fresh;
@@ -167,7 +171,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
           avoids dereference chains, but puts more pressure on the GC. *)
        fresh
     | UVar (_,_,_) when delta < 0 -> x
-    | UVar (_,depth,_) -> assert false (* TO BE IMPLEMENTED *)
+    | UVar (_,_,_) -> assert false (* TO BE IMPLEMENTED *)
     | Arg (i,args) when argsdepth >= to_ ->
         let args =
          smart_map (fun c ->
@@ -182,8 +186,11 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
             e.(i) <- v;
             UVar(r,to_,args)
         else
-         full_deref argsdepth last_call trail ~from:argsdepth
-          ~to_:(to_+depth) args e a
+(* TODO: POTENTIAL BUG. I am not passing depth to full_deref ... to_heap.
+   Therefore next time I get here I will subtract a depth that could be
+   uncorrect. We need to find a test to be sure if the bug is there *)
+         full_deref argsdepth last_call trail ~from:(argsdepth-depth)
+          ~to_ args e a
     | Arg _ -> assert false (* I believe this case to be impossible *)
   in aux 0 t
 
@@ -298,12 +305,12 @@ let make p = add_clauses p ClauseMap.empty
 
 (* Unification *)
 
-let rec make_lambdas depth =
+let rec make_lambdas destdepth depth =
  function
     hd::tl when hd=depth ->
-     let args,body = make_lambdas (depth+1) tl in
+     let args,body = make_lambdas (destdepth+1) (depth+1) tl in
       args,Lam body
-  | args -> args,UVar(ref dummy,depth,[])
+  | args -> args,UVar(ref dummy,destdepth,[])
 
 (* This for_all2 is tail recursive when the two lists have length 1.
    It also raises no exception. *)
@@ -332,6 +339,8 @@ let unif trail last_call adepth a e bdepth b =
    (delta=0 && a == b) || match a,b with
    | _, Arg (i,[]) when e.(i) == dummy ->
      e.(i) <-
+(* TODO: we are not passing depth here. Think twice to check that no bugs
+ are in place. *)
       restrict adepth last_call trail ~from:(adepth+depth) ~to_:adepth e a;
      (*Format.eprintf "<- %a\n%!" ppterm e.(i);*)
      true
@@ -340,6 +349,8 @@ let unif trail last_call adepth a e bdepth b =
        (* TODO: are exceptions efficient here? *)
        (try r :=
          if heap && depth=0 then b else
+(* TODO: we are not passing depth here. Think twice to check that no bugs
+ are in place. *)
           to_heap adepth last_call trail ~from:(bdepth+depth)
            ~to_:origdepth e b;
          true
@@ -347,7 +358,7 @@ let unif trail last_call adepth a e bdepth b =
    | UVar (r,origdepth,args), _ when !r == dummy ->
       if not last_call then trail := r :: !trail;
       (* Here I am doing for the O(1) unification fragment *)
-      let args,body = make_lambdas origdepth args in
+      let args,body = make_lambdas origdepth origdepth args in
       r := body;
       if args = [] then
        (* TODO: unif goes into the UVar when !r != dummy case below.
@@ -358,21 +369,48 @@ let unif trail last_call adepth a e bdepth b =
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
        (try r :=
+(* TODO: we are not passing depth here. Think twice to check that no bugs
+ are in place. *)
          restrict adepth last_call trail ~from:(adepth+depth)
           ~to_:origdepth e a;
          true
         with RestrictionFailure -> false)
-   | _, Arg (i,args) when e.(i) == dummy ->
-      assert false (* TODO: h.o. unification not implemented *)
    | _, UVar (r,origdepth,args) when !r == dummy ->
-      assert false (* TODO: h.o. unification not implemented *)
+      if not last_call then trail := r :: !trail;
+      (* Here I am doing for the O(1) unification fragment *)
+      let args,body = make_lambdas origdepth origdepth args in
+      r := body;
+      if args = [] then
+       (* TODO: unif goes into the UVar when !r != dummy case below.
+          Rewrite the code to do the job directly? *)
+       unif depth a bdepth b heap
+      else assert false (* TODO: h.o. unification not implemented *)
+   | _, Arg (i,args) when e.(i) == dummy ->
+      (*Format.eprintf "%a %d===%d %a\n%!" ppterm a adepth bdepth ppterm b;*)
+      (* Here I am doing for the O(1) unification fragment *)
+      let args,body = make_lambdas adepth bdepth args in
+      e.(i) <- body;
+      if args = [] then
+       (* TODO: unif goes into the UVar when !r != dummy case below.
+          Rewrite the code to do the job directly? *)
+       unif depth a bdepth b heap
+      else assert false (* TODO: h.o. unification not implemented *)
    | _, Arg (i,args) ->
+      (* The arguments live in bdepth+depth; the variable lives in adepth;
+         everything leaves in adepth+depth after derefercing. *)
+      let args = List.map ((+) delta) args in
+(* TODO: we are not passing depth here. Think twice to check that no bugs
+ are in place. *)
       unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args
        e.(i)) true
    | _, UVar ({ contents = t },origdepth,args) ->
+(* TODO: we are not passing depth here. Think twice to check that no bugs
+ are in place. *)
       unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
        true
    | UVar ({ contents = t },origdepth,args), _ ->
+(* TODO: we are not passing depth here. Think twice to check that no bugs
+ are in place. *)
       unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
        heap
    | App (c1,x2,xs), App (c2,y2,ys) ->
