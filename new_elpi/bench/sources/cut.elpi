@@ -9,3 +9,5 @@ b three.
 b four.
 
 c four.
+
+main :- q X, X=ok.

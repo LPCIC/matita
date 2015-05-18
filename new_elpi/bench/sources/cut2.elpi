@@ -13,3 +13,5 @@ c two.
 x two ko1.
 
 e ko2.
+
+main :- q X, X=ok.

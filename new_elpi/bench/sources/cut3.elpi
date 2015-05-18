@@ -9,3 +9,5 @@ b :- !.
 b.
 
 c ok.
+
+main :- q X, X=ok.

@@ -3,3 +3,5 @@
 q(X) :- X.
 
 a.
+
+main :- q a, q (a,a), q true.

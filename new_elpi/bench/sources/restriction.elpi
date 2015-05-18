@@ -1,3 +1,3 @@
-% q should fail.
+% main should fail.
 
-q :- (x\ x) = (x\ X).
+main :- (x\ x) = (x\ X).
