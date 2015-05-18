@@ -113,6 +113,8 @@ module Parsable: Lprun2.ParsableT
        l, AST.App(Lprun2.FuncS.funct_of_ast f,List.rev rev_tl)
     | Parser.App(Parser.Lam (x,y),tl) -> assert false (*still a warning*)
     | Parser.Const f -> l, AST.App(Lprun2.FuncS.funct_of_ast f,[])
+    | Parser.App(Parser.Custom _,_)
+    | Parser.Custom _ -> assert false
     | Parser.App (Parser.App (f, l1), l2) ->
        heap_term_of_ast l (Parser.App (f, l1@l2))
     | Parser.App (Parser.Var _,_)
@@ -136,6 +138,8 @@ module Parsable: Lprun2.ParsableT
           (l,[]) tl in
        l, AST.Struct(Lprun2.FuncS.funct_of_ast f,List.rev rev_tl)
     | Parser.Const f -> l, AST.App(Lprun2.FuncS.funct_of_ast f,[])
+    | Parser.App(Parser.Custom _,_)
+    | Parser.Custom _ -> assert false
     | Parser.App(Parser.Lam (x,y),tl) -> assert false (*still a warning*)
     | Parser.App (Parser.App (f, l1), l2) ->
        stack_term_of_ast l (Parser.App (f, l1@l2))

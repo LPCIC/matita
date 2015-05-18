@@ -43,6 +43,7 @@ module ASTFuncS : ASTFuncT =
 type term =
    Var of string 
  | Const of ASTFuncS.t
+ | Custom of ASTFuncS.t
  | App of term * term list
  | Lam of ASTFuncS.t * term
 
@@ -90,7 +91,7 @@ let or_clauses =
 let mkApp =
  function
     App(c,l1)::l2 -> App(c,l1@l2)
-  | (Const _ | Var _) as c::l2 -> App(c,l2)
+  | (Custom _ | Const _ | Var _) as c::l2 -> App(c,l2)
   | _ -> raise NotInProlog
 
 let uvmap = ref [];;
@@ -98,6 +99,7 @@ let reset () = uvmap := []
 
 let mkUVar u = Var u
 let mkCon c = Const (ASTFuncS.from_string c)
+let mkCustom c = Custom (ASTFuncS.from_string c)
 
 let rec number = lexer [ '0'-'9' number ]
 let rec ident =
@@ -367,8 +369,8 @@ EXTEND
           mkVApp `Flex hd args None
       | SHARP; hd = atom LEVEL "simple"; args = atom LEVEL "simple";
         info = OPT atom LEVEL "simple" ->
-          mkVApp `Frozen hd args info
-      | bt = BUILTIN; a = atom LEVEL "simple" -> mkAtomBiCustom bt a*)
+          mkVApp `Frozen hd args info*)
+      | bt = BUILTIN -> mkCustom bt
       | BANG -> mkCut
       (*| DELAY; t = atom LEVEL "simple"; p = atom LEVEL "simple";
         vars = OPT [ IN; x = atom LEVEL "simple" -> x ];

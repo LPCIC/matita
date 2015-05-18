@@ -31,6 +31,7 @@ type term =
   | Arg of int * constant list
   (* Heap terms *)
   | App of constant * term * term list
+  | Custom of constant * term list
   | UVar of term ref * (*depth:*)int * constant list
   | Lam of term
 
@@ -74,7 +75,8 @@ let ppterm f t =
   and ppconstant c = Format.fprintf f "%s" (string_of_constant c)
   and aux = function
       t when t == dummy -> Format.fprintf f "dummy"
-    | App (hd,x,xs)-> ppapp hd (x::xs) '(' ')'
+    | App (hd,x,xs) -> ppapp hd (x::xs) '(' ')'
+    | Custom (hd,xs) -> ppapp hd xs '(' ')'
     | UVar ({ contents = t },depth,args) ->
        Format.fprintf f "(<@[<hov 1>";
        aux t;
@@ -146,6 +148,9 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        let t' = aux depth t in
        let l' = smart_map (aux depth) l in
        if t==t' && l==l' then x else App (c,t',l')
+    | Custom (c,l) ->
+       let l' = smart_map (aux depth) l in
+       if l==l' then x else Custom (c,l')
     | App (c,t,l) when c >= from ->
        App(c-delta,aux depth t,smart_map (aux depth) l)
     | App _ -> raise RestrictionFailure
@@ -198,6 +203,8 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
        (App (c,constant_of_dbl hd,List.map constant_of_dbl args))
     | hd::args,App (c,arg,args2) ->
        (App (c,arg,args2 @ List.map constant_of_dbl args))
+    | args,Custom (c,args2) ->
+       (Custom (c,args2@List.map constant_of_dbl args))
     (* TODO: when the UVar/Arg is not dummy, we call full_deref that
        will call to_heap that will call_full_deref again. Optimize the
        path *)
@@ -231,7 +238,8 @@ let key_of depth =
     Const k -> k
   | UVar ({contents=t},origdepth,args) when t != dummy ->
      skey_of (deref ~from:origdepth ~to_:depth args t)
-  | App (k,_,_) -> k
+  | App (k,_,_)
+  | Custom (k,_) -> k
   | Lam _ -> abstractionk
   | Arg _ | UVar _ -> variablek in
  let rec key_of_depth = function
@@ -240,6 +248,7 @@ let key_of depth =
     (* TODO: optimization: avoid dereferencing *)
     key_of_depth (deref ~from:origdepth ~to_:depth args t)
  | App (k,arg2,_) -> k, skey_of arg2
+ | Custom _ -> assert false
  | Arg _ | Lam _ | UVar _ -> raise (Failure "Not a predicate")
  in
   key_of_depth
@@ -374,6 +383,9 @@ let unif trail last_call adepth a e bdepth b =
        &&
        (delta=0 && x2 == y2 || unif depth x2 bdepth y2 heap) &&
        for_all2 (fun x y -> unif depth x bdepth y heap) xs ys
+   | Custom (c1,xs), Custom (c2,ys) when c1=c2 ->
+       (* Inefficient comparison *)
+       for_all2 (fun x y -> unif depth x bdepth y heap) xs ys
    | Lam t1, Lam t2 -> unif (depth+1) t1 bdepth t2 heap
    | Const c1, Const c2 when c1=c2 && c1 < cdepth -> true
    | Const c, _ when c >= cdepth && c < adepth -> false
@@ -451,6 +463,19 @@ let rec clausify depth =
   | g -> [ { depth ; hd=g ; hyps=[] ; vars=0 ; key = key_of depth g } ]
 ;;
 
+let register_custom,lookup_custom =
+ let (customs : ('a,term list -> unit) Hashtbl.t) = Hashtbl.create 17 in
+ Hashtbl.add customs,Hashtbl.find customs
+;;
+
+let _ =
+ register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$print")))
+  (fun args ->
+   Format.printf "@[<hov 1>" ;
+   List.iter (Format.printf "%a@ " ppterm) args;
+   Format.printf "@]\n%!")
+;;
+
 (* The block of recursive functions spares the allocation of a Some/None
  * at each iteration in order to know if one needs to backtrack or continue *)
 let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
@@ -497,6 +522,12 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
         let cp = get_clauses depth g p in
         backchain depth p g gs cp next alts lvl
     | Arg _ -> assert false (* Not an heap term *)
+    | Custom(c,gs') ->
+       (try lookup_custom c gs'
+        with Not_found -> assert false) ;
+       (match gs with
+           [] -> pop_andl alts next
+         | (depth,p,g)::gs -> run depth p g gs next alts lvl)
 
   and backchain depth p g gs cp next alts lvl =
     (*Format.eprintf "BACKCHAIN %a @ %d\n%!" ppterm g lvl;
@@ -576,6 +607,7 @@ let rec heap_term_of_ast lvl l l' =
   | AST.Const f ->
      (try l,l',List.assoc f l'
       with Not_found -> l,l',snd (funct_of_ast f))
+  | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
        List.fold_left
@@ -586,6 +618,13 @@ let rec heap_term_of_ast lvl l l' =
      (match List.rev rev_tl with
          hd2::tl -> l,l',App(f,hd2,tl)
        | _ -> assert false)
+  | AST.App (AST.Custom f,tl) ->
+     let l,l',rev_tl =
+       List.fold_left
+        (fun (l,l',tl) t ->
+          let l,l',t = heap_term_of_ast lvl l l' t in (l,l',t::tl))
+        (l,l',[]) tl in
+     l,l',Custom(fst (funct_of_ast f),List.rev rev_tl)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
      let l,l',t' = heap_term_of_ast (lvl+1) l ((x,c)::l') t in
@@ -612,6 +651,7 @@ let rec stack_term_of_ast lvl l l' =
   | AST.Const f ->
      (try l,l',List.assoc f l'
       with Not_found -> l,l',snd (funct_of_ast f))
+  | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
        List.fold_left
@@ -622,6 +662,13 @@ let rec stack_term_of_ast lvl l l' =
      (match List.rev rev_tl with
          hd2::tl -> l,l',App(f,hd2,tl)
        | _ -> assert false)
+  | AST.App (AST.Custom f,tl) ->
+     let l,l',rev_tl =
+       List.fold_left
+        (fun (l,l',tl) t ->
+          let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
+        (l,l',[]) tl in
+     l,l',Custom(fst (funct_of_ast f),List.rev rev_tl)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
      let l,l',t' = stack_term_of_ast (lvl+1) l ((x,c)::l') t in

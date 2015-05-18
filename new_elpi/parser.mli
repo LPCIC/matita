@@ -18,6 +18,7 @@ module ASTFuncS : ASTFuncT
 type term =
    Var of string 
  | Const of ASTFuncS.t
+ | Custom of ASTFuncS.t
  | App of term * term list
  | Lam of ASTFuncS.t * term
 

@@ -366,6 +366,7 @@ module Parsable(Var: VarT)(Func: FuncT): ParsableT
        let l,v = var_of_ast l v in
        l, AST.Var v
     | Parser.Const f -> l, AST.App(Func.funct_of_ast f,[])
+    | Parser.Custom _ -> assert false
     | Parser.App(Parser.Const f,tl) ->
        let l,rev_tl =
          List.fold_left
