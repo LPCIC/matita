@@ -201,7 +201,7 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
     | _,Lam _ -> assert false (* TODO: Implement beta-reduction here *)
     | hd::args,Const c ->
        (App (c,constant_of_dbl hd,List.map constant_of_dbl args))
-    | hd::args,App (c,arg,args2) ->
+    | args,App (c,arg,args2) ->
        (App (c,arg,args2 @ List.map constant_of_dbl args))
     | args,Custom (c,args2) ->
        (Custom (c,args2@List.map constant_of_dbl args))
