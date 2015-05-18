@@ -1,0 +1,2 @@
+% q Y should yield Y = \\\f 2
+q Y :- pi b\ pi c\ (r :- pi a\ s (f a) => s (X b c a)) => r, Y=X.
