@@ -840,10 +840,15 @@ let impl =
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
    Format.eprintf "Result: %a\n%!" ppterm q ;
    while !k != emptyalts do
-     let time0 = Unix.gettimeofday() in
-     k := cont !k;
-     let time1 = Unix.gettimeofday() in
-     prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-     Format.eprintf "Result: %a\n%!" ppterm q ;
+     prerr_endline "More? (Y/n)";
+     if read_line() = "n" then k := emptyalts else
+      try
+       let time0 = Unix.gettimeofday() in
+       k := cont !k;
+       let time1 = Unix.gettimeofday() in
+       prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
+       Format.eprintf "Result: %a\n%!" ppterm q ;
+      with
+       Failure "no clause" -> prerr_endline "Fail"; k := emptyalts
   done
  end : Parser.Implementation)
