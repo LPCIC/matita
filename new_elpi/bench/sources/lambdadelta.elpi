@@ -1,0 +1,41 @@
+% Validity for \lambda\delta version 1
+
+% Closed terms: T ::= sort N
+%                  |  abbr T F where F: T => T
+%                  |  abst T F where F: T => T 
+%                  |  appl T T
+%                  |  cast T T
+%
+% Predicates: h    = sort hierarchy parameter
+%             aaa  = atomic arity assignment (just for testing)
+%             sta  = static type assignment
+%             nv   = native validity
+
+% ATOMIC ARITY ASSIGNMENT ****************************************************
+
+aaa (sort N) atom.
+
+aaa (abbr V T) A :- aaa V B, pi x\ aaa x B => aaa (T x) A.
+
+aaa (abst W T) (impl B A) :- aaa W B, pi x\ aaa x B => aaa (T x) A.
+
+aaa (appl V T) B :- aaa V A, aaa T (impl A B).
+
+aaa (cast U T) A :- aaa U A, aaa T A.
+
+% STATIC TYPE ASSIGNMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+sta (sort N1) (sort N2) :- h N1 N2.
+
+sta (abbr V T) (abbr V U) :- sta V W, pi x\ sta x W => sta (T x) (U x).
+
+sta (abst W T) (abst W U) :- sta W V, pi x\ sta x W => sta (T x) (U x).
+
+
+% TESTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+test_aaa Z :- aaa (abst (abst (sort n) x\ (sort n)) f\ abst (sort n) a\ appl a f) Z.
+
+test_sta Z :- h n1 n2 => sta (abbr (sort n1) x\ x) Z.
+
+main :- test_sta Z, Z = (abbr (sort n1) x\ (sort n2)).
