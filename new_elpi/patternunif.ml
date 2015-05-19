@@ -388,6 +388,8 @@ let unif trail last_call adepth a e bdepth b =
    (*Format.eprintf "unif %b,%b: ^%d:%a =%d= ^%d:%a\n%!" last_call heap adepth ppterm a depth bdepth ppterm b;*)
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
+(* TODO: test if it is better to deref first or not, i.e. the relative order
+   of the clauses below *)
    | _, Arg (i,[]) when e.(i) == dummy ->
      e.(i) <-
       restrict adepth last_call trail ~from:(adepth+depth) ~to_:adepth e a;
@@ -403,6 +405,12 @@ let unif trail last_call adepth a e bdepth b =
           Rewrite the code to do the job directly? *)
        unif depth a bdepth b heap
       else assert false (* TODO: h.o. unification not implemented *)
+   | _, Arg (i,args) ->
+      (* The arguments live in bdepth+depth; the variable lives in adepth;
+         everything leaves in adepth+depth after derefercing. *)
+      let args = List.map (fun c -> if c < bdepth then c else c+delta) args in
+      unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args
+       e.(i)) true
    | UVar (r,origdepth,[]), _ when !r == dummy ->
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
@@ -458,12 +466,6 @@ in Format.eprintf "<--- %a\n%!" ppterm xxx; xxx);
           Rewrite the code to do the job directly? *)
        unif depth a bdepth b heap
       else assert false (* TODO: h.o. unification not implemented *)
-   | _, Arg (i,args) ->
-      (* The arguments live in bdepth+depth; the variable lives in adepth;
-         everything leaves in adepth+depth after derefercing. *)
-      let args = List.map (fun c -> if c < bdepth then c else c+delta) args in
-      unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args
-       e.(i)) true
    | _, UVar ({ contents = t },origdepth,args) ->
       (* The arguments live in bdepth+depth; the variable lives in origdepth;
          everything leaves in bdepth+depth after derefercing. *)
