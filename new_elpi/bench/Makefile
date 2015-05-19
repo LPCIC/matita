@@ -3,7 +3,7 @@
 #   make JOBS=newelpi-impl16
 #   make RUNNERS=newelpi
 #   make only JOB=newelpi-impl16/ok/rev14.elpi
-
+SHELL=/bin/bash
 export TOP=$(abspath ..)
 
 JOBS=$(sort $(notdir $(wildcard jobs/*)))
@@ -19,14 +19,18 @@ define time-log =
  cat $(2)|cut -d ' ' -f 2-) | tr '\n' ' ' | sed 's/ /,/g'
 endef
 
+OK="\e[32mOK\e[0m"
+KO="\e[31mKO\e[0m"
+
 define check =
-if [ -z "`cat $(3)`" ]; then echo KO,$(2),10.00,0:10.00,10.00,0k;\
+if [ -z "`cat $(3)`" ]; then printf $(KO),$(2),10.00,0:10.00,10.00,0k;\
 elif [ "`cat $(3)|cut -d ' ' -f 1`" = 0 -a $(1) = ok ];\
-  then echo OK,$(2),`$(call time-log,$(4),$(3))`;\
+  then printf $(OK),$(2),`$(call time-log,$(4),$(3))`;\
 elif [ "`cat $(3)|cut -d ' ' -f 1`" = 1 -a $(1) = ko ];\
-  then echo OK,$(2),`$(call time-log,$(4),$(3))`;\
-else echo KO,$(2),`$(call time-log,$(4),$(3))`;\
-fi
+  then printf $(OK),$(2),`$(call time-log,$(4),$(3))`;\
+else printf $(KO),$(2),`$(call time-log,$(4),$(3))`;\
+fi;\
+printf "\n"
 endef
 
 define run =
