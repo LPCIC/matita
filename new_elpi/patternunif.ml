@@ -97,6 +97,58 @@ let ppterm f t =
     aux t
 ;;
 
+let m = ref [];;
+let n = ref 0;;
+
+let uppterm f t =
+  let rec pp_uvar r =
+   if !r == dummy then begin
+    let s =
+     try (List.assq r !m)
+     with Not_found ->
+      let s = "X" ^ string_of_int !n in
+      incr n;
+      m := (r,s)::!m;
+      s
+    in
+     Format.fprintf f "%s" s 
+   end else aux !r
+  and ppapp hd a c1 c2 = 
+    Format.fprintf f "%c@[<hov 1>" c1;
+    ppconstant hd;
+    Format.fprintf f "@ ";
+    let args,last =
+     match List.rev a with
+        [] -> assert false
+      | last::l_rev -> List.rev l_rev,last in
+    List.iter (fun x -> aux x; Format.fprintf f "@ ") args;
+    aux last;
+    Format.fprintf f "@]%c" c2
+  and ppconstant c = Format.fprintf f "%s" (string_of_constant c)
+  and aux = function
+      App (hd,x,xs) -> ppapp hd (x::xs) '(' ')'
+    | Custom (hd,xs) -> ppapp hd xs '(' ')'
+    | UVar (r,_,[]) -> pp_uvar r;
+    | UVar (r,_,args) ->
+       Format.fprintf f "(@[<hov 1>";
+       pp_uvar r;
+       let args,last =
+        match List.rev args with
+           [] -> assert false
+         | last::l_rev -> List.rev l_rev,last in
+       List.iter (fun x -> ppconstant x; Format.fprintf f "@ ") args;
+       ppconstant last;
+       Format.fprintf f "@])"
+    | Const s -> ppconstant s
+    | Arg _ -> assert false
+    | Lam t ->
+       Format.fprintf f "\\(";
+       aux t;
+       Format.fprintf f ")";
+  in
+    aux t
+;;
+
 type key1 = int
 type key2 = int
 type key = key1 * key2
@@ -518,7 +570,7 @@ let _ =
  register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$print")))
   (fun args ->
    Format.printf "@[<hov 1>" ;
-   List.iter (Format.printf "%a@ " ppterm) args;
+   List.iter (Format.printf "%a@ " uppterm) args;
    Format.printf "@]\n%!")
 ;;
 
