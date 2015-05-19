@@ -36,7 +36,8 @@ select (xcons Y Ys) (xcons Y Zs) X :- select Ys Zs X.
 range N N (xcons N xnil) :- !.
 range M N (xcons M Ns) :- less M N, M1 = (s M), range M1 N Ns.
 
-main :- queens (s (s (s (s zero)))) (xcons (s zero) (xcons (s (s (s zero))) (xcons (s (s zero)) (xcons (s (s (s (s zero)))) xnil)))).
+%main :- queens (s (s (s (s zero)))) (xcons (s (s (s zero))) (xcons (s zero) (xcons (s (s (s (s zero)))) (xcons (s (s zero)) xnil)))).
+main :- queens (s (s (s (s zero)))) (xcons (s (s zero)) (xcons (s (s (s (s zero)))) (xcons (s zero) (xcons (s (s (s zero))) xnil)))).
 
 % ----------------------------------------------------------
 %queens(N,Qs) :- range(1,N,Ns), queens(Ns,[],Qs).
