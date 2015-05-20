@@ -16,10 +16,14 @@ type xcons i -> mylist i -> mylist i.
 type spy o -> o.
 
 type xxx mylist i -> o.
+type iter i -> o -> o.
+type once o.
 
 type zero i.
 type s    i -> i.
 type plus i -> i -> i -> o.
+type mult i -> i -> i -> o.
+type exp i -> i -> i -> o.
 type less i -> i -> o.
 type neq  i -> i -> o.
 type queens i -> (mylist i) -> o.

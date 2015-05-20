@@ -46,12 +46,24 @@ select (xcons Y Ys) (xcons Y Zs) X :- select Ys Zs X.
 range N N (xcons N xnil) :- !.
 range M N (xcons M Ns) :- less M N, M1 = (s M), range M1 N Ns.
 
-main :- queens (s (s (s (s zero)))) L, xxx L.
+once :- queens (s (s (s (s zero)))) L, xxx L.
 xxx (xcons (s (s zero)) (xcons (s (s (s (s zero)))) (xcons (s zero) (xcons (s (s (s zero))) xnil)))).
 
 q L :- queens (s (s (s (s zero)))) L.
 
+iter zero X.
+iter (s N) X :- X, iter N X.
 
+mult zero X zero.
+mult (s X) Y Z :- mult X Y K, plus Y K Z.
+
+exp zero X (s zero).
+exp (s X) Y Z :- exp X Y K, mult Y K Z.
+
+main :-
+ TEN = s (s (s (s (s (s (s (s (s (s zero))))))))),
+ exp (s (s (s (s zero)))) TEN TENTHOUSAND,
+ iter TENTHOUSAND once.
 
 % ----------------------------------------------------------
 %queens(N,Qs) :- range(1,N,Ns), queens(Ns,[],Qs).
