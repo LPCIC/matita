@@ -49,14 +49,10 @@ copy (cast U1 T1) (appl U2 T2) :- copy U1 U2, copy T1 T2.
 
 % HEAD COMPUTATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-rtm0 (sort N) (sort N).
-
-rtm0 (abst W T) (abst W T).
-
 rtm0 (appl V T1) (appl V T2) :- rtm0 T1 T2. 
 
 %delta, zeta
-rtm0 (abbr V T1) T2 :- pi x\ copy x V => copy (T1 x) T2.
+rtm0 (abbr V T1) T2 :- pi x\ copy x V => copy (T1 x) (T3 x), T2 = T3 x. % Hack to remain in the fragment
 
 % beta, epsilon
 rtm0 (appl V (abst W T)) (abbr V T).
@@ -67,7 +63,7 @@ rtm0 (appl V1 (abbr V2 T)) (abbr V2 (appl V1 T)).
 %epsilon
 rtm0 (cast U T) T.
 
-rtm T1 T2 :- rtm0 T1 T2.
+rtm T T.
 
 rtm T1 T2 :- rtm0 T1 T, rtm T T2.
 
@@ -75,12 +71,11 @@ rtm T1 T2 :- rtm0 T1 T, rtm T T2.
 
 conv U1 U2 :- rtm U1 T1, rtm U2 T2, conv0 T1 T2.
 
-conv0 (sort N) (sort N).
+conv0 T T.
 
 conv0 (appl V1 T1) (appl V2 T2) :- conv V1 V2, conv T1 T2.
 
-conv0 (abst W1 T1) (abst W2 T2) :- conv W1 W2,
-                                   pi x\ rtm x x => conv0 x x => conv (T1 x) (T2 x).
+conv0 (abst W1 T1) (abst W2 T2) :- conv W1 W2, pi x\ conv (T1 x) (T2 x).
 
 % NATIVE VALIDITY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -100,7 +95,13 @@ test_aaa Z :- aaa (abst (abst (sort n) x\ (sort n)) f\ abst (sort n) a\ appl a f
 
 test_sta Z :- h n1 n2 => sta (abbr (sort n1) x\ x) Z.
 
-test_conv :- rtm0 (abbr v x\ (appl x x)) (appl v v).
+test_conv :- rtm (appl w1 (abst w2 x\ (abst x y\ y))) H, H = (abst w1 x\ x).
+
+test_conv_2 :- rtm (appl w1 (abst w2 x\ (abst x y\ y))) (abst w1 x\ x).
+
+test_1 :- rtm0 (appl w1 (abst w2 x\ (abst x y\ y))) Z, Z = (abbr w1 x\ (abst x y\ y)).
+
+test_2 :- rtm0 (abbr w1 x\ (abst x y\ y)) Z, Z = (abst w1 x\ x).
 
 test_nv :- h n1 n2 => nv (cast (sort n2) (sort n1)).
 
