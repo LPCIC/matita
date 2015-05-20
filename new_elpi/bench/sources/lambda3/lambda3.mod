@@ -1,4 +1,4 @@
-%%%module lambda3.
+module lambda3.
 
 of (appl T1 T2) B :- of T1 (impl A B), of T2 A.
 of (lam F) (impl A B) :- pi x\ of x A => of (F x) B.

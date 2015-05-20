@@ -4,9 +4,9 @@ kind t type.
 kind ty type.
 kind a type.
 
-type append (list a) -> (list a) -> (list a) -> o.
+type append (mylist a) -> (mylist a) -> (mylist a) -> o.
 type of t -> ty -> o.
-type termify (list a) -> t -> o.
+type termify (mylist a) -> t -> o.
 type impl ty -> ty -> ty.
 type appl t -> t -> t.
 type lam (t -> t) -> t.
@@ -32,3 +32,7 @@ type exp i -> i -> i -> o.
 type iter i -> o -> o.
 type once o.
 type main o. 
+
+kind mylist type -> type.
+type xnil mylist a.
+type xcons a -> mylist a -> mylist a.
