@@ -52,7 +52,7 @@ copy (cast U1 T1) (appl U2 T2) :- copy U1 U2, copy T1 T2.
 rtm0 (appl V T1) (appl V T2) :- rtm0 T1 T2. 
 
 %delta, zeta
-rtm0 (abbr V T1) T2 :- pi x\ copy x V => copy (T1 x) (T3 x), T2 = T3 x. % Hack to remain in the fragment
+rtm0 (abbr V T1) T2 :- pi x\ copy x V => (copy (T1 x) (T3 x), T2 = T3 x). % Hack to remain in the fragment
 
 % beta, epsilon
 rtm0 (appl V (abst W T)) (abbr V T).
@@ -95,15 +95,8 @@ test_aaa Z :- aaa (abst (abst (sort n) x\ (sort n)) f\ abst (sort n) a\ appl a f
 
 test_sta Z :- h n1 n2 => sta (abbr (sort n1) x\ x) Z.
 
-test_conv :- rtm (appl w1 (abst w2 x\ (abst x y\ y))) H, H = (abst w1 x\ x).
+test_conv :- conv (appl w1 (abst w2 x\ (abst x y\ y))) (abst w1 x\ x).
 
-test_conv_2 :- rtm (appl w1 (abst w2 x\ (abst x y\ y))) (abst w1 x\ x).
+test_nv :- h n1 n2 => h n2 n3 => nv (appl (sort n1) (abst (sort n2) x\ x)).
 
-test_1 :- rtm0 (appl w1 (abst w2 x\ (abst x y\ y))) Z, Z = (abbr w1 x\ (abst x y\ y)).
-
-test_2 :- rtm0 (abbr w1 x\ (abst x y\ y)) Z, Z = (abst w1 x\ x).
-
-test_nv :- h n1 n2 => nv (cast (sort n2) (sort n1)).
-
-main :- test_sta Z, Z = (abbr (sort n1) x\ (sort n2)).
-
+main :- test_sta Z, Z = (abbr (sort n1) x\ (sort n2)), test_conv, test_nv.
