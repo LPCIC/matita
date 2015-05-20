@@ -31,6 +31,68 @@ sta (abbr V T) (abbr V U) :- sta V W, pi x\ sta x W => sta (T x) (U x).
 
 sta (abst W T) (abst W U) :- sta W V, pi x\ sta x W => sta (T x) (U x).
 
+sta (appl V T) (appl V U) :- sta T U.
+
+sta (cast W T) U :- cast T U.
+
+% COPYING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+copy (sort N) (sort N).
+
+copy (abbr V1 T1) (abbr V2 T2) :- copy V1 V2, pi x\ copy x x => copy (T1 x) (T2 x).
+
+copy (abst W1 T1) (abst W2 T2) :- copy W1 W2, pi x\ copy x x => copy (T1 x) (T2 x).
+
+copy (appl V1 T1) (appl V2 T2) :- copy V1 V2, copy T1 T2.
+
+copy (cast U1 T1) (appl U2 T2) :- copy U1 U2, copy T1 T2.
+
+% HEAD COMPUTATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+rtm0 (sort N) (sort N).
+
+rtm0 (abst W T) (abst W T).
+
+rtm0 (appl V T1) (appl V T2) :- rtm T1 T2. 
+
+%delta, zeta
+rtm0 (abbr V T1) T2 :- pi x\ copy x V => copy (T1 x) T2
+
+% beta, epsilon
+rtm0 (appl V (abst W T)) (abbr V T).
+
+%theta
+rtm0 (appl V1 (abbr V2 T)) (abbr V2 (appl V1 T)).
+
+%epsilon
+rtm0 (cast U T) T.
+
+rtm T1 T2 :- rtm0 T1 T2.
+
+rtm T1 T2 :- rtm0 T1 T, rtm T T2.
+
+% CONVERSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+conv U1 U2 :- rtm U1 T1, rtm U2 T2, conv0 T1 T2.
+
+conv0 (sort N) (sort N).
+
+conv0 (appl V1 T1) (appl V2 T2) :- conv V1 V2, conv T1 T2.
+
+conv0 (abst W1 T1) (abst W2 T2) :- conv W1 W2,
+                                   pi x\ rtm x x => conv0 x x => conv (T1 x) (T2 x).
+
+% NATIVE VALIDITY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+nv (sort N).
+
+nv (abbr V T) :- nv V, pi x\ nv x => nv (T x).
+
+nv (abst W T) :- nv W, pi x\ nv x => nv (T x).
+
+nv (appl V T) :- nv V, nv T, sta V W, sta T U, rtm U (abst W0 U0), conv W W0.
+
+nv (cast U T) :- nv U, nv T, sta T W, conv W U.
 
 % TESTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -38,4 +100,9 @@ test_aaa Z :- aaa (abst (abst (sort n) x\ (sort n)) f\ abst (sort n) a\ appl a f
 
 test_sta Z :- h n1 n2 => sta (abbr (sort n1) x\ x) Z.
 
+test_conv :- conv (abbr v x\ (appl x x)) (appl v v).
+
+test_nv :- h n1 n2 => nv (cast (sort n2) (sort n1)).
+
 main :- test_sta Z, Z = (abbr (sort n1) x\ (sort n2)).
+
