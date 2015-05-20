@@ -5,7 +5,7 @@
 
 % queens   +int  -[int]
 
-%%%%module queens.
+module queens.
 
 %spy X :- $print start X, X, $print ok X.
 %spy X :- $print ko X, fail.
