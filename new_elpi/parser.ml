@@ -60,6 +60,9 @@ module type Implementation =
  end
 
 let mkConj = function [f] -> f | l -> App(Const ASTFuncS.andf,l)
+(* TODO: Bug here: mkConj2 should be right associative!
+   But what is the difference??? *)
+let mkConj2 = mkConj
 let mkDisj  = function [f] -> f | l -> App(Const ASTFuncS.orf, l)
 let mkImpl f1 f2 = App(Const ASTFuncS.implf,[f1;f2])
 let mkTrue = Const ASTFuncS.truef
@@ -67,6 +70,15 @@ let mkCut = Const ASTFuncS.cutf
 let mkEq l r = App(Const ASTFuncS.eqf,[l;r]) 
 let mkLam x t = Lam (ASTFuncS.from_string x,t)
 let mkPi x t = App(Const ASTFuncS.pif,[mkLam x t])
+let mkNil = Const (ASTFuncS.from_string "nil")
+let mkSeq l =
+ let rec aux =
+  function
+    [] -> assert false
+  | [e] -> e
+  | hd::tl -> App(Const (ASTFuncS.from_string "::"),[hd;aux tl])
+ in
+  aux l
 
 exception NotInProlog;;
 
@@ -103,7 +115,7 @@ let mkCustom c = Custom (ASTFuncS.from_string c)
 
 let rec number = lexer [ '0'-'9' number ]
 let rec ident =
-  lexer [ [ 'a'-'z' | 'A'-'Z' | '\'' | '_' | '-' | '0'-'9' ] ident
+  lexer [ [ 'a'-'z' | 'A'-'Z' | '\'' | '_' | '-' | '+' | '0'-'9' ] ident
         | '^' '0'-'9' number | ]
 
 let rec string = lexer [ '"' | _ string ]
@@ -125,6 +137,7 @@ let tok = lexer
   |  ":"  -> "COLON",$buf
   |  "::"  -> "CONS",$buf
   | ',' -> "COMMA",","
+  | '&' -> "AMPERSEND",","
   | ';' -> "SEMICOLON",","
   | '.' -> "FULLSTOP","."
   | '\\' -> "BIND","\\"
@@ -140,6 +153,8 @@ let tok = lexer
   | '>' -> "GT",">"
   | '$' 'a'-'z' ident -> "BUILTIN",$buf
   | '!' -> "BANG", $buf
+  | "!-!" -> "AH5",$buf
+  | "!+!" -> "AH6",$buf
   | '@' -> "AT", $buf
   | '#' -> "SHARP", $buf
   | '?' -> "QMARK", $buf
@@ -252,7 +267,7 @@ let check_clause x = ()
 let check_goal x = ()*)
 
 let atom_levels =
-  ["pi";"disjunction";"conjunction";"implication";"equality";"term";"app";"simple";"list"]
+  ["pi";"disjunction";"conjunction";"conjunction2";"implication";"equality";"term";"app";"simple";"list"]
 
 let () =
   Grammar.extend [ Grammar.Entry.obj atom, None,
@@ -324,7 +339,9 @@ EXTEND
   atom : LEVEL "disjunction"
      [[ l = LIST1 atom LEVEL "conjunction" SEP SEMICOLON -> mkDisj l ]];
   atom : LEVEL "conjunction"
-     [[ l = LIST1 atom LEVEL "implication" SEP COMMA -> mkConj l ]];
+     [[ l = LIST1 atom LEVEL "conjunction2" SEP COMMA -> mkConj l ]];
+  atom : LEVEL "conjunction2"
+     [[ l = LIST1 atom LEVEL "implication" SEP AMPERSEND -> mkConj2 l ]];
   atom : LEVEL "implication"
      [[ a = atom; IMPL; p = atom LEVEL "implication" ->
           mkImpl a p
@@ -334,13 +351,9 @@ EXTEND
      [[ a = atom; EQUAL; b = atom LEVEL "term" ->
           mkEq a b ]];
   atom : LEVEL "term"
-     [(*[ l = LIST1 atom LEVEL "app" SEP CONS ->
+     [[ l = LIST1 atom LEVEL "app" SEP CONS ->
           if List.length l = 1 then List.hd l
-          else
-            let l = List.rev l in
-            let last = List.hd l in
-            let rest = List.rev (List.tl l) in
-            mkSeq (L.of_list rest) last ]*)];
+          else mkSeq l ]];
   atom : LEVEL "app"
      [[ hd = atom; args = LIST1 atom LEVEL "simple" ->
           (*match args with
@@ -358,9 +371,9 @@ EXTEND
             | Some b -> mkLam c b)
       | u = UVAR -> (*let u, lvl = lvl_name_of u in mkUv (get_uv u) lvl*) mkUVar u
       | u = FRESHUV -> (*let u, lvl = fresh_lvl_name () in mkUv (get_uv u) lvl*) mkUVar u
-      (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))
+      (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))*)
       | NIL -> mkNil
-      | s = LITERAL -> mkExt (mkString s)
+      (*| s = LITERAL -> mkExt (mkString s)
       | AT; hd = atom LEVEL "simple"; args = atom LEVEL "simple" ->
           mkVApp `Regular hd args None
       | AT -> sentinel
@@ -379,13 +392,13 @@ EXTEND
       | RESUME; t = atom LEVEL "simple"; p = atom LEVEL "simple" -> mkResume t p*)
       | LPAREN; a = atom; RPAREN -> a ]];
   atom : LEVEL "list" 
-     [(*[ LBRACKET; xs = LIST0 atom LEVEL "implication" SEP COMMA;
+     [[ LBRACKET; xs = LIST0 atom LEVEL "implication" SEP COMMA;
           tl = OPT [ PIPE; x = atom LEVEL "term" -> x ]; RBRACKET ->
           let tl = match tl with None -> mkNil | Some x -> x in
           if List.length xs = 0 && tl <> mkNil then 
-            raise (Token.Error ("List with not elements cannot have a tail"));
+            raise (Token.Error ("List with no elements cannot have a tail"));
           if List.length xs = 0 then mkNil
-          else mkSeq (L.of_list xs) tl ]*)];
+          else mkSeq (xs@[tl]) ]];
   (*bound : 
     NOTE: IT WAS RETURNING A BOOLEAN TOO TO DISCRIMINATE THE TWO CASES
     [[ c = CONSTANT -> c
