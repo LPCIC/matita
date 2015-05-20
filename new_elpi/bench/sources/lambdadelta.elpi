@@ -89,6 +89,15 @@ nv (appl V T) :- nv V, nv T, sta V W, sta T U, rtm U (abst W0 U0), conv W W0.
 
 nv (cast U T) :- nv U, nv T, sta T W, conv W U.
 
+% VALIDITY FOR GLOBAL CONTEXTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+gv gtop. 
+
+gv (gdef (cast U T) G) :- nv (cast U T), 
+                          pi x\ nv x => rtm0 x T => sta x U => gv (G x).
+
+gv (gdec U G) :- nv U, pi x\ nv x => sta x U => gv (G x).
+
 % TESTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 test_aaa Z :- aaa (abst (abst (sort n) x\ (sort n)) f\ abst (sort n) a\ appl a f) Z.
