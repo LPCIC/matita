@@ -37,7 +37,6 @@ sta (cast W T) U :- cast T U.
 
 % COPYING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-copy A B :- $print (copy A B), fail.
 copy (sort N) (sort N).
 
 copy (abbr V1 T1) (abbr V2 T2) :- copy V1 V2, pi x\ copy x x => copy (T1 x) (T2 x).
@@ -57,7 +56,7 @@ rtm0 (abst W T) (abst W T).
 rtm0 (appl V T1) (appl V T2) :- rtm0 T1 T2. 
 
 %delta, zeta
-rtm0 (abbr V T1) T2 :- pi x\ copy x V => $print xxx (copy x V), copy (T1 x) T2.
+rtm0 (abbr V T1) T2 :- pi x\ copy x V => copy (T1 x) T2.
 
 % beta, epsilon
 rtm0 (appl V (abst W T)) (abbr V T).
