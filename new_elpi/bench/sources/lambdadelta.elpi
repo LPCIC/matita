@@ -52,7 +52,10 @@ copy (cast U1 T1) (appl U2 T2) :- copy U1 U2, copy T1 T2.
 rtm0 (appl V T1) (appl V T2) :- rtm0 T1 T2. 
 
 %delta, zeta
-rtm0 (abbr V T1) T2 :- pi x\ copy x V => (copy (T1 x) (T3 x), T2 = T3 x). % Hack to remain in the fragment
+% delta is copy (T1 x) (T x)
+% zeta  is T x = T2
+% so we do NOT see this as a hack to remain in the fragment
+rtm0 (abbr V T1) T2 :- pi x\ copy x V => (copy (T1 x) (T x), T x = T2).
 
 % beta, epsilon
 rtm0 (appl V (abst W T)) (abbr V T).
