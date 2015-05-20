@@ -23,3 +23,12 @@ type x8 a.
 type x9 a.
 type x10 a.
 
+kind i type.
+type zero i.
+type s    i -> i.
+type plus i -> i -> i -> o.
+type mult i -> i -> i -> o.
+type exp i -> i -> i -> o.
+type iter i -> o -> o.
+type once o.
+type main o. 
