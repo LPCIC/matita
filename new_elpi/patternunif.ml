@@ -615,7 +615,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     | UVar ({ contents=g },_,_) when g == dummy ->
        raise (Failure "Not a predicate")
     | UVar ({ contents=g },origdepth,args) ->
-       run depth p (deref ~from:origdepth ~to_:origdepth args g)
+       run depth p (deref ~from:origdepth ~to_:depth args g)
         gs next alts lvl
     | Lam _ -> raise (Failure "Not a predicate")
     | Const _ | App _ -> (* Atom case *)
