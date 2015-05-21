@@ -48,5 +48,5 @@ exp (s X) Y Z :- exp X Y K, mult Y K Z.
 
 main :-
  TEN = s (s (s (s (s (s (s (s (s (s zero))))))))),
- exp (s zero) TEN TEN,
- iter TEN once.
+ exp (s (s (s zero))) TEN THOUSAND,
+ iter THOUSAND once.
