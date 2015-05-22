@@ -384,7 +384,6 @@ let rec for_all2 p l1 l2 =
    [adepth,+infty) = [bdepth,+infy)   bound variables *)
 let unif trail last_call adepth a e bdepth b =
  let rec unif depth a bdepth b heap =
- assert(adepth >= bdepth); (* TODO: remove when we are sure *)
    (*Format.eprintf "unif %b,%b: ^%d:%a =%d= ^%d:%a\n%!" last_call heap adepth ppterm a depth bdepth ppterm b;*)
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
