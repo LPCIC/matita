@@ -1,10 +1,14 @@
-% Validity for \lambda\delta version 1
+% Validity for \lambda\delta version 2
 
 % Closed terms: T ::= sort N
 %                  |  abbr T F where F: T => T
 %                  |  abst T F where F: T => T 
 %                  |  appl T T
 %                  |  cast T T
+%
+% Global environments: G ::= gtop
+%                         |  gdef T F where F: T => G
+%                         |  gdec T F where F: T => G
 %
 % Predicates: h    = sort hierarchy parameter
 %             copy = copying
@@ -13,10 +17,13 @@
 %             conv = conversion by levels
 %             comp = comparator by levels
 %             tv   = validity for terms
-%             gv   = validity global environments
+%             gv   = validity for global environments
 %
 % Constants: m+0 = typing not allowed in RTM
 %            m+1 = typing required in RTM
+%            m+y = typing allowed in RTM (version 2)
+%            v+1 = restricted applicability (version 1)
+%            v+2 = extended applicability (version 2)
 
 % COPYING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -34,7 +41,7 @@ copy (cast U1 T1) (appl U2 T2) :- copy U1 U2, copy T1 T2.
 
 rtm1 M (appl V T1) M (appl V T2) :- rtm1 M T1 M T2. 
 
-%delta, zeta
+%local delta, zeta
 % delta is copy (T1 x) (T x)
 % zeta  is T x = T2
 % so we do NOT see this as a hack to remain in the fragment
@@ -48,6 +55,9 @@ rtm1 M (appl V1 (abbr V2 T)) M (abbr V2 (appl V1 T)).
 
 %epsilon
 rtm1 m+0 (cast U T) m+0 T.
+
+%epsilon (version 2 only)
+rtm1 m+y (cast U T) m+y T.
 
 %e
 rtm1 m+1 (cast U T) m+0 U.
@@ -67,18 +77,26 @@ comp N T N T.
 
 comp N1 (appl V1 T1) N2 (appl V2 T2) :- conv N1 T1 N2 T2, conv m+0 V1 m+0 V2.
 
+% local l updated for version 2
 comp N1 (abst W1 T1) N2 (abst W2 T2) :- conv m+0 W1 m+0 W2,
-                                        pi x\ rtm1 m+1 x m+0 W2 => conv N1 (T1 x) N2 (T2 x).
+                                        pi x\ rtm1 m+1 x m+0 W2 => rtm1 m+y x m+y W2 =>
+                                        conv N1 (T1 x) N2 (T2 x).
 
 % VALIDITY FOR TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 tv (sort N).
 
+% local delta
 tv (abbr V T) :- tv V, pi x\ tv x => rtm1 M x M V => tv (T x).
 
-tv (abst W T) :- tv W, pi x\ tv x => rtm1 m+1 x m+0 W => tv (T x).
+% local l updated for version 2
+tv (abst W T) :- tv W, pi x\ tv x => rtm1 m+1 x m+0 W => rtm1 m+y x m+y W => tv (T x).
 
-tv (appl V T) :- tv V, tv T, rtm M T m+0 (abst W U), conv m+1 V m+0 W.
+%extended applicability condition (version 2)
+tv (appl V T) :- v+2, tv V, tv T, rtm m+y T m+y (abst W U), conv m+1 V m+0 W.
+
+% restricted applicability condition (version 1)
+tv (appl V T) :- v+1, tv V, tv T, rtm M T m+0 (abst W U), conv m+1 V m+0 W.
 
 tv (cast U T) :- tv U, tv T, conv m+1 T m+0 U.
 
@@ -86,9 +104,11 @@ tv (cast U T) :- tv U, tv T, conv m+1 T m+0 U.
 
 gv gtop. 
 
+% global delta
 gv (gdef T G) :- tv T, pi x\ tv x => rtm1 M x M T => gv (G x).
 
-gv (gdec U G) :- tv U, pi x\ tv x => rtm1 m+1 x m+0 U => gv (G x).
+% global l updated for version 2
+gv (gdec U G) :- tv U, pi x\ tv x => rtm1 m+1 x m+0 U => rtm1 m+y x m+y U => gv (G x).
 
 % TESTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -96,10 +116,13 @@ test_sta :- h n1 n2 => conv m+1 (sort n1) m+0 (sort n2).
 
 test_conv :- conv m+0 (appl w1 (abst w2 x\ (abst x y\ y))) m+0 (abst w1 x\ x).
 
-test_tv_1 :- h n1 n2 => h n2 n3 => tv (appl (sort n1) (abst (sort n2) x\ x)).
+test_tv_11 :- v+1 => h n1 n2 => h n2 n3 => tv (appl (sort n1) (abst (sort n2) x\ x)).
 
-test_tv_2 :- tv w => tv (abst w x\ cast w x).
+test_tv_12 :- v+1 => tv w => tv (abst w x\ cast w x).
 
-test_tv_3 :- tv w => tv (cast (abst w x\ w) (abst w x\ x)).
+test_tv_13 :- v+1 => tv w => tv (cast (abst w x\ w) (abst w x\ x)).
 
-main :- test_sta, test_conv, test_tv_1, test_tv_2, test_tv_3.
+% does fail in version 1
+test_tv_2 :- v+2 => h n1 n2 => tv (abst (abst (sort n2) x\ (sort n2)) x\ (abst x y\ appl (sort n1) y)).
+
+main :- test_sta, test_conv, test_tv_11, test_tv_12, test_tv_13, test_tv_2.
