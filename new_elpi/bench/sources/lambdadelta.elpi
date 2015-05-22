@@ -1,6 +1,7 @@
 % Validity for \lambda\delta version 2
 
 % Closed terms: T ::= sort N
+%                  |  void   F where F: T => T
 %                  |  abbr T F where F: T => T
 %                  |  abst T F where F: T => T 
 %                  |  appl T T
@@ -29,6 +30,9 @@
 
 copy (sort N) (sort N).
 
+% the premise copy x x should be useless here
+copy (void T1) (void T2) :- pi x\ copy x x => copy (T1 x) (T2 x).
+
 copy (abbr V1 T1) (abbr V2 T2) :- copy V1 V2, pi x\ copy x x => copy (T1 x) (T2 x).
 
 copy (abst W1 T1) (abst W2 T2) :- copy W1 W2, pi x\ copy x x => copy (T1 x) (T2 x).
@@ -41,6 +45,9 @@ copy (cast U1 T1) (appl U2 T2) :- copy U1 U2, copy T1 T2.
 
 rtm1 M (appl V T1) M (appl V T2) :- rtm1 M T1 M T2. 
 
+%zeta
+rtm1 M (void T1) M T2 :- pi x\ (copy (T1 x) (T x), T x = T2).
+
 %local delta, zeta
 % delta is copy (T1 x) (T x)
 % zeta  is T x = T2
@@ -51,7 +58,10 @@ rtm1 M (abbr V T1) M T2 :- pi x\ copy x V => (copy (T1 x) (T x), T x = T2).
 rtm1 M (appl V (abst W T)) M (abbr V T).
 
 %theta
-rtm1 M (appl V1 (abbr V2 T)) M (abbr V2 (appl V1 T)).
+rtm1 M (appl V1 (abbr V2 T)) M (abbr V2 x\ (appl V1 (T x))).
+
+%theta
+rtm1 M (appl V (void T)) M (void x\ (appl V (T x))).
 
 %epsilon
 rtm1 m+0 (cast U T) m+0 T.
@@ -86,17 +96,19 @@ comp N1 (abst W1 T1) N2 (abst W2 T2) :- conv m+0 W1 m+0 W2,
 
 tv (sort N).
 
+tv (void T) :- pi x\ tv (T x).
+
 % local delta
 tv (abbr V T) :- tv V, pi x\ tv x => rtm1 M x M V => tv (T x).
 
 % local l updated for version 2
 tv (abst W T) :- tv W, pi x\ tv x => rtm1 m+1 x m+0 W => rtm1 m+y x m+y W => tv (T x).
 
-%extended applicability condition (version 2)
-tv (appl V T) :- v+2, tv V, tv T, rtm m+y T m+y (abst W U), conv m+1 V m+0 W.
-
 % restricted applicability condition (version 1)
 tv (appl V T) :- v+1, tv V, tv T, rtm M T m+0 (abst W U), conv m+1 V m+0 W.
+
+%extended applicability condition (version 2)
+tv (appl V T) :- v+2, tv V, tv T, rtm m+y T m+y (abst W U), conv m+1 V m+0 W.
 
 tv (cast U T) :- tv U, tv T, conv m+1 T m+0 U.
 
