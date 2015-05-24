@@ -8,7 +8,7 @@ let _ =
 ;;
 *)
 
-let debug = true
+let debug = false
 
 let rec smart_map f =
  function
@@ -386,6 +386,7 @@ let rec for_all2 p l1 l2 =
    [adepth,+infty) = [bdepth,+infy)   bound variables *)
 let unif trail last_call adepth a e bdepth b =
  let rec unif depth a bdepth b heap =
+ assert(adepth >= bdepth); (* TODO: remove when we are sure *)
    (*Format.eprintf "unif %b,%b: ^%d:%a =%d= ^%d:%a\n%!" last_call heap adepth ppterm a depth bdepth ppterm b;*)
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
@@ -494,6 +495,139 @@ in Format.eprintf "<--- %a\n%!" ppterm xxx; xxx);
    | Const c1, Const c2 when c1 = c2 + delta -> true
    | _ -> false in
  unif 0 a bdepth b false
+;;
+
+let lift i gamma s = if i < gamma then i else i + s
+
+let ct_to_heap argsdepth last_call trail ~from ~to_ e t =
+  to_heap argsdepth last_call trail ~from ~to_ e t
+
+let smartApp t args =
+  match args with
+  | [] -> t
+  | hd::tl ->
+      match t with
+      | UVar(r,j,a) when !r == dummy -> UVar(r,j,a@args)
+      | Const i -> App(i,Const hd, List.map (fun x -> Const x) tl)
+      | _ -> assert false
+
+let ct_unif trail last_call depth g e c_depth c_hd =
+  let aj = depth in
+
+  let restrict v j =
+    if debug then Format.eprintf "restrict %d\n%!" j;
+    if not last_call then trail := v :: !trail;
+    v := UVar(ref dummy,j,[]); !v in
+  
+  let extend from root shift args =
+    let rec aux cur = function
+      | [] -> UVar(ref dummy, cur, [])
+      | i :: rest ->
+          let j = lift i root shift in
+          if j = cur then Lam (aux (cur+1) rest)
+          else assert false in
+    aux from args in
+  let extend_uv v j root shift args =
+    if not last_call then trail := v :: !trail;
+    v := extend j root shift args in
+  let extend_arg i root shift args = e.(i) <- extend aj root shift args in
+
+  let beta from root shift args t =
+    let rec aux cur t args =
+      match t, args with
+      | Lam t, arg :: rest ->
+          if lift arg root shift = cur then aux (cur+1) t rest
+          else assert false
+      | t, [] -> cur, t
+      | _ -> cur, smartApp t args in
+    aux from t args in
+
+  let rec bind ok d local r s h t =  (* h = true -> t is in the heap *)
+    if d = ok && s = 0 && h then t else
+    let () =
+      if debug then
+      Format.eprintf "%d) %d | %d |- %d/%d %a\n%!" ok d local r s ppterm t in
+    match t with
+    | Custom (i,xs) -> Custom(i, List.map (bind ok d local r s h) xs)
+    | Const i as w ->
+        let j = lift i r s in if debug then Format.eprintf "j=%d\n%!" j;
+        if j < ok then w else
+        if j >= d then (assert(j < d + local);
+          if i = j && i < local then w else Const(j - (d-ok)))
+        else (assert(j>=ok && j < d); raise RestrictionFailure)
+    | Lam a -> Lam (bind ok d (local+1) r s h a)
+    | App(i,x,xs) ->
+        let j = if i < 0 then i else
+          match bind ok d local r s h (Const i)
+          with Const j -> j | _ -> assert false in
+        App(j, bind ok d local r s h x, List.map (bind ok d local r s h) xs)
+  
+    | UVar(v,j,extra) when !v == dummy ->
+        if extra = [] then if j-local > ok then restrict v ok else t
+        else (extend_uv v j r s extra; bind ok d local r s true t)
+    | Arg(i,extra) when e.(i) == dummy ->
+        if extra = [] then (let v = UVar(ref dummy,aj,[]) in e.(i) <- v; v)
+        else (extend_arg i r s extra; bind ok d local r s true t)
+  
+    | UVar(v,j,args) ->
+        let j, body = beta j r s args !v in
+        bind ok d local j (d+local - j) true body
+    | Arg(i,args) ->
+        let aj, body = beta aj r s args e.(i) in
+        bind ok d local aj (d+local - aj) true body
+  in
+
+  let assign_uv v j depth root shift t heap =
+    if not last_call then trail := v :: !trail;
+    v := bind j depth 0 root shift heap t;
+    if debug then Format.eprintf ":= %a (was %a)\n%!" ppterm !v ppterm t;
+    true in
+
+  let assign_arg i aj depth root shift t =
+    e.(i) <- bind aj depth 0 root shift true t;
+    if debug then Format.eprintf ":= %a (was %a)\n%!" ppterm e.(i) ppterm t;
+    true in
+
+  let rec unif gamma l t1 d t2 r delta =
+    if debug then Format.eprintf "@[<hov 3>%d %d |- %a@ =_%d %a -| %d %d@]\n%!"
+      gamma l ppterm t1 d ppterm t2 r delta;
+   (* useless optim: (gamma = delta && l = r && t1 == t2) || *)
+    match t1, t2 with
+    | Custom (i,xs), Custom (j,ys) ->
+        i = j && for_all2 (fun x y -> unif gamma l x d y r delta) xs ys
+    | Const i, Const j -> lift i gamma l = lift j delta r
+    | Lam a, Lam b -> unif gamma l a (d+1) b r delta
+    | App(i,x,xs), App (j,y,ys) ->
+        lift i gamma l = lift j delta r &&
+        unif gamma l x d y r delta &&
+        for_all2 (fun x y -> unif gamma l x d y r delta) xs ys
+
+    | t, Arg (i,extra) when e.(i) == dummy ->
+        if extra = [] then assign_arg i aj d gamma l t
+        else (extend_arg i delta r extra; unif gamma l t d t2 r delta)
+    | UVar(v,j,extra), t when !v == dummy ->
+        if extra = [] then assign_uv v j d delta r t false
+        else (extend_uv v j gamma l extra; unif gamma l t1 d t r delta)
+    | t, UVar(v,j,extra) when !v == dummy ->
+        if extra = [] then assign_uv v j d gamma l t true
+        else (extend_uv v j gamma r extra; unif gamma l t d t2 r delta)
+
+    | UVar(v,j,args), t ->
+        let j, body = beta j gamma l args !v in
+        unif j (d-j) body d t r delta
+    | t, UVar(v,j,args) ->
+        let j, body = beta j delta r args !v in
+        unif gamma l t d body (d-j) j
+    | t, Arg(i,args) ->
+        let aj, body = beta aj delta r args e.(i) in
+        unif gamma l t d body (d-aj) aj
+
+    | Arg _, _ -> assert false
+
+    | _ -> false
+  in
+    try unif depth 0 g depth c_hd (depth-c_depth) c_depth
+    with RestrictionFailure -> if debug then Format.eprintf "fail\n%!"; false
 ;;
 
 (* Look in Git for Enrico's partially tail recursive but slow unification.
@@ -616,7 +750,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     | UVar ({ contents=g },_,_) when g == dummy ->
        raise (Failure "Not a predicate")
     | UVar ({ contents=g },origdepth,args) ->
-       run depth p (deref ~from:origdepth ~to_:depth args g)
+       run depth p (deref ~from:origdepth ~to_:origdepth args g)
         gs next alts lvl
     | Lam _ -> raise (Failure "Not a predicate")
     | Const _ | App _ -> (* Atom case *)
@@ -640,7 +774,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
         let old_trail = !trail in
         let last_call = last_call && cs = [] in
         let env = Array.create c.vars dummy in
-        match unif trail last_call depth g env c.depth c.hd with
+        match ct_unif trail last_call depth g env c.depth c.hd with
         | false -> undo_trail old_trail trail; select cs
         | true ->
 (* TODO: make to_heap lazy adding the env to unify and making the env
@@ -663,13 +797,13 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
                  else FCons (lvl,gs,next) in
                 let g' =
                  (*Format.eprintf "to_heap ~from:%d ~to:%d %a\n%!" c.depth depth ppterm g';*)
-                 to_heap depth last_call trail ~from:c.depth ~to_:depth
+                 ct_to_heap depth last_call trail ~from:c.depth ~to_:depth
                   env g' in
                 let gs' =
                  List.map
                   (fun x->
                     depth,p,
-                     to_heap depth last_call trail ~from:c.depth ~to_:depth
+                     ct_to_heap depth last_call trail ~from:c.depth ~to_:depth
                       env x) gs'
                 in
                  run depth p g' gs' next alts oldalts)
@@ -700,16 +834,14 @@ let heap_var_of_ast l n =
   let n' = UVar (ref dummy,0,[]) in
   (n,n')::l,n'
 
-let heap_funct_of_ast l' f =
- (try l',List.assoc f l'
-  with Not_found -> l',funct_of_ast f)
-
 let rec heap_term_of_ast lvl l l' =
  function
     AST.Var v -> let l,v = heap_var_of_ast l v in l,l',v
   | AST.App(AST.Const f,[]) when F.eq f F.andf ->
      l,l',truec
-  | AST.Const f -> let l',c=heap_funct_of_ast l' f in l,l',snd c
+  | AST.Const f ->
+     (try l,l',List.assoc f l'
+      with Not_found -> l,l',snd (funct_of_ast f))
   | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
@@ -717,9 +849,9 @@ let rec heap_term_of_ast lvl l l' =
         (fun (l,l',tl) t ->
           let l,l',t = heap_term_of_ast lvl l l' t in (l,l',t::tl))
         (l,l',[]) tl in
-     let l',c = heap_funct_of_ast l' f in
+     let f = fst (funct_of_ast f) in
      (match List.rev rev_tl with
-         hd2::tl -> l,l',App(fst c,hd2,tl)
+         hd2::tl -> l,l',App(f,hd2,tl)
        | _ -> assert false)
   | AST.App (AST.Custom f,tl) ->
      let l,l',rev_tl =
@@ -730,7 +862,7 @@ let rec heap_term_of_ast lvl l l' =
      l,l',Custom(fst (funct_of_ast f),List.rev rev_tl)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
-     let l,l',t' = heap_term_of_ast (lvl+1) l ((x,(lvl,c))::l') t in
+     let l,l',t' = heap_term_of_ast (lvl+1) l ((x,c)::l') t in
      l,l',Lam t'
   | AST.App (AST.Var _,_) -> assert false  (* TODO *)
   | AST.App (AST.App (f,l1),l2) ->
@@ -751,7 +883,9 @@ let rec stack_term_of_ast lvl l l' =
      l,l',v
   | AST.App(AST.Const f,[]) when F.eq f F.andf ->
      l,l',truec
-  | AST.Const f -> let l',c=heap_funct_of_ast l' f in l,l',snd c
+  | AST.Const f ->
+     (try l,l',List.assoc f l'
+      with Not_found -> l,l',snd (funct_of_ast f))
   | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
@@ -759,9 +893,9 @@ let rec stack_term_of_ast lvl l l' =
         (fun (l,l',tl) t ->
           let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
         (l,l',[]) tl in
-     let l',c = heap_funct_of_ast l' f in
+     let f = fst (funct_of_ast f) in
      (match List.rev rev_tl with
-         hd2::tl -> l,l',App(fst c,hd2,tl)
+         hd2::tl -> l,l',App(f,hd2,tl)
        | _ -> assert false)
   | AST.App (AST.Custom f,tl) ->
      let l,l',rev_tl =
@@ -772,7 +906,7 @@ let rec stack_term_of_ast lvl l l' =
      l,l',Custom(fst (funct_of_ast f),List.rev rev_tl)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
-     let l,l',t' = stack_term_of_ast (lvl+1) l ((x,(lvl,c))::l') t in
+     let l,l',t' = stack_term_of_ast (lvl+1) l ((x,c)::l') t in
      l,l',Lam t'
   | AST.App (AST.Var v,tl) ->
      let l,l',rev_tl =
@@ -825,7 +959,7 @@ let impl =
   let program_of_ast = program_of_ast
 
   let msg q =
-   Format.fprintf Format.str_formatter "Pattern unification only: %a" ppterm q ;
+   Format.fprintf Format.str_formatter "Casse tête: %a" ppterm q ;
    Format.flush_str_formatter ()
 
   let execute_once p q =
