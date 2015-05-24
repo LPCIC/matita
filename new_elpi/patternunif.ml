@@ -8,7 +8,7 @@ let _ =
 ;;
 *)
 
-let debug = true
+let debug = false
 
 let rec smart_map f =
  function
