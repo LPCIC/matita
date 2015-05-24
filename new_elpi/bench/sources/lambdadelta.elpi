@@ -1,41 +1,52 @@
-% Validity for \lambda\delta version 2
+% Validator for \lambda\delta version 3 --------------------------------------
 
-% Closed terms: T ::= sort N
-%                  |  void   F where F: T => T
-%                  |  abbr T F where F: T => T
-%                  |  abst T F where F: T => T 
-%                  |  appl T T
-%                  |  cast T T
+% sort: S := user defined
 %
-% Global environments: G ::= gtop
-%                         |  gdef T F where F: T => G
-%                         |  gdec T F where F: T => G
+% Layer: L := user defined
 %
-% Predicates: h    = sort hierarchy parameter
-%             copy = copying
-%             rtm1 = reduction and type machine (single step)
-%             rtm  = reduction and type machine (multiple step)
-%             conv = conversion by levels
-%             comp = comparator by levels
-%             tv   = validity for terms
-%             gv   = validity for global environments
+% Closed term: T, U, V, W ::= sort   S
+%                          |  void     F where F: T => T
+%                          |  abbr   T F where F: T => T
+%                          |  abst L T F where F: T => T 
+%                          |  appl   T T
+%                          |  cast   T T
 %
+% Global environment: G ::= gtop
+%                        |  gdef T F where F: T => G
+%                        |  gdec T F where F: T => G
+%
+% RTM mode: M, N := m+0 | m+1 | m+y 
+%
+% Predicates: copy T T     = copying
+%             rtm1 M T M T = reduction and type machine (single step)
+%             rtm  M T M T = reduction and type machine (multiple step)
+%             conv M T M T = conversion by levels
+%             comp M T M T = comparator by levels
+%             tv   T       = validity for terms
+%             gv   G       = validity for global environments
+%
+% Parameters: ssucc S S = successor for sort hierarchy
+%             lzero L   = zero layer
+%             lpos  L   = positive layer
+%             lpred L L = predeccessor for layers
+%  
 % Constants: m+0 = typing not allowed in RTM
 %            m+1 = typing required in RTM
 %            m+y = typing allowed in RTM (version 2)
-%            v+1 = restricted applicability (version 1)
-%            v+2 = extended applicability (version 2)
+%            a+r = restricted applicability (version 1)
+%            a+x = extended applicability (version 2)
 
 % COPYING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-copy (sort N) (sort N).
+copy (sort S) (sort S).
 
 % the premise copy x x should be useless here
 copy (void T1) (void T2) :- pi x\ copy x x => copy (T1 x) (T2 x).
 
 copy (abbr V1 T1) (abbr V2 T2) :- copy V1 V2, pi x\ copy x x => copy (T1 x) (T2 x).
 
-copy (abst W1 T1) (abst W2 T2) :- copy W1 W2, pi x\ copy x x => copy (T1 x) (T2 x).
+% updated for version 3
+copy (abst L W1 T1) (abst L W2 T2) :- copy W1 W2, pi x\ copy x x => copy (T1 x) (T2 x).
 
 copy (appl V1 T1) (appl V2 T2) :- copy V1 V2, copy T1 T2.
 
@@ -43,7 +54,9 @@ copy (cast U1 T1) (appl U2 T2) :- copy U1 U2, copy T1 T2.
 
 % REDUCTION AND TYPE MACHINE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-rtm1 M (appl V T1) M (appl V T2) :- rtm1 M T1 M T2. 
+rtm1 M1 (appl V T1) M2 (appl V T2) :- rtm1 M1 T1 M2 T2. 
+
+rtm1 M1 (abst L W T1) M2 (abst L W T2) :- pi x\ rtm1 M1 (T1 x) M2 (T2 x). 
 
 %zeta
 rtm1 M (void T1) M T2 :- pi x\ (copy (T1 x) (T x), T x = T2).
@@ -54,8 +67,11 @@ rtm1 M (void T1) M T2 :- pi x\ (copy (T1 x) (T x), T x = T2).
 % so we do NOT see this as a hack to remain in the fragment
 rtm1 M (abbr V T1) M T2 :- pi x\ copy x V => (copy (T1 x) (T x), T x = T2).
 
-% beta, epsilon
-rtm1 M (appl V (abst W T)) M (abbr V T).
+%beta, epsilon, updated for version 3
+rtm1 M (appl V (abst L W T)) M (abbr V T) :- lpos L.
+
+%upsilon (version 3) 
+rtm1 M (abst L W T) M (void T) :- lzero L.
 
 %theta
 rtm1 M (appl V1 (abbr V2 T)) M (abbr V2 x\ (appl V1 (T x))).
@@ -73,7 +89,10 @@ rtm1 m+y (cast U T) m+y T.
 rtm1 m+1 (cast U T) m+0 U.
 
 %s
-rtm1 m+1 (sort N1) m+0 (sort N2) :- h N1 N2.
+rtm1 m+1 (sort S1) m+0 (sort S2) :- ssucc S1 S2.
+
+%x (version 3)
+rtm1 m+1 (abst L1 W T) m+1 (abst L2 W T) :- lpred L1 L2.
 
 rtm M T M T.
 
@@ -87,10 +106,10 @@ comp N T N T.
 
 comp N1 (appl V1 T1) N2 (appl V2 T2) :- conv N1 T1 N2 T2, conv m+0 V1 m+0 V2.
 
-% local l updated for version 2
-comp N1 (abst W1 T1) N2 (abst W2 T2) :- conv m+0 W1 m+0 W2,
-                                        pi x\ rtm1 m+1 x m+0 W2 => rtm1 m+y x m+y W2 =>
-                                        conv N1 (T1 x) N2 (T2 x).
+% local l updated for version 2 and 3
+comp N1 (abst L W1 T1) N2 (abst L W2 T2) :- conv m+0 W1 m+0 W2,
+                                            pi x\ rtm1 m+1 x m+0 W2 => rtm1 m+y x m+y W2 =>
+                                            conv N1 (T1 x) N2 (T2 x).
 
 % VALIDITY FOR TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -101,14 +120,14 @@ tv (void T) :- pi x\ tv (T x).
 % local delta
 tv (abbr V T) :- tv V, pi x\ tv x => rtm1 M x M V => tv (T x).
 
-% local l updated for version 2
-tv (abst W T) :- tv W, pi x\ tv x => rtm1 m+1 x m+0 W => rtm1 m+y x m+y W => tv (T x).
+% local l updated for version 2 and 3
+tv (abst L W T) :- tv W, pi x\ tv x => rtm1 m+1 x m+0 W => rtm1 m+y x m+y W => tv (T x).
 
-% restricted applicability condition (version 1)
-tv (appl V T) :- v+1, tv V, tv T, rtm M T m+0 (abst W U), conv m+1 V m+0 W.
+% restricted applicability condition (version 1) updated for version 3
+tv (appl V T) :- a+r, tv V, tv T, rtm M T m+0 (abst L W U), lpos L, conv m+1 V m+0 W.
 
-%extended applicability condition (version 2)
-tv (appl V T) :- v+2, tv V, tv T, rtm m+y T m+y (abst W U), conv m+1 V m+0 W.
+%extended applicability condition (version 2) updated for version 3
+tv (appl V T) :- a+x, tv V, tv T, rtm m+y T m+y (abst L W U), lpos L, conv m+1 V m+0 W.
 
 tv (cast U T) :- tv U, tv T, conv m+1 T m+0 U.
 
@@ -122,19 +141,51 @@ gv (gdef T G) :- tv T, pi x\ tv x => rtm1 M x M T => gv (G x).
 % global l updated for version 2
 gv (gdec U G) :- tv U, pi x\ tv x => rtm1 m+1 x m+0 U => rtm1 m+y x m+y U => gv (G x).
 
+% Additional matter ----------------------------------------------------------
+
+% LAYERS FOR PTS, LAMBDA-INFINITY, AUT-68, AUT-QE %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Constants: l+0 = hyper Pi
+%            l+1 = Pi
+%            l+2 = lambda
+%            l+y = lambda-infinity
+
+lzero l+0. 
+
+lpos l+1. 
+
+lpos l+2. 
+
+lpos l+y. 
+
+lpred l+0 l+0.
+
+lpred l+1 l+0.
+
+lpred l+2 l+1.
+
+lpred l+y l+y.
+
 % TESTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-test_sta :- h n1 n2 => conv m+1 (sort n1) m+0 (sort n2).
+test_sta :- ssucc s1 s2 => conv m+1 (sort s1) m+0 (sort s2).
 
-test_conv :- conv m+0 (appl w1 (abst w2 x\ (abst x y\ y))) m+0 (abst w1 x\ x).
+test_conv :- conv m+0 (appl w1 (abst l+y w2 x\ (abst l+y x y\ y))) m+0 (abst l+y w1 x\ x).
 
-test_tv_11 :- v+1 => h n1 n2 => h n2 n3 => tv (appl (sort n1) (abst (sort n2) x\ x)).
+test_tv_11 :- a+r => ssucc s1 s2 => ssucc s2 n3 => tv (appl (sort s1) (abst l+y (sort s2) x\ x)).
 
-test_tv_12 :- v+1 => tv w => tv (abst w x\ cast w x).
+test_tv_12 :- a+r => tv w => tv (abst l+y w x\ cast w x).
 
-test_tv_13 :- v+1 => tv w => tv (cast (abst w x\ w) (abst w x\ x)).
+test_tv_13 :- a+r => tv w => tv (cast (abst l+y w x\ w) (abst l+y w x\ x)).
 
-% does fail in version 1
-test_tv_2 :- v+2 => h n1 n2 => tv (abst (abst (sort n2) x\ (sort n2)) x\ (abst x y\ appl (sort n1) y)).
+% does fail with resticted applicability
+test_tv_2 :- a+x => ssucc s1 s2 =>
+             tv (abst l+y (abst l+y (sort s2) x\ (sort s2)) x\ (abst l+y x y\ appl (sort s1) y)).
+
+test_tv_3 :- ssucc s0 s1 => rtm1 m+1 (abst l+1 (sort s0) x\ x) m+1 (abst l+0 (sort s0) x\ x).
+% m+0 (sort s1).
+
+%test_tv_3 :- a+x => ssucc s0 s2 =>
+%             tv (abst l+y (sort s0) a\ (abst l+y (sort s0) b\ (cast (sort s0) (abst l+1 a z\ b)))).
 
 main :- test_sta, test_conv, test_tv_11, test_tv_12, test_tv_13, test_tv_2.
