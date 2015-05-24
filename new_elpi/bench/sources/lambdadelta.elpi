@@ -38,10 +38,10 @@
 
 % REDUCTION AND TYPE MACHINE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-flat m+0
+flat m+0.
 
 % version 2
-flat m+y
+flat m+y.
 
 rtm1 M1 (appl V T1) M2 (appl V T2) :- rtm1 M1 T1 M2 T2, $print rtm1_appl. 
 
@@ -173,11 +173,8 @@ test_tv_13 :- a+r => tv w => tv (cast (abst l+y w x\ w) (abst l+y w x\ x)).
 test_tv_2 :- a+x => ssucc s1 s2 =>
              tv (abst l+y (abst l+y (sort s2) x\ (sort s2)) x\ (abst l+y x y\ appl (sort s1) y)).
 
-test_tv_3 :- rtm m+1 (abst l+1 (sort s0) x\ x) m+0 (void x\ (sort s0)).
+% first line of the grundlagen: requires version 3
+test_tv_3 :- a+r =>
+             tv (abst l+y (sort s0) a\ (abst l+y (sort s0) b\ (cast (sort s0) (abst l+1 a z\ b)))).
 
-% test_tv_3 :- ssucc s0 s1 => conv m+1 (abst l+1 (sort s0) x\ x) m+0 (sort s1).
-
-%test_tv_3 :- a+x => ssucc s0 s2 =>
-%             tv (abst l+y (sort s0) a\ (abst l+y (sort s0) b\ (cast (sort s0) (abst l+1 a z\ b)))).
-
-main :- test_sta, test_conv, test_tv_11, test_tv_12, test_tv_13, test_tv_2.
+main :- test_sta, test_conv, test_tv_11, test_tv_12, test_tv_13, test_tv_2, test_tv_3.
