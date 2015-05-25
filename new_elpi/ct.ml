@@ -840,10 +840,12 @@ let heap_funct_of_ast l' f =
 
 let rec heap_term_of_ast lvl l l' =
  function
-    AST.Var v -> let l,v = heap_var_of_ast l v in l,l',v
+    AST.Var v ->  
+     let l,v = heap_var_of_ast l v in l,l',v
   | AST.App(AST.Const f,[]) when F.eq f F.andf ->
      l,l',truec
-  | AST.Const f -> let l',c=heap_funct_of_ast l' f in l,l',snd c
+  | AST.Const f -> 
+     let l',c=heap_funct_of_ast l' f in l,l',snd c
   | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
