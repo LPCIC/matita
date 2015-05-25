@@ -750,7 +750,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     | UVar ({ contents=g },_,_) when g == dummy ->
        raise (Failure "Not a predicate")
     | UVar ({ contents=g },origdepth,args) ->
-       run depth p (deref ~from:origdepth ~to_:origdepth args g)
+       run depth p (deref ~from:origdepth ~to_:depth args g)
         gs next alts lvl
     | Lam _ -> raise (Failure "Not a predicate")
     | Const _ | App _ -> (* Atom case *)
@@ -834,14 +834,16 @@ let heap_var_of_ast l n =
   let n' = UVar (ref dummy,0,[]) in
   (n,n')::l,n'
 
+let heap_funct_of_ast l' f =
+ (try l',List.assoc f l'
+  with Not_found -> l',funct_of_ast f)
+
 let rec heap_term_of_ast lvl l l' =
  function
     AST.Var v -> let l,v = heap_var_of_ast l v in l,l',v
   | AST.App(AST.Const f,[]) when F.eq f F.andf ->
      l,l',truec
-  | AST.Const f ->
-     (try l,l',List.assoc f l'
-      with Not_found -> l,l',snd (funct_of_ast f))
+  | AST.Const f -> let l',c=heap_funct_of_ast l' f in l,l',snd c
   | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
@@ -849,9 +851,9 @@ let rec heap_term_of_ast lvl l l' =
         (fun (l,l',tl) t ->
           let l,l',t = heap_term_of_ast lvl l l' t in (l,l',t::tl))
         (l,l',[]) tl in
-     let f = fst (funct_of_ast f) in
+     let l',c = heap_funct_of_ast l' f in
      (match List.rev rev_tl with
-         hd2::tl -> l,l',App(f,hd2,tl)
+         hd2::tl -> l,l',App(fst c,hd2,tl)
        | _ -> assert false)
   | AST.App (AST.Custom f,tl) ->
      let l,l',rev_tl =
@@ -862,7 +864,7 @@ let rec heap_term_of_ast lvl l l' =
      l,l',Custom(fst (funct_of_ast f),List.rev rev_tl)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
-     let l,l',t' = heap_term_of_ast (lvl+1) l ((x,c)::l') t in
+     let l,l',t' = heap_term_of_ast (lvl+1) l ((x,(lvl,c))::l') t in
      l,l',Lam t'
   | AST.App (AST.Var _,_) -> assert false  (* TODO *)
   | AST.App (AST.App (f,l1),l2) ->
@@ -883,9 +885,7 @@ let rec stack_term_of_ast lvl l l' =
      l,l',v
   | AST.App(AST.Const f,[]) when F.eq f F.andf ->
      l,l',truec
-  | AST.Const f ->
-     (try l,l',List.assoc f l'
-      with Not_found -> l,l',snd (funct_of_ast f))
+  | AST.Const f -> let l',c=heap_funct_of_ast l' f in l,l',snd c
   | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
@@ -893,9 +893,9 @@ let rec stack_term_of_ast lvl l l' =
         (fun (l,l',tl) t ->
           let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
         (l,l',[]) tl in
-     let f = fst (funct_of_ast f) in
+     let l',c = heap_funct_of_ast l' f in
      (match List.rev rev_tl with
-         hd2::tl -> l,l',App(f,hd2,tl)
+         hd2::tl -> l,l',App(fst c,hd2,tl)
        | _ -> assert false)
   | AST.App (AST.Custom f,tl) ->
      let l,l',rev_tl =
@@ -906,7 +906,7 @@ let rec stack_term_of_ast lvl l l' =
      l,l',Custom(fst (funct_of_ast f),List.rev rev_tl)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
-     let l,l',t' = stack_term_of_ast (lvl+1) l ((x,c)::l') t in
+     let l,l',t' = stack_term_of_ast (lvl+1) l ((x,(lvl,c))::l') t in
      l,l',Lam t'
   | AST.App (AST.Var v,tl) ->
      let l,l',rev_tl =
