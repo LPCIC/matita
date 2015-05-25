@@ -732,7 +732,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     | Lam _ -> assert false
     | Const _ | App _ -> (* Atom case *)
         let cp = get_clauses g_env g_depth g p in
-        backchain p argsdepth g_env g_depth g gs cp next alts lvl
+        backchain p argsdepth g_env g_depth g gs cp next (alts,lvl)
     | Custom(c,gs') ->
        (try lookup_custom c g_env gs'
         with Not_found -> assert false) ;
@@ -741,7 +741,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
          | (p,g_env,g_depth,g)::gs ->
              run p argsdepth g_env g_depth g gs next alts lvl)
 
-  and backchain p argsdepth g_env g_depth g gs cp next alts lvl =
+  and backchain p argsdepth g_env g_depth g gs cp next (alts,lvl) =
     (*Format.eprintf "BACKCHAIN %a @ %d\n%!" (ppterm g_env) g lvl;
 List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
     let last_call = alts == emptyalts in
@@ -790,7 +790,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
     let { program = p; argsdepth; g_env; g_depth; goal = g; goals = gs;
           stack=next; trail = old_trail; clauses; lvl ; next=alts} = alts in
     undo_trail old_trail trail;
-    backchain p argsdepth g_env g_depth g gs clauses next alts lvl
+    backchain p argsdepth g_env g_depth g gs clauses next (alts,lvl)
    end
   in
    (fun p (_,q_env,q) -> run p 0 q_env 0 q [] FNil emptyalts emptyalts),
