@@ -192,6 +192,10 @@ type key = key1 * key2
 type clause =
  { depth : int; hd : term; hyps : term list; vars : int; key : key }
 
+type trail_item =
+   UVar_addr of term ref
+ | Stack_addr of term array * int
+
 (************************* to_heap/restrict/full_deref ******************)
 
 exception RestrictionFailure
@@ -256,7 +260,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
         aux depth t
     | UVar (r,_,[]) when delta > 0 ->
        let fresh = UVar(ref dummy,to_,[]) in
-       if not last_call then trail := r :: !trail;
+       if not last_call then trail := UVar_addr r :: !trail;
        r := fresh;
        (* TODO: test if it is more efficient here to return fresh or
           the original, imperatively changed, term. The current solution
@@ -273,12 +277,13 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
          ) args in
         let a = e.(i) in
         (*Format.eprintf "%a = %a\n%!" ppterm (Arg(i,argsdepth,[])) ppterm a;*)
-        if a == dummy then
+        if a == dummy then begin
             let r = ref dummy in
             let v = UVar(r,to_,[]) in
+            if not last_call then trail := Stack_addr (e,i) :: !trail;
             e.(i) <- v;
             UVar(r,to_,args)
-        else
+        end else
          full_deref argsdepth last_call trail ~from:argsdepth
           ~to_:(to_+depth) args e a
   in aux 0 t
@@ -444,12 +449,14 @@ let unif trail last_call argsdepth ae adepth a be bdepth b =
         restrict argsdepth last_call trail ~from:(adepth+depth)
          ~to_:adepth aheap ae a;
        (*Format.eprintf "<- %a\n%!" (ppterm be) be.(i);*)
+       if not last_call then trail := Stack_addr (be,i) :: !trail;
        true
      with RestrictionFailure -> false)
    | _, Arg (i,args) when be.(i) == dummy ->
       (*Format.eprintf "%a %d===%d %a\n%!" ppterm a adepth bdepth ppterm b;*)
       (* Here I am doing for the O(1) unification fragment *)
       let args,body = make_lambdas adepth bdepth args in
+      if not last_call then trail := Stack_addr (be,i) :: !trail;
       be.(i) <- body;
       if args = [] then
        (* TODO: unif goes into the UVar when !r != dummy case below.
@@ -478,6 +485,7 @@ let unif trail last_call argsdepth ae adepth a be bdepth b =
         (* Second step: we restrict the r.h.s. *)
         restrict adepth last_call trail ~from:(adepth+depth) ~to_:argsdepth
          true be b);
+      if not last_call then trail := Stack_addr (ae,i) :: !trail;
       true
      with RestrictionFailure -> false)
    | Arg (i,args),_ when ae.(i) == dummy ->
@@ -491,7 +499,7 @@ let unif trail last_call argsdepth ae adepth a be bdepth b =
        unif depth a aheap bdepth b bheap
       else assert false (* TODO: h.o. unification not implemented *)
    | UVar (r,origdepth,[]), _ when !r == dummy ->
-       if not last_call then trail := r :: !trail;
+       if not last_call then trail := UVar_addr r :: !trail;
        (* TODO: are exceptions efficient here? *)
        (try
          r :=
@@ -509,7 +517,7 @@ let unif trail last_call argsdepth ae adepth a be bdepth b =
          true
        with RestrictionFailure -> false)
    | UVar (r,origdepth,args), _ when !r == dummy ->
-      if not last_call then trail := r :: !trail;
+      if not last_call then trail := UVar_addr r :: !trail;
       (* Here I am doing for the O(1) unification fragment *)
       let args,body = make_lambdas origdepth origdepth args in
       r := body;
@@ -519,7 +527,7 @@ let unif trail last_call argsdepth ae adepth a be bdepth b =
        unif depth a aheap bdepth b bheap
       else assert false (* TODO: h.o. unification not implemented *)
    | _, UVar (r,origdepth,[]) when !r == dummy ->
-       if not last_call then trail := r :: !trail;
+       if not last_call then trail := UVar_addr r :: !trail;
        (* TODO: are exceptions efficient here? *)
        (try
          r :=
@@ -538,7 +546,7 @@ let unif trail last_call argsdepth ae adepth a be bdepth b =
          true
        with RestrictionFailure -> false)
    | _, UVar (r,origdepth,args) when !r == dummy ->
-      if not last_call then trail := r :: !trail;
+      if not last_call then trail := UVar_addr r :: !trail;
       (* Here I am doing for the O(1) unification fragment *)
       let args,body = make_lambdas origdepth origdepth args in
       r := body;
@@ -589,7 +597,8 @@ let unif trail last_call argsdepth ae adepth a be bdepth b =
 let undo_trail old_trail trail =
   while !trail != old_trail do
     match !trail with
-    | r :: rest -> r := dummy; trail := rest
+    | UVar_addr r :: rest -> r := dummy; trail := rest
+    | Stack_addr (a,i) :: rest -> a.(i) <- dummy; trail := rest
     | _ -> assert false
   done
 ;;
@@ -612,7 +621,7 @@ and alternative = {
   goal : term;
   goals : (program * (*env:*) term array * (*g_depth:*) int * term) list;
   stack : frame;
-  trail : term ref list;
+  trail : trail_item list;
   clauses : clause list;
   next : alternative
 }
