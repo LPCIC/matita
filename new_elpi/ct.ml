@@ -67,7 +67,7 @@ let funct_of_ast, constant_of_dbl, string_of_constant =
    try Hashtbl.find h' n
    with Not_found -> string_of_int n)
 
-let ppterm f t =
+let ppterm env f t =
   let rec ppapp hd a c1 c2 = 
     Format.fprintf f "%c@[<hov 1>" c1;
     ppconstant hd;
@@ -88,7 +88,13 @@ let ppterm f t =
     | Const s -> ppconstant s
     | Arg (i,args) ->
        Format.fprintf f "{@[<hov 1>";
-       Format.fprintf f "A%d " i;
+       if env.(i) == dummy then
+        Format.fprintf f "A%d " i
+       else begin
+        Format.fprintf f "≪";
+        aux env.(i);
+        Format.fprintf f "≫ ";
+       end;
        List.iter (fun x -> ppconstant x; Format.fprintf f "@ ") args;
        Format.fprintf f "@]}"
     | Lam t ->
@@ -102,7 +108,7 @@ let ppterm f t =
 let m = ref [];;
 let n = ref 0;;
 
-let uppterm f t =
+let uppterm names env f t =
   let rec pp_uvar r =
    if !r == dummy then begin
     let s =
@@ -114,6 +120,9 @@ let uppterm f t =
       s
     in
      Format.fprintf f "%s" s 
+   (* TODO: (potential?) bug here, the variable is not lifted
+      from origdepth (currently not even passed to the function)
+      to depth (not passed as well) *)
    end else aux !r
   and ppapp hd a c1 c2 = 
     Format.fprintf f "%c@[<hov 1>" c1;
@@ -127,6 +136,8 @@ let uppterm f t =
     aux last;
     Format.fprintf f "@]%c" c2
   and ppconstant c = Format.fprintf f "%s" (string_of_constant c)
+  and nth_name n =
+   try List.nth names n with Not_found -> "A" ^ string_of_int n
   and aux = function
       App (hd,x,xs) -> ppapp hd (x::xs) '(' ')'
     | Custom (hd,xs) -> ppapp hd xs '(' ')'
@@ -142,7 +153,28 @@ let uppterm f t =
        ppconstant last;
        Format.fprintf f "@])"
     | Const s -> ppconstant s
-    | Arg _ -> assert false
+    | Arg (n,args) ->
+       if args = [] then
+        if env.(n) == dummy then Format.fprintf f "%s" (nth_name n)
+        (* TODO: (potential?) bug here, the argument is not lifted
+           from g_depth (currently not even passed to the function)
+           to depth (not passed as well) *)
+        else aux env.(n)
+       else begin
+        Format.fprintf f "(@[<hov 1>";
+        if env.(n) == dummy then Format.fprintf f "%s" (nth_name n)
+        (* TODO: (potential?) bug here, the argument is not lifted
+           from g_depth (currently not even passed to the function)
+           to depth (not passed as well) *)
+        else aux env.(n);
+         let args,last =
+          match List.rev args with
+             [] -> assert false
+           | last::l_rev -> List.rev l_rev,last in
+         List.iter (fun x -> ppconstant x; Format.fprintf f "@ ") args;
+         ppconstant last;
+        Format.fprintf f "@])"
+       end
     | Lam t ->
        Format.fprintf f "\\(";
        aux t;
@@ -451,10 +483,8 @@ let unif trail last_call adepth a e bdepth b =
            let a =
             to_heap adepth last_call trail ~from:adepth ~to_:bdepth e a in
            (* Second step: we restrict the l.h.s. *)
-let xxx =
-           to_heap adepth last_call trail ~from:(bdepth+depth) ~to_:origdepth
-            e a
-in Format.eprintf "<--- %a\n%!" ppterm xxx; xxx);
+           to_heap adepth last_call trail ~from:(bdepth+depth)
+            ~to_:origdepth e a);
          true
        with RestrictionFailure -> false)
    | _, UVar (r,origdepth,args) when !r == dummy ->
@@ -545,7 +575,7 @@ let ct_unif trail last_call depth g e c_depth c_hd =
     if d = ok && s = 0 && h then t else
     let () =
       if debug then
-      Format.eprintf "%d) %d | %d |- %d/%d %a\n%!" ok d local r s ppterm t in
+      Format.eprintf "%d) %d | %d |- %d/%d %a\n%!" ok d local r s (ppterm [||]) t in
     match t with
     | Custom (i,xs) -> Custom(i, List.map (bind ok d local r s h) xs)
     | Const i as w ->
@@ -579,17 +609,17 @@ let ct_unif trail last_call depth g e c_depth c_hd =
   let assign_uv v j depth root shift t heap =
     if not last_call then trail := v :: !trail;
     v := bind j depth 0 root shift heap t;
-    if debug then Format.eprintf ":= %a (was %a)\n%!" ppterm !v ppterm t;
+    if debug then Format.eprintf ":= %a (was %a)\n%!" (ppterm [||]) !v (ppterm [||]) t;
     true in
 
   let assign_arg i aj depth root shift t =
     e.(i) <- bind aj depth 0 root shift true t;
-    if debug then Format.eprintf ":= %a (was %a)\n%!" ppterm e.(i) ppterm t;
+    if debug then Format.eprintf ":= %a (was %a)\n%!" (ppterm [||]) e.(i) (ppterm [||]) t;
     true in
 
   let rec unif gamma l t1 d t2 r delta =
     if debug then Format.eprintf "@[<hov 3>%d %d |- %a@ =_%d %a -| %d %d@]\n%!"
-      gamma l ppterm t1 d ppterm t2 r delta;
+      gamma l (ppterm [||]) t1 d (ppterm [||]) t2 r delta;
    (* useless optim: (gamma = delta && l = r && t1 == t2) || *)
     match t1, t2 with
     | Custom (i,xs), Custom (j,ys) ->
@@ -698,15 +728,15 @@ let rec clausify depth =
 ;;
 
 let register_custom,lookup_custom =
- let (customs : ('a,term list -> unit) Hashtbl.t) = Hashtbl.create 17 in
+ let (customs : ('a,(*env:*)term array -> term list -> unit) Hashtbl.t) = Hashtbl.create 17 in
  Hashtbl.add customs,Hashtbl.find customs
 ;;
 
 let _ =
  register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$print")))
-  (fun args ->
+  (fun env args ->
    Format.printf "@[<hov 1>" ;
-   List.iter (Format.printf "%a@ " uppterm) args;
+   List.iter (Format.printf "%a@ " (uppterm [] env)) args;
    Format.printf "@]\n%!")
 ;;
 
@@ -719,7 +749,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
      Depth >= 0 is the number of variables in the context.
   *)
   let rec run depth p g gs (next : frame) alts lvl =
-    if debug then Format.eprintf "goal^%d: %a\n%!" depth ppterm g;
+    if debug then Format.eprintf "goal^%d: %a\n%!" depth (ppterm [||]) g;
     (*Format.eprintf "<";
     List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
     Format.eprintf ">";*)
@@ -757,7 +787,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
         backchain depth p g gs cp next alts lvl
     | Arg _ -> assert false (* Not an heap term *)
     | Custom(c,gs') ->
-       (try lookup_custom c gs'
+       (try lookup_custom c [||] gs'
         with Not_found -> assert false) ;
        (match gs with
            [] -> pop_andl alts next
@@ -824,60 +854,22 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
     backchain depth p g gs clauses next alts lvl
    end
   in
-   (fun p q -> run 0 p q [] FNil emptyalts emptyalts), next_alt
+   (fun p (_,q_env,q) ->
+     let q =
+      to_heap 0 true trail ~from:0 ~to_:0 q_env q in
+     run 0 p q [] FNil emptyalts emptyalts),
+   next_alt
 ;;
  
-let heap_var_of_ast l n =
- try l,List.assoc n l
- with Not_found ->
-  let n' = UVar (ref dummy,0,[]) in
-  (n,n')::l,n'
-
-let heap_funct_of_ast l' f =
- (try l',List.assoc f l'
-  with Not_found -> l',funct_of_ast f)
-
-let rec heap_term_of_ast lvl l l' =
- function
-    AST.Var v ->  
-     let l,v = heap_var_of_ast l v in l,l',v
-  | AST.App(AST.Const f,[]) when F.eq f F.andf ->
-     l,l',truec
-  | AST.Const f -> 
-     let l',c=heap_funct_of_ast l' f in l,l',snd c
-  | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
-  | AST.App(AST.Const f,tl) ->
-     let l,l',rev_tl =
-       List.fold_left
-        (fun (l,l',tl) t ->
-          let l,l',t = heap_term_of_ast lvl l l' t in (l,l',t::tl))
-        (l,l',[]) tl in
-     let l',c = heap_funct_of_ast l' f in
-     (match List.rev rev_tl with
-         hd2::tl -> l,l',App(fst c,hd2,tl)
-       | _ -> assert false)
-  | AST.App (AST.Custom f,tl) ->
-     let l,l',rev_tl =
-       List.fold_left
-        (fun (l,l',tl) t ->
-          let l,l',t = heap_term_of_ast lvl l l' t in (l,l',t::tl))
-        (l,l',[]) tl in
-     l,l',Custom(fst (funct_of_ast f),List.rev rev_tl)
-  | AST.Lam (x,t) ->
-     let c = constant_of_dbl lvl in
-     let l,l',t' = heap_term_of_ast (lvl+1) l ((x,(lvl,c))::l') t in
-     l,l',Lam t'
-  | AST.App (AST.Var _,_) -> assert false  (* TODO *)
-  | AST.App (AST.App (f,l1),l2) ->
-     heap_term_of_ast lvl l l' (AST.App (f, l1@l2))
-  | AST.App (AST.Lam _,_) ->
-     (* Beta-redexes not in our language *) assert false
-
 let stack_var_of_ast (f,l) n =
  try (f,l),List.assoc n l
  with Not_found ->
   let n' = Arg (f,[]) in
   (f+1,(n,n')::l),n'
+
+let stack_funct_of_ast l' f =
+ (try l',List.assoc f l'
+  with Not_found -> l',funct_of_ast f)
 
 let rec stack_term_of_ast lvl l l' =
  function
@@ -886,7 +878,7 @@ let rec stack_term_of_ast lvl l l' =
      l,l',v
   | AST.App(AST.Const f,[]) when F.eq f F.andf ->
      l,l',truec
-  | AST.Const f -> let l',c=heap_funct_of_ast l' f in l,l',snd c
+  | AST.Const f -> let l',c=stack_funct_of_ast l' f in l,l',snd c
   | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
@@ -894,7 +886,7 @@ let rec stack_term_of_ast lvl l l' =
         (fun (l,l',tl) t ->
           let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
         (l,l',[]) tl in
-     let l',c = heap_funct_of_ast l' f in
+     let l',c = stack_funct_of_ast l' f in
      (match List.rev rev_tl with
          hd2::tl -> l,l',App(fst c,hd2,tl)
        | _ -> assert false)
@@ -931,15 +923,19 @@ let rec stack_term_of_ast lvl l l' =
   | AST.App (AST.Lam _,_) ->
      (* Beta-redexes not in our language *) assert false
 
-let query_of_ast t = let _,_,t = heap_term_of_ast 0 [] [] t in t
+let query_of_ast t =
+ let (max,l),_,t = stack_term_of_ast 0 (0,[]) [] t in
+  List.rev_map fst l,Array.create max dummy,t
 
 let program_of_ast p =
  let clauses =
   List.map (fun (a,f) ->
    let l,_,a = stack_term_of_ast 0 (0,[]) [] a in
-   let (max,_),_,f = stack_term_of_ast 0 l [] f in
-Format.eprintf "%a :- " ppterm a;
-List.iter (Format.eprintf "%a, " ppterm) (chop f);
+   let (max,l),_,f = stack_term_of_ast 0 l [] f in
+   let names = List.rev_map fst l in
+   let env = Array.create max dummy in
+Format.eprintf "%a :- " (uppterm names env) a;
+List.iter (Format.eprintf "%a, " (uppterm names env)) (chop f);
 Format.eprintf ".\n%!";
    { depth = 0
    ; hd = a
@@ -953,14 +949,14 @@ Format.eprintf ".\n%!";
 let impl =
  (module struct
   (* RUN with non indexed engine *)
-  type query = term
+  type query = string list * term array * term
   type program_ = program
   type program = program_
   let query_of_ast = query_of_ast
   let program_of_ast = program_of_ast
 
-  let msg q =
-   Format.fprintf Format.str_formatter "Casse tête: %a" ppterm q ;
+  let msg (q_names,q_env,q) =
+   Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh: %a" (uppterm q_names q_env) q ;
    Format.flush_str_formatter ()
 
   let execute_once p q =
@@ -968,13 +964,16 @@ let impl =
    try ignore (run p q) ; false
    with Failure _ -> true
 
-  let execute_loop p q =
+  let execute_loop p ((q_names,q_env,q) as qq) =
    let run, cont = make_runtime in
    let time0 = Unix.gettimeofday() in
-   let k = ref (run p q) in
+   let k = ref (run p qq) in
    let time1 = Unix.gettimeofday() in
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-   Format.eprintf "Result: %a\n%!" ppterm q ;
+   Format.eprintf "Raw Result: %a\n%!" (ppterm q_env) q ;
+   Format.eprintf "Result: \n%!" ;
+   List.iteri (fun i name -> Format.eprintf "%s=%a\n%!" name
+    (uppterm q_names q_env) q_env.(i)) q_names;
    while !k != emptyalts do
      prerr_endline "More? (Y/n)";
      if read_line() = "n" then k := emptyalts else
@@ -983,7 +982,10 @@ let impl =
        k := cont !k;
        let time1 = Unix.gettimeofday() in
        prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-       Format.eprintf "Result: %a\n%!" ppterm q ;
+       Format.eprintf "Raw Result: %a\n%!" (ppterm q_env) q ;
+       Format.eprintf "Result: \n%!" ;
+       List.iteri (fun i name -> Format.eprintf "%s=%a\n%!" name
+        (uppterm q_names q_env) q_env.(i)) q_names;
       with
        Failure "no clause" -> prerr_endline "Fail"; k := emptyalts
   done
