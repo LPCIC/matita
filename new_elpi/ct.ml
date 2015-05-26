@@ -520,7 +520,7 @@ let unif trail last_call adepth a e bdepth b =
        for_all2 (fun x y -> unif depth x bdepth y heap) xs ys
    | Lam t1, Lam t2 -> unif (depth+1) t1 bdepth t2 heap
    | Const c1, Const c2 when c1=c2 && c1 < bdepth -> true
-   | Const c, _ when c >= bdepth && c < adepth -> false
+   | Const c, Const _ when c >= bdepth && c < adepth -> false
    | Const c1, Const c2 when c1 = c2 + delta -> true
    | _ -> false in
  unif 0 a bdepth b false
