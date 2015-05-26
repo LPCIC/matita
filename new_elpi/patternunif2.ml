@@ -650,6 +650,7 @@ let rec clausify env depth =
   | App(c, g1, [g2]) when c == implc ->
      [ { depth ; hd=g2 ; hyps=chop g1 ; vars=0 ;
          key = key_of depth env depth g2}]
+  | App(c, _, _) when c == implc -> assert false
   | App(c, Lam b, []) when c == pic ->
      (* TODO: this should be allowed! But the parser needs to be
         fixed to parse pis in positive position correctly, binding

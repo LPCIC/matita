@@ -582,6 +582,7 @@ let rec clausify depth =
 (* TODO: BUG the semantics of implc is wrong when g2 is not an atom. *)
   | App(c, g1, [g2]) when c == implc ->
      [ { depth ; hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of depth g2 } ]
+  | App(c, _, _) when c == implc -> assert false
   | App(c, Lam b, []) when c == pic ->
      (* TODO: this should be allowed! But the parser needs to be
         fixed to parse pis in positive position correctly, binding
