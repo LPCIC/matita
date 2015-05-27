@@ -139,7 +139,7 @@ let uppterm names env f t =
     Format.fprintf f "@]%c" c2
   and ppconstant c = Format.fprintf f "%s" (string_of_constant c)
   and nth_name n =
-   try List.nth names n with Not_found -> "A" ^ string_of_int n
+   try List.nth names n with Failure _ -> "A" ^ string_of_int n
   and aux = function
       App (hd,x,xs) -> ppapp hd (x::xs) '(' ')'
     | Custom (hd,xs) -> ppapp hd xs '(' ')'
