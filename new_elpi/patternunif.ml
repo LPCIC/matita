@@ -142,8 +142,49 @@ let xppterm ~nice names env f t =
     aux f t
 ;;
 
+(* pp for first-order prolog *) 
+let xppterm_prolog ~nice names env f t =
+  let pp_app f pphd pparg (hd,args) =
+   if args = [] then pphd f hd
+   else begin
+    Format.fprintf f "@[<hov 1>%a(%a@]" pphd hd (pplist pparg ",") args;
+    Format.fprintf f "%s" ")";
+   end in
+  let ppconstant f c = Format.fprintf f "%s" (string_of_constant c) in
+  let rec pp_arg f n =
+   let name= try List.nth names n with Not_found -> "A" ^ string_of_int n in
+   if env.(n) == dummy then Format.fprintf f "%s" name
+   (* TODO: (potential?) bug here, the argument is not lifted
+      from g_depth (currently not even passed to the function)
+      to depth (not passed as well) *)
+   else if nice then aux f env.(n)
+   else Format.fprintf f "≪%a≫ " aux env.(n)
+  and aux f = function
+      App (hd,x,xs) ->
+        if hd==eqc then
+         Format.fprintf f "%a = %a" aux x aux (List.hd xs) 
+        else if hd==orc then        
+                       (* (%a) ? *)
+         Format.fprintf f "%a" (pplist aux ";") (x::xs)  
+        else if hd==andc then    
+         Format.fprintf f "%a" (pplist aux ",") (x::xs)  
+        else if hd==implc then (
+          assert (List.length xs = 1);
+          Format.fprintf f "(%a => %a)" aux x aux (List.hd xs)
+        ) else pp_app f ppconstant aux (hd,x::xs) 
+    | Custom (hd,xs) ->  assert false;
+    | UVar (r,depth,args) -> assert false 
+    | Arg (n,[]) -> pp_arg f n
+    | Arg _ -> assert false
+    | Const s -> ppconstant f s
+    | Lam t -> assert false;
+  in
+    aux f t
+;;
+
 let ppterm = xppterm ~nice:false
 let uppterm = xppterm ~nice:true
+let pp_prolog = xppterm_prolog ~nice:true
 
 type key1 = int
 type key2 = int
