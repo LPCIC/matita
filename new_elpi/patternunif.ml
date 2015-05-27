@@ -114,7 +114,7 @@ let xppterm ~nice names env f t =
    end else if nice then aux f !r
    else Format.fprintf f "<%a>_%d" aux !r depth
   and pp_arg f n =
-   let name= try List.nth names n with Not_found -> "A" ^ string_of_int n in
+   let name= try List.nth names n with Failure _ -> "A" ^ string_of_int n in
    if env.(n) == dummy then Format.fprintf f "%s" name
    (* TODO: (potential?) bug here, the argument is not lifted
       from g_depth (currently not even passed to the function)
@@ -152,7 +152,7 @@ let xppterm_prolog ~nice names env f t =
    end in
   let ppconstant f c = Format.fprintf f "%s" (string_of_constant c) in
   let rec pp_arg f n =
-   let name= try List.nth names n with Not_found -> "A" ^ string_of_int n in
+   let name= try List.nth names n with Failure _ -> "A" ^ string_of_int n in
    if env.(n) == dummy then Format.fprintf f "%s" name
    (* TODO: (potential?) bug here, the argument is not lifted
       from g_depth (currently not even passed to the function)
