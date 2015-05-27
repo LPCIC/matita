@@ -82,8 +82,11 @@ let funct_of_ast, constant_of_dbl, string_of_constant =
 let cutc = snd (funct_of_ast F.cutf)
 let truec = snd (funct_of_ast F.truef)
 let andc = fst (funct_of_ast F.andf)
+let orc = fst (funct_of_ast F.orf)
 let implc = fst (funct_of_ast F.implf)
 let pic = fst (funct_of_ast F.pif)
+let eqc = fst (funct_of_ast F.eqf)
+
 
 let m = ref [];;
 let n = ref 0;;
@@ -119,10 +122,14 @@ let xppterm ~nice names env f t =
    else if nice then aux f env.(n)
    else Format.fprintf f "≪%a≫ " aux env.(n)
   and aux f = function
-      App (hd,x,xs) -> 
-        if hd==andc(* , *) then
+      App (hd,x,xs) ->
+        if hd==eqc then
+         Format.fprintf f "%a = %a" aux x aux (List.hd xs)
+        else if hd==orc then
+         Format.fprintf f "(%a)" (pplist aux ";") (x::xs)
+        else if hd==andc then
          Format.fprintf f "(%a)" (pplist aux ",") (x::xs)
-        else if hd==implc(* => *) then (
+        else if hd==implc then (
           assert (List.length xs = 1);
           Format.fprintf f "(%a => %a)" aux x aux (List.hd xs)
         ) else pp_app f ppconstant aux (hd,x::xs)
