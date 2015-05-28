@@ -956,7 +956,7 @@ let impl =
   let program_of_ast = program_of_ast
 
   let msg (q_names,q_env,q) =
-   Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh: %a" (uppterm q_names q_env) q ;
+   Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh, casse-tete: %a" (uppterm q_names q_env) q ;
    Format.flush_str_formatter ()
 
   let execute_once p q =
