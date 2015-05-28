@@ -669,7 +669,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
     | c :: cs ->
         let old_trail = !trail in
         let last_call = last_call && cs = [] in
-        let env = Array.create c.vars dummy in
+        let env = Array.make c.vars dummy in
         match unif trail last_call depth g env c.depth c.hd with
         | false -> undo_trail old_trail trail; select cs
         | true ->
@@ -792,7 +792,7 @@ let rec stack_term_of_ast lvl l l' =
 
 let query_of_ast t =
  let (max,l),_,t = stack_term_of_ast 0 (0,[]) [] t in
-  List.rev_map fst l,Array.create max dummy,t
+  List.rev_map fst l,Array.make max dummy,t
 
 let program_of_ast p =
  let clauses =

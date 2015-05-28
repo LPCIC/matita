@@ -315,7 +315,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
     | c :: cs ->
         let old_trail = !trail in
         let last_call = last_call && cs = [] in
-        let env = Array.create c.vars dummy in
+        let env = Array.make c.vars dummy in
         match unif trail last_call g env c.hd with
         | false -> undo_trail old_trail trail; select cs
         | true ->
