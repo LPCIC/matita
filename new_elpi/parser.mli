@@ -35,4 +35,5 @@ module type Implementation =
   val msg : query -> string
   val execute_once : program -> query -> bool  (* true means error *)
   val execute_loop : program -> query -> unit
+  val pp_prolog : (term * term) list -> unit
  end

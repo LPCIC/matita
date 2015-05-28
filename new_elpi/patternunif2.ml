@@ -891,6 +891,7 @@ let impl =
   type program = program_
   let query_of_ast = query_of_ast
   let program_of_ast = program_of_ast
+  let pp_prolog _ = Format.eprintf "Error: not implemented%!"; assert false
 
   let msg (q_names,q_env,q) =
    Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh: %a" (uppterm q_names q_env) q ;

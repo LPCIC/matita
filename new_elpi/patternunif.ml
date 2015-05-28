@@ -184,7 +184,7 @@ let xppterm_prolog ~nice names env f t =
 
 let ppterm = xppterm ~nice:false
 let uppterm = xppterm ~nice:true
-let pp_prolog = xppterm_prolog ~nice:true
+let pp_FOprolog = xppterm_prolog ~nice:true
 
 type key1 = int
 type key2 = int
@@ -811,6 +811,17 @@ let program_of_ast p =
  in
   make clauses
 
+let pp_FOprolog p =
+ List.iter (fun (a,f) ->
+  let l,_,a = stack_term_of_ast 0 (0,[]) [] a in
+  let (max,l),_,f = stack_term_of_ast 0 l [] f in
+  let names = List.rev_map fst l in
+  let env = Array.make max dummy in
+  if f = truec then
+   Format.eprintf "@[<hov 1>%a%a.@]\n%!" (pp_FOprolog names env) a (pplist (pp_FOprolog names env) ",") (chop f)
+  else
+   Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (pp_FOprolog names env) a (pplist (pp_FOprolog names env) ",") (chop f)) p;;
+
 let impl =
  (module struct
   (* RUN with non indexed engine *)
@@ -819,6 +830,7 @@ let impl =
   type program = program_
   let query_of_ast = query_of_ast
   let program_of_ast = program_of_ast
+  let pp_prolog = pp_FOprolog
 
   let msg (q_names,q_env,q) =
    Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh: %a" (uppterm q_names q_env) q ;

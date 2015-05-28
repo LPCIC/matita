@@ -1328,6 +1328,7 @@ module
   let msg q = Descr.descr ^ IFormula.pp q
   let execute_once p q = IRun.run (IProgram.make p) q = None
   let execute_loop p q = IRun.main_loop (IProgram.make p) q
+  let pp_prolog _ = Format.eprintf "Error: Not implemented%!"; assert false
  end
 ;;
 

@@ -58,6 +58,23 @@ let print_implementations () =
  ) implementations
 ;;
 
+(* rewrites a lambda-prolog program to first-order prolog *)
+let pp_lambda_to_prolog impl prog =
+ let (module Impl : Parser.Implementation) =
+  List.nth implementations (impl - 1) in
+ Printf.printf "\nRewriting λ-prolog to first-order prolog...\n\n%!";
+ Impl.pp_prolog prog
+;;
+
+let set_terminal_width ?(max_w=
+    let ic, _ as p = Unix.open_process "tput cols" in
+    let w = int_of_string (input_line ic) in
+    let _ = Unix.close_process p in w) () =
+  Format.pp_set_margin Format.err_formatter max_w;
+  Format.pp_set_ellipsis_text Format.err_formatter "...";
+  Format.pp_set_max_boxes Format.err_formatter 30;
+;;
+
 let _ =
   let argv = Sys.argv in
   let argn = Array.length argv in
@@ -66,6 +83,7 @@ let _ =
    if argv.(1) = "-test" then
      if argn = 4 then 3,`OneBatch (int_of_string (argv.(2)))
      else 2,`AllBatch
+   else if argv.(1) = "-prolog" then 3,`PPprologBatch (int_of_string (argv.(2)))
    else if argv.(1) = "-impl" then 3,`OneInteractive (int_of_string (argv.(2)))
    else if argv.(1) = "-list" then
     (print_implementations (); exit 0)
@@ -83,13 +101,15 @@ let _ =
   let p = Parser.parse_program p in
   let g =
     match test with
-    | `AllBatch | `OneBatch _ -> "main."
+    | `AllBatch | `OneBatch _ | `PPprologBatch _ -> "main."
     | _ ->
     Printf.printf "goal> %!";
     input_line stdin in
   let g = Parser.parse_goal g in
+  set_terminal_width ();
   match test with
   | `AllBatch -> test_prog p g
   | `OneBatch impl -> test_impl impl p g
   | `OneInteractive impl -> run_prog impl p g
+  | `PPprologBatch impl -> pp_lambda_to_prolog impl p  
 ;;
