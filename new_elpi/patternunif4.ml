@@ -102,7 +102,9 @@ let xppterm ~nice names env f t =
     let s =
      try List.assq r !m
      with Not_found ->
-      let s = "X" ^ string_of_int !n in
+      let s =
+       "X" ^ string_of_int !n ^ if depth=0 then "" else "^" ^ string_of_int depth
+      in
       incr n;
       m := (r,s)::!m;
       s
