@@ -383,7 +383,7 @@ let get_clauses a_env a_depth a m =
     during unification. Does the other choice improves performance? *)
  let ind,app = key_of a_depth a_env a_depth a in
  try
-  let l = List.rev (ClauseMap.find ind m) in
+  let l = ClauseMap.find ind m in
   let rec filter_map =
    function
       [] -> []
@@ -403,7 +403,7 @@ let add_clauses clauses p =
       ClauseMap.add ind [app,clause] m
     ) p clauses
 
-let make p = add_clauses p ClauseMap.empty
+let make p = add_clauses (List.rev p) ClauseMap.empty
 
 (****** End of Indexing ******)
 

@@ -369,7 +369,7 @@ module ClauseMap = Map.Make(IndexData)
 let get_clauses depth a m =
  let ind,app = key_of depth a in
  try
-  let l = List.rev (ClauseMap.find ind m) in
+  let l = ClauseMap.find ind m in
   let rec filter_map =
    function
       [] -> []
@@ -389,7 +389,7 @@ let add_clauses clauses p =
       ClauseMap.add ind [app,clause] m
     ) p clauses
 
-let make p = add_clauses p ClauseMap.empty
+let make p = add_clauses (List.rev p) ClauseMap.empty
 
 (****** End of Indexing ******)
 

@@ -367,9 +367,9 @@ end
 let get_clauses depth a m =
  let ind,app = key_of depth a in
  try
-  let l_rev,flexs_rev,h = Ptmap.find ind m in
-  if app=variablek then List.rev l_rev
-  else List.rev (try Ptmap.find app h with Not_found -> flexs_rev)
+  let l,flexs,h = Ptmap.find ind m in
+  if app=variablek then l
+  else (try Ptmap.find app h with Not_found -> flexs)
  with Not_found -> []
 
 let add_clauses clauses p =       
@@ -393,7 +393,7 @@ let add_clauses clauses p =
        ([clause],[],Ptmap.add app [clause] Ptmap.empty) m
     ) p clauses
 
-let make p = add_clauses p Ptmap.empty
+let make p = add_clauses (List.rev p) Ptmap.empty
 
 (****** End of Indexing ******)
 
