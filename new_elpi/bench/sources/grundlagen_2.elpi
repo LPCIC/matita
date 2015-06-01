@@ -9,38 +9,935 @@ k+succ k+1 k+3.
 grundlagen :- gv+ (
 
 % constant 1
-(gdef c+1 (abst l+2 (sort s+1) a\ (abst l+2 (sort s+1) b\ (cast (sort s+1) (abst l+1 a x\ b))))
+(gdef c+1 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (cast (sort k+1) (abst l+1 a x\ b))))
  l_imp\
 % constant 2
-(gdef c+2 (abst l+2 (sort s+1) a\ (abst l+2 (sort s+1) b\ (abst l+2 a a1\ (abst l+2 (appl b (appl a l_imp)) i\ (cast b (appl a1 i))))))
+(gdef c+2 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 a a1\ (abst l+2 (appl b (appl a l_imp)) i\ (cast b (appl a1 i))))))
  l_mp\
 % constant 3
-(gdef c+3 (abst l+2 (sort s+1) a\ (cast (appl a (appl a l_imp)) (abst l+2 a x\ x)))
+(gdef c+3 (abst l+2 (sort k+1) a\ (cast (appl a (appl a l_imp)) (abst l+2 a x\ x)))
  l_refimp\
 % constant 4
-(gdef c+4 (abst l+2 (sort s+1) a\ (abst l+2 (sort s+1) b\ (abst l+2 (sort s+1) c\ (abst l+2 (appl b (appl a l_imp)) i\ (abst l+2 (appl c (appl b l_imp)) j\ (cast (appl c (appl a l_imp)) (abst l+2 a x\ (appl (appl x i) j))))))))
+(gdef c+4 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_imp)) i\ (abst l+2 (appl c (appl b l_imp)) j\ (cast (appl c (appl a l_imp)) (abst l+2 a x\ (appl (appl x i) j))))))))
  l_trimp\
 % constant 5
-(gdec c+5 (sort s+1)
+(gdec c+5 (sort k+1)
 l_con\
 % constant 6
-(gdef c+6 (abst l+2 (sort s+1) a\ (cast (sort s+1) (appl l_con (appl a l_imp))))
+(gdef c+6 (abst l+2 (sort k+1) a\ (cast (sort k+1) (appl l_con (appl a l_imp))))
  l_not\
 % constant 7
-(gdef c+7 (abst l+2 (sort s+1) a\ (cast (sort s+1) (appl (appl a l_not) l_not)))
+(gdef c+7 (abst l+2 (sort k+1) a\ (cast (sort k+1) (appl (appl a l_not) l_not)))
  l_wel\
 % constant 8
-(gdef c+8 (abst l+2 (sort s+1) a\ (abst l+2 a a1\ (cast (appl a l_wel) (abst l+2 (appl a l_not) x\ (appl a1 x)))))
+(gdef c+8 (abst l+2 (sort k+1) a\ (abst l+2 a a1\ (cast (appl a l_wel) (abst l+2 (appl a l_not) x\ (appl a1 x)))))
  l_weli\
 % constant 9
-(gdec c+9 (abst l+1 (sort s+1) a\ (abst l+1 (appl a l_wel) w\ a))
+(gdec c+9 (abst l+1 (sort k+1) a\ (abst l+1 (appl a l_wel) w\ a))
 l_et\
 % constant 10
-(gdef c+10 (abst l+2 (sort s+1) a\ (abst l+2 l_con c1\ (cast a (appl (abst l+2 (appl a l_not) x\ c1) (appl a l_et)))))
+(gdef c+10 (abst l+2 (sort k+1) a\ (abst l+2 l_con c1\ (cast a (appl (abst l+2 (appl a l_not) x\ c1) (appl a l_et)))))
  l_cone\
 % constant 11
-(gdef c+11 (abst l+2 (sort s+1) a\ (abst l+2 (sort s+1) b\ (abst l+2 (appl b (appl a l_imp)) i\ (abst l+2 (appl b (appl (appl a l_not) l_imp)) j\ (cast b (appl (abst l+2 (appl b l_not) x\ (appl (appl (appl x (appl i (appl l_con (appl b (appl a l_trimp))))) j) x)) (appl b l_et)))))))
+(gdef c+11 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_imp)) i\ (abst l+2 (appl b (appl (appl a l_not) l_imp)) j\ (cast b (appl (abst l+2 (appl b l_not) x\ (appl (appl (appl x (appl i (appl l_con (appl b (appl a l_trimp))))) j) x)) (appl b l_et)))))))
  l_imp_th1\
-gtop)))))))))))
+% constant 12
+(gdef c+12 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl a l_not) n\ (cast (appl b (appl a l_imp)) (appl (abst l+2 l_con x\ (appl x (appl b l_cone))) (appl n (appl b (appl l_con (appl a l_trimp)))))))))
+ l_imp_th2\
+% constant 13
+(gdef c+13 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b l_not) n\ (abst l+2 (appl b (appl a l_imp)) i\ (cast (appl a l_not) (appl n (appl i (appl l_con (appl b (appl a l_trimp))))))))))
+ l_imp_th3\
+% constant 14
+(gdef c+14 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 a a1\ (abst l+2 (appl b l_not) n\ (cast (appl (appl b (appl a l_imp)) l_not) (abst l+2 (appl b (appl a l_imp)) x\ (appl a1 (appl x (appl n (appl b (appl a l_imp_th3)))))))))))
+ l_imp_th4\
+% constant 15
+(gdef c+15 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_imp)) l_not) n\ (cast a (appl (abst l+2 (appl a l_not) x\ (appl (appl x (appl b (appl a l_imp_th2))) n)) (appl a l_et))))))
+ l_imp_th5\
+% constant 16
+(gdef c+16 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_imp)) l_not) n\ (cast (appl b l_not) (abst l+2 b x\ (appl (abst l+2 a y\ x) n))))))
+ l_imp_th6\
+% constant 17
+(gdef c+17 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b l_not) n\ (abst l+2 (appl b (appl (appl a l_not) l_imp)) i\ (cast a (appl (appl i (appl n (appl b (appl (appl a l_not) l_imp_th3)))) (appl a l_et)))))))
+ l_imp_th7\
+% constant 18
+(gdef c+18 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl a l_not) (appl (appl b l_not) l_imp)) i\ (cast (appl b (appl a l_imp)) (abst l+2 a x\ (appl i (appl (appl x (appl a l_weli)) (appl (appl a l_not) (appl b l_imp_th7)))))))))
+ l_cp\
+% constant 19
+(gdef c+19 (cast (sort k+1) (appl l_con (appl l_con l_imp)))
+ l_obvious\
+% constant 20
+(gdef c+20 (cast l_obvious (appl l_con l_refimp))
+ l_obviousi\
+% constant 21
+(gdef c+21 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (cast (sort k+1) (appl (appl b l_not) (appl a l_imp)))))
+ l_ec\
+% constant 22
+(gdef c+22 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl a l_not) n\ (cast (appl b (appl a l_ec)) (appl n (appl (appl b l_not) (appl a l_imp_th2)))))))
+ l_eci1\
+% constant 23
+(gdef c+23 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b l_not) n\ (cast (appl b (appl a l_ec)) (abst l+2 a x\ n)))))
+ l_eci2\
+% constant 24
+(gdef c+24 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b l_not) (appl a l_imp)) i\ (cast (appl b (appl a l_ec)) i))))
+ l_ec_th1\
+% constant 25
+(gdef c+25 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl a l_not) (appl b l_imp)) i\ (cast (appl b (appl a l_ec)) (abst l+2 a x\ (abst l+2 b y\ (appl x (appl y i))))))))
+ l_ec_th2\
+% constant 26
+(gdef c+26 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_ec)) e\ (cast (appl a (appl b l_ec)) (appl e (appl a (appl b l_ec_th2)))))))
+ l_comec\
+% constant 27
+(gdef c+27 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_ec)) e\ (abst l+2 a a1\ (cast (appl b l_not) (appl a1 e))))))
+ l_ece1\
+% constant 28
+(gdef c+28 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_ec)) e\ (abst l+2 b b1\ (cast (appl a l_not) (appl e (appl (appl b1 (appl b l_weli)) (appl (appl b l_not) (appl a l_imp_th3)))))))))
+ l_ece2\
+% constant 29
+(gdef c+29 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_ec)) e\ (abst l+2 (appl a (appl c l_imp)) i\ (cast (appl b (appl c l_ec)) (appl e (appl i (appl (appl b l_not) (appl a (appl c l_trimp)))))))))))
+ l_ec_th3\
+% constant 30
+(gdef c+30 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_ec)) e\ (abst l+2 (appl b (appl c l_imp)) i\ (cast (appl c (appl a l_ec)) (appl (appl i (appl (appl e (appl b (appl a l_comec))) (appl c (appl a (appl b l_ec_th3))))) (appl a (appl c l_comec)))))))))
+ l_ec_th4\
+% constant 31
+(gdef c+31 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (cast (sort k+1) (appl (appl b (appl a l_ec)) l_not))))
+ l_and\
+% constant 32
+(gdef c+32 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 a a1\ (abst l+2 b b1\ (cast (appl b (appl a l_and)) (appl (appl b1 (appl b l_weli)) (appl a1 (appl (appl b l_not) (appl a l_imp_th4)))))))))
+ l_andi\
+% constant 33
+(gdef c+33 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_and)) a1\ (cast a (appl a1 (appl (appl b l_not) (appl a l_imp_th5)))))))
+ l_ande1\
+% constant 34
+(gdef c+34 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_and)) a1\ (cast b (appl (appl a1 (appl (appl b l_not) (appl a l_imp_th6))) (appl b l_et))))))
+ l_ande2\
+% constant 35
+(gdef c+35 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_and)) a1\ (cast (appl a (appl b l_and)) (appl (appl a1 (appl b (appl a l_ande1))) (appl (appl a1 (appl b (appl a l_ande2))) (appl a (appl b l_andi))))))))
+ l_comand\
+% constant 36
+(gdef c+36 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl a l_not) n\ (cast (appl (appl b (appl a l_and)) l_not) (appl (appl n (appl b (appl a l_eci1))) (appl (appl b (appl a l_ec)) l_weli))))))
+ l_and_th1\
+% constant 37
+(gdef c+37 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b l_not) n\ (cast (appl (appl b (appl a l_and)) l_not) (appl (appl n (appl b (appl a l_eci2))) (appl (appl b (appl a l_ec)) l_weli))))))
+ l_and_th2\
+% constant 38
+(gdef c+38 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_and)) l_not) n\ (abst l+2 a a1\ (cast (appl b l_not) (appl a1 (appl (appl n (appl (appl b (appl a l_ec)) l_et)) (appl b (appl a l_ece1)))))))))
+ l_and_th3\
+% constant 39
+(gdef c+39 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_and)) l_not) n\ (abst l+2 b b1\ (cast (appl a l_not) (appl b1 (appl (appl n (appl (appl b (appl a l_ec)) l_et)) (appl b (appl a l_ece2)))))))))
+ l_and_th4\
+% constant 40
+(gdef c+40 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_and)) l_not) n\ (cast (appl (appl a (appl b l_and)) l_not) (appl (abst l+2 (appl a (appl b l_and)) x\ (appl x (appl a (appl b l_comand)))) (appl n (appl (appl b (appl a l_and)) (appl (appl a (appl b l_and)) l_imp_th3))))))))
+ l_and_th5\
+% constant 41
+(gdef c+41 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_and)) a1\ (abst l+2 (appl c (appl a l_imp)) i\ (cast (appl b (appl c l_and)) (appl (appl a1 (appl b (appl a l_ande2))) (appl (appl (appl a1 (appl b (appl a l_ande1))) i) (appl b (appl c l_andi))))))))))
+ l_and_th6\
+% constant 42
+(gdef c+42 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_and)) a1\ (abst l+2 (appl c (appl b l_imp)) i\ (cast (appl c (appl a l_and)) (appl (appl (appl a1 (appl b (appl a l_ande2))) i) (appl (appl a1 (appl b (appl a l_ande1))) (appl c (appl a l_andi))))))))))
+ l_and_th7\
+% constant 43
+(gdef c+43 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (cast (sort k+1) (appl b (appl (appl a l_not) l_imp)))))
+ l_or\
+% constant 44
+(gdef c+44 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 a a1\ (cast (appl b (appl a l_or)) (appl (appl a1 (appl a l_weli)) (appl b (appl (appl a l_not) l_imp_th2)))))))
+ l_ori1\
+% constant 45
+(gdef c+45 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 b b1\ (cast (appl b (appl a l_or)) (abst l+2 (appl a l_not) x\ b1)))))
+ l_ori2\
+% constant 46
+(gdef c+46 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl (appl a l_not) l_imp)) i\ (cast (appl b (appl a l_or)) i))))
+ l_or_th1\
+% constant 47
+(gdef c+47 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl a (appl (appl b l_not) l_imp)) i\ (cast (appl b (appl a l_or)) (abst l+2 (appl a l_not) x\ (appl (appl i (appl x (appl a (appl (appl b l_not) l_imp_th3)))) (appl b l_et)))))))
+ l_or_th2\
+% constant 48
+(gdef c+48 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_or)) o\ (abst l+2 (appl a l_not) n\ (cast b (appl n o))))))
+ l_ore2\
+% constant 49
+(gdef c+49 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_or)) o\ (abst l+2 (appl b l_not) n\ (cast a (appl (appl o (appl n (appl b (appl (appl a l_not) l_imp_th3)))) (appl a l_et)))))))
+ l_ore1\
+% constant 50
+(gdef c+50 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_or)) o\ (cast (appl a (appl b l_or)) (abst l+2 (appl b l_not) x\ (appl x (appl o (appl b (appl a l_ore1)))))))))
+ l_comor\
+% constant 51
+(gdef c+51 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl a l_not) n\ (abst l+2 (appl b l_not) m\ (cast (appl (appl b (appl a l_or)) l_not) (appl m (appl n (appl b (appl (appl a l_not) l_imp_th4)))))))))
+ l_or_th3\
+% constant 52
+(gdef c+52 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_or)) l_not) n\ (cast (appl a l_not) (appl n (appl b (appl (appl a l_not) l_imp_th5)))))))
+ l_or_th4\
+% constant 53
+(gdef c+53 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_or)) l_not) n\ (cast (appl b l_not) (appl n (appl b (appl (appl a l_not) l_imp_th6)))))))
+ l_or_th5\
+% constant 54
+(gdef c+54 (abst l+2 (sort k+1) a\ (cast (appl (appl a l_not) (appl a l_or)) (appl (appl a l_not) l_refimp)))
+ l_or_th6\
+% constant 55
+(gdef c+55 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_or)) o\ (abst l+2 (appl c (appl a l_imp)) i\ (abst l+2 (appl c (appl b l_imp)) j\ (cast c (appl (appl j (appl o (appl c (appl b (appl (appl a l_not) l_trimp))))) (appl i (appl c (appl a l_imp_th1)))))))))))
+ l_orapp\
+% constant 56
+(gdef c+56 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_or)) o\ (abst l+2 (appl c (appl a l_imp)) i\ (cast (appl b (appl c l_or)) (appl o (appl (abst l+2 (appl c l_not) x\ (appl i (appl x (appl c (appl a l_imp_th3))))) (appl b (appl (appl a l_not) (appl (appl c l_not) l_trimp)))))))))))
+ l_or_th7\
+% constant 57
+(gdef c+57 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_or)) o\ (abst l+2 (appl c (appl b l_imp)) i\ (cast (appl c (appl a l_or)) (appl i (appl o (appl c (appl b (appl (appl a l_not) l_trimp)))))))))))
+ l_or_th8\
+% constant 58
+(gdef c+58 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (sort k+1) d\ (abst l+2 (appl b (appl a l_or)) o\ (abst l+2 (appl c (appl a l_imp)) i\ (abst l+2 (appl d (appl b l_imp)) j\ (cast (appl d (appl c l_or)) (appl i (appl (appl j (appl o (appl d (appl b (appl a l_or_th8))))) (appl c (appl d (appl a l_or_th7)))))))))))))
+ l_or_th9\
+% constant 59
+(gdef c+59 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_or)) o\ (cast (appl b (appl (appl a l_not) l_imp)) o))))
+ l_or_th10\
+% constant 60
+(gdef c+60 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_or)) o\ (cast (appl a (appl (appl b l_not) l_imp)) (appl o (appl b (appl a l_comor)))))))
+ l_or_th11\
+% constant 61
+(gdef c+61 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl (appl a l_not) l_or)) o\ (cast (appl b (appl a l_imp)) (appl o (appl (abst l+2 a x\ (appl x (appl a l_weli))) (appl b (appl (appl a l_wel) (appl a l_trimp)))))))))
+ l_or_th12\
+% constant 62
+(gdef c+62 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_imp)) i\ (cast (appl b (appl (appl a l_not) l_or)) (appl i (appl (abst l+2 (appl a l_wel) x\ (appl x (appl a l_et))) (appl b (appl a (appl (appl a l_wel) l_trimp)))))))))
+ l_or_th13\
+% constant 63
+(gdef c+63 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b l_not) (appl (appl a l_not) l_or)) o\ (cast (appl (appl b (appl a l_and)) l_not) (appl (appl o (appl (appl b l_not) (appl a l_or_th12))) (appl (appl b (appl a l_ec)) l_weli))))))
+ l_or_th14\
+% constant 64
+(gdef c+64 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_and)) l_not) n\ (cast (appl (appl b l_not) (appl (appl a l_not) l_or)) (appl (appl n (appl (appl b (appl a l_ec)) l_et)) (appl (appl b l_not) (appl a l_or_th13)))))))
+ l_or_th15\
+% constant 65
+(gdef c+65 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b l_not) (appl (appl a l_not) l_and)) a1\ (cast (appl (appl b (appl a l_or)) l_not) (appl (appl a1 (appl (appl b l_not) (appl (appl a l_not) l_ande2))) (appl (appl a1 (appl (appl b l_not) (appl (appl a l_not) l_ande1))) (appl b (appl a l_or_th3))))))))
+ l_or_th16\
+% constant 66
+(gdef c+66 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b (appl a l_or)) l_not) n\ (cast (appl (appl b l_not) (appl (appl a l_not) l_and)) (appl (appl n (appl b (appl a l_or_th5))) (appl (appl n (appl b (appl a l_or_th4))) (appl (appl b l_not) (appl (appl a l_not) l_andi))))))))
+ l_or_th17\
+% constant 67
+(gdef c+67 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (cast (sort k+1) (appl (appl b (appl a l_ec)) (appl (appl b (appl a l_or)) l_and)))))
+ l_orec\
+% constant 68
+(gdef c+68 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_or)) o\ (abst l+2 (appl b (appl a l_ec)) e\ (cast (appl b (appl a l_orec)) (appl e (appl o (appl (appl b (appl a l_ec)) (appl (appl b (appl a l_or)) l_andi)))))))))
+ l_oreci\
+% constant 69
+(gdef c+69 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 a a1\ (abst l+2 (appl b l_not) n\ (cast (appl b (appl a l_orec)) (appl (appl n (appl b (appl a l_eci2))) (appl (appl a1 (appl b (appl a l_ori1))) (appl b (appl a l_oreci)))))))))
+ l_orec_th1\
+% constant 70
+(gdef c+70 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl a l_not) n\ (abst l+2 b b1\ (cast (appl b (appl a l_orec)) (appl (appl n (appl b (appl a l_eci1))) (appl (appl b1 (appl b (appl a l_ori2))) (appl b (appl a l_oreci)))))))))
+ l_orec_th2\
+% constant 71
+(gdef c+71 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (cast (appl b (appl a l_or)) (appl o (appl (appl b (appl a l_ec)) (appl (appl b (appl a l_or)) l_ande1)))))))
+ l_orece1\
+% constant 72
+(gdef c+72 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (cast (appl b (appl a l_ec)) (appl o (appl (appl b (appl a l_ec)) (appl (appl b (appl a l_or)) l_ande2)))))))
+ l_orece2\
+% constant 73
+(gdef c+73 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (cast (appl a (appl b l_orec)) (appl (appl (appl o (appl b (appl a l_orece2))) (appl b (appl a l_comec))) (appl (appl (appl o (appl b (appl a l_orece1))) (appl b (appl a l_comor))) (appl a (appl b l_oreci))))))))
+ l_comorec\
+% constant 74
+(gdef c+74 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (abst l+2 a a1\ (cast (appl b l_not) (appl a1 (appl (appl o (appl b (appl a l_orece2))) (appl b (appl a l_ece1)))))))))
+ l_orec_th3\
+% constant 75
+(gdef c+75 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (abst l+2 b b1\ (cast (appl a l_not) (appl b1 (appl (appl o (appl b (appl a l_orece2))) (appl b (appl a l_ece2)))))))))
+ l_orec_th4\
+% constant 76
+(gdef c+76 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (abst l+2 (appl a l_not) n\ (cast b (appl n (appl (appl o (appl b (appl a l_orece1))) (appl b (appl a l_ore2)))))))))
+ l_orec_th5\
+% constant 77
+(gdef c+77 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (abst l+2 (appl b l_not) n\ (cast a (appl n (appl (appl o (appl b (appl a l_orece1))) (appl b (appl a l_ore1)))))))))
+ l_orec_th6\
+% constant 78
+(gdef c+78 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (cast (sort k+1) (appl (appl a (appl b l_imp)) (appl (appl b (appl a l_imp)) l_and)))))
+ l_iff\
+% constant 79
+(gdef c+79 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_imp)) i\ (abst l+2 (appl a (appl b l_imp)) j\ (cast (appl b (appl a l_iff)) (appl j (appl i (appl (appl a (appl b l_imp)) (appl (appl b (appl a l_imp)) l_andi)))))))))
+ l_iffi\
+% constant 80
+(gdef c+80 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 a a1\ (abst l+2 b b1\ (cast (appl b (appl a l_iff)) (appl (abst l+2 b x\ a1) (appl (abst l+2 a x\ b1) (appl b (appl a l_iffi)))))))))
+ l_iff_th1\
+% constant 81
+(gdef c+81 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl a l_not) n\ (abst l+2 (appl b l_not) m\ (cast (appl b (appl a l_iff)) (appl (appl m (appl a (appl b l_imp_th2))) (appl (appl n (appl b (appl a l_imp_th2))) (appl b (appl a l_iffi)))))))))
+ l_iff_th2\
+% constant 82
+(gdef c+82 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (cast (appl b (appl a l_imp)) (appl i (appl (appl a (appl b l_imp)) (appl (appl b (appl a l_imp)) l_ande1)))))))
+ l_iffe1\
+% constant 83
+(gdef c+83 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (cast (appl a (appl b l_imp)) (appl i (appl (appl a (appl b l_imp)) (appl (appl b (appl a l_imp)) l_ande2)))))))
+ l_iffe2\
+% constant 84
+(gdef c+84 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (cast (appl a (appl b l_iff)) (appl (appl i (appl b (appl a l_iffe1))) (appl (appl i (appl b (appl a l_iffe2))) (appl a (appl b l_iffi))))))))
+ l_comiff\
+% constant 85
+(gdef c+85 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 a a1\ (cast b (appl a1 (appl i (appl b (appl a l_iffe1)))))))))
+ l_iff_th3\
+% constant 86
+(gdef c+86 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 b b1\ (cast a (appl b1 (appl i (appl b (appl a l_iffe2)))))))))
+ l_iff_th4\
+% constant 87
+(gdef c+87 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl a l_not) n\ (cast (appl b l_not) (appl (appl i (appl b (appl a l_iffe2))) (appl n (appl a (appl b l_imp_th3)))))))))
+ l_iff_th5\
+% constant 88
+(gdef c+88 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl b l_not) n\ (cast (appl a l_not) (appl (appl i (appl b (appl a l_iffe1))) (appl n (appl b (appl a l_imp_th3)))))))))
+ l_iff_th6\
+% constant 89
+(gdef c+89 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 a a1\ (abst l+2 (appl b l_not) n\ (cast (appl (appl b (appl a l_iff)) l_not) (appl (appl n (appl a1 (appl b (appl a l_imp_th4)))) (appl (appl a (appl b l_imp)) (appl (appl b (appl a l_imp)) l_and_th1))))))))
+ l_iff_th7\
+% constant 90
+(gdef c+90 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl a l_not) n\ (abst l+2 b b1\ (cast (appl (appl b (appl a l_iff)) l_not) (appl (appl n (appl b1 (appl a (appl b l_imp_th4)))) (appl (appl a (appl b l_imp)) (appl (appl b (appl a l_imp)) l_and_th2))))))))
+ l_iff_th8\
+% constant 91
+(gdef c+91 (abst l+2 (sort k+1) a\ (cast (appl a (appl a l_iff)) (appl (appl a l_refimp) (appl (appl a l_refimp) (appl a (appl a l_iffi))))))
+ l_refiff\
+% constant 92
+(gdef c+92 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (cast (appl a (appl b l_iff)) (appl i (appl b (appl a l_comiff)))))))
+ l_symiff\
+% constant 93
+(gdef c+93 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl c (appl b l_iff)) j\ (cast (appl c (appl a l_iff)) (appl (appl (appl i (appl b (appl a l_iffe2))) (appl (appl j (appl c (appl b l_iffe2))) (appl a (appl b (appl c l_trimp))))) (appl (appl (appl j (appl c (appl b l_iffe1))) (appl (appl i (appl b (appl a l_iffe1))) (appl c (appl b (appl a l_trimp))))) (appl c (appl a l_iffi))))))))))
+ l_triff\
+% constant 94
+(gdef c+94 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (cast (appl (appl b l_not) (appl (appl a l_not) l_imp)) (abst l+2 (appl a l_not) x\ (appl x (appl i (appl b (appl a l_iff_th5)))))))))
+ l_iff_th9\
+% constant 95
+(gdef c+95 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (cast (appl (appl a l_not) (appl (appl b l_not) l_imp)) (abst l+2 (appl b l_not) x\ (appl x (appl i (appl b (appl a l_iff_th6)))))))))
+ l_iff_th10\
+% constant 96
+(gdef c+96 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_iff)) i\ (cast (appl (appl b l_not) (appl (appl a l_not) l_iff)) (appl (appl i (appl b (appl a l_iff_th10))) (appl (appl i (appl b (appl a l_iff_th9))) (appl (appl b l_not) (appl (appl a l_not) l_iffi))))))))
+ l_iff_th11\
+% constant 97
+(gdef c+97 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b l_not) (appl (appl a l_not) l_imp)) i\ (abst l+2 (appl (appl a l_not) (appl (appl b l_not) l_imp)) j\ (cast (appl b (appl a l_iff)) (appl (appl i (appl a (appl b l_cp))) (appl (appl j (appl b (appl a l_cp))) (appl b (appl a l_iffi)))))))))
+ l_iff_th12\
+% constant 98
+(gdef c+98 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (cast (appl (appl b l_not) (appl a l_iff)) (appl (appl (appl o (appl b (appl a l_orece1))) (appl b (appl a l_comor))) (appl (appl o (appl b (appl a l_orece2))) (appl (appl b l_not) (appl a l_iffi))))))))
+ l_iff_th13\
+% constant 99
+(gdef c+99 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl b (appl a l_orec)) o\ (cast (appl (appl a l_not) (appl b l_iff)) (appl (appl o (appl b (appl a l_comorec))) (appl a (appl b l_iff_th13)))))))
+ l_iff_th14\
+% constant 100
+(gdef c+100 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl b l_not) (appl a l_iff)) i\ (cast (appl b (appl a l_orec)) (appl (appl i (appl (appl b l_not) (appl a l_iffe1))) (appl (appl (appl i (appl (appl b l_not) (appl a l_iffe2))) (appl a (appl b l_comor))) (appl b (appl a l_oreci))))))))
+ l_iff_th15\
+% constant 101
+(gdef c+101 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (appl (appl a l_not) (appl b l_iff)) i\ (cast (appl b (appl a l_orec)) (appl (appl i (appl a (appl b l_iff_th15))) (appl a (appl b l_comorec)))))))
+ l_iff_th16\
+% constant 102
+(gdef c+102 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl c (appl a l_imp)) j\ (cast (appl c (appl b l_imp)) (appl j (appl (appl i (appl b (appl a l_iffe2))) (appl c (appl a (appl b l_trimp)))))))))))
+ l_iff_thimp1\
+% constant 103
+(gdef c+103 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl a (appl c l_imp)) j\ (cast (appl b (appl c l_imp)) (appl (appl i (appl b (appl a l_iffe1))) (appl j (appl b (appl a (appl c l_trimp)))))))))))
+ l_iff_thimp2\
+% constant 104
+(gdef c+104 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl c (appl a l_ec)) e\ (cast (appl c (appl b l_ec)) (appl (appl i (appl b (appl a l_iffe2))) (appl e (appl b (appl c (appl a l_ec_th3)))))))))))
+ l_iff_thec1\
+% constant 105
+(gdef c+105 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl a (appl c l_ec)) e\ (cast (appl b (appl c l_ec)) (appl (appl i (appl b (appl a l_iffe2))) (appl e (appl b (appl a (appl c l_ec_th4)))))))))))
+ l_iff_thec2\
+% constant 106
+(gdef c+106 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl c (appl a l_and)) a1\ (cast (appl c (appl b l_and)) (appl (appl i (appl b (appl a l_iffe1))) (appl a1 (appl b (appl c (appl a l_and_th6)))))))))))
+ l_iff_thand1\
+% constant 107
+(gdef c+107 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl a (appl c l_and)) a1\ (cast (appl b (appl c l_and)) (appl (appl i (appl b (appl a l_iffe1))) (appl a1 (appl b (appl a (appl c l_and_th7)))))))))))
+ l_iff_thand2\
+% constant 108
+(gdef c+108 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl c (appl a l_or)) o\ (cast (appl c (appl b l_or)) (appl (appl i (appl b (appl a l_iffe1))) (appl o (appl b (appl c (appl a l_or_th7)))))))))))
+ l_iff_thor1\
+% constant 109
+(gdef c+109 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl a (appl c l_or)) o\ (cast (appl b (appl c l_or)) (appl (appl i (appl b (appl a l_iffe1))) (appl o (appl b (appl a (appl c l_or_th8)))))))))))
+ l_iff_thor2\
+% constant 110
+(gdef c+110 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl c (appl a l_orec)) o\ (cast (appl c (appl b l_orec)) (appl (appl (appl o (appl c (appl a l_orece2))) (appl i (appl c (appl b (appl a l_iff_thec1))))) (appl (appl (appl o (appl c (appl a l_orece1))) (appl i (appl c (appl b (appl a l_iff_thor1))))) (appl c (appl b l_oreci))))))))))
+ l_iff_thorec1\
+% constant 111
+(gdef c+111 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_iff)) i\ (abst l+2 (appl a (appl c l_orec)) o\ (cast (appl b (appl c l_orec)) (appl (appl (appl o (appl a (appl c l_orece2))) (appl i (appl c (appl b (appl a l_iff_thec2))))) (appl (appl (appl o (appl a (appl c l_orece1))) (appl i (appl c (appl b (appl a l_iff_thor2))))) (appl b (appl c l_oreci))))))))))
+ l_iff_thorec2\
+% constant 112
+(gdef c+112 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (cast (sort k+1) (abst l+1 nsigma x\ (appl x p)))))
+ l_all\
+% constant 113
+(gdef c+113 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_all)) a1\ (abst l+2 nsigma s\ (cast (appl s p) (appl s a1))))))
+ l_alle\
+% constant 114
+(gdef c+114 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 nsigma s\ (abst l+2 (appl (appl s p) l_not) n\ (cast (appl (appl p (appl nsigma l_all)) l_not) (abst l+2 (appl p (appl nsigma l_all)) x\ (appl (appl s x) n)))))))
+ l_all_th1\
+% constant 115
+(gdef c+115 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (cast (abst l+1 nsigma x\ (sort k+1)) (abst l+2 nsigma x\ (appl (appl x p) l_not)))))
+ l_non\
+% constant 116
+(gdef c+116 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (cast (sort k+1) (appl (appl p (appl nsigma l_non)) (appl nsigma l_all)))))
+ l_none\
+% constant 117
+(gdef c+117 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (cast (sort k+1) (appl (appl p (appl nsigma l_none)) l_not))))
+ l_some\
+% constant 118
+(gdef c+118 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 nsigma s\ (abst l+2 (appl s p) sp\ (cast (appl p (appl nsigma l_some)) (appl (appl sp (appl (appl s p) l_weli)) (appl s (appl (appl p (appl nsigma l_non)) (appl nsigma l_all_th1)))))))))
+ l_somei\
+% constant 119
+(gdef c+119 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl (appl p (appl nsigma l_all)) l_not) n\ (abst l+2 (appl (appl p (appl nsigma l_non)) (appl nsigma l_none)) m\ (abst l+2 nsigma s\ (cast (appl s p) (appl (appl s m) (appl (appl s p) l_et))))))))
+ l_some_t1\
+% constant 120
+(gdef c+120 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl (appl p (appl nsigma l_all)) l_not) n\ (abst l+2 (appl (appl p (appl nsigma l_non)) (appl nsigma l_none)) m\ (cast l_con (appl (abst l+2 nsigma x\ (appl x (appl m (appl n (appl p (appl nsigma l_some_t1)))))) n))))))
+ l_some_t2\
+% constant 121
+(gdef c+121 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl (appl p (appl nsigma l_all)) l_not) n\ (cast (appl (appl p (appl nsigma l_non)) (appl nsigma l_some)) (abst l+2 (appl (appl p (appl nsigma l_non)) (appl nsigma l_none)) x\ (appl x (appl n (appl p (appl nsigma l_some_t2)))))))))
+ l_some_th1\
+% constant 122
+(gdef c+122 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl (appl p (appl nsigma l_non)) (appl nsigma l_some)) s\ (abst l+2 (appl p (appl nsigma l_all)) a1\ (abst l+2 nsigma t\ (cast (appl (appl (appl t p) l_not) l_not) (appl (appl t a1) (appl (appl t p) l_weli))))))))
+ l_some_t3\
+% constant 123
+(gdef c+123 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl (appl p (appl nsigma l_non)) (appl nsigma l_some)) s\ (abst l+2 (appl p (appl nsigma l_all)) a1\ (cast l_con (appl (abst l+2 nsigma x\ (appl x (appl a1 (appl s (appl p (appl nsigma l_some_t3)))))) s))))))
+ l_some_t4\
+% constant 124
+(gdef c+124 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl (appl p (appl nsigma l_non)) (appl nsigma l_some)) s\ (cast (appl (appl p (appl nsigma l_all)) l_not) (abst l+2 (appl p (appl nsigma l_all)) x\ (appl x (appl s (appl p (appl nsigma l_some_t4)))))))))
+ l_some_th2\
+% constant 125
+(gdef c+125 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl (appl p (appl nsigma l_some)) l_not) n\ (cast (appl p (appl nsigma l_none)) (appl n (appl (appl p (appl nsigma l_none)) l_et))))))
+ l_some_th3\
+% constant 126
+(gdef c+126 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl (appl p (appl nsigma l_some)) l_not) n\ (abst l+2 nsigma s\ (cast (appl (appl s p) l_not) (appl s (appl n (appl p (appl nsigma l_some_th3)))))))))
+ l_some_th4\
+% constant 127
+(gdef c+127 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_none)) n\ (cast (appl (appl p (appl nsigma l_some)) l_not) (appl n (appl (appl p (appl nsigma l_none)) l_weli))))))
+ l_some_th5\
+% constant 128
+(gdef c+128 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_some)) s\ (abst l+2 (sort k+1) x\ (abst l+2 (abst l+1 nsigma y\ (appl x (appl (appl y p) l_imp))) i\ (abst l+2 (appl x l_not) n\ (abst l+2 nsigma t\ (cast (appl (appl t p) l_not) (appl (appl t i) (appl n (appl x (appl (appl t p) l_imp_th3))))))))))))
+ l_some_t5\
+% constant 129
+(gdef c+129 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_some)) s\ (abst l+2 (sort k+1) x\ (abst l+2 (abst l+1 nsigma y\ (appl x (appl (appl y p) l_imp))) i\ (abst l+2 (appl x l_not) n\ (cast l_con (appl (appl (abst l+2 nsigma y\ (appl y (appl n (appl i (appl x (appl s (appl p (appl nsigma l_some_t5)))))))) (appl p (appl nsigma l_some_th5))) (appl s (appl l_con (appl (appl p (appl nsigma l_some)) l_mp)))))))))))
+ l_some_t6\
+% constant 130
+(gdef c+130 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_some)) s\ (abst l+2 (sort k+1) x\ (abst l+2 (abst l+1 nsigma y\ (appl x (appl (appl y p) l_imp))) i\ (cast x (appl (abst l+2 (appl x l_not) y\ (appl y (appl i (appl x (appl s (appl p (appl nsigma l_some_t6))))))) (appl x l_et))))))))
+ l_someapp\
+% constant 131
+(gdef c+131 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) q\ (abst l+2 (appl p (appl nsigma l_some)) s\ (abst l+2 (abst l+1 nsigma x\ (appl (appl x q) (appl (appl x p) l_imp))) i\ (cast (appl q (appl nsigma l_some)) (appl (abst l+2 nsigma x\ (abst l+2 (appl x p) y\ (appl (appl (appl x i) (appl y (appl (appl x q) (appl (appl x p) l_mp)))) (appl x (appl q (appl nsigma l_somei)))))) (appl (appl q (appl nsigma l_some)) (appl s (appl p (appl nsigma l_someapp)))))))))))
+ l_some_th6\
+% constant 132
+(gdef c+132 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (cast (sort k+1) (appl (appl c (appl b l_or)) (appl a l_or))))))
+ l_or3\
+% constant 133
+(gdef c+133 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (abst l+2 (appl a l_not) n\ (cast (appl c (appl b l_or)) (appl n (appl o (appl (appl c (appl b l_or)) (appl a l_ore2))))))))))
+ l_or3_th1\
+% constant 134
+(gdef c+134 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (abst l+2 (appl a l_not) n\ (abst l+2 (appl b l_not) m\ (cast c (appl m (appl (appl n (appl o (appl c (appl b (appl a l_or3_th1))))) (appl c (appl b l_ore2)))))))))))
+ l_or3e3\
+% constant 135
+(gdef c+135 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (abst l+2 (appl b l_not) n\ (cast (appl a (appl c l_or)) (appl (abst l+2 (appl a l_not) x\ (appl n (appl x (appl o (appl c (appl b (appl a l_or3e3))))))) (appl a (appl c l_or_th2)))))))))
+ l_or3_th2\
+% constant 136
+(gdef c+136 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (abst l+2 (appl b l_not) n\ (abst l+2 (appl c l_not) m\ (cast a (appl m (appl (appl n (appl o (appl c (appl b (appl a l_or3_th2))))) (appl a (appl c l_ore2)))))))))))
+ l_or3e1\
+% constant 137
+(gdef c+137 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (abst l+2 (appl c l_not) n\ (cast (appl b (appl a l_or)) (appl (abst l+2 (appl b l_not) x\ (appl n (appl x (appl o (appl c (appl b (appl a l_or3e1))))))) (appl b (appl a l_or_th2)))))))))
+ l_or3_th3\
+% constant 138
+(gdef c+138 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (abst l+2 (appl c l_not) n\ (abst l+2 (appl a l_not) m\ (cast b (appl m (appl (appl n (appl o (appl c (appl b (appl a l_or3_th3))))) (appl b (appl a l_ore2)))))))))))
+ l_or3e2\
+% constant 139
+(gdef c+139 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (cast (appl a (appl c (appl b l_or3))) (appl (abst l+2 (appl b l_not) x\ (appl x (appl o (appl c (appl b (appl a l_or3_th2)))))) (appl (appl a (appl c l_or)) (appl b l_or_th1))))))))
+ l_or3_th4\
+% constant 140
+(gdef c+140 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (cast (appl b (appl a (appl c l_or3))) (appl (appl o (appl c (appl b (appl a l_or3_th4)))) (appl a (appl c (appl b l_or3_th4)))))))))
+ l_or3_th5\
+% constant 141
+(gdef c+141 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 a a1\ (cast (appl c (appl b (appl a l_or3))) (appl a1 (appl (appl c (appl b l_or)) (appl a l_ori1))))))))
+ l_or3i1\
+% constant 142
+(gdef c+142 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 b b1\ (cast (appl c (appl b (appl a l_or3))) (appl (appl b1 (appl c (appl b l_ori1))) (appl (appl c (appl b l_or)) (appl a l_ori2))))))))
+ l_or3i2\
+% constant 143
+(gdef c+143 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 c c1\ (cast (appl c (appl b (appl a l_or3))) (appl (appl c1 (appl c (appl b l_ori2))) (appl (appl c (appl b l_or)) (appl a l_ori2))))))))
+ l_or3i3\
+% constant 144
+(gdef c+144 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_or)) o\ (cast (appl c (appl b (appl a l_or3))) (appl (appl o (appl (appl b (appl a l_or)) (appl c l_ori2))) (appl b (appl a (appl c l_or3_th4)))))))))
+ l_or3_th6\
+% constant 145
+(gdef c+145 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b l_or)) o\ (cast (appl c (appl b (appl a l_or3))) (appl o (appl (appl c (appl b l_or)) (appl a l_ori2))))))))
+ l_or3_th7\
+% constant 146
+(gdef c+146 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl a (appl c l_or)) o\ (cast (appl c (appl b (appl a l_or3))) (appl (appl o (appl b (appl a (appl c l_or3_th6)))) (appl b (appl a (appl c l_or3_th4)))))))))
+ l_or3_th8\
+% constant 147
+(gdef c+147 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (sort k+1) d\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (abst l+2 (appl d (appl a l_imp)) i\ (abst l+2 (appl d (appl b l_imp)) j\ (abst l+2 (appl d (appl c l_imp)) k\ (cast d (appl (abst l+2 (appl c (appl b l_or)) x\ (appl k (appl j (appl x (appl d (appl c (appl b l_orapp))))))) (appl i (appl o (appl d (appl (appl c (appl b l_or)) (appl a l_orapp)))))))))))))))
+ l_or3app\
+% constant 148
+(gdef c+148 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (cast (sort k+1) (appl (appl c (appl b l_and)) (appl a l_and))))))
+ l_and3\
+% constant 149
+(gdef c+149 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast a (appl a1 (appl (appl c (appl b l_and)) (appl a l_ande1))))))))
+ l_and3e1\
+% constant 150
+(gdef c+150 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast b (appl (appl a1 (appl (appl c (appl b l_and)) (appl a l_ande2))) (appl c (appl b l_ande1))))))))
+ l_and3e2\
+% constant 151
+(gdef c+151 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast c (appl (appl a1 (appl (appl c (appl b l_and)) (appl a l_ande2))) (appl c (appl b l_ande2))))))))
+ l_and3e3\
+% constant 152
+(gdef c+152 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 a a1\ (abst l+2 b b1\ (abst l+2 c c1\ (cast (appl c (appl b (appl a l_and3))) (appl (appl c1 (appl b1 (appl c (appl b l_andi)))) (appl a1 (appl (appl c (appl b l_and)) (appl a l_andi)))))))))))
+ l_and3i\
+% constant 153
+(gdef c+153 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast (appl a (appl c (appl b l_and3))) (appl (appl a1 (appl c (appl b (appl a l_and3e1)))) (appl (appl a1 (appl c (appl b (appl a l_and3e3)))) (appl (appl a1 (appl c (appl b (appl a l_and3e2)))) (appl a (appl c (appl b l_and3i)))))))))))
+ l_and3_th1\
+% constant 154
+(gdef c+154 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast (appl b (appl a (appl c l_and3))) (appl (appl a1 (appl c (appl b (appl a l_and3_th1)))) (appl a (appl c (appl b l_and3_th1)))))))))
+ l_and3_th2\
+% constant 155
+(gdef c+155 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast (appl b (appl a l_and)) (appl (appl a1 (appl c (appl b (appl a l_and3e2)))) (appl (appl a1 (appl c (appl b (appl a l_and3e1)))) (appl b (appl a l_andi)))))))))
+ l_and3_th3\
+% constant 156
+(gdef c+156 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast (appl c (appl b l_and)) (appl a1 (appl (appl c (appl b l_and)) (appl a l_ande2))))))))
+ l_and3_th4\
+% constant 157
+(gdef c+157 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast (appl a (appl c l_and)) (appl (appl a1 (appl c (appl b (appl a l_and3_th2)))) (appl b (appl a (appl c l_and3_th3)))))))))
+ l_and3_th5\
+% constant 158
+(gdef c+158 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_and3))) a1\ (cast (appl a (appl b (appl c l_and3))) (appl (appl a1 (appl c (appl b (appl a l_and3e1)))) (appl (appl a1 (appl c (appl b (appl a l_and3e2)))) (appl (appl a1 (appl c (appl b (appl a l_and3e3)))) (appl a (appl b (appl c l_and3i)))))))))))
+ l_and3_th6\
+% constant 159
+(gdef c+159 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (cast (sort k+1) (appl (appl a (appl c l_ec)) (appl (appl c (appl b l_ec)) (appl (appl b (appl a l_ec)) l_and3)))))))
+ l_ec3\
+% constant 160
+(gdef c+160 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (cast (appl b (appl a l_ec)) (appl e (appl (appl a (appl c l_ec)) (appl (appl c (appl b l_ec)) (appl (appl b (appl a l_ec)) l_and3e1)))))))))
+ l_ec3_th1\
+% constant 161
+(gdef c+161 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (cast (appl c (appl b l_ec)) (appl e (appl (appl a (appl c l_ec)) (appl (appl c (appl b l_ec)) (appl (appl b (appl a l_ec)) l_and3e2)))))))))
+ l_ec3_th2\
+% constant 162
+(gdef c+162 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (cast (appl a (appl c l_ec)) (appl e (appl (appl a (appl c l_ec)) (appl (appl c (appl b l_ec)) (appl (appl b (appl a l_ec)) l_and3e3)))))))))
+ l_ec3_th3\
+% constant 163
+(gdef c+163 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (cast (appl a (appl c (appl b l_ec3))) (appl e (appl (appl a (appl c l_ec)) (appl (appl c (appl b l_ec)) (appl (appl b (appl a l_ec)) l_and3_th1)))))))))
+ l_ec3_th4\
+% constant 164
+(gdef c+164 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (cast (appl b (appl a (appl c l_ec3))) (appl (appl e (appl c (appl b (appl a l_ec3_th4)))) (appl a (appl c (appl b l_ec3_th4)))))))))
+ l_ec3_th5\
+% constant 165
+(gdef c+165 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (cast (appl a (appl b (appl c l_ec3))) (appl (appl (appl e (appl c (appl b (appl a l_ec3_th3)))) (appl a (appl c l_comec))) (appl (appl (appl e (appl c (appl b (appl a l_ec3_th1)))) (appl b (appl a l_comec))) (appl (appl (appl e (appl c (appl b (appl a l_ec3_th2)))) (appl c (appl b l_comec))) (appl (appl c (appl a l_ec)) (appl (appl a (appl b l_ec)) (appl (appl b (appl c l_ec)) l_and3i)))))))))))
+ l_ec3_th5a\
+% constant 166
+(gdef c+166 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 a a1\ (cast (appl b l_not) (appl a1 (appl (appl e (appl c (appl b (appl a l_ec3_th1)))) (appl b (appl a l_ece1))))))))))
+ l_ec3e12\
+% constant 167
+(gdef c+167 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 a a1\ (cast (appl c l_not) (appl a1 (appl (appl e (appl c (appl b (appl a l_ec3_th3)))) (appl a (appl c l_ece2))))))))))
+ l_ec3e13\
+% constant 168
+(gdef c+168 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 b b1\ (cast (appl c l_not) (appl b1 (appl (appl e (appl c (appl b (appl a l_ec3_th4)))) (appl a (appl c (appl b l_ec3e12)))))))))))
+ l_ec3e23\
+% constant 169
+(gdef c+169 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 b b1\ (cast (appl a l_not) (appl b1 (appl (appl e (appl c (appl b (appl a l_ec3_th4)))) (appl a (appl c (appl b l_ec3e13)))))))))))
+ l_ec3e21\
+% constant 170
+(gdef c+170 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 c c1\ (cast (appl a l_not) (appl c1 (appl (appl e (appl c (appl b (appl a l_ec3_th5)))) (appl b (appl a (appl c l_ec3e12)))))))))))
+ l_ec3e31\
+% constant 171
+(gdef c+171 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 c c1\ (cast (appl b l_not) (appl c1 (appl (appl e (appl c (appl b (appl a l_ec3_th5)))) (appl b (appl a (appl c l_ec3e13)))))))))))
+ l_ec3e32\
+% constant 172
+(gdef c+172 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b (appl a l_ec)) e\ (abst l+2 (appl c (appl b l_ec)) f\ (abst l+2 (appl a (appl c l_ec)) g\ (cast (appl c (appl b (appl a l_ec3))) (appl g (appl f (appl e (appl (appl a (appl c l_ec)) (appl (appl c (appl b l_ec)) (appl (appl b (appl a l_ec)) l_and3i)))))))))))))
+ l_ec3_th6\
+% constant 173
+(gdef c+173 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 (appl b (appl a l_or)) o\ (cast (appl c l_not) (appl (abst l+2 b x\ (appl x (appl (appl e (appl c (appl b (appl a l_ec3_th2)))) (appl c (appl b l_ece1))))) (appl (abst l+2 a x\ (appl x (appl (appl e (appl c (appl b (appl a l_ec3_th3)))) (appl a (appl c l_ece2))))) (appl o (appl (appl c l_not) (appl b (appl a l_orapp))))))))))))
+ l_ec3_th7\
+% constant 174
+(gdef c+174 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 (appl c (appl b l_or)) o\ (cast (appl a l_not) (appl o (appl (appl e (appl c (appl b (appl a l_ec3_th4)))) (appl a (appl c (appl b l_ec3_th7)))))))))))
+ l_ec3_th8\
+% constant 175
+(gdef c+175 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (abst l+2 (appl a (appl c l_or)) o\ (cast (appl b l_not) (appl o (appl (appl e (appl c (appl b (appl a l_ec3_th5)))) (appl b (appl a (appl c l_ec3_th7)))))))))))
+ l_ec3_th9\
+% constant 176
+(gdef c+176 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl a l_not) n\ (abst l+2 (appl b l_not) m\ (cast (appl c (appl b (appl a l_ec3))) (appl (appl n (appl a (appl c l_eci2))) (appl (appl m (appl c (appl b l_eci1))) (appl (appl n (appl b (appl a l_eci1))) (appl c (appl b (appl a l_ec3_th6))))))))))))
+ l_ec3i1\
+% constant 177
+(gdef c+177 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl b l_not) n\ (abst l+2 (appl c l_not) m\ (cast (appl c (appl b (appl a l_ec3))) (appl (appl m (appl a (appl c l_eci1))) (appl (appl n (appl c (appl b l_eci1))) (appl (appl n (appl b (appl a l_eci2))) (appl c (appl b (appl a l_ec3_th6))))))))))))
+ l_ec3i2\
+% constant 178
+(gdef c+178 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c l_not) n\ (abst l+2 (appl a l_not) m\ (cast (appl c (appl b (appl a l_ec3))) (appl (appl n (appl a (appl c l_eci1))) (appl (appl n (appl c (appl b l_eci2))) (appl (appl m (appl b (appl a l_eci1))) (appl c (appl b (appl a l_ec3_th6))))))))))))
+ l_ec3i3\
+% constant 179
+(gdef c+179 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (sort k+1) d\ (abst l+2 (sort k+1) e\ (abst l+2 (sort k+1) f\ (abst l+2 (appl c (appl b (appl a l_or3))) o1\ (abst l+2 (appl f (appl e (appl d l_ec3))) p1\ (abst l+2 (appl d (appl a l_imp)) i\ (abst l+2 (appl e (appl b l_imp)) j\ (abst l+2 (appl f (appl c l_imp)) k\ (abst l+2 d d1\ (cast (appl b l_not) (abst l+2 b x\ (appl (appl d1 (appl p1 (appl f (appl e (appl d l_ec3e12))))) (appl (appl x j) (appl l_con (appl e l_mp))))))))))))))))))
+ l_ec3_t1\
+% constant 180
+(gdef c+180 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (sort k+1) d\ (abst l+2 (sort k+1) e\ (abst l+2 (sort k+1) f\ (abst l+2 (appl c (appl b (appl a l_or3))) o1\ (abst l+2 (appl f (appl e (appl d l_ec3))) p1\ (abst l+2 (appl d (appl a l_imp)) i\ (abst l+2 (appl e (appl b l_imp)) j\ (abst l+2 (appl f (appl c l_imp)) k\ (abst l+2 d d1\ (cast (appl c l_not) (abst l+2 c x\ (appl (appl d1 (appl p1 (appl f (appl e (appl d l_ec3e13))))) (appl (appl x k) (appl l_con (appl f l_mp))))))))))))))))))
+ l_ec3_t2\
+% constant 181
+(gdef c+181 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (sort k+1) d\ (abst l+2 (sort k+1) e\ (abst l+2 (sort k+1) f\ (abst l+2 (appl c (appl b (appl a l_or3))) o1\ (abst l+2 (appl f (appl e (appl d l_ec3))) p1\ (abst l+2 (appl d (appl a l_imp)) i\ (abst l+2 (appl e (appl b l_imp)) j\ (abst l+2 (appl f (appl c l_imp)) k\ (abst l+2 d d1\ (cast a (appl (appl d1 (appl k (appl j (appl i (appl p1 (appl o1 (appl f (appl e (appl d (appl c (appl b (appl a l_ec3_t2)))))))))))) (appl (appl d1 (appl k (appl j (appl i (appl p1 (appl o1 (appl f (appl e (appl d (appl c (appl b (appl a l_ec3_t1)))))))))))) (appl o1 (appl c (appl b (appl a l_or3e1)))))))))))))))))))
+ l_ec3_th10\
+% constant 182
+(gdef c+182 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (sort k+1) d\ (abst l+2 (sort k+1) e\ (abst l+2 (sort k+1) f\ (abst l+2 (appl c (appl b (appl a l_or3))) o1\ (abst l+2 (appl f (appl e (appl d l_ec3))) p1\ (abst l+2 (appl d (appl a l_imp)) i\ (abst l+2 (appl e (appl b l_imp)) j\ (abst l+2 (appl f (appl c l_imp)) k\ (abst l+2 e e1\ (cast b (appl e1 (appl i (appl k (appl j (appl (appl p1 (appl f (appl e (appl d l_ec3_th4)))) (appl (appl o1 (appl c (appl b (appl a l_or3_th4)))) (appl d (appl f (appl e (appl a (appl c (appl b l_ec3_th10)))))))))))))))))))))))))
+ l_ec3_th11\
+% constant 183
+(gdef c+183 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (sort k+1) d\ (abst l+2 (sort k+1) e\ (abst l+2 (sort k+1) f\ (abst l+2 (appl c (appl b (appl a l_or3))) o1\ (abst l+2 (appl f (appl e (appl d l_ec3))) p1\ (abst l+2 (appl d (appl a l_imp)) i\ (abst l+2 (appl e (appl b l_imp)) j\ (abst l+2 (appl f (appl c l_imp)) k\ (abst l+2 f f1\ (cast c (appl f1 (appl j (appl i (appl k (appl (appl p1 (appl f (appl e (appl d l_ec3_th5)))) (appl (appl o1 (appl c (appl b (appl a l_or3_th5)))) (appl e (appl d (appl f (appl b (appl a (appl c l_ec3_th10)))))))))))))))))))))))))
+ l_ec3_th12\
+% constant 184
+(gdef c+184 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (cast (sort k+1) (appl (appl c (appl b (appl a l_ec3))) (appl (appl c (appl b (appl a l_or3))) l_and))))))
+ l_orec3\
+% constant 185
+(gdef c+185 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_orec3))) o\ (cast (appl c (appl b (appl a l_or3))) (appl o (appl (appl c (appl b (appl a l_ec3))) (appl (appl c (appl b (appl a l_or3))) l_ande1))))))))
+ l_orec3e1\
+% constant 186
+(gdef c+186 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_orec3))) o\ (cast (appl c (appl b (appl a l_ec3))) (appl o (appl (appl c (appl b (appl a l_ec3))) (appl (appl c (appl b (appl a l_or3))) l_ande2))))))))
+ l_orec3e2\
+% constant 187
+(gdef c+187 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_or3))) o\ (abst l+2 (appl c (appl b (appl a l_ec3))) e\ (cast (appl c (appl b (appl a l_orec3))) (appl e (appl o (appl (appl c (appl b (appl a l_ec3))) (appl (appl c (appl b (appl a l_or3))) l_andi))))))))))
+ l_orec3i\
+% constant 188
+(gdef c+188 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_orec3))) o\ (cast (appl a (appl c (appl b l_orec3))) (appl (appl (appl o (appl c (appl b (appl a l_orec3e2)))) (appl c (appl b (appl a l_ec3_th4)))) (appl (appl (appl o (appl c (appl b (appl a l_orec3e1)))) (appl c (appl b (appl a l_or3_th4)))) (appl a (appl c (appl b l_orec3i))))))))))
+ l_orec3_th1\
+% constant 189
+(gdef c+189 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+1) b\ (abst l+2 (sort k+1) c\ (abst l+2 (appl c (appl b (appl a l_orec3))) o\ (cast (appl b (appl a (appl c l_orec3))) (appl (appl (appl o (appl c (appl b (appl a l_orec3e2)))) (appl c (appl b (appl a l_ec3_th5)))) (appl (appl (appl o (appl c (appl b (appl a l_orec3e1)))) (appl c (appl b (appl a l_or3_th5)))) (appl b (appl a (appl c l_orec3i))))))))))
+ l_orec3_th2\
+% constant 190
+(gdec c+190 (abst l+1 (sort k+0) nsigma\ (abst l+1 nsigma s\ (abst l+1 nsigma t\ (sort k+1))))
+l_e_is\
+% constant 191
+(gdec c+191 (abst l+1 (sort k+0) nsigma\ (abst l+1 nsigma s\ (appl s (appl s (appl nsigma l_e_is)))))
+l_e_refis\
+% constant 192
+(gdec c+192 (abst l+1 (sort k+0) nsigma\ (abst l+1 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+1 nsigma s\ (abst l+1 nsigma t\ (abst l+1 (appl s p) sp\ (abst l+1 (appl t (appl s (appl nsigma l_e_is))) i\ (appl t p)))))))
+l_e_isp\
+% constant 193
+(gdef c+193 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl t (appl s (appl nsigma l_e_is))) i\ (cast (appl s (appl t (appl nsigma l_e_is))) (appl i (appl (appl s (appl nsigma l_e_refis)) (appl t (appl s (appl (abst l+2 nsigma x\ (appl s (appl x (appl nsigma l_e_is)))) (appl nsigma l_e_isp)))))))))))
+ l_e_symis\
+% constant 194
+(gdef c+194 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 (appl t (appl s (appl nsigma l_e_is))) i\ (abst l+2 (appl u (appl t (appl nsigma l_e_is))) j\ (cast (appl u (appl s (appl nsigma l_e_is))) (appl (appl i (appl t (appl s (appl nsigma l_e_symis)))) (appl j (appl s (appl t (appl (abst l+2 nsigma x\ (appl u (appl x (appl nsigma l_e_is)))) (appl nsigma l_e_isp)))))))))))))
+ l_e_tris\
+% constant 195
+(gdef c+195 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 (appl s (appl u (appl nsigma l_e_is))) i\ (abst l+2 (appl t (appl u (appl nsigma l_e_is))) j\ (cast (appl t (appl s (appl nsigma l_e_is))) (appl j (appl (appl i (appl s (appl u (appl nsigma l_e_symis)))) (appl t (appl u (appl s (appl nsigma l_e_tris)))))))))))))
+ l_e_tris1\
+% constant 196
+(gdef c+196 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 (appl u (appl s (appl nsigma l_e_is))) i\ (abst l+2 (appl u (appl t (appl nsigma l_e_is))) j\ (cast (appl t (appl s (appl nsigma l_e_is))) (appl (appl j (appl u (appl t (appl nsigma l_e_symis)))) (appl i (appl t (appl u (appl s (appl nsigma l_e_tris)))))))))))))
+ l_e_tris2\
+% constant 197
+(gdef c+197 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl s p) sp\ (abst l+2 (appl s (appl t (appl nsigma l_e_is))) i\ (cast (appl t p) (appl (appl i (appl s (appl t (appl nsigma l_e_symis)))) (appl sp (appl t (appl s (appl p (appl nsigma l_e_isp)))))))))))))
+ l_e_isp1\
+% constant 198
+(gdef c+198 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl (appl t (appl s (appl nsigma l_e_is))) l_not) n\ (cast (appl (appl s (appl t (appl nsigma l_e_is))) l_not) (appl (abst l+2 (appl s (appl t (appl nsigma l_e_is))) x\ (appl x (appl s (appl t (appl nsigma l_e_symis))))) (appl n (appl (appl t (appl s (appl nsigma l_e_is))) (appl (appl s (appl t (appl nsigma l_e_is))) l_imp_th3)))))))))
+ l_e_symnotis\
+% constant 199
+(gdef c+199 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 (appl (appl t (appl s (appl nsigma l_e_is))) l_not) n\ (abst l+2 (appl u (appl s (appl nsigma l_e_is))) i\ (cast (appl (appl t (appl u (appl nsigma l_e_is))) l_not) (appl i (appl n (appl u (appl s (appl (abst l+2 nsigma x\ (appl (appl t (appl x (appl nsigma l_e_is))) l_not)) (appl nsigma l_e_isp)))))))))))))
+ l_e_notis_th1\
+% constant 200
+(gdef c+200 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 (appl (appl t (appl s (appl nsigma l_e_is))) l_not) n\ (abst l+2 (appl s (appl u (appl nsigma l_e_is))) i\ (cast (appl (appl t (appl u (appl nsigma l_e_is))) l_not) (appl (appl i (appl s (appl u (appl nsigma l_e_symis)))) (appl n (appl u (appl t (appl s (appl nsigma l_e_notis_th1)))))))))))))
+ l_e_notis_th2\
+% constant 201
+(gdef c+201 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 (appl (appl t (appl s (appl nsigma l_e_is))) l_not) n\ (abst l+2 (appl u (appl t (appl nsigma l_e_is))) i\ (cast (appl (appl u (appl s (appl nsigma l_e_is))) l_not) (appl i (appl n (appl u (appl t (appl (abst l+2 nsigma x\ (appl (appl x (appl s (appl nsigma l_e_is))) l_not)) (appl nsigma l_e_isp)))))))))))))
+ l_e_notis_th3\
+% constant 202
+(gdef c+202 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 (appl (appl t (appl s (appl nsigma l_e_is))) l_not) n\ (abst l+2 (appl t (appl u (appl nsigma l_e_is))) i\ (cast (appl (appl u (appl s (appl nsigma l_e_is))) l_not) (appl (appl i (appl t (appl u (appl nsigma l_e_symis)))) (appl n (appl u (appl t (appl s (appl nsigma l_e_notis_th3)))))))))))))
+ l_e_notis_th4\
+% constant 203
+(gdef c+203 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 nsigma v\ (abst l+2 (appl (appl t (appl s (appl nsigma l_e_is))) l_not) n\ (abst l+2 (appl u (appl s (appl nsigma l_e_is))) i\ (abst l+2 (appl v (appl t (appl nsigma l_e_is))) j\ (cast (appl (appl v (appl u (appl nsigma l_e_is))) l_not) (appl j (appl (appl i (appl n (appl u (appl t (appl s (appl nsigma l_e_notis_th1)))))) (appl v (appl t (appl u (appl nsigma l_e_notis_th3)))))))))))))))
+ l_e_notis_th5\
+% constant 204
+(gdef c+204 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 nsigma v\ (abst l+2 (appl t (appl s (appl nsigma l_e_is))) i\ (abst l+2 (appl u (appl t (appl nsigma l_e_is))) j\ (abst l+2 (appl v (appl u (appl nsigma l_e_is))) k\ (cast (appl v (appl s (appl nsigma l_e_is))) (appl k (appl (appl j (appl i (appl u (appl t (appl s (appl nsigma l_e_tris)))))) (appl v (appl u (appl s (appl nsigma l_e_tris)))))))))))))))
+ l_e_tr3is\
+% constant 205
+(gdef c+205 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 nsigma u\ (abst l+2 nsigma v\ (abst l+2 nsigma w\ (abst l+2 (appl t (appl s (appl nsigma l_e_is))) i\ (abst l+2 (appl u (appl t (appl nsigma l_e_is))) j\ (abst l+2 (appl v (appl u (appl nsigma l_e_is))) k\ (abst l+2 (appl w (appl v (appl nsigma l_e_is))) l\ (cast (appl w (appl s (appl nsigma l_e_is))) (appl l (appl (appl k (appl j (appl i (appl v (appl u (appl t (appl s (appl nsigma l_e_tr3is)))))))) (appl w (appl v (appl s (appl nsigma l_e_tris)))))))))))))))))
+ l_e_tr4is\
+% constant 206
+(gdef c+206 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (cast (sort k+1) (abst l+1 nsigma x\ (abst l+1 nsigma y\ (abst l+1 (appl x p) u\ (abst l+1 (appl y p) v\ (appl y (appl x (appl nsigma l_e_is))))))))))
+ l_e_amone\
+% constant 207
+(gdef c+207 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_e_amone)) a1\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl s p) sp\ (abst l+2 (appl t p) tp\ (cast (appl t (appl s (appl nsigma l_e_is))) (appl tp (appl sp (appl t (appl s a1))))))))))))
+ l_e_amonee\
+% constant 208
+(gdef c+208 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (cast (sort k+1) (appl (appl p (appl nsigma l_some)) (appl (appl p (appl nsigma l_e_amone)) l_and)))))
+ l_e_one\
+% constant 209
+(gdef c+209 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_e_amone)) a1\ (abst l+2 (appl p (appl nsigma l_some)) s\ (cast (appl p (appl nsigma l_e_one)) (appl s (appl a1 (appl (appl p (appl nsigma l_some)) (appl (appl p (appl nsigma l_e_amone)) l_andi)))))))))
+ l_e_onei\
+% constant 210
+(gdef c+210 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_e_one)) o1\ (cast (appl p (appl nsigma l_e_amone)) (appl o1 (appl (appl p (appl nsigma l_some)) (appl (appl p (appl nsigma l_e_amone)) l_ande1)))))))
+ l_e_onee1\
+% constant 211
+(gdef c+211 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_e_one)) o1\ (cast (appl p (appl nsigma l_some)) (appl o1 (appl (appl p (appl nsigma l_some)) (appl (appl p (appl nsigma l_e_amone)) l_ande2)))))))
+ l_e_onee2\
+% constant 212
+(gdec c+212 (abst l+1 (sort k+0) nsigma\ (abst l+1 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+1 (appl p (appl nsigma l_e_one)) o1\ nsigma)))
+l_e_ind\
+% constant 213
+(gdec c+213 (abst l+1 (sort k+0) nsigma\ (abst l+1 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+1 (appl p (appl nsigma l_e_one)) o1\ (appl (appl o1 (appl p (appl nsigma l_e_ind))) p))))
+l_e_oneax\
+% constant 214
+(gdef c+214 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_e_one)) o1\ (abst l+2 nsigma s\ (abst l+2 (appl s p) sp\ (cast (appl s (appl (appl o1 (appl p (appl nsigma l_e_ind))) (appl nsigma l_e_is))) (appl sp (appl (appl o1 (appl p (appl nsigma l_e_oneax))) (appl s (appl (appl o1 (appl p (appl nsigma l_e_ind))) (appl (appl o1 (appl p (appl nsigma l_e_onee1))) (appl p (appl nsigma l_e_amonee)))))))))))))
+ l_e_one_th1\
+% constant 215
+(gdef c+215 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl t (appl s (appl nsigma l_e_is))) i\ (cast (appl (appl t f) (appl (appl s f) (appl tau l_e_is))) (appl i (appl (appl (appl s f) (appl tau l_e_refis)) (appl t (appl s (appl (abst l+2 nsigma x\ (appl (appl x f) (appl (appl s f) (appl tau l_e_is)))) (appl nsigma l_e_isp)))))))))))))
+ l_e_isf\
+% constant 216
+(gdef c+216 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (cast (sort k+1) (appl (abst l+2 nsigma x\ (appl (abst l+2 nsigma y\ (appl (appl y (appl x (appl nsigma l_e_is))) (appl (appl (appl y f) (appl (appl x f) (appl tau l_e_is))) l_imp))) (appl nsigma l_all))) (appl nsigma l_all))))))
+ l_e_injective\
+% constant 217
+(gdef c+217 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl (appl t f) (appl (appl s f) (appl tau l_e_is))) j\ (cast (appl t (appl s (appl nsigma l_e_is))) (appl j (appl t (appl s i)))))))))))
+ l_e_isfe\
+% constant 218
+(gdef c+218 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 tau t0\ (cast (sort k+1) (appl (abst l+2 nsigma x\ (appl (appl x f) (appl t0 (appl tau l_e_is)))) (appl nsigma l_some)))))))
+ l_e_image\
+% constant 219
+(gdef c+219 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 nsigma s\ (cast tau (appl s f))))))
+ l_e_tofs\
+% constant 220
+(gdef c+220 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 nsigma s\ (cast (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl f (appl tau (appl nsigma l_e_image)))) (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tau l_e_refis)) (appl s (appl (abst l+2 nsigma x\ (appl (appl x f) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tau l_e_is)))) (appl nsigma l_somei)))))))))
+ l_e_imagei\
+% constant 221
+(gdef c+221 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau ta\ (abst l+2 tau tb\ (abst l+2 (appl tb (appl ta (appl tau l_e_is))) j\ (abst l+2 nsigma sa\ (abst l+2 nsigma sb\ (abst l+2 (appl (appl sa (appl f (appl tau (appl nsigma l_e_tofs)))) (appl ta (appl tau l_e_is))) ja\ (abst l+2 (appl (appl sb (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tb (appl tau l_e_is))) jb\ (cast (appl (appl sb (appl f (appl tau (appl nsigma l_e_tofs)))) (appl (appl sa (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tau l_e_is))) (appl jb (appl j (appl (appl ja (appl (appl sa (appl f (appl tau (appl nsigma l_e_tofs)))) (appl ta (appl tau l_e_symis)))) (appl (appl sb (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tb (appl ta (appl (appl sa (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tau l_e_tr3is))))))))))))))))))))
+ l_e_inj_t1\
+% constant 222
+(gdef c+222 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau ta\ (abst l+2 tau tb\ (abst l+2 (appl tb (appl ta (appl tau l_e_is))) j\ (abst l+2 nsigma sa\ (abst l+2 nsigma sb\ (abst l+2 (appl (appl sa (appl f (appl tau (appl nsigma l_e_tofs)))) (appl ta (appl tau l_e_is))) ja\ (abst l+2 (appl (appl sb (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tb (appl tau l_e_is))) jb\ (cast (appl sb (appl sa (appl nsigma l_e_is))) (appl (appl jb (appl ja (appl sb (appl sa (appl j (appl tb (appl ta (appl i (appl f (appl tau (appl nsigma l_e_inj_t1))))))))))) (appl sb (appl sa (appl i (appl f (appl tau (appl nsigma l_e_isfe)))))))))))))))))))
+ l_e_inj_th1\
+% constant 223
+(gdef c+223 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau t0\ (cast (appl (abst l+2 nsigma x\ (appl (appl x f) (appl t0 (appl tau l_e_is)))) (appl nsigma l_e_amone)) (abst l+2 nsigma x\ (abst l+2 nsigma y\ (abst l+2 (appl (appl x f) (appl t0 (appl tau l_e_is))) u\ (abst l+2 (appl (appl y f) (appl t0 (appl tau l_e_is))) v\ (appl v (appl u (appl y (appl x (appl (appl t0 (appl tau l_e_refis)) (appl t0 (appl t0 (appl i (appl f (appl tau (appl nsigma l_e_inj_th1)))))))))))))))))))))
+ l_e_inj_th2\
+% constant 224
+(gdef c+224 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau t0\ (abst l+2 (appl t0 (appl f (appl tau (appl nsigma l_e_image)))) j\ (cast (appl (abst l+2 nsigma x\ (appl (appl x f) (appl t0 (appl tau l_e_is)))) (appl nsigma l_e_one)) (appl j (appl (appl t0 (appl i (appl f (appl tau (appl nsigma l_e_inj_th2))))) (appl (abst l+2 nsigma x\ (appl (appl x f) (appl t0 (appl tau l_e_is)))) (appl nsigma l_e_onei)))))))))))
+ l_e_inj_th3\
+% constant 225
+(gdef c+225 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau t0\ (abst l+2 (appl t0 (appl f (appl tau (appl nsigma l_e_image)))) j\ (cast nsigma (appl (appl j (appl t0 (appl i (appl f (appl tau (appl nsigma l_e_inj_th3)))))) (appl (abst l+2 nsigma x\ (appl (appl x f) (appl t0 (appl tau l_e_is)))) (appl nsigma l_e_ind))))))))))
+ l_e_soft\
+% constant 226
+(gdef c+226 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (cast (abst l+1 tau x\ (abst l+1 (appl x (appl f (appl tau (appl nsigma l_e_image)))) u\ nsigma)) (abst l+2 tau x\ (abst l+2 (appl x (appl f (appl tau (appl nsigma l_e_image)))) u\ (appl u (appl x (appl i (appl f (appl tau (appl nsigma l_e_soft)))))))))))))
+ l_e_inverse\
+% constant 227
+(gdef c+227 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau t0\ (abst l+2 (appl t0 (appl f (appl tau (appl nsigma l_e_image)))) j\ (cast (appl (appl (appl j (appl t0 (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl f (appl tau (appl nsigma l_e_tofs)))) (appl t0 (appl tau l_e_is))) (appl (appl j (appl t0 (appl i (appl f (appl tau (appl nsigma l_e_inj_th3)))))) (appl (abst l+2 nsigma x\ (appl (appl x f) (appl t0 (appl tau l_e_is)))) (appl nsigma l_e_oneax))))))))))
+ l_e_ists1\
+% constant 228
+(gdef c+228 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau t0\ (abst l+2 (appl t0 (appl f (appl tau (appl nsigma l_e_image)))) j\ (cast (appl t0 (appl (appl (appl j (appl t0 (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tau l_e_is))) (appl (appl j (appl t0 (appl i (appl f (appl tau (appl nsigma l_e_ists1)))))) (appl (appl (appl j (appl t0 (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl f (appl tau (appl nsigma l_e_tofs)))) (appl t0 (appl tau l_e_symis)))))))))))
+ l_e_ists2\
+% constant 229
+(gdef c+229 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau ta\ (abst l+2 (appl ta (appl f (appl tau (appl nsigma l_e_image)))) ja\ (abst l+2 tau tb\ (abst l+2 (appl tb (appl f (appl tau (appl nsigma l_e_image)))) jb\ (abst l+2 (appl tb (appl ta (appl tau l_e_is))) j\ (cast (appl (appl jb (appl tb (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl (appl ja (appl ta (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl nsigma l_e_is))) (appl (appl jb (appl tb (appl i (appl f (appl tau (appl nsigma l_e_ists1)))))) (appl (appl ja (appl ta (appl i (appl f (appl tau (appl nsigma l_e_ists1)))))) (appl (appl jb (appl tb (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl (appl ja (appl ta (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl j (appl tb (appl ta (appl i (appl f (appl tau (appl nsigma l_e_inj_th1)))))))))))))))))))))
+ l_e_isinv\
+% constant 230
+(gdef c+230 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 tau ta\ (abst l+2 (appl ta (appl f (appl tau (appl nsigma l_e_image)))) ja\ (abst l+2 tau tb\ (abst l+2 (appl tb (appl f (appl tau (appl nsigma l_e_image)))) jb\ (abst l+2 (appl (appl jb (appl tb (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl (appl ja (appl ta (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl nsigma l_e_is))) j\ (cast (appl tb (appl ta (appl tau l_e_is))) (appl (appl jb (appl tb (appl i (appl f (appl tau (appl nsigma l_e_ists2)))))) (appl (appl j (appl (appl jb (appl tb (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl (appl ja (appl ta (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl f (appl tau (appl nsigma l_e_isf)))))) (appl (appl ja (appl ta (appl i (appl f (appl tau (appl nsigma l_e_ists1)))))) (appl tb (appl (appl (appl jb (appl tb (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl f (appl tau (appl nsigma l_e_tofs)))) (appl (appl (appl ja (appl ta (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl f (appl tau (appl nsigma l_e_tofs)))) (appl ta (appl tau l_e_tr3is))))))))))))))))))
+ l_e_isinve\
+% constant 231
+(gdef c+231 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 nsigma s\ (cast (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_imagei)))) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl s (appl nsigma l_e_is))) (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_imagei)))) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl i (appl f (appl tau (appl nsigma l_e_ists1)))))) (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_imagei)))) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl s (appl i (appl f (appl tau (appl nsigma l_e_isfe)))))))))))))
+ l_e_isst1\
+% constant 232
+(gdef c+232 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) i\ (abst l+2 nsigma s\ (cast (appl s (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_imagei)))) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl nsigma l_e_is))) (appl (appl s (appl i (appl f (appl tau (appl nsigma l_e_isst1))))) (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_imagei)))) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl i (appl f (appl tau (appl nsigma l_e_soft)))))) (appl s (appl nsigma l_e_symis))))))))))
+ l_e_isst2\
+% constant 233
+(gdef c+233 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (cast (sort k+1) (appl (abst l+2 tau x\ (appl x (appl f (appl tau (appl nsigma l_e_image))))) (appl tau l_all))))))
+ l_e_surjective\
+% constant 234
+(gdef c+234 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (cast (sort k+1) (appl (appl f (appl tau (appl nsigma l_e_surjective))) (appl (appl f (appl tau (appl nsigma l_e_injective))) l_and))))))
+ l_e_bijective\
+% constant 235
+(gdef c+235 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) b\ (cast (appl f (appl tau (appl nsigma l_e_injective))) (appl b (appl (appl f (appl tau (appl nsigma l_e_surjective))) (appl (appl f (appl tau (appl nsigma l_e_injective))) l_ande1))))))))
+ l_e_inj_t2\
+% constant 236
+(gdef c+236 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) b\ (cast (appl f (appl tau (appl nsigma l_e_surjective))) (appl b (appl (appl f (appl tau (appl nsigma l_e_surjective))) (appl (appl f (appl tau (appl nsigma l_e_injective))) l_ande2))))))))
+ l_e_inj_t3\
+% constant 237
+(gdef c+237 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) b\ (abst l+2 tau t\ (cast nsigma (appl (appl t (appl b (appl f (appl tau (appl nsigma l_e_inj_t3))))) (appl t (appl (appl b (appl f (appl tau (appl nsigma l_e_inj_t2)))) (appl f (appl tau (appl nsigma l_e_soft))))))))))))
+ l_e_inj_so\
+% constant 238
+(gdef c+238 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) b\ (cast (abst l+1 tau x\ nsigma) (abst l+2 tau x\ (appl x (appl b (appl f (appl tau (appl nsigma l_e_inj_so)))))))))))
+ l_e_invf\
+% constant 239
+(gdef c+239 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) b\ (abst l+2 nsigma s\ (cast (appl (appl (appl s f) (appl b (appl f (appl tau (appl nsigma l_e_invf))))) (appl s (appl nsigma l_e_is))) (appl (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl tau l_e_refis)) (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl b (appl f (appl tau (appl nsigma l_e_inj_t3))))) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl (appl s (appl f (appl tau (appl nsigma l_e_imagei)))) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl (appl b (appl f (appl tau (appl nsigma l_e_inj_t2)))) (appl f (appl tau (appl nsigma l_e_isinv))))))))) (appl (appl s (appl (appl b (appl f (appl tau (appl nsigma l_e_inj_t2)))) (appl f (appl tau (appl nsigma l_e_isst1))))) (appl (appl (appl s f) (appl b (appl f (appl tau (appl nsigma l_e_invf))))) (appl (appl (appl s (appl f (appl tau (appl nsigma l_e_imagei)))) (appl (appl s (appl f (appl tau (appl nsigma l_e_tofs)))) (appl (appl b (appl f (appl tau (appl nsigma l_e_inj_t2)))) (appl f (appl tau (appl nsigma l_e_soft)))))) (appl s (appl nsigma l_e_tris))))))))))))
+ l_e_thinvf1\
+% constant 240
+(gdef c+240 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) b\ (abst l+2 tau t\ (cast (appl (appl (appl t (appl b (appl f (appl tau (appl nsigma l_e_invf))))) f) (appl t (appl tau l_e_is))) (appl (appl t (appl b (appl f (appl tau (appl nsigma l_e_inj_t3))))) (appl t (appl (appl b (appl f (appl tau (appl nsigma l_e_inj_t2)))) (appl f (appl tau (appl nsigma l_e_ists1))))))))))))
+ l_e_thinvf2\
+% constant 241
+(gdef c+241 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) if\ (abst l+2 (appl g (appl upsilon (appl tau l_e_injective))) ig\ (cast (abst l+1 nsigma x\ upsilon) (abst l+2 nsigma x\ (appl (appl x f) g))))))))))
+ l_e_inj_h\
+% constant 242
+(gdef c+242 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) if\ (abst l+2 (appl g (appl upsilon (appl tau l_e_injective))) ig\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl (appl t (appl ig (appl if (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_h)))))))) (appl (appl s (appl ig (appl if (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_h)))))))) (appl upsilon l_e_is))) i\ (cast (appl (appl t f) (appl (appl s f) (appl tau l_e_is))) (appl i (appl (appl t f) (appl (appl s f) (appl ig (appl g (appl upsilon (appl tau l_e_isfe))))))))))))))))))
+ l_e_inj_t4\
+% constant 243
+(gdef c+243 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) if\ (abst l+2 (appl g (appl upsilon (appl tau l_e_injective))) ig\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl (appl t (appl ig (appl if (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_h)))))))) (appl (appl s (appl ig (appl if (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_h)))))))) (appl upsilon l_e_is))) i\ (cast (appl t (appl s (appl nsigma l_e_is))) (appl (appl i (appl t (appl s (appl ig (appl if (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_t4)))))))))) (appl t (appl s (appl if (appl f (appl tau (appl nsigma l_e_isfe))))))))))))))))))
+ l_e_inj_t5\
+% constant 244
+(gdef c+244 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_injective))) if\ (abst l+2 (appl g (appl upsilon (appl tau l_e_injective))) ig\ (cast (appl (abst l+2 nsigma x\ (appl (appl x f) g)) (appl upsilon (appl nsigma l_e_injective))) (abst l+2 nsigma x\ (abst l+2 nsigma y\ (abst l+2 (appl (appl y (appl ig (appl if (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_h)))))))) (appl (appl x (appl ig (appl if (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_h)))))))) (appl upsilon l_e_is))) v\ (appl v (appl y (appl x (appl ig (appl if (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_t5)))))))))))))))))))))
+ l_e_inj_th4\
+% constant 245
+(gdef c+245 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_surjective))) sf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_surjective))) sg\ (cast (abst l+1 nsigma x\ upsilon) (abst l+2 nsigma x\ (appl (appl x f) g))))))))))
+ l_e_surj_h\
+% constant 246
+(gdef c+246 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_surjective))) sf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_surjective))) sg\ (abst l+2 upsilon u\ (cast (appl u (appl g (appl upsilon (appl tau l_e_image)))) (appl u sg))))))))))
+ l_e_surj_t1\
+% constant 247
+(gdef c+247 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_surjective))) sf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_surjective))) sg\ (abst l+2 upsilon u\ (abst l+2 tau t\ (abst l+2 (appl (appl t g) (appl u (appl upsilon l_e_is))) i\ (cast (appl t (appl f (appl tau (appl nsigma l_e_image)))) (appl t sf))))))))))))
+ l_e_surj_t2\
+% constant 248
+(gdef c+248 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_surjective))) sf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_surjective))) sg\ (abst l+2 upsilon u\ (abst l+2 tau t\ (abst l+2 (appl (appl t g) (appl u (appl upsilon l_e_is))) i\ (abst l+2 nsigma s\ (abst l+2 (appl (appl s f) (appl t (appl tau l_e_is))) j\ (cast (appl (appl s (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_h)))))))) (appl u (appl upsilon l_e_is))) (appl (appl j (appl (appl s f) (appl t (appl g (appl upsilon (appl tau l_e_isf)))))) (appl i (appl (appl s (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_h)))))))) (appl (appl t g) (appl u (appl upsilon l_e_tris)))))))))))))))))))
+ l_e_surj_t3\
+% constant 249
+(gdef c+249 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_surjective))) sf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_surjective))) sg\ (abst l+2 upsilon u\ (abst l+2 tau t\ (abst l+2 (appl (appl t g) (appl u (appl upsilon l_e_is))) i\ (abst l+2 nsigma s\ (abst l+2 (appl (appl s f) (appl t (appl tau l_e_is))) j\ (cast (appl u (appl (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_h))))))) (appl upsilon (appl nsigma l_e_image)))) (appl (appl j (appl s (appl i (appl t (appl u (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_t3)))))))))))) (appl s (appl (abst l+2 nsigma x\ (appl (appl x (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_h)))))))) (appl u (appl upsilon l_e_is)))) (appl nsigma l_somei)))))))))))))))))
+ l_e_surj_t4\
+% constant 250
+(gdef c+250 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_surjective))) sf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_surjective))) sg\ (abst l+2 upsilon u\ (abst l+2 tau t\ (abst l+2 (appl (appl t g) (appl u (appl upsilon l_e_is))) i\ (cast (appl u (appl (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_h))))))) (appl upsilon (appl nsigma l_e_image)))) (appl (abst l+2 nsigma x\ (abst l+2 (appl (appl x f) (appl t (appl tau l_e_is))) v\ (appl v (appl x (appl i (appl t (appl u (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_t4)))))))))))))) (appl (appl u (appl (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_h))))))) (appl upsilon (appl nsigma l_e_image)))) (appl (appl i (appl t (appl u (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_t2)))))))))) (appl (abst l+2 nsigma x\ (appl (appl x f) (appl t (appl tau l_e_is)))) (appl nsigma l_someapp))))))))))))))))
+ l_e_surj_t5\
+% constant 251
+(gdef c+251 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_surjective))) sf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_surjective))) sg\ (abst l+2 upsilon u\ (cast (appl u (appl (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_h))))))) (appl upsilon (appl nsigma l_e_image)))) (appl (abst l+2 tau x\ (abst l+2 (appl (appl x g) (appl u (appl upsilon l_e_is))) v\ (appl v (appl x (appl u (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_t5)))))))))))) (appl (appl u (appl (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_h))))))) (appl upsilon (appl nsigma l_e_image)))) (appl (appl u (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_t1)))))))) (appl (abst l+2 tau x\ (appl (appl x g) (appl u (appl upsilon l_e_is)))) (appl tau l_someapp))))))))))))))
+ l_e_surj_t6\
+% constant 252
+(gdef c+252 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_surjective))) sf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_surjective))) sg\ (cast (appl (abst l+2 nsigma x\ (appl (appl x f) g)) (appl upsilon (appl nsigma l_e_surjective))) (abst l+2 upsilon x\ (appl x (appl sg (appl sf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_t6)))))))))))))))))
+ l_e_surj_th1\
+% constant 253
+(gdef c+253 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) bf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_bijective))) bg\ (cast (abst l+1 nsigma x\ upsilon) (abst l+2 nsigma x\ (appl (appl x f) g))))))))))
+ l_e_bij_h\
+% constant 254
+(gdef c+254 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) bf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_bijective))) bg\ (cast (appl (appl bg (appl bf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_bij_h))))))) (appl upsilon (appl nsigma l_e_injective))) (appl (appl bg (appl (appl g (appl upsilon (appl tau l_e_surjective))) (appl (appl g (appl upsilon (appl tau l_e_injective))) l_ande1))) (appl (appl bf (appl (appl f (appl tau (appl nsigma l_e_surjective))) (appl (appl f (appl tau (appl nsigma l_e_injective))) l_ande1))) (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_inj_th4)))))))))))))))
+ l_e_bij_t1\
+% constant 255
+(gdef c+255 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) bf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_bijective))) bg\ (cast (appl (appl bg (appl bf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_bij_h))))))) (appl upsilon (appl nsigma l_e_surjective))) (appl (appl bg (appl (appl g (appl upsilon (appl tau l_e_surjective))) (appl (appl g (appl upsilon (appl tau l_e_injective))) l_ande2))) (appl (appl bf (appl (appl f (appl tau (appl nsigma l_e_surjective))) (appl (appl f (appl tau (appl nsigma l_e_injective))) l_ande2))) (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_surj_th1)))))))))))))))
+ l_e_bij_t2\
+% constant 256
+(gdef c+256 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (sort k+0) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appl f (appl tau (appl nsigma l_e_bijective))) bf\ (abst l+2 (appl g (appl upsilon (appl tau l_e_bijective))) bg\ (cast (appl (abst l+2 nsigma x\ (appl (appl x f) g)) (appl upsilon (appl nsigma l_e_bijective))) (appl (appl bg (appl bf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_bij_t2))))))) (appl (appl bg (appl bf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_bij_t1))))))) (appl (appl (appl bg (appl bf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_bij_h))))))) (appl upsilon (appl nsigma l_e_surjective))) (appl (appl (appl bg (appl bf (appl g (appl f (appl upsilon (appl tau (appl nsigma l_e_bij_h))))))) (appl upsilon (appl nsigma l_e_injective))) l_andi))))))))))))
+ l_e_bij_th1\
+% constant 257
+(gdef c+257 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 nsigma x\ tau) g\ (abst l+2 (appl g (appl f (appl (abst l+1 nsigma x\ tau) l_e_is))) i\ (abst l+2 nsigma s\ (cast (appl (appl s g) (appl (appl s f) (appl tau l_e_is))) (appl i (appl (appl (appl s f) (appl tau l_e_refis)) (appl g (appl f (appl (abst l+2 (abst l+1 nsigma x\ tau) y\ (appl (appl s y) (appl (appl s f) (appl tau l_e_is)))) (appl (abst l+1 nsigma x\ tau) l_e_isp)))))))))))))
+ l_e_fise\
+% constant 258
+(gdec c+258 (abst l+1 (sort k+0) nsigma\ (abst l+1 (sort k+0) tau\ (abst l+1 (abst l+1 nsigma x\ tau) f\ (abst l+1 (abst l+1 nsigma x\ tau) g\ (abst l+1 (abst l+1 nsigma x\ (appl (appl x g) (appl (appl x f) (appl tau l_e_is)))) i\ (appl g (appl f (appl (abst l+1 nsigma x\ tau) l_e_is))))))))
+l_e_fisi\
+% constant 259
+(gdef c+259 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 nsigma x\ tau) g\ (abst l+2 (appl g (appl f (appl (abst l+1 nsigma x\ tau) l_e_is))) i\ (abst l+2 nsigma s\ (abst l+2 nsigma t\ (abst l+2 (appl t (appl s (appl nsigma l_e_is))) j\ (cast (appl (appl t g) (appl (appl s f) (appl tau l_e_is))) (appl (appl t (appl i (appl g (appl f (appl tau (appl nsigma l_e_fise)))))) (appl (appl j (appl t (appl s (appl f (appl tau (appl nsigma l_e_isf)))))) (appl (appl t g) (appl (appl t f) (appl (appl s f) (appl tau l_e_tris)))))))))))))))
+ l_e_fis_th1\
+% constant 260
+(gdec c+260 (abst l+1 (sort k+0) nsigma\ (abst l+1 (abst l+1 nsigma x\ (sort k+1)) p\ (sort k+0)))
+l_e_ot\
+% constant 261
+(gdec c+261 (abst l+1 (sort k+0) nsigma\ (abst l+1 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+1 (appl p (appl nsigma l_e_ot)) o1\ nsigma)))
+l_e_in\
+% constant 262
+(gdec c+262 (abst l+1 (sort k+0) nsigma\ (abst l+1 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+1 (appl p (appl nsigma l_e_ot)) o1\ (appl (appl o1 (appl p (appl nsigma l_e_in))) p))))
+l_e_inp\
+% constant 263
+(gdec c+263 (abst l+1 (sort k+0) nsigma\ (abst l+1 (abst l+1 nsigma x\ (sort k+1)) p\ (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_injective)))))
+l_e_otax1\
+% constant 264
+(gdec c+264 (abst l+1 (sort k+0) nsigma\ (abst l+1 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+1 nsigma s\ (abst l+1 (appl s p) sp\ (appl s (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_image))))))))
+l_e_otax2\
+% constant 265
+(gdef c+265 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_e_ot)) o1\ (abst l+2 (appl p (appl nsigma l_e_ot)) o2\ (abst l+2 (appl o2 (appl o1 (appl (appl p (appl nsigma l_e_ot)) l_e_is))) i\ (cast (appl (appl o2 (appl p (appl nsigma l_e_in))) (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl nsigma l_e_is))) (appl i (appl o2 (appl o1 (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_isf))))))))))))
+ l_e_isini\
+% constant 266
+(gdef c+266 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_e_ot)) o1\ (abst l+2 (appl p (appl nsigma l_e_ot)) o2\ (abst l+2 (appl (appl o2 (appl p (appl nsigma l_e_in))) (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl nsigma l_e_is))) i\ (cast (appl o2 (appl o1 (appl (appl p (appl nsigma l_e_ot)) l_e_is))) (appl i (appl o2 (appl o1 (appl (appl p (appl nsigma l_e_otax1)) (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_isfe)))))))))))))
+ l_e_isine\
+% constant 267
+(gdef c+267 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 nsigma s\ (abst l+2 (appl s p) sp\ (cast (appl p (appl nsigma l_e_ot)) (appl (appl sp (appl s (appl p (appl nsigma l_e_otax2)))) (appl s (appl (appl p (appl nsigma l_e_otax1)) (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_soft)))))))))))
+ l_e_out\
+% constant 268
+(gdef c+268 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 nsigma s\ (abst l+2 (appl s p) sp\ (abst l+2 nsigma t\ (abst l+2 (appl t p) tp\ (abst l+2 (appl t (appl s (appl nsigma l_e_is))) i\ (cast (appl (appl tp (appl t (appl p (appl nsigma l_e_out)))) (appl (appl sp (appl s (appl p (appl nsigma l_e_out)))) (appl (appl p (appl nsigma l_e_ot)) l_e_is))) (appl i (appl (appl tp (appl t (appl p (appl nsigma l_e_otax2)))) (appl t (appl (appl sp (appl s (appl p (appl nsigma l_e_otax2)))) (appl s (appl (appl p (appl nsigma l_e_otax1)) (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_isinv)))))))))))))))))
+ l_e_isouti\
+% constant 269
+(gdef c+269 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 nsigma s\ (abst l+2 (appl s p) sp\ (abst l+2 nsigma t\ (abst l+2 (appl t p) tp\ (abst l+2 (appl (appl tp (appl t (appl p (appl nsigma l_e_out)))) (appl (appl sp (appl s (appl p (appl nsigma l_e_out)))) (appl (appl p (appl nsigma l_e_ot)) l_e_is))) i\ (cast (appl t (appl s (appl nsigma l_e_is))) (appl i (appl (appl tp (appl t (appl p (appl nsigma l_e_otax2)))) (appl t (appl (appl sp (appl s (appl p (appl nsigma l_e_otax2)))) (appl s (appl (appl p (appl nsigma l_e_otax1)) (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_isinve)))))))))))))))))
+ l_e_isoute\
+% constant 270
+(gdef c+270 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 (appl p (appl nsigma l_e_ot)) o1\ (cast (appl (appl (appl o1 (appl p (appl nsigma l_e_inp))) (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl p (appl nsigma l_e_out)))) (appl o1 (appl (appl p (appl nsigma l_e_ot)) l_e_is))) (appl (appl (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl nsigma l_e_refis)) (appl (appl (appl o1 (appl p (appl nsigma l_e_inp))) (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl p (appl nsigma l_e_otax2)))) (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl (appl o1 (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_imagei)))) (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl (appl p (appl nsigma l_e_otax1)) (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_isinv))))))))) (appl (appl o1 (appl (appl p (appl nsigma l_e_otax1)) (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_isst1))))) (appl (appl (appl o1 (appl p (appl nsigma l_e_inp))) (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl p (appl nsigma l_e_out)))) (appl (appl (appl o1 (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_imagei)))) (appl (appl o1 (appl p (appl nsigma l_e_in))) (appl (appl p (appl nsigma l_e_otax1)) (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_soft)))))) (appl o1 (appl (appl p (appl nsigma l_e_ot)) l_e_tris))))))))))
+ l_e_isoutin\
+% constant 271
+(gdef c+271 (abst l+2 (sort k+0) nsigma\ (abst l+2 (abst l+1 nsigma x\ (sort k+1)) p\ (abst l+2 nsigma s\ (abst l+2 (appl s p) sp\ (cast (appl (appl (appl sp (appl s (appl p (appl nsigma l_e_out)))) (appl p (appl nsigma l_e_in))) (appl s (appl nsigma l_e_is))) (appl (appl sp (appl s (appl p (appl nsigma l_e_otax2)))) (appl s (appl (appl p (appl nsigma l_e_otax1)) (appl (abst l+2 (appl p (appl nsigma l_e_ot)) x\ (appl x (appl p (appl nsigma l_e_in)))) (appl nsigma (appl (appl p (appl nsigma l_e_ot)) l_e_ists1)))))))))))
+ l_e_isinout\
+% constant 272
+(gdec c+272 (abst l+1 (sort k+0) nsigma\ (abst l+1 (sort k+0) tau\ (sort k+0)))
+l_e_pairtype\
+% constant 273
+(gdec c+273 (abst l+1 (sort k+0) nsigma\ (abst l+1 (sort k+0) tau\ (abst l+1 nsigma s\ (abst l+1 tau t\ (appl tau (appl nsigma l_e_pairtype))))))
+l_e_pair\
+% constant 274
+(gdec c+274 (abst l+1 (sort k+0) nsigma\ (abst l+1 (sort k+0) tau\ (abst l+1 (appl tau (appl nsigma l_e_pairtype)) p1\ nsigma)))
+l_e_first\
+% constant 275
+(gdec c+275 (abst l+1 (sort k+0) nsigma\ (abst l+1 (sort k+0) tau\ (abst l+1 (appl tau (appl nsigma l_e_pairtype)) p1\ tau)))
+l_e_second\
+% constant 276
+(gdec c+276 (abst l+1 (sort k+0) nsigma\ (abst l+1 (sort k+0) tau\ (abst l+1 (appl tau (appl nsigma l_e_pairtype)) p1\ (appl p1 (appl (appl (appl p1 (appl tau (appl nsigma l_e_second))) (appl (appl p1 (appl tau (appl nsigma l_e_first))) (appl tau (appl nsigma l_e_pair)))) (appl (appl tau (appl nsigma l_e_pairtype)) l_e_is))))))
+l_e_pairis1\
+% constant 277
+(gdef c+277 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 (appl tau (appl nsigma l_e_pairtype)) p1\ (cast (appl (appl (appl p1 (appl tau (appl nsigma l_e_second))) (appl (appl p1 (appl tau (appl nsigma l_e_first))) (appl tau (appl nsigma l_e_pair)))) (appl p1 (appl (appl tau (appl nsigma l_e_pairtype)) l_e_is))) (appl (appl p1 (appl tau (appl nsigma l_e_pairis1))) (appl p1 (appl (appl (appl p1 (appl tau (appl nsigma l_e_second))) (appl (appl p1 (appl tau (appl nsigma l_e_first))) (appl tau (appl nsigma l_e_pair)))) (appl (appl tau (appl nsigma l_e_pairtype)) l_e_symis))))))))
+ l_e_pairis2\
+% constant 278
+(gdec c+278 (abst l+1 (sort k+0) nsigma\ (abst l+1 (sort k+0) tau\ (abst l+1 nsigma s\ (abst l+1 tau t\ (appl s (appl (appl (appl t (appl s (appl tau (appl nsigma l_e_pair)))) (appl tau (appl nsigma l_e_first))) (appl nsigma l_e_is)))))))
+l_e_firstis1\
+% constant 279
+(gdef c+279 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 nsigma s\ (abst l+2 tau t\ (cast (appl (appl (appl t (appl s (appl tau (appl nsigma l_e_pair)))) (appl tau (appl nsigma l_e_first))) (appl s (appl nsigma l_e_is))) (appl (appl t (appl s (appl tau (appl nsigma l_e_firstis1)))) (appl s (appl (appl (appl t (appl s (appl tau (appl nsigma l_e_pair)))) (appl tau (appl nsigma l_e_first))) (appl nsigma l_e_symis)))))))))
+ l_e_firstis2\
+% constant 280
+(gdec c+280 (abst l+1 (sort k+0) nsigma\ (abst l+1 (sort k+0) tau\ (abst l+1 nsigma s\ (abst l+1 tau t\ (appl t (appl (appl (appl t (appl s (appl tau (appl nsigma l_e_pair)))) (appl tau (appl nsigma l_e_second))) (appl tau l_e_is)))))))
+l_e_secondis1\
+% constant 281
+(gdef c+281 (abst l+2 (sort k+0) nsigma\ (abst l+2 (sort k+0) tau\ (abst l+2 nsigma s\ (abst l+2 tau t\ (cast (appl (appl (appl t (appl s (appl tau (appl nsigma l_e_pair)))) (appl tau (appl nsigma l_e_second))) (appl t (appl tau l_e_is))) (appl (appl t (appl s (appl tau (appl nsigma l_e_secondis1)))) (appl t (appl (appl (appl t (appl s (appl tau (appl nsigma l_e_pair)))) (appl tau (appl nsigma l_e_second))) (appl tau l_e_symis)))))))))
+ l_e_secondis2\
+% constant 282
+(gdef c+282 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 ksi z\ (cast (sort k+1) (appl (appl (appl y (appl z (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl (appl x (appl z (appl ksi l_e_is))) (appl a l_imp)) l_and))))))))
+ l_e_ite_prop1\
+% constant 283
+(gdef c+283 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (abst l+2 ksi x1\ (abst l+2 ksi y1\ (abst l+2 (appl x1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) px1\ (abst l+2 (appl y1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) py1\ (cast (appl (appl x (appl x1 (appl ksi l_e_is))) (appl a l_imp)) (appl px1 (appl (appl (appl y (appl x1 (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl (appl x (appl x1 (appl ksi l_e_is))) (appl a l_imp)) l_ande1)))))))))))))
+ l_e_ite_t1\
+% constant 284
+(gdef c+284 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (abst l+2 ksi x1\ (abst l+2 ksi y1\ (abst l+2 (appl x1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) px1\ (abst l+2 (appl y1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) py1\ (cast (appl x (appl x1 (appl ksi l_e_is))) (appl (appl py1 (appl px1 (appl y1 (appl x1 (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t1))))))))) (appl a1 (appl (appl x (appl x1 (appl ksi l_e_is))) (appl a l_mp))))))))))))))
+ l_e_ite_t2\
+% constant 285
+(gdef c+285 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (abst l+2 ksi x1\ (abst l+2 ksi y1\ (abst l+2 (appl x1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) px1\ (abst l+2 (appl y1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) py1\ (cast (appl x (appl y1 (appl ksi l_e_is))) (appl px1 (appl py1 (appl x1 (appl y1 (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t2)))))))))))))))))))
+ l_e_ite_t3\
+% constant 286
+(gdef c+286 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (abst l+2 ksi x1\ (abst l+2 ksi y1\ (abst l+2 (appl x1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) px1\ (abst l+2 (appl y1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) py1\ (cast (appl y1 (appl x1 (appl ksi l_e_is))) (appl (appl py1 (appl px1 (appl y1 (appl x1 (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t3))))))))) (appl (appl py1 (appl px1 (appl y1 (appl x1 (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t2))))))))) (appl x (appl y1 (appl x1 (appl ksi l_e_tris2))))))))))))))))
+ l_e_ite_t4\
+% constant 287
+(gdef c+287 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (cast (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_amone)) (abst l+2 ksi s\ (abst l+2 ksi t\ (abst l+2 (appl s (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) ps\ (abst l+2 (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) pt\ (appl pt (appl ps (appl t (appl s (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t4)))))))))))))))))))
+ l_e_ite_t5\
+% constant 288
+(gdef c+288 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (cast (appl (appl x (appl x (appl ksi l_e_is))) (appl a l_imp)) (abst l+2 a x1\ (appl x (appl ksi l_e_refis)))))))))
+ l_e_ite_t6\
+% constant 289
+(gdef c+289 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (cast (appl (appl y (appl x (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl a1 (appl a l_weli)) (appl (appl y (appl x (appl ksi l_e_is))) (appl (appl a l_not) l_imp_th2)))))))))
+ l_e_ite_t7\
+% constant 290
+(gdef c+290 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (cast (appl x (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) (appl (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t7))))) (appl (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t6))))) (appl (appl (appl y (appl x (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl (appl x (appl x (appl ksi l_e_is))) (appl a l_imp)) l_andi))))))))))
+ l_e_ite_t8\
+% constant 291
+(gdef c+291 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (cast (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_some)) (appl (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t8))))) (appl x (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_somei))))))))))
+ l_e_ite_t9\
+% constant 292
+(gdef c+292 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (cast (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_one)) (appl (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t9))))) (appl (appl a1 (appl y (appl x (appl ksi (appl a l_e_ite_t5))))) (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_onei))))))))))
+ l_e_ite_t10\
+% constant 293
+(gdef c+293 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (abst l+2 ksi x1\ (abst l+2 ksi y1\ (abst l+2 (appl x1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) px1\ (abst l+2 (appl y1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) py1\ (cast (appl (appl y (appl x1 (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl px1 (appl (appl (appl y (appl x1 (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl (appl x (appl x1 (appl ksi l_e_is))) (appl a l_imp)) l_ande2)))))))))))))
+ l_e_ite_t11\
+% constant 294
+(gdef c+294 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (abst l+2 ksi x1\ (abst l+2 ksi y1\ (abst l+2 (appl x1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) px1\ (abst l+2 (appl y1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) py1\ (cast (appl y (appl x1 (appl ksi l_e_is))) (appl (appl py1 (appl px1 (appl y1 (appl x1 (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t11))))))))) (appl n (appl (appl y (appl x1 (appl ksi l_e_is))) (appl (appl a l_not) l_mp))))))))))))))
+ l_e_ite_t12\
+% constant 295
+(gdef c+295 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (abst l+2 ksi x1\ (abst l+2 ksi y1\ (abst l+2 (appl x1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) px1\ (abst l+2 (appl y1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) py1\ (cast (appl y (appl y1 (appl ksi l_e_is))) (appl px1 (appl py1 (appl x1 (appl y1 (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t12)))))))))))))))))))
+ l_e_ite_t13\
+% constant 296
+(gdef c+296 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (abst l+2 ksi x1\ (abst l+2 ksi y1\ (abst l+2 (appl x1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) px1\ (abst l+2 (appl y1 (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) py1\ (cast (appl y1 (appl x1 (appl ksi l_e_is))) (appl (appl py1 (appl px1 (appl y1 (appl x1 (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t13))))))))) (appl (appl py1 (appl px1 (appl y1 (appl x1 (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t12))))))))) (appl y (appl y1 (appl x1 (appl ksi l_e_tris2))))))))))))))))
+ l_e_ite_t14\
+% constant 297
+(gdef c+297 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (cast (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_amone)) (abst l+2 ksi s\ (abst l+2 ksi t\ (abst l+2 (appl s (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) ps\ (abst l+2 (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) pt\ (appl pt (appl ps (appl t (appl s (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t14)))))))))))))))))))
+ l_e_ite_t15\
+% constant 298
+(gdef c+298 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (cast (appl (appl y (appl y (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (abst l+2 (appl a l_not) x1\ (appl y (appl ksi l_e_refis)))))))))
+ l_e_ite_t16\
+% constant 299
+(gdef c+299 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (cast (appl (appl x (appl y (appl ksi l_e_is))) (appl a l_imp)) (appl n (appl (appl x (appl y (appl ksi l_e_is))) (appl a l_imp_th2)))))))))
+ l_e_ite_t17\
+% constant 300
+(gdef c+300 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (cast (appl y (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) (appl (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t16))))) (appl (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t17))))) (appl (appl (appl y (appl y (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl (appl x (appl y (appl ksi l_e_is))) (appl a l_imp)) l_andi))))))))))
+ l_e_ite_t18\
+% constant 301
+(gdef c+301 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (cast (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_some)) (appl (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t18))))) (appl y (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_somei))))))))))
+ l_e_ite_t19\
+% constant 302
+(gdef c+302 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (cast (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_one)) (appl (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t19))))) (appl (appl n (appl y (appl x (appl ksi (appl a l_e_ite_t15))))) (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_onei))))))))))
+ l_e_ite_t20\
+% constant 303
+(gdef c+303 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (cast (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_one)) (appl (abst l+2 (appl a l_not) t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_t20)))))) (appl (abst l+2 a t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_t10)))))) (appl (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_one)) (appl a l_imp_th1)))))))))
+ l_e_ite_t21\
+% constant 304
+(gdef c+304 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (cast ksi (appl (appl y (appl x (appl ksi (appl a l_e_ite_t21)))) (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_ind))))))))
+ l_e_ite\
+% constant 305
+(gdef c+305 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (cast (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl y (appl x (appl ksi (appl a l_e_ite_prop1))))) (appl (appl y (appl x (appl ksi (appl a l_e_ite_t21)))) (appl (abst l+2 ksi t\ (appl t (appl y (appl x (appl ksi (appl a l_e_ite_prop1)))))) (appl ksi l_e_oneax))))))))
+ l_e_ite_t22\
+% constant 306
+(gdef c+306 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (cast (appl (appl x (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl a l_imp)) (appl (appl y (appl x (appl ksi (appl a l_e_ite_t22)))) (appl (appl (appl y (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl (appl x (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl a l_imp)) l_ande1))))))))
+ l_e_ite_t23\
+% constant 307
+(gdef c+307 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (cast (appl (appl y (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl y (appl x (appl ksi (appl a l_e_ite_t22)))) (appl (appl (appl y (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl (appl a l_not) l_imp)) (appl (appl (appl x (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl a l_imp)) l_ande2))))))))
+ l_e_ite_t24\
+% constant 308
+(gdef c+308 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 a a1\ (cast (appl x (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl (appl y (appl x (appl ksi (appl a l_e_ite_t23)))) (appl a1 (appl (appl x (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl a l_mp))))))))))
+ l_e_itet\
+% constant 309
+(gdef c+309 (abst l+2 (sort k+1) a\ (abst l+2 (sort k+0) ksi\ (abst l+2 ksi x\ (abst l+2 ksi y\ (abst l+2 (appl a l_not) n\ (cast (appl y (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl (appl y (appl x (appl ksi (appl a l_e_ite_t24)))) (appl n (appl (appl y (appl (appl y (appl x (appl ksi (appl a l_e_ite)))) (appl ksi l_e_is))) (appl (appl a l_not) l_mp))))))))))
+ l_e_itef\
+% constant 310
+(gdef c+310 (abst l+2 (sort k+0) nsigma\ (abst l+2 nsigma s0\ (abst l+2 nsigma t0\ (abst l+2 nsigma s\ (cast nsigma (appl s (appl t0 (appl nsigma (appl (appl s0 (appl s (appl nsigma l_e_is))) l_e_ite)))))))))
+ l_e_wissel_wa\
+gtop))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
 ).

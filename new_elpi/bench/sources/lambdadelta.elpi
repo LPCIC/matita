@@ -19,12 +19,13 @@
 
 % RTM mode: M, N := m+0 | m+1 | m+y 
 
-% Predicates: flat+  M           = (M = m+0) or (M = m+y)
+% Predicates: m+flat M           = (M = m+0) or (M = m+y)
+%             y+upd  M L L       = layer update for the x reduction step
 %             rtm+1  T S M M S T = reduction and type machine (single step)
-%             conv+  T M T M = conversion by levels
-%             appl+  T M T M = applicability 
-%             tv+    T       = validity for terms
-%             gv+    G       = validity for global environments
+%             conv+  T S M M S T = conversion by levels
+%             appl+  T S M M S T = applicability 
+%             tv+    T           = validity for terms
+%             gv+    G           = validity for global environments
 
 % Parameters: k+succ K K = successor for sort hierarchy
 %             l+zero L   = zero layer
@@ -39,14 +40,14 @@
 
 % AUXILIARY PREDICATES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-flat+ m+0.
+m+flat m+0.
 
 % version 2
-flat+ m+y.
+m+flat m+y.
 
 l+upd m+1 L1 L2 :- l+pred L1 L2.
 
-l+upd M L L :- flat+ M.
+l+upd M L L :- m+flat M.
 
 % REDUCTION AND TYPE MACHINE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -59,7 +60,7 @@ rtm+1 (abst L1 W T) (scons S V) M M S (abbr V T) :- l+upd M L1 L2, l+pos L2, $pr
 rtm+1 (cast U T) S m+1 m+0 S U :- $print rtm+1_e.
 
 % epsilon
-rtm+1 (cast U T) S M M S T :- flat+ M, $print rtm+1_epsilon.
+rtm+1 (cast U T) S M M S T :- m+flat M, $print rtm+1_epsilon.
 
 % s
 rtm+1 (sort K1) S m+1 m+0 S (sort K2) :- k+succ K1 K2, $print rtm+1_s.
