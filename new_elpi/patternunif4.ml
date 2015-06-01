@@ -613,7 +613,13 @@ let _ =
   (fun env args ->
    Format.printf "@[<hov 1>" ;
    List.iter (Format.printf "%a@ " (uppterm [] env)) args;
-   Format.printf "@]\n%!")
+   Format.printf "@]\n%!") ;
+ register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$lt")))
+  (fun env args ->
+    match args with
+       [Const c1; Const c2] ->
+         if c1 < c2 then raise (Failure "not lt")
+     | _ -> assert false)
 ;;
 
 (* The block of recursive functions spares the allocation of a Some/None
