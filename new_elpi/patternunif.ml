@@ -8,15 +8,15 @@ let _ =
 ;;
 *)
 
-let pplist ppelem sep f l =
+let pplist ?(boxed=false) ppelem sep f l =
  if l <> [] then begin
-  Format.fprintf f "@[<hov 1>";
+  if boxed then Format.fprintf f "@[<hov 1>";
   let args,last = match List.rev l with
     [] -> assert false;
   | head::tail -> List.rev tail,head in
   List.iter (fun x -> Format.fprintf f "%a%s@ " ppelem x sep) args;
   Format.fprintf f "%a" ppelem last;
-  Format.fprintf f "@]"
+  if boxed then Format.fprintf f "@]"
  end
 ;;
 
@@ -124,14 +124,14 @@ let xppterm ~nice names env f t =
   and aux f = function
       App (hd,x,xs) ->
         if hd==eqc then
-         Format.fprintf f "%a = %a" aux x aux (List.hd xs)
+         Format.fprintf f "@[<hov 1>%a@ =@ %a@]" aux x aux (List.hd xs)
         else if hd==orc then
          Format.fprintf f "(%a)" (pplist aux ";") (x::xs)
         else if hd==andc then
          Format.fprintf f "(%a)" (pplist aux ",") (x::xs)
         else if hd==implc then (
           assert (List.length xs = 1);
-          Format.fprintf f "(%a => %a)" aux x aux (List.hd xs)
+          Format.fprintf f "@[<hov 1>(%a@ =>@ %a)@]" aux x aux (List.hd xs)
         ) else pp_app f ppconstant aux (hd,x::xs)
     | Custom (hd,xs) -> pp_app f ppconstant aux (hd,xs)
     | UVar (r,depth,args) -> pp_app f (pp_uvar depth) ppconstant (r,args)
@@ -162,7 +162,7 @@ let xppterm_prolog ~nice names env f t =
   and aux f = function
       App (hd,x,xs) ->
         if hd==eqc then
-         Format.fprintf f "%a = %a" aux x aux (List.hd xs) 
+         Format.fprintf f "@[<hov 1>%a@ =@ %a@]" aux x aux (List.hd xs) 
         else if hd==orc then        
                        (* (%a) ? *)
          Format.fprintf f "%a" (pplist aux ";") (x::xs)  
@@ -170,7 +170,7 @@ let xppterm_prolog ~nice names env f t =
          Format.fprintf f "%a" (pplist aux ",") (x::xs)  
         else if hd==implc then (
           assert (List.length xs = 1);
-          Format.fprintf f "(%a => %a)" aux x aux (List.hd xs)
+          Format.fprintf f "@[<hov 1>(%a@ =>@ %a@])" aux x aux (List.hd xs)
         ) else pp_app f ppconstant aux (hd,x::xs) 
     | Custom (hd,xs) ->  assert false;
     | UVar (r,depth,args) -> assert false 
@@ -800,8 +800,11 @@ let program_of_ast p =
    let l,_,a = stack_term_of_ast 0 (0,[]) [] a in
    let (max,l),_,f = stack_term_of_ast 0 l [] f in
    let names = List.rev_map fst l in
-   let env = Array.create max dummy in
-   Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm names env) a (pplist (uppterm names env) ",") (chop f);
+   let env = Array.make max dummy in
+   if f = truec then
+    Format.eprintf "@[<hov 1>%a%a.@]\n%!" (uppterm names env) a (pplist (uppterm names env) ",") (chop f)
+   else
+    Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm names env) a (pplist ~boxed:true (uppterm names env) ",") (chop f);
    { depth = 0
    ; hd = a
    ; hyps = chop f

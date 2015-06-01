@@ -8,6 +8,20 @@ let _ =
 ;;
 *)
 
+let pplist ppelem sep f l =
+ if l <> [] then begin
+  Format.fprintf f "@[<hov 1>";
+  let args,last = match List.rev l with
+    [] -> assert false;
+  | head::tail -> List.rev tail,head in
+  List.iter (fun x -> Format.fprintf f "%a%s@ " ppelem x sep) args;
+  Format.fprintf f "%a" ppelem last;
+  Format.fprintf f "@]"
+ end
+;;
+
+let debug = false      
+
 let rec smart_map f =
  function
     [] -> []
@@ -69,7 +83,7 @@ let funct_of_ast, constant_of_dbl, string_of_constant =
    try Hashtbl.find h' n
    with Not_found -> string_of_int n)
 
-let ppterm env f t =
+let ppterm ~nice env f t =
   let rec ppapp hd a c1 c2 = 
     Format.fprintf f "%c@[<hov 1>" c1;
     ppconstant hd;
@@ -107,14 +121,27 @@ let ppterm env f t =
     aux t
 ;;
 
+let cutc = snd (funct_of_ast F.cutf)
+let truec = snd (funct_of_ast F.truef)
+let andc = fst (funct_of_ast F.andf)
+let orc = fst (funct_of_ast F.orf)
+let implc = fst (funct_of_ast F.implf)
+let pic = fst (funct_of_ast F.pif)
+let eqc = fst (funct_of_ast F.eqf)
+
 let m = ref [];;
 let n = ref 0;;
 
-let uppterm names env f t =
-  let rec pp_uvar r =
+let xppterm ~nice names env f t =
+  let pp_app f pphd pparg (hd,args) =
+   if args = [] then pphd f hd
+   else
+    Format.fprintf f "(@[<hov 1>%a@ %a@])" pphd hd (pplist pparg "") args in
+  let ppconstant f c = Format.fprintf f "%s" (string_of_constant c) in
+  let rec pp_uvar depth f r =
    if !r == dummy then begin
     let s =
-     try (List.assq r !m)
+     try List.assq r !m
      with Not_found ->
       let s = "X" ^ string_of_int !n in
       incr n;
@@ -125,65 +152,39 @@ let uppterm names env f t =
    (* TODO: (potential?) bug here, the variable is not lifted
       from origdepth (currently not even passed to the function)
       to depth (not passed as well) *)
-   end else aux !r
-  and ppapp hd a c1 c2 = 
-    Format.fprintf f "%c@[<hov 1>" c1;
-    ppconstant hd;
-    Format.fprintf f "@ ";
-    let args,last =
-     match List.rev a with
-        [] -> assert false
-      | last::l_rev -> List.rev l_rev,last in
-    List.iter (fun x -> aux x; Format.fprintf f "@ ") args;
-    aux last;
-    Format.fprintf f "@]%c" c2
-  and ppconstant c = Format.fprintf f "%s" (string_of_constant c)
-  and nth_name n =
-   try List.nth names n with Failure _ -> "A" ^ string_of_int n
-  and aux = function
-      App (hd,x,xs) -> ppapp hd (x::xs) '(' ')'
-    | Custom (hd,xs) -> ppapp hd xs '(' ')'
-    | UVar (r,_,[]) -> pp_uvar r;
-    | UVar (r,_,args) ->
-       Format.fprintf f "(@[<hov 1>";
-       pp_uvar r;
-       let args,last =
-        match List.rev args with
-           [] -> assert false
-         | last::l_rev -> List.rev l_rev,last in
-       List.iter (fun x -> ppconstant x; Format.fprintf f "@ ") args;
-       ppconstant last;
-       Format.fprintf f "@])"
-    | Const s -> ppconstant s
-    | Arg (n,args) ->
-       if args = [] then
-        if env.(n) == dummy then Format.fprintf f "%s" (nth_name n)
-        (* TODO: (potential?) bug here, the argument is not lifted
-           from g_depth (currently not even passed to the function)
-           to depth (not passed as well) *)
-        else aux env.(n)
-       else begin
-        Format.fprintf f "(@[<hov 1>";
-        if env.(n) == dummy then Format.fprintf f "%s" (nth_name n)
-        (* TODO: (potential?) bug here, the argument is not lifted
-           from g_depth (currently not even passed to the function)
-           to depth (not passed as well) *)
-        else aux env.(n);
-         let args,last =
-          match List.rev args with
-             [] -> assert false
-           | last::l_rev -> List.rev l_rev,last in
-         List.iter (fun x -> ppconstant x; Format.fprintf f "@ ") args;
-         ppconstant last;
-        Format.fprintf f "@])"
-       end
-    | Lam t ->
-       Format.fprintf f "\\(";
-       aux t;
-       Format.fprintf f ")";
+   end else if nice then aux f !r
+   else Format.fprintf f "<%a>_%d" aux !r depth
+  and pp_arg f n =
+  let name= try List.nth names n with Not_found -> "A" ^ string_of_int n in
+   if env.(n) == dummy then Format.fprintf f "%s" name
+   (* TODO: (potential?) bug here, the argument is not lifted
+      from g_depth (currently not even passed to the function)
+      to depth (not passed as well) *)
+   else if nice then aux f env.(n)
+   else Format.fprintf f "≪%a≫ " aux env.(n)
+  and aux f = function
+      App (hd,x,xs) ->
+        if hd==eqc then
+         Format.fprintf f "%a = %a" aux x aux (List.hd xs)
+        else if hd==orc then
+         Format.fprintf f "(%a)" (pplist aux ";") (x::xs)
+        else if hd==andc then
+         Format.fprintf f "(%a)" (pplist aux ",") (x::xs)
+        else if hd==implc then (
+          assert (List.length xs = 1);
+          Format.fprintf f "(%a => %a)" aux x aux (List.hd xs)
+        ) else pp_app f ppconstant aux (hd,x::xs)
+    | Custom (hd,xs) -> pp_app f ppconstant aux (hd,xs)
+    | UVar (r,depth,args) -> pp_app f (pp_uvar depth) ppconstant (r,args)
+    | Arg (n,args) -> pp_app f pp_arg ppconstant (n,args)
+    | Const s -> ppconstant f s
+    | Lam t -> Format.fprintf f "\\(%a)" aux t;
   in
-    aux t
+    aux f t
 ;;
+
+let ppterm = xppterm ~nice:false
+let uppterm = xppterm ~nice:true
 
 type key1 = int
 type key2 = int
@@ -628,12 +629,6 @@ and alternative = {
 
 let emptyalts = Obj.magic 0
 
-let cutc = snd (funct_of_ast F.cutf)
-let truec = snd (funct_of_ast F.truef)
-let andc = fst (funct_of_ast F.andf)
-let implc = fst (funct_of_ast F.implf)
-let pic = fst (funct_of_ast F.pif)
-
 let rec chop =
  function
     App(c,hd2,tl) when c == andc ->
@@ -894,7 +889,7 @@ let impl =
   let pp_prolog _ = Format.eprintf "Error: not implemented%!"; assert false
 
   let msg (q_names,q_env,q) =
-   Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh: %a" (uppterm q_names q_env) q ;
+   Format.fprintf Format.str_formatter "Pattern unification only, super lazy refresh: %a" (uppterm q_names q_env) q ;
    Format.flush_str_formatter ()
 
   let execute_once p q =
@@ -908,7 +903,7 @@ let impl =
    let k = ref (run p qq) in
    let time1 = Unix.gettimeofday() in
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-   Format.eprintf "Raw Result: %a\n%!" (ppterm q_env) q ;
+   Format.eprintf "Raw Result: %a\n%!" (ppterm q_names q_env) q ;
    Format.eprintf "Result: \n%!" ;
    List.iteri (fun i name -> Format.eprintf "%s=%a\n%!" name
     (uppterm q_names q_env) q_env.(i)) q_names;
@@ -920,7 +915,7 @@ let impl =
        k := cont !k;
        let time1 = Unix.gettimeofday() in
        prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-       Format.eprintf "Raw Result: %a\n%!" (ppterm q_env) q ;
+       Format.eprintf "Raw Result: %a\n%!" (ppterm q_names q_env) q ;
        Format.eprintf "Result: \n%!" ;
        List.iteri (fun i name -> Format.eprintf "%s=%a\n%!" name
         (uppterm q_names q_env) q_env.(i)) q_names;
@@ -928,3 +923,4 @@ let impl =
        Failure "no clause" -> prerr_endline "Fail"; k := emptyalts
   done
  end : Parser.Implementation)
+
