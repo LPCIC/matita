@@ -663,11 +663,13 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
         backchain depth p g gs cp next alts lvl
     | Arg _ -> assert false (* Not an heap term *)
     | Custom(c,gs') ->
-       (try lookup_custom c [||] gs'
-        with Not_found -> assert false) ;
-       (match gs with
+       let f = try lookup_custom c with Not_found -> assert false in
+       let b = try f [||] gs'; true with Failure _ -> false in
+       if b then
+        (match gs with
            [] -> pop_andl alts next
          | (depth,p,g)::gs -> run depth p g gs next alts lvl)
+       else next_alt alts
 
   and backchain depth p g gs cp next alts lvl =
     (*Format.eprintf "BACKCHAIN %a @ %d\n%!" ppterm g lvl;
