@@ -283,7 +283,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
             let v = UVar(r,to_,[]) in
             if not last_call then trail := Stack_addr (e,i) :: !trail;
             e.(i) <- v;
-            UVar(r,to_,args)
+            if args=[] then v else UVar(r,to_,args)
         end else
          full_deref argsdepth last_call trail ~from:argsdepth
           ~to_:(to_+depth) args e a

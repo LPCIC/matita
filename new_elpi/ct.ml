@@ -273,7 +273,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
             let r = ref dummy in
             let v = UVar(r,to_,[]) in
             e.(i) <- v;
-            UVar(r,to_,args)
+            if args=[] then v else UVar(r,to_,args)
         else
          full_deref argsdepth last_call trail ~from:argsdepth ~to_:(to_+depth)
            args e a
