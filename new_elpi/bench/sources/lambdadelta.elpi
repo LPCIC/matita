@@ -1,179 +1,178 @@
 % Validator for \lambda\delta version 3 --------------------------------------
 
-% sort: S := user defined
-%
+% sort: K := user defined
+
 % Layer: L := user defined
-%
-% Closed term: T, U, V, W ::= sort   S
-%                          |  void     F where F: T => T
+
+% Closed term: T, U, V, W ::= sort   K
 %                          |  abbr   T F where F: T => T
 %                          |  abst L T F where F: T => T 
 %                          |  appl   T T
 %                          |  cast   T T
-%
+
 % Global environment: G ::= gtop
 %                        |  gdef T F where F: T => G
 %                        |  gdec T F where F: T => G
-%
+
+% application stack: S ::= satom
+%                       |  scons S V
+
 % RTM mode: M, N := m+0 | m+1 | m+y 
-%
-% Predicates: flat+  M       = M = m+0 or M = m+y
-%             rtm+1  T M T M = reduction and type machine (single step)
-%             rtm+   T M T M = reduction and type machine (multiple step)
+
+% Predicates: flat+  M           = (M = m+0) or (M = m+y)
+%             rtm+1  T S M M S T = reduction and type machine (single step)
 %             conv+  T M T M = conversion by levels
-%             comp+  T M T M = comparator by levels
-%             conv+0 T M T M = applicator
-%             comp+0 T M T M = 
+%             appl+  T M T M = applicability 
 %             tv+    T       = validity for terms
 %             gv+    G       = validity for global environments
-%
-% Parameters: s+succ S S = successor for sort hierarchy
+
+% Parameters: k+succ K K = successor for sort hierarchy
 %             l+zero L   = zero layer
 %             l+pos  L   = positive layer
 %             l+pred L L = predeccessor for layers
-%  
+  
 % Constants: m+0 = typing not allowed in RTM
 %            m+1 = typing required in RTM
 %            m+y = typing allowed in RTM (version 2)
 %            a+r = restricted applicability (version 1)
 %            a+x = extended applicability (version 2)
 
-% REDUCTION AND TYPE MACHINE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% AUXILIARY PREDICATES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 flat+ m+0.
 
 % version 2
 flat+ m+y.
 
-rtm+1 (appl V T1) M1 (appl V T2) M2 :- rtm+1 T1 M1 T2 M2, $print rtm+1_appl. 
+l+upd m+1 L1 L2 :- l+pred L1 L2, !.
 
-% local delta, updated for version 2
-rtm+1 (abbr V T1) M1 (abbr V T2) M2 :- pi x\ rtm+1 x m+0 V m+0 =>
-                                             rtm+1 x m+1 V m+1 =>
-                                             rtm+1 x m+y V m+y =>
-                                       rtm+1 (T1 x) M1 (T2 x) M2, $print rtm+1_delta. 
+l+upd M L L :- flat+ M.
 
-rtm+1 (void T1) M1 (void T2) M2 :- pi x\ rtm+1 (T1 x) M1 (T2 x) M2, $print rtm+1_void. 
+% REDUCTION AND TYPE MACHINE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% local l
-rtm+1 (abst L W T1) m+1 (abst L W T2) m+0 :- l+zero L,
-                                             pi x\ rtm+1 x m+1 W m+0 =>
-                                             rtm+1 (T1 x) m+1 (T2 x) m+0, $print rtm+1_l.
+rtm+1 (appl V T) S M M (scons S V) T :- !, $print rtm+1_appl.
 
-% beta, epsilon, updated for version 3
-rtm+1 (appl V (abst L W T)) M (abbr V T) M :- l+pos L, $print rtm+1_beta.
-
-% upsilon (version 3) 
-rtm+1 (abst L W T) M (void T) M :- flat+ M, l+zero L, $print rtm+1_upsilon.
-
-% theta
-rtm+1 (appl V1 (abbr V2 T)) M (abbr V2 x\ (appl V1 (T x))) M :- $print rtm+1_theta_abbr.
-
-% theta
-rtm+1 (appl V (void T)) M (void x\ (appl V (T x))) M :- $print rtm+1_theta_void.
-
-% epsilon
-rtm+1 (cast U T) M T M :- flat+ M, $print rtm+1_epsilon.
+% beta, epsilon, x, updated for version 3
+rtm+1 (abst L1 W T) (scons S V) M M S (abbr V T) :- l+upd M L1 L2, l+pos L2, !, $print rtm+1_beta.
 
 % e
-rtm+1 (cast U T) m+1 U m+0 :- $print rtm+1_e.
+rtm+1 (cast U T) S m+1 m+0 S U :- !, $print rtm+1_e.
+
+% epsilon
+rtm+1 (cast U T) S M M S T :- flat+ M, !, $print rtm+1_epsilon.
 
 % s
-rtm+1 (sort S1) m+1 (sort S2) m+0 :- s+succ S1 S2, $print rtm+1_s.
+rtm+1 (sort K1) S m+1 m+0 S (sort K2) :- k+succ K1 K2, !, $print rtm+1_s.
 
-% x (version 3)
-rtm+1 (abst L1 W T) m+1 (abst L2 W T) m+1 :- l+pred L1 L2, $print rtm+1_x.
+rtm+1 T1 S M1 M2 S T2 :- prem+ T1 M1 M2 T2, !, $print rtm+1_lref.
 
-rtm+ T M T M :- $print rtm+_refl.
+% CONVERSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-rtm+ T1 M1 T2 M2 :- rtm+1 T1 M1 T M, rtm+ T M T2 M2, $print rtm+_step.
+stack+ satom satom :- !, $print stack+_atom.
 
-% COMPARATOR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+stack+ (scons S1 V1) (scons S2 V2) :- conv+ V1 satom m+0 m+0 satom V2,
+                                      stack+ S1 S2, !, $print stack+_cons.
 
-conv+ U1 N1 U2 N2 :- rtm+ U1 N1 T1 M1, rtm+ U2 N2 T2 M2, comp+ T1 M1 T2 M2, $print conv+.
+conv+ T S1 M M S2 T :- stack+ S1 S2, !, $print conv+_refl.
 
-comp+ T M T M :- $print comp+_refl.
+% local l, x, updated for version 2 and 3
+conv+ (abst L1 W1 T1) satom M1 M2 satom (abst L2 W2 T2) :- l+upd M1 L1 L2, l+pos L2,
+                                                           conv+ W1 satom m+0 m+0 satom W2,
+                                                           pi x\ prem+ x m+1 m+0 W2 => prem+ x m+y m+y W2 =>
+                                                           conv+ (T1 x) satom M1 M2 satom (T2 x), !,
+                                                           $print conv+_abst.
 
-comp+ (appl V1 T1) M1 (appl V2 T2) M2 :- conv+ T1 M1 T2 M2, conv+ V1 m+0 V2 m+0, $print comp+_appl.
+% upsilon, local l, x 
+conv+ (abst L1 W T) S1 M1 M2 S2 T2 :- l+upd M1 L1 L, l+zero L,
+                                      pi x\ prem+ x m+1 m+0 W => conv+ (T x) S1 M1 M2 S2 T2,
+                                      !, $print conv+_upsilon_sn.
 
-% local l updated for version 2 and 3
-comp+ (abst L W1 T1) M1 (abst L W2 T2) M2 :- l+pos L, conv+ W1 m+0 W2 m+0,
-                                             pi x\ rtm+1 x m+1 W2 m+0 => rtm+1 x m+y W2 m+y =>
-                                             conv+ (T1 x) M1 (T2 x) M2, $print comp+_abst.
+% local delta updated for version 2
+conv+ (abbr V T) S1 M1 M2 S2 T2 :- pi x\ prem+ x m+0 m+0 V =>
+                                         prem+ x m+1 m+1 V =>
+                                         prem+ x m+y m+y V =>
+                                   conv+ (T x) S1 M1 M2 S2 T2, !, $print conv+_abbr_sn.
 
-% local delta, updated for version 2
-comp+ (abbr V T) M1 T2 M2 :- pi x\ rtm+1 x m+0 V m+0 =>
-                                   rtm+1 x m+1 V m+1 =>
-                                   rtm+1 x m+y V m+y =>
-                             comp+ (T x) M1 T2 M2, $print comp+_abbr_sn.
+conv+ T1 S1 M1 M2 S2 T2 :- rtm+1 T1 S1 M1 M S T, conv+ T S M M2 S2 T2, !, $print conv+_step_sn.
 
-% local delta, updated for version 2
-comp+ T1 M1 (abbr V T) M2 :- pi x\ rtm+1 x m+0 V m+0 =>
-                                   rtm+1 x m+1 V m+1 =>
-                                   rtm+1 x m+y V m+y =>
-                             comp+ T1 M1 (T x) M2, $print comp+_abbr_dx.
+% upsilon, local l, x
+conv+ T1 S1 M1 M2 (abst L2 W T) :- l+upd M2 L2 L, l+zero L,
+                                   pi x\ prem+ x m+1 m+0 W => conv+ T1 S1 M1 M2 S2 (T x),
+                                   !, $print conv+_upsilon_dx.
 
-comp+ (void T) M1 T2 M2 :- pi x\ comp+ (T x) M1 T2 M2, $print comp+_void_sn.
+% local delta updated for version 2
+conv+ T1 S1 M1 M2 S2 (abbr V T) :- pi x\ prem+ x m+0 m+0 V =>
+                                         prem+ x m+1 m+1 V =>
+                                         prem+ x m+y m+y V =>
+                                   conv+ T1 S1 M1 M2 S2 (T x), !, $print conv+_abbr_dx.
 
-comp+ T1 M1 (void T) M2 :- pi x\ comp+ T1 M1 (T x) M2, $print comp+_void_dx.
+conv+ T1 S1 M1 M2 S2 T2 :- rtm+1 T2 S2 M2 M S T, conv+ T1 S1 M1 M S T, !, $print conv+_step_dx.
 
-% APPLICATOR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPLICABILITY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-conv+0 V M1 T M2 :- rtm+ T M1 T0 M2, comp+0 V T0, $print conv+0.
+appl+ T1 S1 M1 M2 S2 T2 :- $print aaaa T1 M1 M2 T2, fail.
 
-comp+0 V (abst L W U) :- l+pos L, conv+ V m+1 W m+0, $print comp+0_refl.
+appl+ (abst L1 W U) satom M M S V :- $print quo L1 W M V, l+upd M L1 L, l+pos L, 
+                                     conv+ V S m+1 m+0 satom W, !, $print appl+_refl.
 
-% local delta, updated for version 2
-comp+0 T1 (abbr V T) :- pi x\ rtm+1 x m+0 V m+0 =>
-                              rtm+1 x m+1 V m+1 =>
-                              rtm+1 x m+y V m+y =>
-                        comp+0 T1 (T x), $print comp+0_abbr.
+% upsilon, local l
+appl+ (abst L1 W T) S1 M1 M2 S2 T2 :- l+upd M1 L1 L, l+zero L,
+                                      pi x\ prem+ x m+1 m+0 W => appl+ (T x) S1 M1 M2 S2 T2,
+                                      !, $print appl+_upsilon.
 
-comp+0 T1 (void T) :- pi x\ comp+0 T1 (T x), $print comp+0_void.
+% local delta updated for version 2
+appl+ (abbr V T) S1 M1 M2 S2 T2 :- pi x\ prem+ x m+0 m+0 V =>
+                                         prem+ x m+1 m+1 V =>
+                                         prem+ x m+y m+y V =>
+                                   appl+ (T x) S1 M1 M2 S2 T2, !, $print appl+_abbr.
+
+appl+ T1 S1 M1 M2 S2 T2 :- rtm+1 T1 S1 M1 M S T, $print step T M, appl+ T S M M2 S2 T2, !, $print appl+_step.
 
 % VALIDITY FOR TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tv+ (sort N) :- $print tv+_sort.
+tv+ T :- $print qui T, fail.
 
-tv+ (void T) :- pi x\ tv+ (T x), $print tv+_void.
+tv+ (sort N) :- !, $print tv+_sort.
 
-% local delta, updated for version 2
+% local delta updated for version 2
 tv+ (abbr V T) :- tv+ V, pi x\ tv+ x =>
-                               rtm+1 x m+0 V m+0 =>
-                               rtm+1 x m+1 V m+1 =>
-                               rtm+1 x m+y V m+y =>
-                  tv+ (T x), $print tv+_abbr.
+                               prem+ x m+0 m+0 V =>
+                               prem+ x m+1 m+1 V =>
+                               prem+ x m+y m+y V =>
+                         tv+ (T x), !, $print tv+_abbr V T.
 
 % local l updated for version 2 and 3
 tv+ (abst L W T) :- tv+ W, pi x\ tv+ x => 
-                                 rtm+1 x m+1 W m+0 =>
-                                 rtm+1 x m+y W m+y =>
-                           tv+ (T x), $print tv+_abst.
+                                 prem+ x m+1 m+0 W =>
+                                 prem+ x m+y m+y W =>
+                           tv+ (T x), !, $print tv+_abst.
 
 % restricted applicability condition (version 1) updated for version 3
-tv+ (appl V T) :- a+r, tv+ V, tv+ T, conv+0 V M T m+0, $print tv+_appl_r.
+tv+ (appl V T) :- a+r, tv+ V, tv+ T, appl+ T satom M m+0 satom V, !, $print tv+_appl_r.
 
 %extended applicability condition (version 2) updated for version 3
-tv+ (appl V T) :- a+x, tv+ V, tv+ T, conv+0 V m+y T m+y, $print tv+_appl_x.
+tv+ (appl V T) :- a+x, tv+ V, tv+ T, $print applicability, appl+ T satom m+y m+y satom V, !, $print tv+_appl_x.
 
-tv+ (cast U T) :- tv+ U, tv+ T, conv+ T m+1 U m+0, $print tv+_cast.
+tv+ (cast U T) :- tv+ U, tv+ T, conv+ T satom m+1 m+0 satom U, !, $print tv+_cast.
 
 % VALIDITY FOR GLOBAL ENVIRONMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-gv+ gtop :- $print gv+_top. 
+gv+ gtop :- !, $print gv+_top. 
 
 % global delta updated for version 2
-gv+ (gdef V G) :- tv+ V, pi x\ tv+ x =>
-                               rtm+1 x m+0 V m+0 =>
-                               rtm+1 x m+1 V m+1 =>
-                               rtm+1 x m+y V m+y =>
-                         gv+ (G x), $print gv+_def.
+gv+ (gdef C V G) :- $print constant C,
+                    tv+ V, pi x\ tv+ x =>
+                                 prem+ x m+0 m+0 V =>
+                                 prem+ x m+1 m+1 V =>
+                                 prem+ x m+y m+y V =>
+                           gv+ (G x), !, $print gv+_def.
 
 % global l updated for version 2
-gv+ (gdec W G) :- tv+ U, pi x\ tv+ x =>
-                               rtm+1 x m+1 W m+0 =>
-                               rtm+1 x m+y W m+y =>
-                         gv+ (G x), $print gv+_dec.
+gv+ (gdec C W G) :- $print constant C,
+                    tv+ U, pi x\ tv+ x =>
+                                 prem+ x m+1 m+0 W =>
+                                 prem+ x m+y m+y W =>
+                           gv+ (G x), !, $print gv+_dec.
 
 % Additional matter ----------------------------------------------------------
 
@@ -192,40 +191,44 @@ l+pos l+2.
 
 l+pos l+y. 
 
+l+pred l+0 l+0.
+
 l+pred l+1 l+0.
 
 l+pred l+2 l+1.
 
+l+pred l+y l+y.
+
 % TESTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-test_sta :- s+succ s+1 s+2 => conv+ (sort s+1) m+1 (sort s+2) m+0.
+test_sta :- k+succ k+1 k+2 => conv+ (sort k+1) satom m+1 m+0 satom  (sort k+2).
 
-test_conv :- conv+ (appl w1 (abst l+y w2 x\ (abst l+y x y\ y))) m+0 (abst l+y w1 x\ x) m+0.
+test_conv :- conv+ (appl w1 (abst l+y w2 x\ (abst l+y x y\ y))) satom m+0 m+0 satom (abst l+y w1 x\ x).
 
-test_tv_11 :- a+r => s+succ s+1 s+2 => s+succ s+2 s+3 => tv+ (appl (sort s+1) (abst l+y (sort s+2) x\ x)).
+test_tv_11 :- a+r => k+succ k+1 k+2 => k+succ k+2 k+3 => tv+ (appl (sort k+1) (abst l+y (sort k+2) x\ x)).
 
 test_tv_12 :- a+r => tv+ w => tv+ (abst l+y w x\ cast w x).
 
 test_tv_13 :- a+r => tv+ w => tv+ (cast (abst l+y w x\ w) (abst l+y w x\ x)).
 
 % does fail with resticted applicability
-test_tv_2 :- a+x => s+succ s+1 s+2 =>
-             tv+ (abst l+y (abst l+y (sort s+2) x\ (sort s+2)) x\ (abst l+y x y\ appl (sort s+1) y)).
+test_tv_2 :- a+x => k+succ k+1 k+2 =>
+             tv+ (abst l+y (abst l+y (sort k+2) x\ (sort k+2)) x\ (abst l+y x y\ appl (sort k+1) y)).
 
 % first two lines of the grundlagen: requires version 3
 test_gv_3 :- a+x => gv+ (
 % constant 1
-   (gdef (abst l+y (sort s+1) a\
-         (abst l+y (sort s+1) b\
-            (cast (sort s+1) (abst l+1 a x\ b))
-         )) l_imp\
+   (gdef c+1 (abst l+y (sort k+1) a\
+             (abst l+y (sort k+1) b\
+               (cast (sort k+1) (abst l+1 a x\ b))
+             )) l_imp\
 % constant 2
-   (gdef (abst l+y (sort s+1) a\ 
-         (abst l+y (sort s+1) b\
-         (abst l+y a a1\
-         (abst l+y (appl b (appl a l_imp)) i\
-            (cast b (appl a1 i))
-         )))) l_mp\
+   (gdef c+2 (abst l+y (sort k+1) a\ 
+             (abst l+y (sort k+1) b\
+             (abst l+y a a1\
+             (abst l+y (appl b (appl a l_imp)) i\
+                (cast b (appl a1 i))
+              )))) l_mp\
    gtop))
 ).
 
