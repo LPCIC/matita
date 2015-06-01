@@ -2,9 +2,9 @@
 
 a+x.
 
-s+succ s+0 s+2.
+k+succ k+0 k+2.
 
-s+succ s+1 s+3.
+k+succ k+1 k+3.
 
 grundlagen :- gv+ (
 
