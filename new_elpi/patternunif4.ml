@@ -361,38 +361,37 @@ module IndexData =
   let equal = (==)
   let compare (x:int) (y:int) = y - x
 end
-module ClauseMap = Map.Make(IndexData)
 
 let get_clauses depth a m =
  let ind,app = key_of depth a in
  try
-  let l_rev,flexs_rev,h = ClauseMap.find ind m in
+  let l_rev,flexs_rev,h = Ptmap.find ind m in
   if app=variablek then List.rev l_rev
-  else List.rev (try ClauseMap.find app h with Not_found -> flexs_rev)
+  else List.rev (try Ptmap.find app h with Not_found -> flexs_rev)
  with Not_found -> []
 
 let add_clauses clauses p =       
   List.fold_left (fun m clause -> 
     let ind,app = clause.key in
     try 
-      let l,flexs,h = ClauseMap.find ind m in
+      let l,flexs,h = Ptmap.find ind m in
       if app=variablek then
-       ClauseMap.add ind
-        (clause::l,clause::flexs,ClauseMap.map(fun l_rev->clause::l_rev) h)
+       Ptmap.add ind
+        (clause::l,clause::flexs,Ptmap.map(fun l_rev->clause::l_rev) h)
         m
       else
-       let l_rev = try ClauseMap.find app h with Not_found -> flexs in
-        ClauseMap.add ind
-         (clause::l,flexs,ClauseMap.add app (clause::l_rev) h) m
+       let l_rev = try Ptmap.find app h with Not_found -> flexs in
+        Ptmap.add ind
+         (clause::l,flexs,Ptmap.add app (clause::l_rev) h) m
     with Not_found -> 
      if app=variablek then
-      ClauseMap.add ind ([clause],[clause],ClauseMap.empty) m
+      Ptmap.add ind ([clause],[clause],Ptmap.empty) m
      else
-      ClauseMap.add ind
-       ([clause],[],ClauseMap.add app [clause] ClauseMap.empty) m
+      Ptmap.add ind
+       ([clause],[],Ptmap.add app [clause] Ptmap.empty) m
     ) p clauses
 
-let make p = add_clauses p ClauseMap.empty
+let make p = add_clauses p Ptmap.empty
 
 (****** End of Indexing ******)
 
@@ -551,7 +550,7 @@ type program =
     all flexible clauses: used when the query is rigid and the map
                           for that atom is empty
     map: used when the query is rigid before trying the all flexible clauses *)
- (clause list * clause list * clause list ClauseMap.t) ClauseMap.t
+ (clause list * clause list * clause list Ptmap.t) Ptmap.t
 (* The activation frames point to the choice point that
    cut should backtrack to, i.e. the first one not to be
    removed. For bad reasons, we call it lvl in the code. *)

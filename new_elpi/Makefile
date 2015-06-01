@@ -15,9 +15,9 @@ OCP=ocamlopt
 #OCP=ocamlc
 
 newelpi: newelpi.$(CMX) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) ct.$(CMX) patternunif.$(CMX) patternunif2.$(CMX) patternunif3.$(CMX) patternunif4.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX)
-	$(OC) $(OCAMLOPTIONS) $(FLAGS) -o newelpi camlp5.$(CMXA) unix.$(CMXA) parser.$(CMX) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) ct.$(CMX) patternunif.$(CMX) patternunif2.$(CMX) patternunif3.$(CMX) patternunif4.$(CMX) desperate2.$(CMX) desperate3.$(CMX) newelpi.$(CMX)
+	$(OC) $(OCAMLOPTIONS) $(FLAGS) -o newelpi camlp5.$(CMXA) unix.$(CMXA) parser.$(CMX) lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) ct.$(CMX) patternunif.$(CMX) patternunif2.$(CMX) patternunif3.$(CMX) ptmap.$(CMX) patternunif4.$(CMX) desperate2.$(CMX) desperate3.$(CMX) newelpi.$(CMX)
 
-newelpi.$(CMX): newelpi.ml lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) ct.$(CMX) patternunif.$(CMX) patternunif2.$(CMX) patternunif3.$(CMX) patternunif4.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX)
+newelpi.$(CMX): newelpi.ml lprun2.$(CMX) lprun3.$(CMX) lprun4.$(CMX) ct.$(CMX) patternunif.$(CMX) patternunif2.$(CMX) patternunif3.$(CMX) ptmap.$(CMX) patternunif4.$(CMX) desperate2.$(CMX) desperate3.$(CMX) parser.$(CMX)
 	$(OC) $(OCAMLOPTIONS) -c newelpi.ml
 
 lprun2.$(CMX) lprun2.cmi: lprun2.ml parser.cmi parser.$(CMX)
@@ -26,7 +26,7 @@ lprun2.$(CMX) lprun2.cmi: lprun2.ml parser.cmi parser.$(CMX)
 patternunif.$(CMX) patternunif.cmi: patternunif.ml parser.cmi parser.$(CMX)
 	$(OC) $(OCAMLOPTIONS) -c patternunif.ml
 
-patternunif4.$(CMX) patternunif4.cmi: patternunif4.ml parser.cmi parser.$(CMX)
+patternunif4.$(CMX) patternunif4.cmi: patternunif4.ml parser.cmi parser.$(CMX) ptmap.cmi ptmap.$(CMX)
 	$(OC) $(OCAMLOPTIONS) -c patternunif4.ml
 
 patternunif3.$(CMX) patternunif3.cmi: patternunif3.ml parser.cmi parser.$(CMX)
@@ -50,6 +50,12 @@ lprun4.$(CMX) lprun4.cmi: lprun4.ml lprun3.cmi parser.cmi parser.$(CMX)
 lprun3.$(CMX) lprun3.cmi: lprun3.ml parser.cmi parser.$(CMX)
 	$(OC) $(OCAMLOPTIONS) -c lprun3.ml
 
+ptmap.cmi: ptmap.mli
+	$(OC) $(OCAMLOPTIONS) -c ptmap.mli
+
+ptmap.$(CMX): ptmap.ml ptmap.cmi
+	$(OC) $(OCAMLOPTIONS) -c ptmap.ml
+
 parser.cmi: parser.mli
 	$(OC) $(OCAMLOPTIONS) -c parser.mli
 
@@ -58,3 +64,8 @@ parser.$(CMX): parser.ml parser.cmi
 
 clean:
 	rm -f *.cmo *.cma *.cmx *.cmxa *.cmi *.o
+
+test:	newelpi
+	./newelpi -impl 19 tests/queens.elpi
+
+.PHONY: test
