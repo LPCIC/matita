@@ -604,21 +604,27 @@ let rec clausify depth =
 ;;
 
 let register_custom,lookup_custom =
- let (customs : ('a,(*env:*)term array -> term list -> unit) Hashtbl.t) = Hashtbl.create 17 in
+ let (customs : ('a,(*depth:*)int -> (*env:*)term array -> term list -> unit) Hashtbl.t) = Hashtbl.create 17 in
  Hashtbl.add customs,Hashtbl.find customs
 ;;
 
 let _ =
  register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$print")))
-  (fun env args ->
+  (fun _ env args ->
    Format.printf "@[<hov 1>" ;
    List.iter (Format.printf "%a@ " (uppterm [] env)) args;
    Format.printf "@]\n%!") ;
  register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$lt")))
-  (fun env args ->
+  (fun depth _ args ->
+    let rec get_constant =
+     function
+        Const c -> c
+      | UVar ({contents=t},vardepth,args) when t != dummy ->
+         get_constant (deref ~from:vardepth ~to_:depth args t)
+      | _ -> assert false in
     match args with
-       [Const c1; Const c2] ->
-         if c1 < c2 then raise (Failure "not lt")
+       [t1; t2] ->
+         if get_constant t1 <= get_constant t2 then raise (Failure "not lt")
      | _ -> assert false)
 ;;
 
@@ -670,7 +676,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     | Arg _ -> assert false (* Not an heap term *)
     | Custom(c,gs') ->
        let f = try lookup_custom c with Not_found -> assert false in
-       let b = try f [||] gs'; true with Failure _ -> false in
+       let b = try f depth [||] gs'; true with Failure _ -> false in
        if b then
         (match gs with
            [] -> pop_andl alts next
