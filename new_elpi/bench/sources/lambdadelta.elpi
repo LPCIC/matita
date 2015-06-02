@@ -45,11 +45,17 @@ m+flat m+0.
 % version 2
 m+flat m+y.
 
-l+upd m+1 L1 L2 :- l+pred L1 L2.
+l+upd m+1 L1 L2 :- !, l+pred L1 L2.
 
 l+upd M L L :- m+flat M.
 
 % REDUCTION AND TYPE MACHINE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+rtm+1 T1 S1 M1 M2 S2 T2 :- debug, $print begin-rtm1 T1 S1 M1, fail.
+
+rtm+1 T1 S M1 M2 S T2 :- prem+ T1 M1 M2 T2, M1 = m+0, M2 = m+y, $print sbagliato, fail.
+
+rtm+1 T1 S M1 M2 S T2 :- prem+ T1 M1 M2 T2, $print rtm+1_lref T1 M1 M2 T2.
 
 rtm+1 (appl V T) S M M (scons S V) T :- $print rtm+1_appl.
 
@@ -65,14 +71,13 @@ rtm+1 (cast U T) S M M S T :- m+flat M, $print rtm+1_epsilon.
 % s
 rtm+1 (sort K1) S m+1 m+0 S (sort K2) :- k+succ K1 K2, $print rtm+1_s.
 
-rtm+1 T1 S M1 M2 S T2 :- prem+ T1 M1 M2 T2, $print rtm+1_lref.
-
 % CONVERSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 stack+ satom satom :- $print stack+_atom.
 
 stack+ (scons S1 V1) (scons S2 V2) :- conv+ V1 satom m+0 m+0 satom V2,
                                       stack+ S1 S2, $print stack+_cons.
+conv+ T1 S1 M1 M2 S2 T2 :- debug, $print begin-conv T1 S1 M1 T2 S2 M2, fail.
 
 conv+ T S1 M M S2 T :- stack+ S1 S2, $print conv+_refl.
 
@@ -111,6 +116,8 @@ conv+ T1 S1 M1 M2 S2 T2 :- rtm+1 T2 S2 M2 M S T, conv+ T1 S1 M1 M S T, $print co
 
 % APPLICABILITY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+appl+ T1 S1 M1 M2 S2 T2 :- debug, $print begin-appl T1 S1 M1, fail.
+
 appl+ (abst L1 W U) satom M M S V :- l+upd M L1 L, l+pos L, 
                                      conv+ V S m+1 m+0 satom W, $print appl+_refl.
 
@@ -128,6 +135,8 @@ appl+ (abbr V T) S1 M1 M2 S2 T2 :- pi x\ prem+ x m+0 m+0 V =>
 appl+ T1 S1 M1 M2 S2 T2 :- rtm+1 T1 S1 M1 M S T, appl+ T S M M2 S2 T2, $print appl+_step.
 
 % VALIDITY FOR TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+tv+ T :- debug, $print begin-tv T, fail.
 
 tv+ (sort N) :- $print tv+_sort.
 
@@ -153,6 +162,8 @@ tv+ (appl V T) :- a+x, tv+ V, tv+ T, appl+ T satom m+y m+y satom V, $print tv+_a
 tv+ (cast U T) :- tv+ U, tv+ T, conv+ T satom m+1 m+0 satom U, $print tv+_cast.
 
 % VALIDITY FOR GLOBAL ENVIRONMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+gv+ G :- debug, $print begin-gv G, fail.
 
 gv+ gtop :- $print gv+_top. 
 
@@ -198,7 +209,7 @@ l+pred l+y l+y.
 
 % TESTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-test_sta :- k+succ k+1 k+2 => conv+ (sort k+1) satom m+1 m+0 satom  (sort k+2).
+test_sta :- k+succ k+1 k+2 => conv+ (sort k+1) satom m+1 m+0 satom (sort k+2).
 
 test_conv :- conv+ (appl w1 (abst l+y w2 x\ (abst l+y x y\ y))) satom m+0 m+0 satom (abst l+y w1 x\ x).
 
@@ -225,8 +236,12 @@ test_gv_3 :- a+x => gv+ (
              (abst l+y a a1\
              (abst l+y (appl b (appl a l_imp)) i\
                 (cast b (appl a1 i))
-              )))) l_mp\
-   gtop))
+             )))) l_mp\
+% constant 3
+   (gdef c+3 (abst l+2 (sort k+1) a\
+                (cast (appl a (appl a l_imp)) (abst l+2 a x\ x))
+             ) l_refimp\
+   gtop)))
 ).
 
 main :- test_sta, test_conv, test_tv_11, test_tv_12, test_tv_13, test_tv_2, test_gv_3.
