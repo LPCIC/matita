@@ -8,6 +8,8 @@ Possible optimizations:
 2. optimize neck-cuts during the indexing phase (? maybe not easy/possible)
 3. the to_heap could keep the highest non-bound variable to be cached in
    the UVar to make restriction linear
+4. compact representation of UVar^d c1 ... cn
+5. read-only arrays in place of lists
 
 Missing:
 1. occur-check
