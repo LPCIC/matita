@@ -583,7 +583,7 @@ let unif trail last_call argsdepth ae adepth a be bdepth b =
        (* Inefficient comparison *)
        for_all2 (fun x y -> unif depth x aheap bdepth y bheap) xs ys
    | Lam t1, Lam t2 -> unif (depth+1) t1 aheap bdepth t2 bheap
-   | Const c1, Const c2 when c1=c2 && c1 < bdepth -> true
+   | Const c1, Const c2 when c1 < bdepth -> c1=c2
    | Const c, Const _ when c >= bdepth && c < adepth -> false
    | Const c1, Const c2 when c1 = c2 + delta -> true
    | _ -> false in
