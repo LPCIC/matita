@@ -1,4 +1,8 @@
 Possible optimizations:
 
 1. avoid unifying the head of the clause
-2. optimize neck-cuts during the indexing phase
+2. optimize neck-cuts during the indexing phase (? maybe not easy/possible)
+
+Missing:
+1. occur-check
+2. full lambda-prolog
