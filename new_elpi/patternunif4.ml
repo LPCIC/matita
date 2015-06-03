@@ -425,7 +425,7 @@ let rec for_all2 p l1 l2 =
    [adepth,+infty) = [bdepth,+infy)   bound variables *)
 let unif trail last_call adepth a e bdepth b =
  let rec unif depth a bdepth b heap =
-   (*Format.eprintf "unif %b,%b: ^%d:%a =%d= ^%d:%a\n%!" last_call heap adepth ppterm a depth bdepth ppterm b;*)
+   (*Format.eprintf "unif: ^%d:%a =%d= ^%d:%a\n%!" adepth (ppterm [] [||]) a depth bdepth (ppterm [] e) b;*)
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
 (* TODO: test if it is better to deref first or not, i.e. the relative order
