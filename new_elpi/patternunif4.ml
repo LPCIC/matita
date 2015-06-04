@@ -430,12 +430,32 @@ let unif trail last_call adepth a e bdepth b =
    (delta=0 && a == b) || match a,b with
 (* TODO: test if it is better to deref first or not, i.e. the relative order
    of the clauses below *)
-   | _, Arg (i,[]) when e.(i) == dummy ->
+   | UVar (r1,_,args1),UVar (r2,_,args2) when r1==r2 ->
+       for_all2
+        (fun c1 c2 ->if c1 < bdepth then c1=c2 else c1 >= adepth && c1 = c2 + delta)
+        args1 args2
+   | UVar ({ contents = t },origdepth,args), _ when t != dummy ->
+      (* The arguments live in adepth+depth; the variable lives in origdepth;
+         everything leaves in adepth+depth after derefercing. *)
+      unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
+       heap
+   | _, UVar ({ contents = t },origdepth,args) when t != dummy ->
+      (* The arguments live in bdepth+depth; the variable lives in origdepth;
+         everything leaves in bdepth+depth after derefercing. *)
+      unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
+       true
+   | _, Arg (i,args) when e.(i) != dummy ->
+      (* The arguments live in bdepth+depth; the variable lives in adepth;
+         everything leaves in adepth+depth after derefercing. *)
+      let args = List.map (fun c -> if c < bdepth then c else c+delta) args in
+      unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args
+       e.(i)) true
+   | _, Arg (i,[]) ->
      e.(i) <-
       restrict adepth last_call trail ~from:(adepth+depth) ~to_:adepth e a;
      (*Format.eprintf "<- %a\n%!" ppterm e.(i);*)
      true
-   | _, Arg (i,args) when e.(i) == dummy ->
+   | _, Arg (i,args) ->
       (*Format.eprintf "%a %d===%d %a\n%!" ppterm a adepth bdepth ppterm b;*)
       (* Here I am doing for the O(1) unification fragment *)
       let args,body = make_lambdas adepth bdepth args in
@@ -445,13 +465,33 @@ let unif trail last_call adepth a e bdepth b =
           Rewrite the code to do the job directly? *)
        unif depth a bdepth b heap
       else assert false (* TODO: h.o. unification not implemented *)
-   | _, Arg (i,args) ->
-      (* The arguments live in bdepth+depth; the variable lives in adepth;
-         everything leaves in adepth+depth after derefercing. *)
-      let args = List.map (fun c -> if c < bdepth then c else c+delta) args in
-      unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args
-       e.(i)) true
-   | UVar (r,origdepth,[]), _ when !r == dummy ->
+   | _, UVar (r,origdepth,[]) ->
+       if not last_call then trail := r :: !trail;
+       (* TODO: are exceptions efficient here? *)
+       (try
+         r :=
+          if depth = 0 then
+           restrict adepth last_call trail ~from:adepth ~to_:origdepth e a
+          else (
+           (* First step: we restrict the l.h.s. to the r.h.s. level *)
+           let a =
+            to_heap adepth last_call trail ~from:adepth ~to_:bdepth e a in
+           (* Second step: we restrict the l.h.s. *)
+           to_heap adepth last_call trail ~from:(bdepth+depth)
+            ~to_:origdepth e a);
+         true
+       with RestrictionFailure -> false)
+   | _, UVar (r,origdepth,args) ->
+      if not last_call then trail := r :: !trail;
+      (* Here I am doing for the O(1) unification fragment *)
+      let args,body = make_lambdas origdepth origdepth args in
+      r := body;
+      if args = [] then
+       (* TODO: unif goes into the UVar when !r != dummy case below.
+          Rewrite the code to do the job directly? *)
+       unif depth a bdepth b heap
+      else assert false (* TODO: h.o. unification not implemented *)
+   | UVar (r,origdepth,[]), _ ->
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
        (try
@@ -468,7 +508,7 @@ let unif trail last_call adepth a e bdepth b =
             e b);
          true
        with RestrictionFailure -> false)
-   | UVar (r,origdepth,args), _ when !r == dummy ->
+   | UVar (r,origdepth,args), _ ->
       if not last_call then trail := r :: !trail;
       (* Here I am doing for the O(1) unification fragment *)
       let args,body = make_lambdas origdepth origdepth args in
@@ -478,42 +518,6 @@ let unif trail last_call adepth a e bdepth b =
           Rewrite the code to do the job directly? *)
        unif depth a bdepth b heap
       else assert false (* TODO: h.o. unification not implemented *)
-   | _, UVar (r,origdepth,[]) when !r == dummy ->
-       if not last_call then trail := r :: !trail;
-       (* TODO: are exceptions efficient here? *)
-       (try
-         r :=
-          if depth = 0 then
-           restrict adepth last_call trail ~from:adepth ~to_:origdepth e a
-          else (
-           (* First step: we restrict the l.h.s. to the r.h.s. level *)
-           let a =
-            to_heap adepth last_call trail ~from:adepth ~to_:bdepth e a in
-           (* Second step: we restrict the l.h.s. *)
-           to_heap adepth last_call trail ~from:(bdepth+depth)
-            ~to_:origdepth e a);
-         true
-       with RestrictionFailure -> false)
-   | _, UVar (r,origdepth,args) when !r == dummy ->
-      if not last_call then trail := r :: !trail;
-      (* Here I am doing for the O(1) unification fragment *)
-      let args,body = make_lambdas origdepth origdepth args in
-      r := body;
-      if args = [] then
-       (* TODO: unif goes into the UVar when !r != dummy case below.
-          Rewrite the code to do the job directly? *)
-       unif depth a bdepth b heap
-      else assert false (* TODO: h.o. unification not implemented *)
-   | _, UVar ({ contents = t },origdepth,args) ->
-      (* The arguments live in bdepth+depth; the variable lives in origdepth;
-         everything leaves in bdepth+depth after derefercing. *)
-      unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
-       true
-   | UVar ({ contents = t },origdepth,args), _ ->
-      (* The arguments live in adepth+depth; the variable lives in origdepth;
-         everything leaves in adepth+depth after derefercing. *)
-      unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
-       heap
    | App (c1,x2,xs), App (c2,y2,ys) ->
       (* Compressed cut&past from Const vs Const case below +
          delta=0 optimization for <c1,c2> and <x2,y2> *)
@@ -522,13 +526,15 @@ let unif trail last_call adepth a e bdepth b =
        &&
        (delta=0 && x2 == y2 || unif depth x2 bdepth y2 heap) &&
        for_all2 (fun x y -> unif depth x bdepth y heap) xs ys
-   | Custom (c1,xs), Custom (c2,ys) when c1=c2 ->
+   | Custom (c1,xs), Custom (c2,ys) ->
        (* Inefficient comparison *)
-       for_all2 (fun x y -> unif depth x bdepth y heap) xs ys
+       c1 = c2 && for_all2 (fun x y -> unif depth x bdepth y heap) xs ys
    | Lam t1, Lam t2 -> unif (depth+1) t1 bdepth t2 heap
-   | Const c1, Const c2 when c1 < bdepth -> c1=c2
+   | Const c1, Const c2 ->
+      if c1 < bdepth then c1=c2 else c1 >= adepth && c1 = c2 + delta
+   (*| Const c1, Const c2 when c1 < bdepth -> c1=c2
    | Const c, Const _ when c >= bdepth && c < adepth -> false
-   | Const c1, Const c2 when c1 = c2 + delta -> true
+   | Const c1, Const c2 when c1 = c2 + delta -> true*)
    | _ -> false in
  unif 0 a bdepth b false
 ;;
