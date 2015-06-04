@@ -11,11 +11,12 @@ Benchmarks:
 
 Bugs:
 
-1. ?n == ?n
-2. fix pretty-printing of constants
+1. fix pretty-printing of constants
 
 Possible optimizations:
 
+0. Try alternative implementation for ?n == ?n
+   (i.e. go back to the previous unif code, but change to_heap/restrict)
 1. avoid unifying the head of the clause
 2. optimize neck-cuts during the indexing phase (? maybe not easy/possible)
 3. the to_heap could keep the highest non-bound variable to be cached in
