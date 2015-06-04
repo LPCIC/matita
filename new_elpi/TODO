@@ -3,10 +3,16 @@ Benchmarks:
 0. modify lambda3 to use the bound variables (via a list, etc.)
 1. http://www.cs.hofstra.edu/~cscccl/lambda-examples/
    vedi lpcic/elpi/doc/termrep.pdf
+2. port all examples we have to Teyjus as well
+3. port Teyjus pnf.* and its examples to newelpi
+4. port Teyjus hc_interp.* to newelpi
+   Note: it is outside the fragment and it needs to be brought
+   back in.
 
 Bugs:
 
 1. ?n == ?n
+2. fix pretty-printing of constants
 
 Possible optimizations:
 
@@ -20,3 +26,16 @@ Possible optimizations:
 Missing:
 1. occur-check
 2. full lambda-prolog
+
+=============================================
+
+How to implement substitution:
+
+- in full lambda-prolog:
+  reduce (app (lam F) T) (F T).
+
+- in the fragment: using the copy clause.
+  reduce (app (lam F) T) R :- pi x\ copy x T => copy (F x) (R' x), R = R' x.
+
+  copy (app M N) (app M2 N2) :- copy M M2, copy N n2.
+  copy (lam F) (lam F2) :- pi x\ copy x x => copy (F x) (F2 x).
