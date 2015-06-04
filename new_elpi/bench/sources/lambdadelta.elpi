@@ -10,6 +10,7 @@
 %                          |  appr   T T                 restricted application
 %                          |  appx   T T                 extended application
 %                          |  cast   T T                 type annotatiuon
+% only for RTM:            |  prod L T F where F: T => T updated L-abstraction of type T in F
 
 % Global environment: G ::= gtop                     empty
 %                        |  gdef T F where F: T => G definition of T in F
@@ -20,58 +21,57 @@
 
 % RTM mode: M, N := m+0 | m+1 | m+y 
 
-% Predicates: v+exp  T M M T     = specification for variable expansion
-%             y+upd  M L L       = layer update for the x reduction step
-%             rtm+1  T S M M S T = reduction and type machine (single step)
-%             conv+  T S M M S T = conversion by levels
-%             appl+  T S M M S T = applicability 
+% Predicates: r+exp  T M M T     = reference expansion
+%             rtm+0  T S M M S T = extended reduction     (aux)
+%             conv+  T S M M S T = extended conversion    (main)
+%             conv+r T S M M S T = extended conversion    (aux)
+%             conv+0 T S M M S T = extended conversion    (aux)
+%             appl+  T S M M S T = extended applicability (main)
 %             tv+    T           = validity for terms
 %             gv+    G           = validity for global environments
 
 % Parameters: k+succ K K = successor for sort hierarchy
 %             l+zero L   = zero layer
-%             l+pos  L   = positive layer
 %             l+pred L L = predeccessor for layers
   
 % Constants: m+0 = typing not allowed in RTM
 %            m+1 = typing required in RTM
 %            m+y = typing allowed in RTM (version 2)
 
-% AUXILIARY PREDICATES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% EXTENDED REDUCTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-l+upd m+1 L1 L2 :- !, l+pred L1 L2.
+rtm+0 T1 S1 M1 M2 S2 T2 :- before, $print begin-rtm1 T1 S1 M1, fail.
 
-l+upd m+0 L L :- !.
+rtm+0 (appr V T) S M M (scons S V) T :- !, $print rtm+0_appr.
 
-% version 2
-l+upd m+y L L.
+rtm+0 (appx V T) S M M (scons S V) T :- !, $print rtm+0_appx.
 
-% REDUCTION AND TYPE MACHINE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-rtm+1 T1 S1 M1 M2 S2 T2 :- before, $print begin-rtm1 T1 S1 M1, fail.
-
-rtm+1 (appr V T) S M M (scons S V) T :- !, $print rtm+1_appr.
-
-rtm+1 (appx V T) S M M (scons S V) T :- !, $print rtm+1_appx.
-
-% beta, epsilon, x, updated for version 3
-rtm+1 (abst L1 W T) (scons S V) M M S (abbr V T) :- !, l+upd M L1 L2, l+pos L2, $print rtm+1_beta.
+% beta, epsilon, updated for version 3
+rtm+0 (prod L W T) (scons S V) M M S (abbr V T) :- !, $print rtm+0_beta.
 
 % e
-rtm+1 (cast U T) S m+1 m+0 S U :- !, $print rtm+1_e.
+rtm+0 (cast U T) S m+1 m+0 S U :- !, $print rtm+0_e.
 
 % epsilon
-rtm+1 (cast U T) S m+0 m+0 S T :- !, $print rtm+1_epsilon.
+rtm+0 (cast U T) S m+0 m+0 S T :- !, $print rtm+0_epsilon.
 
 % epsilon, version 2
-rtm+1 (cast U T) S m+y m+y S T :- !, $print rtm+1_epsilon.
+rtm+0 (cast U T) S m+y m+y S T :- !, $print rtm+0_epsilon.
 
 % s
-rtm+1 (sort K1) S m+1 m+0 S (sort K2) :- !, k+succ K1 K2, $print rtm+1_s.
+rtm+0 (sort K1) S m+1 m+0 S (sort K2) :- !, k+succ K1 K2, $print rtm+0_s.
 
-rtm+1 T1 S M1 M2 S T2 :- v+exp T1 M1 M2 T2, $print rtm+1_lref.
+% x
+rtm+0 (abst L1 W T) S m+1 m+1 S (prod L2 W T) :- !, l+pred L1 L2, $print rtm+0_x. 
 
-% CONVERSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+rtm+0 (abst L W T) S m+0 m+0 S (prod L W T) :- !, $print rtm+0_abst_0. 
+
+% version 2
+rtm+0 (abst L W T) S m+y m+y S (prod L W T) :- !, $print rtm+0_abst_y. 
+
+rtm+0 T1 S M1 M2 S T2 :- r+exp T1 M1 M2 T2, $print rtm+0_lref.
+
+% EXTENDED CONVERSION PART 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 stack+ satom satom :- !, $print stack+_atom.
 
@@ -82,60 +82,77 @@ conv+ T1 S1 M1 M2 S2 T2 :- before, $print begin-conv T1 S1 M1 T2 S2 M2, fail.
 
 conv+ T S1 M M S2 T :- !, stack+ S1 S2, $print conv+_refl.
 
-% local l, x, updated for version 2 and 3
-conv+ (abst L1 W1 T1) satom M1 M2 satom (abst L2 W2 T2) :- l+upd M1 L1 L2, l+pos L2, !,
-                                                           conv+ W1 satom m+0 m+0 satom W2,
-                                                           pi x\ v+exp x m+1 m+0 W2 =>
-                                                                 v+exp x m+y m+y W2 =>
-                                                                 conv+ (T1 x) satom M1 M2 satom (T2 x),
-                                                           $print conv+_abst.
+% upsilon, local l
+conv+ (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !, 
+                                      pi x\ r+exp x m+1 m+0 W => 
+                                            conv+ (T1 x) S1 M1 M2 S2 T2,
+                                      $print conv+_prod.
 
-% upsilon, local l, x 
-conv+ (abst L1 W T) S1 M1 M2 S2 T2 :- l+upd M1 L1 L, l+zero L, !,
-                                      pi x\ v+exp x m+1 m+0 W => conv+ (T x) S1 M1 M2 S2 T2,
-                                      $print conv+_upsilon_sn.
+% local delta, updated for version 2
+conv+ (abbr V T1) S1 M1 M2 S2 T2 :- !, pi x\ r+exp x m+0 m+0 V =>
+                                             r+exp x m+1 m+1 V =>
+                                             r+exp x m+y m+y V =>
+                                             conv+ (T1 x) S1 M1 M2 S2 T2, 
+                                       $print conv+_abbr.
 
-% local delta updated for version 2
-conv+ (abbr V T) S1 M1 M2 S2 T2 :- !, pi x\ v+exp x m+0 m+0 V =>
-                                            v+exp x m+1 m+1 V =>
-                                            v+exp x m+y m+y V =>
-                                            conv+ (T x) S1 M1 M2 S2 T2,
-                                      $print conv+_abbr_sn.
-% upsilon, local l, x
-conv+ T1 S1 M1 M2 (abst L2 W T) :- l+upd M2 L2 L, l+zero L, !,
-                                   pi x\ v+exp x m+1 m+0 W => conv+ T1 S1 M1 M2 S2 (T x),
-                                   $print conv+_upsilon_dx.
+conv+ T1 S1 M1 M2 S2 T2 :- rtm+0 T1 S1 M1 M S T, !, conv+ T S M M2 S2 T2, $print conv+_step.
 
-% local delta updated for version 2
-conv+ T1 S1 M1 M2 S2 (abbr V T) :- !, pi x\ v+exp x m+0 m+0 V =>
-                                            v+exp x m+1 m+1 V =>
-                                            v+exp x m+y m+y V =>
-                                      conv+ T1 S1 M1 M2 S2 (T x), $print conv+_abbr_dx.
+conv+ T1 S1 M1 M2 S2 T2 :- conv+r T2 S2 M2 M1 S1 T1.
 
-conv+ T1 S1 M1 M2 S2 T2 :- rtm+1 T1 S1 M1 M S T, !, conv+ T S M M2 S2 T2, $print conv+_step_sn.
+% EXTENDED CONVERSION PART 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-conv+ T1 S1 M1 M2 S2 T2 :- rtm+1 T2 S2 M2 M S T, conv+ T1 S1 M1 M S T, $print conv+_step_dx.
-
-% APPLICABILITY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-appl+ T1 S1 M1 M2 S2 T2 :- before, $print begin-appl T1 S1 M1, fail.
-
-appl+ (abst L1 W U) satom M M S V :- l+upd M L1 L, l+pos L, !,
-                                     conv+ V S m+1 m+0 satom W, $print appl+_refl.
+conv+r T S1 M M S2 T :- !, stack+ S1 S2, $print conv+r_refl.
 
 % upsilon, local l
-appl+ (abst L1 W T) S1 M1 M2 S2 T2 :- l+upd M1 L1 L, l+zero L, !,
-                                      pi x\ v+exp x m+1 m+0 W => appl+ (T x) S1 M1 M2 S2 T2,
-                                      $print appl+_upsilon.
+conv+r (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !, 
+                                       pi x\ r+exp x m+1 m+0 W => 
+                                             conv+r (T1 x) S1 M1 M2 S2 T2,
+                                       $print conv+r_prod.
 
-% local delta updated for version 2
-appl+ (abbr V T) S1 M1 M2 S2 T2 :- !, pi x\ v+exp x m+0 m+0 V =>
-                                            v+exp x m+1 m+1 V =>
-                                            v+exp x m+y m+y V =>
-                                            appl+ (T x) S1 M1 M2 S2 T2,
-                                      $print appl+_abbr.
+% local delta, updated for version 2
+conv+r (abbr V T1) S1 M1 M2 S2 T2 :- !, pi x\ r+exp x m+0 m+0 V =>
+                                              r+exp x m+1 m+1 V =>
+                                              r+exp x m+y m+y V =>
+                                              conv+r (T1 x) S1 M1 M2 S2 T2, 
+                                        $print conv+r_abbr.
 
-appl+ T1 S1 M1 M2 S2 T2 :- rtm+1 T1 S1 M1 M S T, appl+ T S M M2 S2 T2, $print appl+_step.
+conv+r T1 S1 M1 M2 S2 T2 :- rtm+0 T1 S1 M1 M S T, !, conv+r T S M M2 S2 T2, $print conv+r_step.
+
+conv+r T1 S1 M1 M2 S2 T2 :- conv+0 T2 S2 M2 M1 S1 T1.
+
+% EXTENDED CONVERSION PART 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+conv+0 T1 S1 M1 M2 S2 T2 :- before, $print begin-conv0 T1 S1 M1 T2 S2 M2, fail.
+
+conv+0 T S1 M M S2 T :- !, stack+ S1 S2, $print conv+0_refl.
+
+% local l, updated for version 2 and 3
+conv+0 (prod L W1 T1) satom M1 M2 satom (prod L W2 T2) :- !, conv+ W1 satom m+0 m+0 satom W2,
+                                                             pi x\ r+exp x m+1 m+0 W2 =>
+                                                                   r+exp x m+y m+y W2 =>
+                                                                   conv+ (T1 x) satom M1 M2 satom (T2 x),
+                                                             $print conv+0_abst.
+
+% EXTENDED APPLICABILITY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+appl+ T1 S M T2 :- before, $print begin-appl T1 S M, fail.
+
+% upsilon, local l
+appl+ (prod L W T1) S M T2 :- l+zero L, !, 
+                              pi x\ r+exp x m+1 m+0 W =>
+                                    appl+ (T1 x) S M T2,
+                              $print appl+_prod.
+
+% local delta, updated for version 2
+appl+ (abbr V T1) S M T2 :- !, pi x\ r+exp x m+0 m+0 V =>
+                                     r+exp x m+1 m+1 V =>
+                                     r+exp x m+y m+y V =>
+                                     appl+ (T1 x) S M T2, 
+                               $print appl+_abbr.
+
+appl+ (prod L W U) satom M V :- !, conv+ V satom m+1 m+0 satom W, $print appl+_conv.
+
+appl+ T1 S1 M1 T2 :- rtm+0 T1 S1 M1 M S T, !, appl+ T S M T2, $print appl+_step.
 
 % VALIDITY FOR TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -146,25 +163,25 @@ tv+ (sort N) :- !, $print tv+_sort.
 % local delta updated for version 2
 tv+ (abbr V T) :- !, tv+ V,
                      pi x\ (tv+ x :- !) =>
-                           v+exp x m+0 m+0 V =>
-                           v+exp x m+1 m+1 V =>
-                           v+exp x m+y m+y V =>
+                           r+exp x m+0 m+0 V =>
+                           r+exp x m+1 m+1 V =>
+                           r+exp x m+y m+y V =>
                            tv+ (T x),
                      $print tv+_abbr.
 
 % local l updated for version 2 and 3
 tv+ (abst L W T) :- !, tv+ W,
                        pi x\ (tv+ x :- !) => 
-                             v+exp x m+1 m+0 W =>
-                             v+exp x m+y m+y W =>
+                             r+exp x m+1 m+0 W =>
+                             r+exp x m+y m+y W =>
                              tv+ (T x),
                        $print tv+_abst.
 
 % restricted applicability condition (version 1) updated for version 3
-tv+ (appr V T) :- !, tv+ V, tv+ T, appl+ T satom M m+0 satom V, $print tv+_appl_r.
+tv+ (appr V T) :- !, tv+ V, tv+ T, appl+ T satom m+1 V, $print tv+_appl_r.
 
 %extended applicability condition (version 2) updated for version 3
-tv+ (appx V T) :- !, tv+ V, tv+ T, appl+ T satom m+y m+y satom V, $print tv+_appl_x.
+tv+ (appx V T) :- !, tv+ V, tv+ T, appl+ T satom m+y V, $print tv+_appl_x.
 
 tv+ (cast U T) :- tv+ U, tv+ T, conv+ T satom m+1 m+0 satom U, $print tv+_cast.
 
@@ -178,9 +195,9 @@ gv+ gtop :- $print gv+_top.
 gv+ (gdef C V G) :- $print constant C,
                     tv+ V, 
                     pi x\ (tv+ x :- !) =>
-                          v+exp x m+0 m+0 V =>
-                          v+exp x m+1 m+1 V =>
-                          v+exp x m+y m+y V =>
+                          r+exp x m+0 m+0 V =>
+                          r+exp x m+1 m+1 V =>
+                          r+exp x m+y m+y V =>
                           gv+ (G x),
                     $print gv+_def.
 
@@ -188,8 +205,8 @@ gv+ (gdef C V G) :- $print constant C,
 gv+ (gdec C W G) :- $print constant C,
                     tv+ U,
                     pi x\ (tv+ x :- !) =>
-                          v+exp x m+1 m+0 W =>
-                          v+exp x m+y m+y W =>
+                          r+exp x m+1 m+0 W =>
+                          r+exp x m+y m+y W =>
                           gv+ (G x),
                     $print gv+_dec.
 
@@ -203,12 +220,6 @@ gv+ (gdec C W G) :- $print constant C,
 %            l+y = lambda-infinity
 
 l+zero l+0. 
-
-l+pos l+1 :- !.
-
-l+pos l+2 :- !.
-
-l+pos l+y :- !.
 
 l+pred l+0 l+0 :- !.
 
