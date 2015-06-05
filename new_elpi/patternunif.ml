@@ -249,6 +249,12 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
     | UVar _ when delta=0 -> x
     | UVar ({contents=t},vardepth,args) when t != dummy ->
        if depth = 0 then
+        let args =
+         smart_map (fun c ->
+          if c >= from then (c - delta)
+          else if c < to_ then c
+          else raise RestrictionFailure
+         ) args in
         full_deref argsdepth last_call trail ~from:vardepth ~to_ args e t
        else
         (* First phase: from vardepth to from+depth *)
@@ -288,13 +294,14 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
 
 (* full_deref is to be called only on heap terms and with from <= to *)
 (* Note: when full_deref is called inside restrict, it may be from > to_ *)
+(* t lives in from; args already live in to *)
 and full_deref argsdepth last_call trail ~from ~to_ args e t =
  if args = [] then
   if from=to_ then t
   else to_heap argsdepth last_call trail ~from ~to_ e t
  else (* O(1) reduction fragment tested here *)
   let from,args,t = eat_args from args t in
-  let t =
+  let t = full_deref argsdepth last_call trail ~from ~to_ [] e t in
    match args,t with
       [],t -> t
     | _,Lam _ -> assert false (* TODO: Implement beta-reduction here *)
@@ -309,8 +316,6 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
        path *)
     | args,UVar(t,depth,args2) -> UVar(t,depth,args2@args)
     | args,Arg(i,args2) -> Arg(i,args2@args)
-   in
-    full_deref argsdepth last_call trail ~from ~to_ [] e t
 ;;
 
 (* Restrict is to be called only on heap terms *)
