@@ -153,5 +153,5 @@ exp (s X) Y Z :- exp X Y K, prod Y K Z.
 
 main :-
  TEN = s (s (s (s (s (s (s (s (s (s null))))))))),
- exp (s (s (s null))) TEN THOUSAND,
- iter THOUSAND.
+ exp (s (s null)) TEN HUNDRED,
+ iter HUNDRED.
