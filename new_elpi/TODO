@@ -17,6 +17,16 @@ Possible optimizations:
 
 0. Try alternative implementation for ?n == ?n
    (i.e. go back to the previous unif code, but change to_heap/restrict)
+   NOTE: in the WAM the check is for free. An uninstantiated variable
+   points to itsefl. So X=X is implemented making X points to X, i.e.
+   leaving X uninstantiated. We cannot do that easily for two reasons:
+   a) Fields of a constructor cannot be mutated in ocaml <=4.3.
+   b) Our variables can occur multiple times applied to different arguments.
+      To exploit the WAM's representation we should replace our
+      UVar of ... * term list with a UApp (UVar ..., term list) but then
+      we need a deep pattern matching everywhere and this could slow down
+      again.
+   TO BE TRIED (??)
 1. avoid unifying the head of the clause
 2. optimize neck-cuts during the indexing phase (? maybe not easy/possible)
 3. the to_heap could keep the highest non-bound variable to be cached in
