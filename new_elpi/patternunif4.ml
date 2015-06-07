@@ -835,10 +835,12 @@ let program_of_ast p =
    let (max,l),_,f = stack_term_of_ast 0 l [] f in
    let names = List.rev_map fst l in
    let env = Array.make max dummy in
+(* FG: print should be optional
    if f = truec then
     Format.eprintf "@[<hov 1>%a%a.@]\n%!" (uppterm names env) a (pplist (uppterm names env) ",") (chop f)
    else
     Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm names env) a (pplist ~boxed:true (uppterm names env) ",") (chop f);
+*)
    { depth = 0
    ; hd = a
    ; hyps = chop f

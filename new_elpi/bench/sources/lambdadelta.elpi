@@ -42,12 +42,12 @@
 
 % rtm+0 T1 S1 M1 M2 S2 T2 :- before, $print begin-rtm1 T1 S1 M1, fail.
 
-rtm+0 (appr V T) S M M (scons S V) T :- !.
+rtm+0 (appr V T) S M M (scons S V) T.
 
-rtm+0 (appx V T) S M M (scons S V) T :- !.
+rtm+0 (appx V T) S M M (scons S V) T.
 
 % beta, epsilon, updated for version 3
-rtm+0 (prod L W T) (scons S V) M M S (abbr V T) :- !.
+rtm+0 (prod L W T) (scons S V) M M S (abbr V T). % :- $print beta.
 
 % e
 rtm+0 (cast U T) S m+1 m+0 S U :- !.
@@ -56,10 +56,10 @@ rtm+0 (cast U T) S m+1 m+0 S U :- !.
 rtm+0 (cast U T) S m+0 m+0 S T :- !.
 
 % epsilon, version 2
-rtm+0 (cast U T) S m+y m+y S T :- !.
+rtm+0 (cast U T) S m+y m+y S T.
 
 % s
-rtm+0 (sort K1) S m+1 m+0 S (sort K2) :- !, k+succ K1 K2.
+rtm+0 (sort K1) S m+1 m+0 S (sort K2) :- k+succ K1 K2.
 
 % x
 rtm+0 (abst L1 W T) S m+1 m+1 S (prod L2 W T) :- !, l+pred L1 L2. 
@@ -67,18 +67,14 @@ rtm+0 (abst L1 W T) S m+1 m+1 S (prod L2 W T) :- !, l+pred L1 L2.
 rtm+0 (abst L W T) S m+0 m+0 S (prod L W T) :- !.
 
 % version 2
-rtm+0 (abst L W T) S m+y m+y S (prod L W T) :- !.
+rtm+0 (abst L W T) S m+y m+y S (prod L W T).
 
 % EXTENDED CONVERSION PART 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-stack+ satom satom :- !.
-
-stack+ (scons S1 V1) (scons S2 V2) :- !, conv+ V1 satom m+0 m+0 satom V2,
-                                         stack+ S1 S2.
-
 % conv+ T1 S1 M1 M2 S2 T2 :- before, $print begin-conv T1 S1 M1 T2 S2 M2, fail.
 
-conv+ T S1 M M S2 T :- !, stack+ S1 S2.
+% not in Helena
+conv+ T S M M S T :- !.
 
 % upsilon, local l
 conv+ (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !,
@@ -97,7 +93,10 @@ conv+ T1 S1 M1 M2 S2 T2 :- conv+r T2 S2 M2 M1 S1 T1.
 
 % EXTENDED CONVERSION PART 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-conv+l T S1 M M S2 T :- !, stack+ S1 S2.
+% conv+l T1 S1 M1 M2 S2 T2 :- before, $print begin-conv-l T1 S1 M1 T2 S2 M2, fail.
+
+% not in Helena
+conv+l T S M M S T :- !.
 
 % upsilon, local l
 conv+l (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !, 
@@ -116,7 +115,10 @@ conv+l T1 S1 M1 M2 S2 T2 :- conv+0 T1 S1 M1 M2 S2 T2.
 
 % EXTENDED CONVERSION PART 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-conv+r T S1 M M S2 T :- !, stack+ S1 S2.
+% conv+r T1 S1 M1 M2 S2 T2 :- before, $print begin-conv-r T1 S1 M1 T2 S2 M2, fail.
+
+% not in Helena
+conv+r T S M M S T :- !.
 
 % upsilon, local l
 conv+r (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !, 
@@ -135,9 +137,15 @@ conv+r T1 S1 M1 M2 S2 T2 :- conv+0 T2 S2 M2 M1 S1 T1.
 
 % EXTENDED CONVERSION PART 4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% conv+0 T1 S1 M1 M2 S2 T2 :- before, $print begin-conv0 T1 S1 M1 T2 S2 M2, fail.
+stack+ satom satom.
 
-conv+0 T S1 M M S2 T :- !, stack+ S1 S2.
+stack+ (scons S1 V1) (scons S2 V2) :- conv+ V1 satom m+0 m+0 satom V2,
+                                      stack+ S1 S2.
+
+% conv+0 T1 S1 M1 M2 S2 T2 :- before, $print begin-conv-0 T1 S1 M1 T2 S2 M2, fail.
+
+% not in Helena
+conv+0 T S M M S T :- !.
 
 % local l, updated for version 2 and 3
 conv+0 (prod L W1 T1) satom M1 M2 satom (prod L W2 T2) :- !, conv+ W1 satom m+0 m+0 satom W2,
@@ -145,13 +153,15 @@ conv+0 (prod L W1 T1) satom M1 M2 satom (prod L W2 T2) :- !, conv+ W1 satom m+0 
                                                                    r+exp x m+y m+y W2 =>
                                                                    conv+ (T1 x) satom M1 M2 satom (T2 x).
 
-conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 M T, r+exp T2 M2 _ _, $lt T2 T1, !, conv+l T S1 M M2 S2 T2.
+conv+0 T S1 M M S2 T :- stack+ S1 S2, !.
 
-conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 _ _, r+exp T2 M2 M T, $lt T1 T2, !, conv+r T S2 M M1 S1 T1.
-
-conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 M T, !, conv+l T S1 M M2 S2 T2.
+conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 M T, ok+l T1 M2 T2, !, conv+l T S1 M M2 S2 T2.
 
 conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T2 M2 M T, conv+r T S2 M M1 S1 T1.
+
+ok+l T1 M2 T2 :- r+exp T2 M2 N U, !, $lt T1 T2.
+
+ok+l T1 M2 T2.
 
 % EXTENDED APPLICABILITY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -176,30 +186,30 @@ appl+ T1 S M1 T2 :- r+exp T1 M1 M2 T, !, appl+ T S M2 T2.
 
 % VALIDITY FOR TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% tv+ T :- before, $print begin-tv T, fail.
+tv+ T :- before, $print begin-tv T, fail.
 
-tv+ (sort N) :- !.
+tv+ (sort N).
 
 % local delta updated for version 2
-tv+ (abbr V T) :- !, tv+ V,
-                     pi x\ (tv+ x :- !) =>
-                           r+exp x m+0 m+0 V =>
-                           r+exp x m+1 m+1 V =>
-                           r+exp x m+y m+y V =>
-                           tv+ (T x).
+tv+ (abbr V T) :- tv+ V,
+                  pi x\ (tv+ x :- !) =>
+                        r+exp x m+0 m+0 V =>
+                        r+exp x m+1 m+1 V =>
+                        r+exp x m+y m+y V =>
+                        tv+ (T x).
 
 % local l updated for version 2 and 3
-tv+ (abst L W T) :- !, tv+ W,
-                       pi x\ (tv+ x :- !) =>
-                             r+exp x m+1 m+0 W =>
-                             r+exp x m+y m+y W =>
-                             tv+ (T x).
+tv+ (abst L W T) :- tv+ W,
+                    pi x\ (tv+ x :- !) =>
+                          r+exp x m+1 m+0 W =>
+                          r+exp x m+y m+y W =>
+                          tv+ (T x).
 
 % restricted applicability condition (version 1) updated for version 3
-tv+ (appr V T) :- !, tv+ V, tv+ T, appl+ T satom m+1 V.
+tv+ (appr V T) :- tv+ V, tv+ T, appl+ T satom m+1 V.
 
 %extended applicability condition (version 2) updated for version 3
-tv+ (appx V T) :- !, tv+ V, tv+ T, appl+ T satom m+y V.
+tv+ (appx V T) :- tv+ V, tv+ T, appl+ T satom m+y V.
 
 tv+ (cast U T) :- tv+ U, tv+ T, conv+ T satom m+1 m+0 satom U.
 
@@ -207,10 +217,10 @@ tv+ (cast U T) :- tv+ U, tv+ T, conv+ T satom m+1 m+0 satom U.
 
 % gv+ G :- before, $print begin-gv G, fail.
 
-gv+ gtop :- !.
+gv+ gtop.
 
 % global delta updated for version 2
-gv+ (gdef C V G) :- !, $print constant C,
+gv+ (gdef C V G) :- $print constant C,
                     tv+ V, 
                     pi x\ (tv+ x :- !) =>
                           r+exp x m+0 m+0 V =>
@@ -219,14 +229,14 @@ gv+ (gdef C V G) :- !, $print constant C,
                           gv+ (G x).
 
 % global l updated for version 2
-gv+ (gdec C W G) :- !, $print constant C,
-                    tv+ U,
+gv+ (gdec C W G) :- $print constant C,
+                    tv+ W,
                     pi x\ (tv+ x :- !) =>
                           r+exp x m+1 m+0 W =>
                           r+exp x m+y m+y W =>
                           gv+ (G x).
 
-% Additional matter ----------------------------------------------------------
+% Additions ------------------------------------------------------------------
 
 % LAYERS FOR PTS, LAMBDA-INFINITY, AUT-68, AUT-QE %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -237,11 +247,11 @@ gv+ (gdec C W G) :- !, $print constant C,
 
 l+zero l+0. 
 
-l+pred l+0 l+0 :- !.
+l+pred l+0 l+0.
 
-l+pred l+1 l+0 :- !.
+l+pred l+1 l+0.
 
-l+pred l+2 l+1 :- !.
+l+pred l+2 l+1.
 
 l+pred l+y l+y.
 
@@ -279,7 +289,32 @@ test_gv_3 :- gv+ (
    (gdef c+3 (abst l+2 (sort k+1) a\
                 (cast (appx a (appx a l_imp)) (abst l+2 a x\ x))
              ) l_refimp\
-   gtop)))
+% constant 4
+   (gdef c+4 (abst l+2 (sort k+1) a\
+             (abst l+2 (sort k+1) b\
+             (abst l+2 (sort k+1) c\
+             (abst l+2 (appx b (appx a l_imp)) i\ 
+             (abst l+2 (appx c (appx b l_imp)) j\
+                (cast (appx c (appx a l_imp)) (abst l+2 a x\ (appx (appx x i) j)))
+             ))))) l_trimp\
+% constant 5
+   (gdec c+5 (sort k+1) l_con\
+% constant 6
+   (gdef c+6 (abst l+2 (sort k+1) a\
+                (cast (sort k+1) (appx l_con (appx a l_imp)))
+             ) l_not\
+% constant 7
+   (gdef c+7 (abst l+2 (sort k+1) a\
+                (cast (sort k+1) (appx (appx a l_not) l_not))
+             ) l_wel\
+% constant 8
+   (gdef c+8 (abst l+2 (sort k+1) a\
+             (abst l+2 a a1\
+                (cast (appx a l_wel) (abst l+2 (appx a l_not) x\ (appx a1 x)))
+             )) l_weli\
+   gtop))))))))
 ).
 
 main :- test_sta, test_conv, test_tv_11, test_tv_12, test_tv_13, test_tv_2, test_gv_3.
+
+% before.
