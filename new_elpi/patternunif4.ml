@@ -635,7 +635,10 @@ let _ =
       | _ -> assert false in
     match args with
        [t1; t2] ->
-         if get_constant t1 <= get_constant t2 then raise (Failure "not lt")
+         let t1 = get_constant t1 in
+         let t2 = get_constant t2 in
+         let is_lt = if t1 <= 0 then t2 > 0 || t2 < t1 else t1 < t2 in
+         if not is_lt then raise (Failure "not lt")
      | _ -> assert false)
 ;;
 
