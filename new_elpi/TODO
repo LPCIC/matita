@@ -12,6 +12,8 @@ Benchmarks:
 Bugs:
 
 1. fix pretty-printing of constants
+2. a & b :- c  is parsed incorrectly (wrong precedence)
+   and not at all in the toplevel
 
 Possible optimizations:
 
