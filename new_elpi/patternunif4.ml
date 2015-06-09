@@ -117,7 +117,8 @@ let xppterm ~nice names env f t =
    else Format.fprintf f "<%a>_%d" aux !r depth
   and pp_arg f n =
    let name= try List.nth names n with Failure _ -> "A" ^ string_of_int n in
-   if env.(n) == dummy then Format.fprintf f "%s" name
+   if try env.(n) == dummy with Invalid_argument _ -> true then
+    Format.fprintf f "%s" name
    (* TODO: (potential?) bug here, the argument is not lifted
       from g_depth (currently not even passed to the function)
       to depth (not passed as well) *)
