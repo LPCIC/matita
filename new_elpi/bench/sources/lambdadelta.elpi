@@ -159,7 +159,7 @@ conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 M T, ok+l T1 M2 T2, !, conv+l T S1 M M2 
 
 conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T2 M2 M T, conv+r T S2 M M1 S1 T1.
 
-ok+l T1 M2 T2 :- r+exp T2 M2 N U, !, $lt T1 T2.
+ok+l T1 M2 T2 :- r+exp T2 M2 N U, !, $lt T2 T1.
 
 ok+l T1 M2 T2.
 
