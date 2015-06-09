@@ -1,6 +1,7 @@
 module type ASTFuncT =
   sig
     type t
+    val compare : t -> t -> int
     val pp : t -> string
     val eq : t -> t -> bool
     val truef : t
@@ -16,6 +17,7 @@ module type ASTFuncT =
 module ASTFuncS : ASTFuncT = 
   struct
     type t = string
+    let compare = String.compare
 
     (* Hash consing *)
     let from_string =

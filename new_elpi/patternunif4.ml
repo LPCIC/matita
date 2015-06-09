@@ -771,8 +771,10 @@ let stack_var_of_ast (f,l) n =
   let n' = Arg (f,[]) in
   (f+1,(n,n')::l),n'
 
+module ConstMap = Map.Make(Parser.ASTFuncS);;
+
 let stack_funct_of_ast l' f =
- (try l',List.assoc f l'
+ (try l',ConstMap.find f l'
   with Not_found -> l',funct_of_ast f)
 
 let rec stack_term_of_ast lvl l l' =
@@ -803,7 +805,7 @@ let rec stack_term_of_ast lvl l l' =
      l,l',Custom(fst (funct_of_ast f),List.rev rev_tl)
   | AST.Lam (x,t) ->
      let c = constant_of_dbl lvl in
-     let l,l',t' = stack_term_of_ast (lvl+1) l ((x,(lvl,c))::l') t in
+     let l,l',t' = stack_term_of_ast (lvl+1) l (ConstMap.add x (lvl,c) l') t in
      l,l',Lam t'
   | AST.App (AST.Var v,tl) ->
      let l,l',rev_tl =
@@ -828,14 +830,14 @@ let rec stack_term_of_ast lvl l l' =
      (* Beta-redexes not in our language *) assert false
 
 let query_of_ast t =
- let (max,l),_,t = stack_term_of_ast 0 (0,[]) [] t in
+ let (max,l),_,t = stack_term_of_ast 0 (0,[]) ConstMap.empty t in
   List.rev_map fst l,Array.make max dummy,t
 
 let program_of_ast p =
  let clauses =
   List.map (fun (a,f) ->
-   let l,_,a = stack_term_of_ast 0 (0,[]) [] a in
-   let (max,l),_,f = stack_term_of_ast 0 l [] f in
+   let l,_,a = stack_term_of_ast 0 (0,[]) ConstMap.empty a in
+   let (max,l),_,f = stack_term_of_ast 0 l ConstMap.empty f in
 (* FG: print should be optional
    let names = List.rev_map fst l in
    let env = Array.make max dummy in
@@ -855,8 +857,8 @@ let program_of_ast p =
 
 let pp_FOprolog p =
  List.iter (fun (a,f) ->
-  let l,_,a = stack_term_of_ast 0 (0,[]) [] a in
-  let (max,l),_,f = stack_term_of_ast 0 l [] f in
+  let l,_,a = stack_term_of_ast 0 (0,[]) ConstMap.empty a in
+  let (max,l),_,f = stack_term_of_ast 0 l ConstMap.empty f in
   let names = List.rev_map fst l in
   let env = Array.make max dummy in
   if f = truec then
