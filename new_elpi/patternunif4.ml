@@ -833,9 +833,9 @@ let program_of_ast p =
   List.map (fun (a,f) ->
    let l,_,a = stack_term_of_ast 0 (0,[]) [] a in
    let (max,l),_,f = stack_term_of_ast 0 l [] f in
+(* FG: print should be optional
    let names = List.rev_map fst l in
    let env = Array.make max dummy in
-(* FG: print should be optional
    if f = truec then
     Format.eprintf "@[<hov 1>%a%a.@]\n%!" (uppterm names env) a (pplist (uppterm names env) ",") (chop f)
    else
