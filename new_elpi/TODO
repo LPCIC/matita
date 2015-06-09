@@ -1,3 +1,8 @@
+Other:
+
+0. pretty-printing to LaTeX + transformation to standard presentation
+   (with fresh variables, etc.)
+
 Benchmarks:
 
 0. modify lambda3 to use the bound variables (via a list, etc.)
@@ -11,7 +16,7 @@ Benchmarks:
 
 Bugs:
 
-1. fix pretty-printing of constants
+1. fix pretty-printing of constants e.g. X = x\x
 2. a & b :- c  is parsed incorrectly (wrong precedence)
    and not at all in the toplevel
 
@@ -29,12 +34,10 @@ Possible optimizations:
       we need a deep pattern matching everywhere and this could slow down
       again.
    TO BE TRIED (??)
-1. avoid unifying the head of the clause
 2. optimize neck-cuts during the indexing phase (? maybe not easy/possible)
 3. the to_heap could keep the highest non-bound variable to be cached in
    the UVar to make restriction linear
 4. compact representation of UVar^d c1 ... cn
-5. read-only arrays in place of lists
 
 Missing:
 1. occur-check
