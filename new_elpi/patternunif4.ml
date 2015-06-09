@@ -31,7 +31,6 @@ let rec smart_map f =
      if hd==hd' && tl==tl' then l else hd'::tl'
 
 (* TODOS:
-   - Do the TODO: optimization for indexing
    - There are a few TODOs with different implementative choices to
      be benchmarked *)
 
@@ -194,7 +193,7 @@ type key2 = int
 type key = key1 * key2
 
 type clause =
- { depth : int; hd : term; hyps : term list; vars : int; key : key }
+ { depth : int; args : term list; hyps : term list; vars : int; key : key }
 
 (************************* to_heap/restrict/deref ******************)
 
@@ -593,26 +592,28 @@ let rec chop =
   | f when f==truec -> []
   | _ as f -> [ f ]
 
-let rec clausify depth =
+let rec clausify depth hyps =
  function
     App(c, g, gs) when c == andc ->
-     clausify depth g @ List.flatten (List.map (clausify depth) gs)
-(* TODO: BUG the semantics of implc is wrong when g2 is not an atom. *)
-  | App(c, g1, [g2]) when c == implc ->
-     [ { depth ; hd=g2 ; hyps=chop g1 ; vars=0 ; key = key_of depth g2 } ]
+     clausify depth hyps g@ List.flatten (List.map (clausify depth hyps) gs)
+  | App(c, g1, [g2]) when c == implc -> clausify depth (chop g1::hyps) g2
   | App(c, _, _) when c == implc -> assert false
   | App(c, Lam b, []) when c == pic ->
      (* TODO: this should be allowed! But the parser needs to be
         fixed to parse pis in positive position correctly, binding
         the UVars as Constants *)
      assert false
-  | UVar ({ contents=g },_,_) when g == dummy -> assert false
-  | UVar ({ contents=g },origdepth,args) ->
-     clausify depth (deref ~from:origdepth ~to_:depth args g)
+  | Const _ as g ->
+     [ { depth ; args = []; hyps = List.flatten (List.rev hyps) ; vars=0 ;
+         key = key_of depth g } ]
+  | App(_,x,xs) as g ->
+     [ { depth ; args=x::xs; hyps = List.flatten (List.rev hyps); vars=0 ;
+         key = key_of depth g}]
+  | UVar ({ contents=g },origdepth,args) when g != dummy ->
+     clausify depth hyps (deref ~from:origdepth ~to_:depth args g)
   | Arg _ -> assert false
   | Lam _ | Custom _ -> assert false
-  | (Const _ | App _) as g ->
-      [ { depth ; hd=g ; hyps=[] ; vars=0 ; key = key_of depth g}]
+  | UVar _ -> assert false
 ;;
 
 let register_custom,lookup_custom =
@@ -675,7 +676,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     (* We do not check the case of implication applied to
        multiple arguments *)
     | App(c, g1, [g2]) when c == implc ->
-       let clauses = clausify depth g1 in
+       let clauses = clausify depth [] g1 in
        run depth (add_clauses clauses p) g2 gs next alts lvl
     | App(c, Lam f, []) when c == pic ->
        run (depth+1) p f gs next alts lvl
@@ -708,11 +709,19 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
         let old_trail = !trail in
         let last_call = last_call && cs = [] in
         let env = Array.make c.vars dummy in
-        match unif trail last_call depth g env c.depth c.hd with
+        let rec args_of =
+         function
+            Const _ -> []
+          | App(_,x,xs) -> x::xs
+          | UVar ({ contents = g },origdepth,args) when g != dummy ->
+             args_of (deref ~from:origdepth ~to_:depth args g) 
+          | _ -> assert false in
+        match
+         for_all2 (fun x y -> unif trail last_call depth x env c.depth y)
+          (args_of g) c.args
+        with
         | false -> undo_trail old_trail trail; select cs
         | true ->
-(* TODO: make to_heap lazy adding the env to unify and making the env
-   survive longer. It may be slower or faster, who knows *)
             let oldalts = alts in
             let alts =
              if cs = [] then alts
@@ -847,8 +856,15 @@ let program_of_ast p =
    else
     Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm names env) a (pplist ~boxed:true (uppterm names env) ",") (chop f);
 *)
+   let args =
+    match a with
+       Const _ -> []
+     | App(_,x,xs) -> x::xs
+     | Arg _ -> assert false
+     | _ -> assert false
+   in
    { depth = 0
-   ; hd = a
+   ; args
    ; hyps = chop f
    ; vars = max
    ; key = key_of 0 a
