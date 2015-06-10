@@ -41,11 +41,11 @@ type term =
   (* Pure terms *)
   | Const of constant
   (* Clause terms *)
-  | Arg of int * constant list
+  | Arg of (*id:*)int * (*argsno:*)int
   (* Heap terms *)
   | App of constant * term * term list
   | Custom of constant * term list
-  | UVar of term ref * (*depth:*)int * constant list
+  | UVar of term ref * (*depth:*)int * (*argsno:*)int
   | Lam of term
 
 let rec dummy = App (-9999,dummy,[])
@@ -90,7 +90,12 @@ let eqc = fst (funct_of_ast F.eqf)
 let m = ref [];;
 let n = ref 0;;
 
-let xppterm ~nice names env f t =
+(* mkinterval d n 0 = [d; ...; d+n-1] *)
+let rec mkinterval depth argsno n =
+ if n = argsno then [] else (n+depth)::mkinterval depth argsno (n+1)
+;;
+
+let xppterm ~nice names argsdepth env f t =
   let pp_app f pphd pparg (hd,args) =
    if args = [] then pphd f hd
    else
@@ -136,8 +141,12 @@ let xppterm ~nice names env f t =
           Format.fprintf f "@[<hov 1>(%a@ =>@ %a)@]" aux x aux (List.hd xs)
         ) else pp_app f ppconstant aux (hd,x::xs)
     | Custom (hd,xs) -> pp_app f ppconstant aux (hd,xs)
-    | UVar (r,depth,args) -> pp_app f (pp_uvar depth) ppconstant (r,args)
-    | Arg (n,args) -> pp_app f pp_arg ppconstant (n,args)
+    | UVar (r,depth,argsno) ->
+       let args = mkinterval depth argsno 0 in
+       pp_app f (pp_uvar depth) ppconstant (r,args)
+    | Arg (n,argsno) ->
+       let args = mkinterval argsdepth argsno 0 in
+       pp_app f pp_arg ppconstant (n,args)
     | Const s -> ppconstant f s
     | Lam t -> Format.fprintf f "\\(%a)" aux t;
   in
@@ -176,7 +185,7 @@ let xppterm_prolog ~nice names env f t =
         ) else pp_app f ppconstant aux (hd,x::xs) 
     | Custom (hd,xs) ->  assert false;
     | UVar (r,depth,args) -> assert false 
-    | Arg (n,[]) -> pp_arg f n
+    | Arg (n,0) -> pp_arg f n
     | Arg _ -> assert false
     | Const s -> ppconstant f s
     | Lam t -> assert false;
@@ -202,10 +211,10 @@ exception RestrictionFailure
 (* eat_args n [n ; ... ; n+k] (Lam_0 ... (Lam_k t)...) = n+k+1,[],t
    eat_args n [n ; ... ; n+k]@l (Lam_0 ... (Lam_k t)...) =
      n+k+1,l,t if t != Lam or List.hd l != n+k+1 *)
-let rec eat_args from l t =
- match l,t with
-    hd::tl,Lam t' when hd=from -> eat_args (from+1) tl t'
-  | _,_ -> from,l,t
+let rec eat_args l t =
+ match t with
+    Lam t' when l > 0 -> eat_args (l-1) t'
+  | _ -> l,t
 
 (* To_heap performs at once:
    1) refreshing of the arguments into variables (heapifycation)
@@ -249,12 +258,6 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
     | UVar _ when delta=0 -> x
     | UVar ({contents=t},vardepth,args) when t != dummy ->
        if depth = 0 then
-        let args =
-         smart_map (fun c ->
-          if c >= from then (c - delta)
-          else if c < to_ then c
-          else raise RestrictionFailure
-         ) args in
         full_deref argsdepth last_call trail ~from:vardepth ~to_ args e t
        else
         (* First phase: from vardepth to from+depth *)
@@ -262,8 +265,8 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
          ~to_:(from+depth) args e t in
         (* Second phase: from from to to *)
         aux depth t
-    | UVar (r,_,[]) when delta > 0 ->
-       let fresh = UVar(ref dummy,to_,[]) in
+    | UVar (r,_,0) when delta > 0 ->
+       let fresh = UVar(ref dummy,to_,0) in
        if not last_call then trail := r :: !trail;
        r := fresh;
        (* TODO: test if it is more efficient here to return fresh or
@@ -273,19 +276,13 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
     | UVar (_,_,_) when delta < 0 -> x
     | UVar (_,_,_) -> assert false (* TO BE IMPLEMENTED *)
     | Arg (i,args) when argsdepth >= to_ ->
-        let args =
-         smart_map (fun c ->
-          if c >= from then (c - delta)
-          else if c < to_ then c
-          else raise RestrictionFailure
-         ) args in
         let a = e.(i) in
         (*Format.eprintf "%a^%d = %a\n%!" ppterm (Arg(i,[])) argsdepth ppterm a;*)
         if a == dummy then
             let r = ref dummy in
-            let v = UVar(r,to_,[]) in
+            let v = UVar(r,to_,0) in
             e.(i) <- v;
-            if args=[] then v else UVar(r,to_,args)
+            if args=0 then v else UVar(r,to_,args)
         else
          full_deref argsdepth last_call trail ~from:argsdepth ~to_:(to_+depth)
            args e a
@@ -296,26 +293,33 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
 (* Note: when full_deref is called inside restrict, it may be from > to_ *)
 (* t lives in from; args already live in to *)
 and full_deref argsdepth last_call trail ~from ~to_ args e t =
- if args = [] then
+ if args = 0 then
   if from=to_ then t
   else to_heap argsdepth last_call trail ~from ~to_ e t
  else (* O(1) reduction fragment tested here *)
-  let from,args,t = eat_args from args t in
-  let t = full_deref argsdepth last_call trail ~from ~to_ [] e t in
-   match args,t with
-      [],t -> t
-    | _,Lam _ -> assert false (* TODO: Implement beta-reduction here *)
-    | hd::args,Const c ->
-       (App (c,constant_of_dbl hd,List.map constant_of_dbl args))
-    | args,App (c,arg,args2) ->
+  let args',t = eat_args args t in
+  let from = from + args - args' in 
+  let t = full_deref argsdepth last_call trail ~from ~to_ 0 e t in
+   match t with
+      t when args'=0 -> t
+    | Lam _ -> assert false (* never happens *)
+    | Const c ->
+       let args = mkinterval (from+1) (args'-1) 0 in
+       (App (c,constant_of_dbl from,List.map constant_of_dbl args))
+    | App (c,arg,args2) ->
+       let args = mkinterval from args' 0 in
        (App (c,arg,args2 @ List.map constant_of_dbl args))
-    | args,Custom (c,args2) ->
+    | Custom (c,args2) ->
+       let args = mkinterval from args' 0 in
        (Custom (c,args2@List.map constant_of_dbl args))
     (* TODO: when the UVar/Arg is not dummy, we call full_deref that
        will call to_heap that will call_full_deref again. Optimize the
        path *)
-    | args,UVar(t,depth,args2) -> UVar(t,depth,args2@args)
-    | args,Arg(i,args2) -> Arg(i,args2@args)
+    | UVar(t,depth,args2) when from = depth+args2 ->
+       UVar(t,depth,args2+args')
+    | Arg(i,args2) when from = argsdepth+args2 -> Arg(i,args2+args')
+    | UVar _
+    | Arg _ -> assert false (* We are dynamically exiting the fragment *)
 ;;
 
 (* Restrict is to be called only on heap terms *)
@@ -404,12 +408,9 @@ let make p = add_clauses (List.rev p) Ptmap.empty
 
 (* Unification *)
 
-let rec make_lambdas destdepth depth =
- function
-    hd::tl when hd=depth ->
-     let args,body = make_lambdas (destdepth+1) (depth+1) tl in
-      args,Lam body
-  | args -> args,UVar(ref dummy,destdepth,[])
+let rec make_lambdas destdepth args =
+ if args = 0 then UVar(ref dummy,destdepth,0)
+ else Lam (make_lambdas (destdepth+1) (args-1))
 
 (* This for_all2 is tail recursive when the two lists have length 1.
    It also raises no exception. *)
@@ -430,15 +431,12 @@ let rec for_all2 p l1 l2 =
    [adepth,+infty) = [bdepth,+infy)   bound variables *)
 let unif trail last_call adepth a e bdepth b =
  let rec unif depth a bdepth b heap =
-   (*Format.eprintf "unif: ^%d:%a =%d= ^%d:%a\n%!" adepth (ppterm [] [||]) a depth bdepth (ppterm [] e) b;*)
+   (*Format.eprintf "unif: ^%d:%a =%d= ^%d:%a\n%!" adepth (ppterm [] adepth [||]) a depth bdepth (ppterm [] adepth e) b;*)
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
 (* TODO: test if it is better to deref first or not, i.e. the relative order
    of the clauses below *)
-   | UVar (r1,_,args1),UVar (r2,_,args2) when r1==r2 ->
-       for_all2
-        (fun c1 c2 ->if c1 < bdepth then c1=c2 else c1 >= adepth && c1 = c2 + delta)
-        args1 args2
+   | UVar (r1,_,args1),UVar (r2,_,args2) when r1==r2 -> args1=args2
    | UVar ({ contents = t },origdepth,args), _ when t != dummy ->
       (* The arguments live in adepth+depth; the variable lives in origdepth;
          everything leaves in adepth+depth after derefercing. *)
@@ -452,10 +450,9 @@ let unif trail last_call adepth a e bdepth b =
    | _, Arg (i,args) when e.(i) != dummy ->
       (* The arguments live in bdepth+depth; the variable lives in adepth;
          everything leaves in adepth+depth after derefercing. *)
-      let args = List.map (fun c -> if c < bdepth then c else c+delta) args in
       unif depth a adepth (deref ~from:adepth ~to_:(adepth+depth) args
        e.(i)) true
-   | _, Arg (i,[]) ->
+   | _, Arg (i,0) ->
      e.(i) <-
       restrict adepth last_call trail ~from:(adepth+depth) ~to_:adepth e a;
      (*Format.eprintf "<- %a\n%!" ppterm e.(i);*)
@@ -463,14 +460,12 @@ let unif trail last_call adepth a e bdepth b =
    | _, Arg (i,args) ->
       (*Format.eprintf "%a %d===%d %a\n%!" ppterm a adepth bdepth ppterm b;*)
       (* Here I am doing for the O(1) unification fragment *)
-      let args,body = make_lambdas adepth bdepth args in
+      let body = make_lambdas adepth args in
       e.(i) <- body;
-      if args = [] then
-       (* TODO: unif goes into the UVar when !r != dummy case below.
-          Rewrite the code to do the job directly? *)
-       unif depth a bdepth b heap
-      else assert false (* TODO: h.o. unification not implemented *)
-   | _, UVar (r,origdepth,[]) ->
+      (* TODO: unif goes into the UVar when !r != dummy case below.
+         Rewrite the code to do the job directly? *)
+      unif depth a bdepth b heap
+   | _, UVar (r,origdepth,0) ->
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
        (try
@@ -489,14 +484,12 @@ let unif trail last_call adepth a e bdepth b =
    | _, UVar (r,origdepth,args) ->
       if not last_call then trail := r :: !trail;
       (* Here I am doing for the O(1) unification fragment *)
-      let args,body = make_lambdas origdepth origdepth args in
+      let body = make_lambdas origdepth args in
       r := body;
-      if args = [] then
-       (* TODO: unif goes into the UVar when !r != dummy case below.
-          Rewrite the code to do the job directly? *)
-       unif depth a bdepth b heap
-      else assert false (* TODO: h.o. unification not implemented *)
-   | UVar (r,origdepth,[]), _ ->
+      (* TODO: unif goes into the UVar when !r != dummy case below.
+         Rewrite the code to do the job directly? *)
+      unif depth a bdepth b heap
+   | UVar (r,origdepth,0), _ ->
        if not last_call then trail := r :: !trail;
        (* TODO: are exceptions efficient here? *)
        (try
@@ -516,13 +509,11 @@ let unif trail last_call adepth a e bdepth b =
    | UVar (r,origdepth,args), _ ->
       if not last_call then trail := r :: !trail;
       (* Here I am doing for the O(1) unification fragment *)
-      let args,body = make_lambdas origdepth origdepth args in
+      let body = make_lambdas origdepth args in
       r := body;
-      if args = [] then
-       (* TODO: unif goes into the UVar when !r != dummy case below.
-          Rewrite the code to do the job directly? *)
-       unif depth a bdepth b heap
-      else assert false (* TODO: h.o. unification not implemented *)
+      (* TODO: unif goes into the UVar when !r != dummy case below.
+         Rewrite the code to do the job directly? *)
+      unif depth a bdepth b heap
    | App (c1,x2,xs), App (c2,y2,ys) ->
       (* Compressed cut&past from Const vs Const case below +
          delta=0 optimization for <c1,c2> and <x2,y2> *)
@@ -625,7 +616,7 @@ let _ =
  register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$print")))
   (fun _ env args ->
    Format.printf "@[<hov 1>" ;
-   List.iter (Format.printf "%a@ " (uppterm [] env)) args;
+   List.iter (Format.printf "%a@ " (uppterm [] 0 env)) args;
    Format.printf "@]\n%!") ;
  register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$lt")))
   (fun depth _ args ->
@@ -653,7 +644,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
      Depth >= 0 is the number of variables in the context.
   *)
   let rec run depth p g gs (next : frame) alts lvl =
-    if debug then Format.eprintf "goal^%d: %a\n%!" depth (ppterm [] [||]) g;
+    if debug then Format.eprintf "goal^%d: %a\n%!" depth (ppterm [] 0 [||]) g;
     (*Format.eprintf "<";
     List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
     Format.eprintf ">";*)
@@ -778,7 +769,7 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
 let stack_var_of_ast (f,l) n =
  try (f,l),List.assoc n l
  with Not_found ->
-  let n' = Arg (f,[]) in
+  let n' = Arg (f,0) in
   (f+1,(n,n')::l),n'
 
 module ConstMap = Map.Make(Parser.ASTFuncS);;
@@ -825,15 +816,15 @@ let rec stack_term_of_ast lvl l l' =
         (l,l',[]) tl in
      let tl = List.rev rev_tl in
      let tl =
-      let rec aux =
+      let rec aux expected =
        function
-         [] -> []
-       | Const c::tl -> c::aux tl
+         [] -> 0
+       | Const c::tl when c = expected -> 1 + aux (expected+1) tl
        | _ -> assert false (* Not in Pattern Fragment *)
       in
-       aux tl in
+       aux 0 tl in
      (match stack_var_of_ast l v with
-         l,Arg (v,[]) -> l,l',Arg(v,tl)
+         l,Arg (v,0) -> l,l',Arg(v,tl)
        | _,_ -> assert false)
   | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
   | AST.App (AST.Lam _,_) ->
@@ -852,9 +843,9 @@ let program_of_ast p =
    let names = List.rev_map fst l in
    let env = Array.make max dummy in
    if f = truec then
-    Format.eprintf "@[<hov 1>%a%a.@]\n%!" (uppterm names env) a (pplist (uppterm names env) ",") (chop f)
+    Format.eprintf "@[<hov 1>%a%a.@]\n%!" (uppterm names 0 env) a (pplist (uppterm names 0 env) ",") (chop f)
    else
-    Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm names env) a (pplist ~boxed:true (uppterm names env) ",") (chop f);
+    Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm names 0 env) a (pplist ~boxed:true (uppterm names 0 env) ",") (chop f);
 *)
    let args =
     match a with
@@ -894,7 +885,7 @@ let impl =
   let pp_prolog = pp_FOprolog
 
   let msg (q_names,q_env,q) =
-   Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh, double hash indexing: %a" (uppterm q_names q_env) q ;
+   Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh, double hash indexing: %a" (uppterm q_names 0 q_env) q ;
    Format.flush_str_formatter ()
 
   let execute_once p q =
@@ -908,10 +899,10 @@ let impl =
    let k = ref (run p qq) in
    let time1 = Unix.gettimeofday() in
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-   Format.eprintf "Raw Result: %a\n%!" (ppterm q_names q_env) q ;
+   Format.eprintf "Raw Result: %a\n%!" (ppterm q_names 0 q_env) q ;
    Format.eprintf "Result: \n%!" ;
    List.iteri (fun i name -> Format.eprintf "%s=%a\n%!" name
-    (uppterm q_names q_env) q_env.(i)) q_names;
+    (uppterm q_names 0 q_env) q_env.(i)) q_names;
    while !k != emptyalts do
      prerr_endline "More? (Y/n)";
      if read_line() = "n" then k := emptyalts else
@@ -920,10 +911,10 @@ let impl =
        k := cont !k;
        let time1 = Unix.gettimeofday() in
        prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-       Format.eprintf "Raw Result: %a\n%!" (ppterm q_names q_env) q ;
+       Format.eprintf "Raw Result: %a\n%!" (ppterm q_names 0 q_env) q ;
        Format.eprintf "Result: \n%!" ;
        List.iteri (fun i name -> Format.eprintf "%s=%a\n%!" name
-        (uppterm q_names q_env) q_env.(i)) q_names;
+        (uppterm q_names 0 q_env) q_env.(i)) q_names;
       with
        Failure "no clause" -> prerr_endline "Fail"; k := emptyalts
   done
