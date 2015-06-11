@@ -186,7 +186,7 @@ appl+ T1 S M1 T2 :- r+exp T1 M1 M2 T, !, appl+ T S M2 T2.
 
 % VALIDITY FOR TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tv+ T :- before, $print begin-tv T, fail.
+% tv+ T :- before, $print begin-tv T, fail.
 
 tv+ (sort N).
 
