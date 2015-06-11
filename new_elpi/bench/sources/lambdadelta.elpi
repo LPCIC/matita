@@ -1,4 +1,4 @@
-% Validator for \lambda\delta version 3 --------------------------------------
+% Helena L: validator for \lambda\delta version 3 ----------------------------
 
 % sort: K := user defined
 
@@ -47,7 +47,8 @@ rtm+0 (appr V T) S M M (scons S V) T.
 rtm+0 (appx V T) S M M (scons S V) T.
 
 % beta, epsilon, updated for version 3
-rtm+0 (prod L W T) (scons S V) M M S (abbr V T). % :- $print beta.
+rtm+0 (prod L W T) (scons S V) M M S (abbr V T).
+% rtm+0 (prod L W T) (scons S V) M M S (abbr V T) :- $print beta.
 
 % e
 rtm+0 (cast U T) S m+1 m+0 S U :- !.
@@ -73,8 +74,9 @@ rtm+0 (abst L W T) S m+y m+y S (prod L W T).
 
 % conv+ T1 S1 M1 M2 S2 T2 :- before, $print begin-conv T1 S1 M1 T2 S2 M2, fail.
 
-% not in Helena
+% not in Helena M
 conv+ T S M M S T :- !.
+% conv+ T S M M S T :- !, $print opt.
 
 % upsilon, local l
 conv+ (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !,
@@ -95,8 +97,9 @@ conv+ T1 S1 M1 M2 S2 T2 :- conv+r T2 S2 M2 M1 S1 T1.
 
 % conv+l T1 S1 M1 M2 S2 T2 :- before, $print begin-conv-l T1 S1 M1 T2 S2 M2, fail.
 
-% not in Helena
+% not in Helena M
 conv+l T S M M S T :- !.
+% conv+l T S M M S T :- !, $print opt-l.
 
 % upsilon, local l
 conv+l (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !, 
@@ -117,8 +120,9 @@ conv+l T1 S1 M1 M2 S2 T2 :- conv+0 T1 S1 M1 M2 S2 T2.
 
 % conv+r T1 S1 M1 M2 S2 T2 :- before, $print begin-conv-r T1 S1 M1 T2 S2 M2, fail.
 
-% not in Helena
+% not in Helena M
 conv+r T S M M S T :- !.
+% conv+r T S M M S T :- !, $print opt-r.
 
 % upsilon, local l
 conv+r (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !, 
@@ -144,20 +148,25 @@ stack+ (scons S1 V1) (scons S2 V2) :- conv+ V1 satom m+0 m+0 satom V2,
 
 % conv+0 T1 S1 M1 M2 S2 T2 :- before, $print begin-conv-0 T1 S1 M1 T2 S2 M2, fail.
 
-% not in Helena
+% not in Helena M
 conv+0 T S M M S T :- !.
+% conv+0 T S M M S T :- !, $print opt-0.
 
 % local l, updated for version 2 and 3
 conv+0 (prod L W1 T1) satom M1 M2 satom (prod L W2 T2) :- !, conv+ W1 satom m+0 m+0 satom W2,
-                                                             pi x\ r+exp x m+1 m+0 W2 =>
-                                                                   r+exp x m+y m+y W2 =>
+                                                             pi x\ r+exp x m+1 m+0 W1 =>
+                                                                   r+exp x m+y m+y W1 =>
                                                                    conv+ (T1 x) satom M1 M2 satom (T2 x).
 
 conv+0 T S1 M M S2 T :- stack+ S1 S2, !.
 
+% left expansion
 conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 M T, ok+l T1 M2 T2, !, conv+l T S1 M M2 S2 T2.
+% conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 M T, ok+l T1 M2 T2, !, $print exp-l, conv+l T S1 M M2 S2 T2.
 
+% right expansion
 conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T2 M2 M T, conv+r T S2 M M1 S1 T1.
+% conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T2 M2 M T, $print exp-r, conv+r T S2 M M1 S1 T1.
 
 ok+l T1 M2 T2 :- r+exp T2 M2 N U, !, $lt T2 T1.
 
@@ -182,7 +191,9 @@ appl+ (prod L W U) satom M V :- !, conv+ V satom m+1 m+0 satom W.
 
 appl+ T1 S1 M1 T2 :- rtm+0 T1 S1 M1 M S T, !, appl+ T S M T2.
 
+% right expansion
 appl+ T1 S M1 T2 :- r+exp T1 M1 M2 T, !, appl+ T S M2 T2.
+% appl+ T1 S M1 T2 :- r+exp T1 M1 M2 T, !, $print exp-a, appl+ T S M2 T2.
 
 % VALIDITY FOR TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
