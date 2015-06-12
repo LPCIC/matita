@@ -41,6 +41,7 @@ type scons s -> t -> s.
 type $print c -> c -> o.
 type $lt t -> t -> o.
 
+type m+pred m -> m -> o.
 type k+succ k -> k -> o.
 type l+zero l -> o.
 type l+pred l -> l -> o.
