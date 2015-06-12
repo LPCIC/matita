@@ -7,6 +7,7 @@ kind t type. % term
 kind g type. % global environment
 kind s type. % RTM stack
 kind m type. % RTM mode
+kind e type. % environment side
 
 type constant c.
 
@@ -18,6 +19,9 @@ type l+y l.
 type m+0 m.
 type m+1 m.
 type m+y m.
+
+type e+sn e.
+type e+dx e.
 
 type sort k -> t.
 type abbr t -> (t -> t) -> t.
@@ -41,7 +45,7 @@ type k+succ k -> k -> o.
 type l+zero l -> o.
 type l+pred l -> l -> o.
 
-type r+exp  t -> m -> m -> t -> o.
+type r+exp  t -> m -> e -> m -> t -> o.
 type rtm+0  t -> s -> m -> m -> s -> t -> o.
 type stack+ s -> s -> o.
 type conv+  t -> s -> m -> m -> s -> t -> o.
