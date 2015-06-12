@@ -88,9 +88,8 @@ conv+ (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !,
                                             conv+ (T1 x) S1 M1 M2 S2 T2.
 
 % local delta, updated for version 2
-conv+ (abbr V T1) S1 M1 M2 S2 T2 :- !, pi x\ (r+exp x m+0 e+sn m+0 V :- !) =>
-                                             (r+exp x m+1 e+sn m+1 V :- !) =>
-                                             (r+exp x m+y e+sn m+y V :- !) =>
+conv+ (abbr V T1) S1 M1 M2 S2 T2 :- !,
+                                    pi x\ (pi m\ r+exp x m e+sn m V) =>
                                              conv+ (T1 x) S1 M1 M2 S2 T2.
 
 conv+ T1 S1 M1 M2 S2 T2 :- rtm+0 T1 S1 M1 M S T, !, conv+ T S M M2 S2 T2.
@@ -107,13 +106,12 @@ conv+ T1 S1 M1 M2 S2 T2 :- conv+r T2 S2 M2 M1 S1 T1.
 
 % upsilon, local l
 conv+l (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !, 
-                                       pi x\ (r+exp x m+1 e+sn m+0 W :- !) =>
+                                       pi x\ (r+exp x m+1 e+sn m+0 W) =>
                                              conv+l (T1 x) S1 M1 M2 S2 T2.
 
 % local delta, updated for version 2
-conv+l (abbr V T1) S1 M1 M2 S2 T2 :- !, pi x\ (r+exp x m+0 e+sn m+0 V :- !) =>
-                                              (r+exp x m+1 e+sn m+1 V :- !) =>
-                                              (r+exp x m+y e+sn m+y V :- !) =>
+conv+l (abbr V T1) S1 M1 M2 S2 T2 :- !,
+                                     pi x\ (pi m\ r+exp x m e+sn m V) =>
                                               conv+l (T1 x) S1 M1 M2 S2 T2.
 
 conv+l T1 S1 M1 M2 S2 T2 :- rtm+0 T1 S1 M1 M S T, !, conv+l T S M M2 S2 T2.
@@ -130,13 +128,12 @@ conv+l T1 S1 M1 M2 S2 T2 :- conv+0 T1 S1 M1 M2 S2 T2.
 
 % upsilon, local l
 conv+r (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !, 
-                                       pi x\ (r+exp x m+1 e+dx m+0 W :- !) =>
+                                       pi x\ (r+exp x m+1 e+dx m+0 W) =>
                                              conv+r (T1 x) S1 M1 M2 S2 T2.
 
 % local delta, updated for version 2
-conv+r (abbr V T1) S1 M1 M2 S2 T2 :- !, pi x\ (r+exp x m+0 e+dx m+0 V :- !) =>
-                                              (r+exp x m+1 e+dx m+1 V :- !) =>
-                                              (r+exp x m+y e+dx m+y V :- !) =>
+conv+r (abbr V T1) S1 M1 M2 S2 T2 :- !,
+                                     pi x\ (pi m\ r+exp x m e+dx m V) =>
                                               conv+r (T1 x) S1 M1 M2 S2 T2.
 
 conv+r T1 S1 M1 M2 S2 T2 :- rtm+0 T1 S1 M1 M S T, !, conv+r T S M M2 S2 T2.
@@ -184,13 +181,12 @@ ok+l T1 M2 T2.
 
 % upsilon, local l
 appl+ (prod L W T1) S M T2 :- l+zero L, !, 
-                              pi x\ (r+exp x m+1 e+dx m+0 W :- !) =>
+                              pi x\ (r+exp x m+1 e+dx m+0 W) =>
                                     appl+ (T1 x) S M T2.
 
 % local delta, updated for version 2
-appl+ (abbr V T1) S M T2 :- !, pi x\ (r+exp x m+0 e+dx m+0 V :- !) =>
-                                     (r+exp x m+1 e+dx m+1 V :- !) =>
-                                     (r+exp x m+y e+dx m+y V :- !) =>
+appl+ (abbr V T1) S M T2 :- !,
+                             pi x\ (pi m\ r+exp x m e+dx m V) =>
                                      appl+ (T1 x) S M T2.
 
 appl+ (prod L W U) satom M V :- !, conv+ V satom m+1 m+0 satom W.
@@ -210,12 +206,7 @@ tv+ (sort N).
 % local delta updated for version 2
 tv+ (abbr V T) :- tv+ V,
                   pi x\ (tv+ x :- !) =>
-                        (r+exp x m+0 e+sn m+0 V :- !) =>
-                        (r+exp x m+1 e+sn m+1 V :- !) =>
-                        (r+exp x m+y e+sn m+y V :- !) =>
-                        (r+exp x m+0 e+dx m+0 V :- !) =>
-                        (r+exp x m+1 e+dx m+1 V :- !) =>
-                        (r+exp x m+y e+dx m+y V :- !) =>
+                        (pi m\ pi e\ r+exp x m e m V) =>
                         tv+ (T x).
 
 % local l updated for version 2 and 3
@@ -245,12 +236,7 @@ gv+ gtop.
 gv+ (gdef C V G) :- $print constant C,
                     tv+ V, 
                     pi x\ (tv+ x :- !) =>
-                          (r+exp x m+0 e+sn m+0 V :- !) =>
-                          (r+exp x m+1 e+sn m+1 V :- !) =>
-                          (r+exp x m+y e+sn m+y V :- !) =>
-                          (r+exp x m+0 e+dx m+0 V :- !) =>
-                          (r+exp x m+1 e+dx m+1 V :- !) =>
-                          (r+exp x m+y e+dx m+y V :- !) =>
+                          (pi m\ pi e\ r+exp x m e m V) =>
                           gv+ (G x).
 
 % global l updated for version 2

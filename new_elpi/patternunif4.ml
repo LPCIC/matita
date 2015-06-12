@@ -583,25 +583,81 @@ let rec chop =
   | f when f==truec -> []
   | _ as f -> [ f ]
 
-let rec clausify depth hyps =
+(* in_fragment n [n;...;n+m-1] = m *)
+let rec in_fragment expected =
+ function
+   [] -> 0
+ | Const c::tl when c = expected -> 1 + in_fragment (expected+1) tl
+ | _ -> assert false (* Not in Pattern Fragment *)
+
+(* simultaneous substitution of ts for [depth,depth+|ts|)
+   the substituted term must be in the heap
+   the term is delifted by |ts|
+   every t in ts must be a Arg(i,0)
+   WARNING: the ts are NOT lifted *)
+let subst fromdepth ts t =
+ if ts == [] then t else
+ let len = List.length ts in
+ let rec aux depth =
+  function
+   | Const c as x ->
+      if c >= fromdepth && c < fromdepth+len then List.nth ts (c-fromdepth)
+      else if c < fromdepth then x
+      else constant_of_dbl (c-len)
+   | Arg _ -> assert false (* heap term *)
+   | App(c,x,xs) as orig ->
+      let x' = aux depth x in
+      let xs' = List.map (aux depth) xs in
+      if c >= fromdepth && c < fromdepth+len then
+       (match List.nth ts (c-fromdepth) with
+           Arg(i,0) -> Arg(i,in_fragment fromdepth (x'::xs'))
+         | _ -> assert false (* precondition violated *))
+      else if c < fromdepth then
+       if x==x' && xs==xs' then orig else App(c,x',xs')
+      else App(c-len,x',xs')
+   | Custom(c,xs) as orig ->
+      let xs' = List.map (aux depth) xs in
+      if xs==xs' then orig else Custom(c,xs')
+   | UVar({contents=g},vardepth,argsno) when g != dummy ->
+      aux depth (deref ~from:vardepth ~to_:depth argsno g)
+   | UVar(_,vardepth,argsno) as orig ->
+      if vardepth+argsno <= fromdepth then orig
+      else assert false (* out of fragment *)
+   | Lam t -> Lam (aux depth t)
+ in
+  aux fromdepth t
+;;
+
+(* BUG: the following clause is rejected because (Z c d) is not
+   in the fragment. However, once X and Y becomes arguments, (Z c d)
+   enters the fragment. 
+r :- (pi X\ pi Y\ q X Y :- pi c\ pi d\ q (Z c d) (X c d) (Y c)) => ... *)
+
+let rec clausify vars depth hyps ts =
  function
     App(c, g, gs) when c == andc ->
-     clausify depth hyps g@ List.flatten (List.map (clausify depth hyps) gs)
-  | App(c, g1, [g2]) when c == implc -> clausify depth (chop g1::hyps) g2
+     clausify vars depth hyps ts g@ List.flatten (List.map (clausify vars depth hyps ts) gs)
+  | App(c, g1, [g2]) when c == implc ->
+     let g1 = subst depth ts g1 in
+     clausify vars depth (chop g1::hyps) ts g2
   | App(c, _, _) when c == implc -> assert false
   | App(c, Lam b, []) when c == pic ->
-     (* TODO: this should be allowed! But the parser needs to be
-        fixed to parse pis in positive position correctly, binding
-        the UVars as Constants *)
-     assert false
+     clausify (vars+1) depth hyps (ts@[Arg(vars,0)]) b
   | Const _ as g ->
-     [ { depth ; args = []; hyps = List.flatten (List.rev hyps) ; vars=0 ;
+     let g = subst depth ts g in
+     [ { depth ; args = []; hyps = List.flatten (List.rev hyps) ; vars ;
          key = key_of depth g } ]
-  | App(_,x,xs) as g ->
-     [ { depth ; args=x::xs; hyps = List.flatten (List.rev hyps); vars=0 ;
-         key = key_of depth g}]
+  | App _ as g ->
+     (* TODO: test this optimization on Prolog code: if ts==[] then
+        us the original x,xs,g avoiding the double pattern match *)
+     let g = subst depth ts g in
+     (match g with
+         App(_,x,xs) ->
+          [ { depth ; args=x::xs; hyps = List.flatten (List.rev hyps); vars ;
+              key = key_of depth g}]
+       | _ -> assert false)
   | UVar ({ contents=g },origdepth,args) when g != dummy ->
-     clausify depth hyps (deref ~from:origdepth ~to_:depth args g)
+     clausify vars depth hyps ts (deref ~from:origdepth ~to_:depth args g)
   | Arg _ -> assert false
   | Lam _ | Custom _ -> assert false
   | UVar _ -> assert false
@@ -667,7 +723,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     (* We do not check the case of implication applied to
        multiple arguments *)
     | App(c, g1, [g2]) when c == implc ->
-       let clauses = clausify depth [] g1 in
+       let clauses = clausify 0 depth [] [] g1 in
        run depth (add_clauses clauses p) g2 gs next alts lvl
     | App(c, Lam f, []) when c == pic ->
        run (depth+1) p f gs next alts lvl
@@ -814,15 +870,7 @@ let rec stack_term_of_ast lvl l l' =
         (fun (l,l',tl) t ->
           let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
         (l,l',[]) tl in
-     let tl = List.rev rev_tl in
-     let tl =
-      let rec aux expected =
-       function
-         [] -> 0
-       | Const c::tl when c = expected -> 1 + aux (expected+1) tl
-       | _ -> assert false (* Not in Pattern Fragment *)
-      in
-       aux 0 tl in
+     let tl = in_fragment 0 (List.rev rev_tl) in
      (match stack_var_of_ast l v with
          l,Arg (v,0) -> l,l',Arg(v,tl)
        | _,_ -> assert false)
