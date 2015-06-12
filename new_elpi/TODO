@@ -16,6 +16,7 @@ Benchmarks:
 
 Bugs:
 
+0. turn =, or, etc. into Custom predicates?
 1. fix pretty-printing of constants e.g. X = x\x
 2. a & b :- c  is parsed incorrectly (wrong precedence)
    and not at all in the toplevel
