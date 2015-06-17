@@ -623,9 +623,9 @@ let subst fromdepth ts t =
    | UVar(_,vardepth,argsno) as orig ->
       if vardepth+argsno <= fromdepth then orig
       else assert false (* out of fragment *)
-   | Lam t -> Lam (aux depth t)
+   | Lam t -> Lam (aux (depth+1) t)
  in
-  aux fromdepth t
+  aux (fromdepth+List.length ts) t
 ;;
 
 (* BUG: the following clause is rejected because (Z c d) is not
@@ -657,7 +657,8 @@ let rec clausify vars depth hyps ts =
               key = key_of depth g}]
        | _ -> assert false)
   | UVar ({ contents=g },origdepth,args) when g != dummy ->
-     clausify vars depth hyps ts (deref ~from:origdepth ~to_:depth args g)
+   Format.eprintf "#### %d: (%a)^%d to %d\n%!" depth (uppterm [] 0 [||]) g origdepth (depth+List.length ts);
+     clausify vars depth hyps ts (deref ~from:origdepth ~to_:(depth+List.length ts) args g)
   | Arg _ -> assert false
   | Lam _ | Custom _ -> assert false
   | UVar _ -> assert false
