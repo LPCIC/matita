@@ -1,8 +1,12 @@
 % Helena L: validator for \lambda\delta version 3 ----------------------------
 
+% aux information: C := user defined
+
 % sort: K := user defined
 
 % Layer: L := user defined
+
+% Global reference R := user defined
 
 % Closed term: T, U, V, W ::= sort   K                   sort of index K
 %                          |  abbr   T F where F: T => T abbreviation of T in F
@@ -12,9 +16,11 @@
 %                          |  cast   T T                 type annotatiuon
 % only for RTM:            |  prod L T F where F: T => T updated L-abstraction of type T in F
 
-% Global environment: G ::= gtop                     empty
-%                        |  gdef T F where F: T => G definition of T in F
-%                        |  gdec T F where F: T => G declaration of type T in F
+% Global environment: G ::= gtop                         empty
+%                        |  gdef+1 C T F where F: T => G definition of T in F
+%                        |  gdec+1 C T F where F: T => G declaration of type T in F
+%                        |  gdef+2 R G                   pointer to definition of R
+%                        |  gdec+2 R G where F: T => G   pointer to declaration of R
 
 % application stack: S ::= satom     empty
 %                       |  scons S V stacked argument
@@ -34,6 +40,7 @@
 %             appl+  T S M M S T = extended applicability
 %             tv+    T           = validity for terms
 %             gv+    G           = validity for global environments
+%             g+line R C T       = definition/declaration of R
 
 % Parameters: k+succ K K = successor for sort hierarchy
 %             l+zero L   = zero layer
@@ -238,30 +245,30 @@ tv+ (cast U T) :- tv+ U, tv+ T, conv+ T satom m+1 m+0 satom U.
 gv+ gtop.
 
 % global delta updated for version 2
-gv+ (gdef+1 C V G) :- % $print constant C,
+gv+ (gdef+1 C V G) :- % $print constant unknown C,
                       tv+ V,
                       pi x\ tv+ x =>
                             (pi m\ pi e\ r+exp x m e m V) =>
                             gv+ (G x).
 
 % global l updated for version 2
-gv+ (gdec+1 C W G) :- % $print constant C,
+gv+ (gdec+1 C W G) :- % $print constant unknown C,
                       tv+ W,
                       pi x\ tv+ x =>
                             (pi m1\ pi m2\ pi e\ r+exp x m1 e m2 W :- m+pred m1 m2) =>
                             gv+ (G x).
 
 % global delta updated for version 2
-gv+ (gdef+2 R G) :- line R C V,
-%                    $print constant C R,
+gv+ (gdef+2 R G) :- g+line R C V,
+%                    $print constant R C,
                     tv+ V,
 %                    $print vedo V,
                     (tv+ R => (pi m\ pi e\ r+exp R m e m V) => gv+ G).
 % ($print aggiungo (pi m\ pi e\ r+exp R m e m V), gv+ G)).
 
 % global l updated for version 2
-gv+ (gdec+2 R G) :- line R C W,
-%                    $print constant C R,
+gv+ (gdec+2 R G) :- g+line R C W,
+%                    $print constant R C,
                     tv+ W,
 %                    $print vedo W,
                     (tv+ R => (pi m1\ pi m2\ pi e\ r+exp R m1 e m2 W :- m+pred m1 m2) => gv+ G).
@@ -304,57 +311,57 @@ test_tv_2 :- k+succ k+0 k+1 =>
 
 % first eight lines of the grundlagen: requires version 3
 /*
-line l_imp c+1
-     (abst l+y (sort k+prop) a\
-     (abst l+y (sort k+prop) b\
-        (cast (sort k+prop) (abst l+1 a x\ b))
-     )).
+g+line l_imp c+1
+       (abst l+y (sort k+prop) a\
+       (abst l+y (sort k+prop) b\
+          (cast (sort k+prop) (abst l+1 a x\ b))
+       )).
 
-line l_mp c+2
-     (abst l+y (sort k+prop) a\
-     (abst l+y (sort k+prop) b\
-     (abst l+y a a1\
-     (abst l+y (appx b (appx a l_imp)) i\
-        (cast b (appx a1 i))
-     )))).
+g+line l_mp c+2
+       (abst l+y (sort k+prop) a\
+       (abst l+y (sort k+prop) b\
+       (abst l+y a a1\
+       (abst l+y (appx b (appx a l_imp)) i\
+          (cast b (appx a1 i))
+       )))).
 
-line l_refimp c+3
-     (abst l+2 (sort k+prop) a\
-        (cast (appx a (appx a l_imp)) (abst l+2 a x\ x))
-     ).
+g+line l_refimp c+3
+       (abst l+2 (sort k+prop) a\
+          (cast (appx a (appx a l_imp)) (abst l+2 a x\ x))
+       ).
 
-line l_trimp c+4
-     (abst l+2 (sort k+prop) a\
-     (abst l+2 (sort k+prop) b\
-     (abst l+2 (sort k+prop) c\
-     (abst l+2 (appx b (appx a l_imp)) i\
-     (abst l+2 (appx c (appx b l_imp)) j\
-        (cast (appx c (appx a l_imp)) (abst l+2 a x\ (appx (appx x i) j)))
-     ))))).
+g+line l_trimp c+4
+       (abst l+2 (sort k+prop) a\
+       (abst l+2 (sort k+prop) b\
+       (abst l+2 (sort k+prop) c\
+       (abst l+2 (appx b (appx a l_imp)) i\
+       (abst l+2 (appx c (appx b l_imp)) j\
+          (cast (appx c (appx a l_imp)) (abst l+2 a x\ (appx (appx x i) j)))
+       ))))).
 
-line l_con c+5 (sort k+prop).
+g+line l_con c+5 (sort k+prop).
 
-line l_not c+6
-     (abst l+2 (sort k+prop) a\
-        (cast (sort k+prop) (appx l_con (appx a l_imp)))
-     ).
+g+line l_not c+6
+       (abst l+2 (sort k+prop) a\
+          (cast (sort k+prop) (appx l_con (appx a l_imp)))
+       ).
 
-line l_wel c+7
-     (abst l+2 (sort k+prop) a\
-        (cast (sort k+prop) (appx (appx a l_not) l_not))
-     ).
+g+line l_wel c+7
+       (abst l+2 (sort k+prop) a\
+          (cast (sort k+prop) (appx (appx a l_not) l_not))
+       ).
 
-line l_weli c+8
-     (abst l+2 (sort k+prop) a\
-     (abst l+2 a a1\
-        (cast (appx a l_wel) (abst l+2 (appx a l_not) x\ (appx a1 x)))
-     )).
+g+line l_weli c+8
+       (abst l+2 (sort k+prop) a\
+       (abst l+2 a a1\
+          (cast (appx a l_wel) (abst l+2 (appx a l_not) x\ (appx a1 x)))
+       )).
 
-line l_et c+9
-     (abst l+1 (sort k+prop) a\
-     (abst l+1 (appr a l_wel) w\
-        a
-     )).
+g+line l_et c+9
+       (abst l+1 (sort k+prop) a\
+       (abst l+1 (appr a l_wel) w\
+          a
+       )).
 */
 test_gv_32 :- gv+ (
    (gdef+2 l_imp
