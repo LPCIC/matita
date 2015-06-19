@@ -726,7 +726,7 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
      Depth >= 0 is the number of variables in the context.
   *)
   let rec run depth p g gs (next : frame) alts lvl =
-    if debug then Format.eprintf "goal^%d: %a\n%!" depth (ppterm [] 0 [||]) g;
+    if debug then Format.eprintf "goal^%d: %a\n%!" depth (ppterm depth [] 0 [||]) g;
     (*Format.eprintf "<";
     List.iter (Format.eprintf "goal: %a\n%!" ppterm) stack.goals;
     Format.eprintf ">";*)
