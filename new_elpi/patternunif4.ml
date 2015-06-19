@@ -854,7 +854,6 @@ let stack_var_of_ast (f,l) n =
   let n' = Arg (f,0) in
   (f+1,(n,n')::l),n'
 
-module ConstMap = Map.Make(Parser.ASTFuncS);;
 
 let stack_funct_of_ast l' f =
  (try l',ConstMap.find f l'
