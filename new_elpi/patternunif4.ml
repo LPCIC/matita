@@ -72,7 +72,7 @@ let funct_of_ast, constant_of_dbl, string_of_constant =
   try Hashtbl.find h'' x
   with Not_found ->
    let xx = Const x in
-   Hashtbl.add h' x (string_of_int x);
+   Hashtbl.add h' x ("x" ^ string_of_int x);
    Hashtbl.add h'' x xx; xx),
  (function n ->
    try Hashtbl.find h' n
@@ -95,19 +95,21 @@ let rec mkinterval depth argsno n =
  if n = argsno then [] else (n+depth)::mkinterval depth argsno (n+1)
 ;;
 
-let xppterm ~nice names argsdepth env f t =
+let do_deref = ref (fun ~from ~to_ _ _ -> assert false);;
+
+let xppterm ~nice depth names argsdepth env f t =
   let pp_app f pphd pparg (hd,args) =
    if args = [] then pphd f hd
    else
     Format.fprintf f "(@[<hov 1>%a@ %a@])" pphd hd (pplist pparg "") args in
   let ppconstant f c = Format.fprintf f "%s" (string_of_constant c) in
-  let rec pp_uvar depth f r =
+  let rec pp_uvar depth vardepth args f r =
    if !r == dummy then begin
     let s =
      try List.assq r !m
      with Not_found ->
       let s =
-       "X" ^ string_of_int !n ^ if depth=0 then "" else "^" ^ string_of_int depth
+       "X" ^ string_of_int !n ^ if vardepth=0 then "" else "^" ^ string_of_int vardepth
       in
       incr n;
       m := (r,s)::!m;
@@ -117,40 +119,47 @@ let xppterm ~nice names argsdepth env f t =
    (* TODO: (potential?) bug here, the variable is not lifted
       from origdepth (currently not even passed to the function)
       to depth (not passed as well) *)
-   end else if nice then aux f !r
-   else Format.fprintf f "<%a>_%d" aux !r depth
-  and pp_arg f n =
+   end else if nice then begin
+    Format.eprintf "----------\n%!";
+    aux depth f (!do_deref ~from:vardepth ~to_:depth args !r)
+   end else Format.fprintf f "<%a>_%d" (aux depth) !r vardepth
+  and pp_arg depth f n =
    let name= try List.nth names n with Failure _ -> "A" ^ string_of_int n in
    if try env.(n) == dummy with Invalid_argument _ -> true then
     Format.fprintf f "%s" name
    (* TODO: (potential?) bug here, the argument is not lifted
       from g_depth (currently not even passed to the function)
       to depth (not passed as well) *)
-   else if nice then aux f env.(n)
-   else Format.fprintf f "≪%a≫ " aux env.(n)
-  and aux f = function
+   else if nice then aux depth f env.(n)
+   else Format.fprintf f "≪%a≫ " (aux depth) env.(n)
+  and aux depth f = function
       App (hd,x,xs) ->
         if hd==eqc then
-         Format.fprintf f "@[<hov 1>%a@ =@ %a@]" aux x aux (List.hd xs)
+         Format.fprintf f "@[<hov 1>%a@ =@ %a@]" (aux depth) x (aux depth) (List.hd xs)
         else if hd==orc then
-         Format.fprintf f "(%a)" (pplist aux ";") (x::xs)
+         Format.fprintf f "(%a)" (pplist (aux depth) ";") (x::xs)
         else if hd==andc then
-         Format.fprintf f "(%a)" (pplist aux ",") (x::xs)
+         Format.fprintf f "(%a)" (pplist (aux depth) ",") (x::xs)
         else if hd==implc then (
           assert (List.length xs = 1);
-          Format.fprintf f "@[<hov 1>(%a@ =>@ %a)@]" aux x aux (List.hd xs)
-        ) else pp_app f ppconstant aux (hd,x::xs)
-    | Custom (hd,xs) -> pp_app f ppconstant aux (hd,xs)
-    | UVar (r,depth,argsno) ->
-       let args = mkinterval depth argsno 0 in
-       pp_app f (pp_uvar depth) ppconstant (r,args)
+          Format.fprintf f "@[<hov 1>(%a@ =>@ %a)@]" (aux depth) x (aux depth) (List.hd xs)
+        ) else pp_app f ppconstant (aux depth) (hd,x::xs)
+    | Custom (hd,xs) -> pp_app f ppconstant (aux depth) (hd,xs)
+    | UVar (r,vardepth,argsno) when !r == dummy || not nice ->
+       let args = mkinterval vardepth argsno 0 in
+       pp_app f (pp_uvar depth vardepth 0) ppconstant (r,args)
+    | UVar (r,vardepth,argsno) ->
+       pp_uvar depth vardepth argsno f r
     | Arg (n,argsno) ->
        let args = mkinterval argsdepth argsno 0 in
-       pp_app f pp_arg ppconstant (n,args)
-    | Const s -> ppconstant f s
-    | Lam t -> Format.fprintf f "\\(%a)" aux t;
+       pp_app f (pp_arg depth) ppconstant (n,args)
+    | Const s -> ppconstant f s 
+    | Lam t ->
+       let c = constant_of_dbl depth in
+       Format.fprintf f "%a\\%a%!" (aux depth) c (aux (depth+1)) t;
+    | String str -> Format.fprintf f "%s" str
   in
-    aux f t
+    aux depth f t
 ;;
 
 (* pp for first-order prolog *) 
@@ -334,6 +343,8 @@ let deref ~from ~to_ args t =
  (* Dummy trail, argsdepth and e: they won't be used *)
  full_deref 0 false (ref []) ~from ~to_ args [||] t
 ;;
+
+do_deref := deref;;
 
 
 (****** Indexing ******)
@@ -657,10 +668,10 @@ let rec clausify vars depth hyps ts =
               key = key_of depth g}]
        | _ -> assert false)
   | UVar ({ contents=g },origdepth,args) when g != dummy ->
-   Format.eprintf "#### %d: (%a)^%d to %d\n%!" depth (uppterm [] 0 [||]) g origdepth (depth+List.length ts);
+   Format.eprintf "%d: (%a)^%d to %d\n%!" depth (uppterm depth [] 0 [||]) g origdepth (depth+List.length ts);
      clausify vars depth hyps ts (deref ~from:origdepth ~to_:(depth+List.length ts) args g)
   | Arg _ -> assert false
-  | Lam _ | Custom _ -> assert false
+  | Lam _ | Custom _ | String _ -> assert false
   | UVar _ -> assert false
 ;;
 
@@ -671,9 +682,9 @@ let register_custom,lookup_custom =
 
 let _ =
  register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$print")))
-  (fun _ env args ->
+  (fun depth env args ->
    Format.printf "@[<hov 1>" ;
-   List.iter (Format.printf "%a@ " (uppterm [] 0 env)) args;
+   List.iter (Format.printf "%a@ " (uppterm depth [] 0 env)) args;
    Format.printf "@]\n%!") ;
  register_custom (fst (funct_of_ast (Parser.ASTFuncS.from_string "$lt")))
   (fun depth _ args ->
@@ -886,16 +897,16 @@ let query_of_ast t =
 let program_of_ast p =
  let clauses =
   List.map (fun (a,f) ->
-   let l,_,a = stack_term_of_ast 0 (0,[]) ConstMap.empty a in
-   let (max,l),_,f = stack_term_of_ast 0 l ConstMap.empty f in
-(* FG: print should be optional
+   let l,m1,a = stack_term_of_ast 0 (0,[]) ConstMap.empty a in
+   let (max,l),m2,f = stack_term_of_ast 0 l m1 f in
+(* FG: print should be optional *)
    let names = List.rev_map fst l in
    let env = Array.make max dummy in
    if f = truec then
-    Format.eprintf "@[<hov 1>%a%a.@]\n%!" (uppterm names 0 env) a (pplist (uppterm names 0 env) ",") (chop f)
+    Format.eprintf "@[<hov 1>%a%a.@]\n%!" (uppterm 0 names 0 env) a (pplist (uppterm 0 names 0 env) ",") (chop f)
    else
-    Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm names 0 env) a (pplist ~boxed:true (uppterm names 0 env) ",") (chop f);
-*)
+    Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm 0 names 0 env) a (pplist ~boxed:true (uppterm 0 names 0 env) ",") (chop f);
+
    let args =
     match a with
        Const _ -> []
@@ -934,7 +945,7 @@ let impl =
   let pp_prolog = pp_FOprolog
 
   let msg (q_names,q_env,q) =
-   Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh, double hash indexing: %a" (uppterm q_names 0 q_env) q ;
+   Format.fprintf Format.str_formatter "Pattern unification only, lazy refresh, double hash indexing: %a" (uppterm 0 q_names 0 q_env) q ;
    Format.flush_str_formatter ()
 
   let execute_once p q =
@@ -948,10 +959,10 @@ let impl =
    let k = ref (run p qq) in
    let time1 = Unix.gettimeofday() in
    prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-   Format.eprintf "Raw Result: %a\n%!" (ppterm q_names 0 q_env) q ;
+   Format.eprintf "Raw Result: %a\n%!" (ppterm 0 q_names 0 q_env) q ;
    Format.eprintf "Result: \n%!" ;
    List.iteri (fun i name -> Format.eprintf "%s=%a\n%!" name
-    (uppterm q_names 0 q_env) q_env.(i)) q_names;
+    (uppterm 0 q_names 0 q_env) q_env.(i)) q_names;
    while !k != emptyalts do
      prerr_endline "More? (Y/n)";
      if read_line() = "n" then k := emptyalts else
@@ -960,10 +971,10 @@ let impl =
        k := cont !k;
        let time1 = Unix.gettimeofday() in
        prerr_endline ("Execution time: "^string_of_float(time1 -. time0));
-       Format.eprintf "Raw Result: %a\n%!" (ppterm q_names 0 q_env) q ;
+       Format.eprintf "Raw Result: %a\n%!" (ppterm 0 q_names 0 q_env) q ;
        Format.eprintf "Result: \n%!" ;
        List.iteri (fun i name -> Format.eprintf "%s=%a\n%!" name
-        (uppterm q_names 0 q_env) q_env.(i)) q_names;
+        (uppterm 0 q_names 0 q_env) q_env.(i)) q_names;
       with
        Failure "no clause" -> prerr_endline "Fail"; k := emptyalts
   done
