@@ -23,6 +23,8 @@ Bugs:
 
 Possible optimizations:
 
+-1. if full_deref only works on heap terms, why do we pass all that stuff?
+    why not calling deref instead?
 0. Try alternative implementation for ?n == ?n
    (i.e. go back to the previous unif code, but change to_heap/restrict)
    NOTE: in the WAM the check is for free. An uninstantiated variable
