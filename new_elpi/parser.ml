@@ -74,6 +74,7 @@ let mkEq l r = App(Const ASTFuncS.eqf,[l;r])
 let mkLam x t = Lam (ASTFuncS.from_string x,t)
 let mkPi x t = App(Const ASTFuncS.pif,[mkLam x t])
 let mkNil = Const (ASTFuncS.from_string "nil")
+let mkString str = Const (ASTFuncS.from_string str)
 let mkSeq l =
  let rec aux =
   function
@@ -376,8 +377,8 @@ EXTEND
       | u = FRESHUV -> (*let u, lvl = fresh_lvl_name () in mkUv (get_uv u) lvl*) mkUVar u
       (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))*)
       | NIL -> mkNil
-      (*| s = LITERAL -> mkExt (mkString s)
-      | AT; hd = atom LEVEL "simple"; args = atom LEVEL "simple" ->
+      | s = LITERAL -> mkString s
+      (*| AT; hd = atom LEVEL "simple"; args = atom LEVEL "simple" ->
           mkVApp `Regular hd args None
       | AT -> sentinel
       | CONTEXT; hd = atom LEVEL "simple" -> mkAtomBiContext hd
