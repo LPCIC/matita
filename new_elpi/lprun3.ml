@@ -127,6 +127,7 @@ module Parsable(Func: Lprun2.FuncT) : Lprun2.ParsableT
         l, AST.Var v
      | Parser.Const f -> l, AST.App(Func.funct_of_ast f,[||])
      | Parser.Custom _ -> assert false
+     | Parser.String _ -> assert false
      | Parser.App(Parser.Const f,tl) ->
         let tl' = Array.make (List.length tl) (Obj.magic ()) (* dummy *) in
         let l = ref l in

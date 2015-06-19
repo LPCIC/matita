@@ -261,6 +261,8 @@ let rec heap_term_of_ast l =
      heap_term_of_ast l (Parser.App(term1,tl1@tl))
   | Parser.App(Parser.Lam (_,_), _) -> assert false
   | Parser.App((Parser.Custom _), _) -> assert false
+  | Parser.App(Parser.String _, _) -> assert false
+  | Parser.String _ -> assert false
   | Parser.Custom _ -> assert false
 
 let stack_var_of_ast (f,l) n =
@@ -294,8 +296,10 @@ let rec stack_term_of_ast l =
   | Parser.App(Parser.App(term1,tl1), tl) ->
      stack_term_of_ast l (Parser.App(term1,tl1@tl))
   | Parser.App(Parser.Lam (_,_), _) -> assert false
-  | Parser.App((Parser.Custom _), _) -> assert false
-  | Parser.Custom _ -> assert false
+  | Parser.App((Parser.Custom _), _) -> assert false 
+  | Parser.App(Parser.String _, _) -> assert false
+  | Parser.Custom _ -> assert false  
+  | Parser.String _ -> assert false  
 
 let query_of_ast t = snd (heap_term_of_ast [] t)
 

@@ -849,6 +849,8 @@ let rec stack_term_of_ast lvl l l' =
   | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
   | AST.App (AST.Lam _,_) ->
      (* Beta-redexes not in our language *) assert false
+  | AST.App (AST.String _,_) -> assert false
+  | AST.String _ -> assert false
 
 let query_of_ast t =
  let (max,l),_,t = stack_term_of_ast 0 (0,[]) [] t in
