@@ -217,14 +217,6 @@ type clause =
 
 exception RestrictionFailure
 
-(* eat_args n [n ; ... ; n+k] (Lam_0 ... (Lam_k t)...) = n+k+1,[],t
-   eat_args n [n ; ... ; n+k]@l (Lam_0 ... (Lam_k t)...) =
-     n+k+1,l,t if t != Lam or List.hd l != n+k+1 *)
-let rec eat_args l t =
- match t with
-    Lam t' when l > 0 -> eat_args (l-1) t'
-  | _ -> l,t
-
 (* To_heap performs at once:
    1) refreshing of the arguments into variables (heapifycation)
       (and Structs/CLam into App/Lam)
@@ -306,8 +298,7 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
   if from=to_ then t
   else to_heap argsdepth last_call trail ~from ~to_ e t
  else (* O(1) reduction fragment tested here *)
-  let args',t = eat_args args t in
-  let from = from + args - args' in 
+  let from,args',t = eat_args from args t in
   let t = full_deref argsdepth last_call trail ~from ~to_ 0 e t in
    match t with
       t when args'=0 -> t
@@ -329,15 +320,19 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
     | Arg(i,args2) when from = argsdepth+args2 -> Arg(i,args2+args')
     | UVar _
     | Arg _ -> assert false (* We are dynamically exiting the fragment *)
-;;
 
-(* Restrict is to be called only on heap terms *)
-let restrict argsdepth last_call trail ~from ~to_ e t =
- if from=to_ then t
- else to_heap argsdepth last_call trail ~from ~to_ e t
+(* eat_args n [n ; ... ; n+k] (Lam_0 ... (Lam_k t)...) = n+k+1,[],t
+   eat_args n [n ; ... ; n+k]@l (Lam_0 ... (Lam_k t)...) =
+     n+k+1,l,t if t != Lam or List.hd l != n+k+1 *)
+and eat_args depth l t =
+ match t with
+    Lam t' when l > 0 -> eat_args (depth+1) (l-1) t'
+  | UVar ({contents=t},origdepth,args) when t != dummy ->
+     eat_args depth l (deref ~from:origdepth ~to_:depth args t)
+  | _ -> depth,l,t
 
 (* Deref is to be called only on heap terms and with from <= to *)
-let deref ~from ~to_ args t =
+and deref ~from ~to_ args t =
  (* TODO: Remove the assertion when we are sure *)
  assert (from <= to_);
  (* Dummy trail, argsdepth and e: they won't be used *)
@@ -345,6 +340,12 @@ let deref ~from ~to_ args t =
 ;;
 
 do_deref := deref;;
+
+
+(* Restrict is to be called only on heap terms *)
+let restrict argsdepth last_call trail ~from ~to_ e t =
+ if from=to_ then t
+ else to_heap argsdepth last_call trail ~from ~to_ e t
 
 
 (****** Indexing ******)
