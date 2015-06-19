@@ -113,7 +113,10 @@ let mkApp =
 let uvmap = ref [];;
 let reset () = uvmap := []
 
+let fresh_uv_names = ref (-1);;
+
 let mkUVar u = Var u
+let mkFreshUVar () = incr fresh_uv_names; Var ("_" ^ string_of_int !fresh_uv_names)
 let mkCon c = Const (ASTFuncS.from_string c)
 let mkCustom c = Custom (ASTFuncS.from_string c)
 
@@ -374,7 +377,7 @@ EXTEND
               None -> mkCon c
             | Some b -> mkLam c b)
       | u = UVAR -> (*let u, lvl = lvl_name_of u in mkUv (get_uv u) lvl*) mkUVar u
-      | u = FRESHUV -> (*let u, lvl = fresh_lvl_name () in mkUv (get_uv u) lvl*) mkUVar u
+      | u = FRESHUV -> mkFreshUVar ()
       (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))*)
       | NIL -> mkNil
       | s = LITERAL -> mkString s
