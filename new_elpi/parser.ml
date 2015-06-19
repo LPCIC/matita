@@ -48,6 +48,7 @@ type term =
  | Custom of ASTFuncS.t
  | App of term * term list
  | Lam of ASTFuncS.t * term
+ | String of ASTFuncS.t
 
 (* TODO: to be moved elsewhere, obviously *)
 module type Implementation =
@@ -74,7 +75,7 @@ let mkEq l r = App(Const ASTFuncS.eqf,[l;r])
 let mkLam x t = Lam (ASTFuncS.from_string x,t)
 let mkPi x t = App(Const ASTFuncS.pif,[mkLam x t])
 let mkNil = Const (ASTFuncS.from_string "nil")
-let mkString str = Const (ASTFuncS.from_string str)
+let mkString str = String (ASTFuncS.from_string str)
 let mkSeq l =
  let rec aux =
   function

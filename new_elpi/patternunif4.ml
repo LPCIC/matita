@@ -47,11 +47,13 @@ type term =
   | Custom of constant * term list
   | UVar of term ref * (*depth:*)int * (*argsno:*)int
   | Lam of term
+  | String of Parser.ASTFuncS.t
 
 let rec dummy = App (-9999,dummy,[])
 
 module F = Parser.ASTFuncS
 module AST = Parser
+module ConstMap = Map.Make(Parser.ASTFuncS);;
 
 (* Hash re-consing :-( *)
 let funct_of_ast, constant_of_dbl, string_of_constant =
@@ -157,7 +159,7 @@ let xppterm ~nice depth names argsdepth env f t =
     | Lam t ->
        let c = constant_of_dbl depth in
        Format.fprintf f "%a\\%a%!" (aux depth) c (aux (depth+1)) t;
-    | String str -> Format.fprintf f "%s" str
+    | String str -> Format.fprintf f "\"%s\"" (Parser.ASTFuncS.pp str)
   in
     aux depth f t
 ;;
@@ -198,13 +200,14 @@ let xppterm_prolog ~nice names env f t =
     | Arg _ -> assert false
     | Const s -> ppconstant f s
     | Lam t -> assert false;
+    | String str -> Format.fprintf f "\"%s\"" (Parser.ASTFuncS.pp str)
   in
     aux f t
 ;;
 
 let ppterm = xppterm ~nice:false
 let uppterm = xppterm ~nice:true
-let pp_FOprolog = xppterm_prolog ~nice:true
+let pp_FOprolog = xppterm_prolog ~nice:true 
 
 type key1 = int
 type key2 = int
@@ -288,12 +291,14 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
          full_deref argsdepth last_call trail ~from:argsdepth ~to_:(to_+depth)
            args e a
     | Arg _ -> assert false (* I believe this case to be impossible *)
+    | String _ -> x 
   in aux 0 t
 
 (* full_deref is to be called only on heap terms and with from <= to *)
 (* Note: when full_deref is called inside restrict, it may be from > to_ *)
 (* t lives in from; args already live in to *)
 and full_deref argsdepth last_call trail ~from ~to_ args e t =
+ Format.eprintf "full_deref from:%d to:%d %a @@ %d\n%!" from to_ (ppterm from [] 0 e) t args;
  if args = 0 then
   if from=to_ then t
   else to_heap argsdepth last_call trail ~from ~to_ e t
@@ -301,7 +306,7 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
   let from,args',t = eat_args from args t in
   let t = full_deref argsdepth last_call trail ~from ~to_ 0 e t in
    match t with
-      t when args'=0 -> t
+      _ when args'=0 -> t
     | Lam _ -> assert false (* never happens *)
     | Const c ->
        let args = mkinterval (from+1) (args'-1) 0 in
@@ -320,6 +325,7 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
     | Arg(i,args2) when from = argsdepth+args2 -> Arg(i,args2+args')
     | UVar _
     | Arg _ -> assert false (* We are dynamically exiting the fragment *)
+    | String _ -> t
 
 (* eat_args n [n ; ... ; n+k] (Lam_0 ... (Lam_k t)...) = n+k+1,[],t
    eat_args n [n ; ... ; n+k]@l (Lam_0 ... (Lam_k t)...) =
@@ -361,7 +367,11 @@ let key_of depth =
   | App (k,_,_)
   | Custom (k,_) -> k
   | Lam _ -> abstractionk
-  | Arg _ | UVar _ -> variablek in
+  | Arg _ | UVar _ -> variablek
+  | String str -> 
+     let hash = -(Hashtbl.hash str) in
+     if hash > abstractionk then hash
+     else hash+2 in           
  let rec key_of_depth = function
    Const k -> k, variablek
  | UVar ({contents=t},origdepth,args) when t != dummy ->
@@ -369,7 +379,8 @@ let key_of depth =
     key_of_depth (deref ~from:origdepth ~to_:depth args t)
  | App (k,arg2,_) -> k, skey_of arg2
  | Custom _ -> assert false
- | Arg _ | Lam _ | UVar _ -> raise (Failure "Not a predicate")
+ | Arg _ | Lam _ | UVar _ | String _ -> raise (Failure "Not a predicate")
+(* | String str ->  *)
  in
   key_of_depth
 
@@ -543,6 +554,7 @@ let unif trail last_call adepth a e bdepth b =
    (*| Const c1, Const c2 when c1 < bdepth -> c1=c2
    | Const c, Const _ when c >= bdepth && c < adepth -> false
    | Const c1, Const c2 when c1 = c2 + delta -> true*)
+   | String s1, String s2 -> s1==s2
    | _ -> false in
  unif 0 a bdepth b false
 ;;
@@ -636,6 +648,7 @@ let subst fromdepth ts t =
       if vardepth+argsno <= fromdepth then orig
       else assert false (* out of fragment *)
    | Lam t -> Lam (aux (depth+1) t)
+   | String _ as str -> str 
  in
   aux (fromdepth+List.length ts) t
 ;;
@@ -890,7 +903,9 @@ let rec stack_term_of_ast lvl l l' =
   | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
   | AST.App (AST.Lam _,_) ->
      (* Beta-redexes not in our language *) assert false
-
+  | AST.App (AST.String _,_) -> assert false
+  | AST.String str -> l,l',String str
+ 
 let query_of_ast t =
  let (max,l),_,t = stack_term_of_ast 0 (0,[]) ConstMap.empty t in
   List.rev_map fst l,Array.make max dummy,t
