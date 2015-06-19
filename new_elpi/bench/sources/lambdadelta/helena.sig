@@ -9,8 +9,6 @@ kind s type. % RTM stack
 kind m type. % RTM mode
 kind e type. % environment side
 
-type constant c.
-
 type l+0 l.
 type l+1 l.
 type l+2 l.
@@ -32,13 +30,14 @@ type appx t -> t -> t.
 type cast t -> t -> t.
 
 type gtop g.
-type gdef c -> t -> (t -> g) -> g.
-type gdec c -> t -> (t -> g) -> g.
+type gdef+1 c -> t -> (t -> g) -> g.
+type gdec+1 c -> t -> (t -> g) -> g.
+type gdef+2 t -> g -> g.
+type gdec+2 t -> g -> g.
 
 type satom s.
 type scons s -> t -> s.
 
-type $print c -> c -> o.
 type $lt t -> t -> o.
 
 type m+pred m -> m -> o.
@@ -57,3 +56,4 @@ type ok+l   t -> m -> t -> o.
 type appl+  t -> s -> m -> t -> o.
 type tv+    t -> o.
 type gv+    g -> o.
+type g+line t -> c -> t -> o.

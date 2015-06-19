@@ -245,14 +245,14 @@ tv+ (cast U T) :- tv+ U, tv+ T, conv+ T satom m+1 m+0 satom U.
 gv+ gtop.
 
 % global delta updated for version 2
-gv+ (gdef+1 C V G) :- % $print constant unknown C,
+gv+ (gdef+1 C V G) :- % $print constant C unknown,
                       tv+ V,
                       pi x\ tv+ x =>
                             (pi m\ pi e\ r+exp x m e m V) =>
                             gv+ (G x).
 
 % global l updated for version 2
-gv+ (gdec+1 C W G) :- % $print constant unknown C,
+gv+ (gdec+1 C W G) :- % $print constant C unknown,
                       tv+ W,
                       pi x\ tv+ x =>
                             (pi m1\ pi m2\ pi e\ r+exp x m1 e m2 W :- m+pred m1 m2) =>
@@ -260,7 +260,7 @@ gv+ (gdec+1 C W G) :- % $print constant unknown C,
 
 % global delta updated for version 2
 gv+ (gdef+2 R G) :- g+line R C V,
-%                    $print constant R C,
+%                    $print constant C R,
                     tv+ V,
 %                    $print vedo V,
                     (tv+ R => (pi m\ pi e\ r+exp R m e m V) => gv+ G).
@@ -268,7 +268,7 @@ gv+ (gdef+2 R G) :- g+line R C V,
 
 % global l updated for version 2
 gv+ (gdec+2 R G) :- g+line R C W,
-%                    $print constant R C,
+%                    $print constant C R,
                     tv+ W,
 %                    $print vedo W,
                     (tv+ R => (pi m1\ pi m2\ pi e\ r+exp R m1 e m2 W :- m+pred m1 m2) => gv+ G).
@@ -362,7 +362,7 @@ g+line l_et c+9
        (abst l+1 (appr a l_wel) w\
           a
        )).
-*/
+
 test_gv_32 :- gv+ (
    (gdef+2 l_imp
    (gdef+2 l_mp
@@ -375,7 +375,7 @@ test_gv_32 :- gv+ (
    (gdec+2 l_et
    gtop)))))))))
 ).
-
+*/
 test_gv_31 :- gv+ (
    (gdef+1 c+1 (abst l+y (sort k+1) a\
                (abst l+y (sort k+1) b\
