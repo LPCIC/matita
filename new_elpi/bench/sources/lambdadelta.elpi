@@ -36,7 +36,7 @@
 %             conv+l T S M M S T = extended conversion    (aux)
 %             conv+r T S M M S T = extended conversion    (aux)
 %             conv+0 T S M M S T = extended conversion    (aux)
-%             ok+l   T M T       = ages check
+%             ok+l   T M M M T   = ages check
 %             appl+  T S M M S T = extended applicability
 %             tv+    T           = validity for terms
 %             gv+    G           = validity for global environments
@@ -67,17 +67,14 @@ rtm+0 (appr V T) S M M (scons S V) T.
 rtm+0 (appx V T) S M M (scons S V) T.
 
 % beta, epsilon, updated for version 3
-rtm+0 (prod L W T) (scons S V) M M S (abbr V T).
-% rtm+0 (prod L W T) (scons S V) M M S (abbr V T) :- $print beta.
+rtm+0 (prod L W T) (scons S V) M M S (abbr (cast W V) T).
+% rtm+0 (prod L W T) (scons S V) M M S (abbr (cast W V) T) :- $print beta.
 
 % e
 rtm+0 (cast U T) S m+1 m+0 S U :- !.
 
 % epsilon
-rtm+0 (cast U T) S m+0 m+0 S T :- !.
-
-% epsilon, version 2
-rtm+0 (cast U T) S m+y m+y S T.
+rtm+0 (cast U T) S M M S T.
 
 % s
 rtm+0 (sort K1) S m+1 m+0 S (sort K2) :- k+succ K1 K2.
@@ -85,10 +82,7 @@ rtm+0 (sort K1) S m+1 m+0 S (sort K2) :- k+succ K1 K2.
 % x
 rtm+0 (abst L1 W T) S m+1 m+1 S (prod L2 W T) :- !, l+pred L1 L2. 
 
-rtm+0 (abst L W T) S m+0 m+0 S (prod L W T) :- !.
-
-% version 2
-rtm+0 (abst L W T) S m+y m+y S (prod L W T).
+rtm+0 (abst L W T) S M M S (prod L W T).
 
 % EXTENDED CONVERSION PART 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -179,16 +173,18 @@ conv+0 (prod L W1 T1) satom M1 M2 satom (prod L W2 T2) :- !,
 conv+0 T S1 M M S2 T :- stack+ S1 S2, !.
 
 % left expansion
-conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 e+sn M T, ok+l T1 M2 T2, !, conv+l T S1 M M2 S2 T2.
-% conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 e+sn M T, ok+l T1 M2 T2, !, $print exp-l, conv+l T S1 M M2 S2 T2.
+conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 e+sn M T, ok+l T1 M1 M M2 T2, !, conv+l T S1 M M2 S2 T2.
+% conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 e+sn M T, ok+l T1 M1 M M2 T2, !, $print exp-l, conv+l T S1 M M2 S2 T2.
 
 % right expansion
 conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T2 M2 e+dx M T, conv+r T S2 M M1 S1 T1.
 % conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T2 M2 e+dx M T, $print exp-r, conv+r T S2 M M1 S1 T1.
 
-ok+l T1 M2 T2 :- r+exp T2 M2 e+dx N U, !, $lt T2 T1.
+ok+l T1 m+1 m+0 M2 T2 :- !.
 
-ok+l T1 M2 T2.
+ok+l T1 M1 M M2 T2 :- r+exp T2 M2 e+dx N U, !, $lt T2 T1.
+
+ok+l T1 M1 M M2 T2.
 
 % EXTENDED APPLICABILITY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -262,6 +258,7 @@ gv+ (gdec+1 C W G) :- % $print constant C unknown,
 gv+ (gdef+2 R G) :- g+line R C V,
 %                    $print constant C R,
                     tv+ V,
+%                    tv+c C V,
 %                    $print vedo V,
                     (tv+ R => (pi m\ pi e\ r+exp R m e m V) => gv+ G).
 % ($print aggiungo (pi m\ pi e\ r+exp R m e m V), gv+ G)).
@@ -270,6 +267,7 @@ gv+ (gdef+2 R G) :- g+line R C V,
 gv+ (gdec+2 R G) :- g+line R C W,
 %                    $print constant C R,
                     tv+ W,
+%                    tv+c C W,
 %                    $print vedo W,
                     (tv+ R => (pi m1\ pi m2\ pi e\ r+exp R m1 e m2 W :- m+pred m1 m2) => gv+ G).
 % ($print aggiungo (pi m1\ pi m2\ pi e\ r+exp R m1 e m2 W :- m+pred m1 m2), gv+ G)).
