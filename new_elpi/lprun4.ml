@@ -119,7 +119,9 @@ module Parsable: Lprun2.ParsableT
        heap_term_of_ast l (Parser.App (f, l1@l2))
     | Parser.App (Parser.Var _,_)
     | Parser.App (Parser.String _, _)
+    | Parser.App (Parser.Int _, _)
     | Parser.String _
+    | Parser.Int _
     | Parser.Lam _ -> assert false
    
   let stack_var_of_ast (f,l) n =
@@ -148,6 +150,8 @@ module Parsable: Lprun2.ParsableT
     | Parser.App (Parser.Var _,_)
     | Parser.App (Parser.String _, _)
     | Parser.String _
+    | Parser.App (Parser.Int _, _)
+    | Parser.Int _
     | Parser.Lam _ -> assert false
  
   let query_of_ast t = snd (heap_term_of_ast [] t)

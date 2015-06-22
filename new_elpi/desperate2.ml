@@ -254,6 +254,7 @@ let rec heap_term_of_ast l =
      (match funct_of_ast f :: List.rev rev_tl with
         hd1::hd2::tl -> l, App(hd1,hd2,tl)
       | _ -> assert false)
+  | Parser.App(Parser.Int _,_) -> assert false
   | Parser.Const f -> l, funct_of_ast f
   | Parser.Lam _ -> assert false
   | Parser.App(Parser.Var v, _) -> assert false
@@ -264,6 +265,7 @@ let rec heap_term_of_ast l =
   | Parser.App(Parser.String _, _) -> assert false
   | Parser.String _ -> assert false
   | Parser.Custom _ -> assert false
+  | Parser.Int _ -> assert false
 
 let stack_var_of_ast (f,l) n =
  try (f,l),List.assoc n l
@@ -288,10 +290,9 @@ let rec stack_term_of_ast l =
      (match funct_of_ast f :: List.rev rev_tl with
         hd1::hd2::tl -> l, Struct(hd1,hd2,tl)
       | _ -> assert false)
-
+  | Parser.App(Parser.Int _,_) -> assert false
   | Parser.Const f -> l, funct_of_ast f
   | Parser.Lam _ -> assert false
-
   | Parser.App(Parser.Var v, _) -> assert false
   | Parser.App(Parser.App(term1,tl1), tl) ->
      stack_term_of_ast l (Parser.App(term1,tl1@tl))
@@ -300,6 +301,7 @@ let rec stack_term_of_ast l =
   | Parser.App(Parser.String _, _) -> assert false
   | Parser.Custom _ -> assert false  
   | Parser.String _ -> assert false  
+  | Parser.Int _ -> assert false  
 
 let query_of_ast t = snd (heap_term_of_ast [] t)
 
