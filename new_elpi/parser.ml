@@ -49,6 +49,7 @@ type term =
  | App of term * term list
  | Lam of ASTFuncS.t * term
  | String of ASTFuncS.t
+ | Int of int
 
 (* TODO: to be moved elsewhere, obviously *)
 module type Implementation =
@@ -76,6 +77,7 @@ let mkLam x t = Lam (ASTFuncS.from_string x,t)
 let mkPi x t = App(Const ASTFuncS.pif,[mkLam x t])
 let mkNil = Const (ASTFuncS.from_string "nil")
 let mkString str = String (ASTFuncS.from_string str)
+let mkInt i = Int i
 let mkSeq l =
  let rec aux =
   function
@@ -121,10 +123,9 @@ let mkFreshUVar () = incr fresh_uv_names; Var ("_" ^ string_of_int !fresh_uv_nam
 let mkCon c = Const (ASTFuncS.from_string c)
 let mkCustom c = Custom (ASTFuncS.from_string c)
 
-let rec number = lexer [ '0'-'9' number ]
+let rec number = lexer [ '0'-'9' number | '0'-'9' ]
 let rec ident =
-  lexer [ [ 'a'-'z' | 'A'-'Z' | '\'' | '_' | '-' | '+' | '0'-'9' ] ident
-        | '^' '0'-'9' number | ]
+  lexer [ [ 'a'-'z' | 'A'-'Z' | '\'' | '_' | '-' | '+' | '0'-'9' ] ident | ]
 
 let rec string = lexer [ '"' | _ string ]
 
@@ -139,7 +140,8 @@ let lvl_name_of s =
 let tok = lexer
   [ 'A'-'Z' ident -> "UVAR", $buf 
   | 'a'-'z' ident -> "CONSTANT", $buf
-  | '_' '0'-'9' number -> "REL", $buf
+  | number -> "INTEGER", $buf
+  | '-' number -> "INTEGER", $buf
   | '_' -> "FRESHUV", "_"
   |  ":-"  -> "ENTAILS",$buf
   |  ":"  -> "COLON",$buf
@@ -382,6 +384,7 @@ EXTEND
       (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))*)
       | NIL -> mkNil
       | s = LITERAL -> mkString s
+      | s = INTEGER -> mkInt (int_of_string s) 
       (*| AT; hd = atom LEVEL "simple"; args = atom LEVEL "simple" ->
           mkVApp `Regular hd args None
       | AT -> sentinel

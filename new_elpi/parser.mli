@@ -23,6 +23,7 @@ type term =
  | App of term * term list
  | Lam of ASTFuncS.t * term
  | String of ASTFuncS.t
+ | Int of int 
 val parse_program : string -> (term * term) list
 val parse_goal : string -> term
 
