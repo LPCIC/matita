@@ -2,6 +2,10 @@ Other:
 
 0. pretty-printing to LaTeX + transformation to standard presentation
    (with fresh variables, etc.)
+1. implement delay and experiment with it for:
+   a) unif outside the fragment
+   b) avoid the creation of Explicit Substitutions ??
+   c) avoid failure of the "is" predicate?
 
 Benchmarks:
 
@@ -16,6 +20,7 @@ Benchmarks:
 
 Bugs:
 
+-2. revise all the assert false/raise Failure
 -1. Introduce ES for the general case?
     Or delay the goals?
 0. turn =, or, etc. into Custom predicates?
