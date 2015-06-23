@@ -296,9 +296,9 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
           the original, imperatively changed, term. The current solution
           avoids dereference chains, but puts more pressure on the GC. *)
        fresh
-    | UVar (_,_,_) when delta < 0 -> assert false (* Was: x. I think x is correct iff depth=0. TODO: Bug here? if depth>0, i.e.
-      we are under a lambda, then the arguments of UVar may be bound
-      variables that need to be lifted even if delta < 0 *)
+    | UVar (_,origdepth,n) when delta < 0 ->
+       if origdepth+n-1 < from then x
+       else assert false (* TODO: Exiting the fragment *)
     | UVar (_,_,_) -> assert false (* TO BE IMPLEMENTED *)
     (* TODO XXXXX *)
     | AppUVar ({contents=t},vardepth,args) when t != dummy ->
