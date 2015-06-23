@@ -326,13 +326,13 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
     (* TODO XXXXX *)
     | AppArg(i,args) when argsdepth >= to_ ->
         let a = e.(i) in
-        (*Format.eprintf "%a^%d = %a\n%!" ppterm (Arg(i,[])) argsdepth ppterm a;*)
         if a == dummy then
-            let r = ref dummy in
-            let v = UVar(r,to_,0) in
-            e.(i) <- v;
-            AppUVar(r,to_,args)
+         let r = ref dummy in
+         let v = UVar(r,to_,0) in
+         e.(i) <- v;
+         AppUVar(r,to_,args) 
         else
+         let args = List.map (aux depth) args in
          app_deref ~from:argsdepth ~to_:(to_+depth) args a
     | AppArg _ -> assert false (* I believe this case to be impossible *)
     | String _ -> x 
