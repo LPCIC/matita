@@ -295,9 +295,11 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
           the original, imperatively changed, term. The current solution
           avoids dereference chains, but puts more pressure on the GC. *)
        fresh
-    | UVar (_,origdepth,n) when delta < 0 ->
-       if origdepth+n-1 < from then x
-       else assert false (* TODO: Exiting the fragment *)
+    | UVar (_,vardepth,argsno) when delta < 0 ->
+       if vardepth+argsno <= from then x
+       (* TODO: Exiting the fragment, use AppUVar *)
+       else if vardepth <= from then assert false
+       else assert false (* TODO: Exiting the fragment, need ES *)
     | UVar (_,_,_) -> assert false (* TO BE IMPLEMENTED *)
     (* TODO XXXXX *)
     | AppUVar ({contents=t},vardepth,args) when t != dummy ->
@@ -435,7 +437,9 @@ and subst fromdepth ts t =
       aux depth (deref ~from:vardepth ~to_:depth argsno g)
    | UVar(_,vardepth,argsno) as orig ->
       if vardepth+argsno <= fromdepth then orig
-      else assert false (* out of fragment *)
+      (* TODO: Exiting the fragment, use AppUVar *)
+      else if vardepth <= fromdepth then assert false
+      else assert false (* TODO: Exiting the fragment, need ES *)
    | AppUVar({ contents = t },vardepth,args) when t != dummy ->
       aux depth (app_deref ~from:vardepth ~to_:depth args t)
    (* TODO XXXXX *)
