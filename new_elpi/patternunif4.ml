@@ -125,7 +125,6 @@ let xppterm ~nice depth names argsdepth env f t =
       from origdepth (currently not even passed to the function)
       to depth (not passed as well) *)
    end else if nice then begin
-    Format.eprintf "----------\n%!";
     aux depth f (!do_deref ~from:vardepth ~to_:depth args !r)
    end else Format.fprintf f "<%a>_%d" (aux depth) !r vardepth
   and pp_arg depth f n =
@@ -160,7 +159,7 @@ let xppterm ~nice depth names argsdepth env f t =
     | Arg (n,argsno) ->
        let args = mkinterval argsdepth argsno 0 in
        pp_app f (pp_arg depth) ppconstant (n,args)
-    | AppArg (v,terms) -> 
+    | AppArg (v,terms) ->
        pp_app f (pp_arg depth) (aux depth) (v,terms) 
     | Const s -> ppconstant f s 
     | Lam t ->
@@ -258,7 +257,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
   (*Format.eprintf "to_heap: argsdepth=%d, from=%d, to=%d %a\n%!" argsdepth from to_ ppterm t;*)
   let delta = from - to_ in
   let rec aux depth x =
-   (*Format.eprintf "to_heap(%d,%d): %a\n%!" depth delta ppterm x;*)
+   (*Format.eprintf "to_heap(%d,%d): %a\n%!" depth delta (ppterm depth [] 0 e) x;*)
    match x with
       Const c ->
         if delta=0 then x else (* optimization *)
@@ -344,7 +343,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
 (* Note: when full_deref is called inside restrict, it may be from > to_ *)
 (* t lives in from; args already live in to *)
 and full_deref argsdepth last_call trail ~from ~to_ args e t =
- Format.eprintf "full_deref from:%d to:%d %a @@ %d\n%!" from to_ (ppterm from [] 0 e) t args;
+ (*Format.eprintf "full_deref from:%d to:%d %a @@ %d\n%!" from to_ (ppterm from [] 0 e) t args;*)
  if args = 0 then
   if from=to_ then t
   else to_heap argsdepth last_call trail ~from ~to_ e t
@@ -405,6 +404,7 @@ and deref ~from ~to_ args t =
    every t in ts must be a Arg(i,0)
    WARNING: the ts are NOT lifted *)
 and subst fromdepth ts t =
+ (*Format.eprintf "subst t: %a \n%!" (uppterm 0 [] 0 [||]) t; *)
  if ts == [] then t else
  let len = List.length ts in
  let rec aux depth =
@@ -599,14 +599,14 @@ let rec for_all2 p l1 l2 =
    [adepth,+infty) = [bdepth,+infy)   bound variables *)
 let unif trail last_call adepth a e bdepth b =
  let rec unif depth a bdepth b heap =
-   (*Format.eprintf "unif: ^%d:%a =%d= ^%d:%a\n%!" adepth (ppterm [] adepth [||]) a depth bdepth (ppterm [] adepth e) b;*)
+   (*Format.eprintf "unif: ^%d:%a =%d= ^%d:%a\n%!" adepth (ppterm depth [] adepth [||]) a depth bdepth (ppterm depth [] adepth e) b;*)
    let delta = adepth - bdepth in
    (delta=0 && a == b) || match a,b with
 (* TODO: test if it is better to deref first or not, i.e. the relative order
    of the clauses below *)
    | UVar (r1,_,args1),UVar (r2,_,args2) when r1==r2 -> args1=args2
    | UVar ({ contents = t },origdepth,args), _ when t != dummy ->
-      (* The arguments live in adepth+depth; the variable lives in origdepth;
+     (* The arguments live in adepth+depth; the variable lives in origdepth;
          everything leaves in adepth+depth after derefercing. *)
       unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
        heap
@@ -614,13 +614,13 @@ let unif trail last_call adepth a e bdepth b =
    | AppUVar ({ contents = t },origdepth,args),_ when t != dummy -> 
       unif depth (app_deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b heap
    | _, UVar ({ contents = t },origdepth,args) when t != dummy ->
-      (* The arguments live in bdepth+depth; the variable lives in origdepth;
+     (* The arguments live in bdepth+depth; the variable lives in origdepth;
          everything leaves in bdepth+depth after derefercing. *)
       unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
        true
    (* TODO XXXXX *)
    | _, AppUVar ({ contents = t },origdepth,args) when t != dummy ->
-      (* The arguments live in bdepth+depth; the variable lives in origdepth;
+     (* The arguments live in bdepth+depth; the variable lives in origdepth;
          everything leaves in bdepth+depth after derefercing. *)
       unif depth a bdepth (app_deref ~from:origdepth ~to_:(bdepth+depth) args t) true
    | _, Arg (i,args) when e.(i) != dummy ->
@@ -636,7 +636,7 @@ let unif trail last_call adepth a e bdepth b =
      (*Format.eprintf "<- %a\n%!" ppterm e.(i);*)
      true
    | _, Arg (i,args) ->
-      (*Format.eprintf "%a %d===%d %a\n%!" ppterm a adepth bdepth ppterm b;*)
+     (*Format.eprintf "%a %d===%d %a\n%!" ppterm a adepth bdepth ppterm b;*)
       (* Here I am doing for the O(1) unification fragment *)
       let body = make_lambdas adepth args in
       e.(i) <- body;
@@ -893,8 +893,8 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
        else next_alt alts
 
   and backchain depth p g gs cp next alts lvl =
-    (*Format.eprintf "BACKCHAIN %a @ %d\n%!" ppterm g lvl;
-List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
+    (*Format.eprintf "BACKCHAIN %a \n%!" (uppterm 0 [] 0 [||]) g ;*)
+(*List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" (uppterm 0 [] 0 [||]) g) gs;*)
     let last_call = alts == emptyalts in
     let rec select = function
     | [] -> next_alt alts
@@ -908,7 +908,8 @@ List.iter (fun (_,g) -> Format.eprintf "GS %a\n%!" ppterm g) gs;*)
           | App(_,x,xs) -> x::xs
           | UVar ({ contents = g },origdepth,args) when g != dummy ->
              args_of (deref ~from:origdepth ~to_:depth args g) 
-          | AppUVar({ contents = g },origdepth,args) when g != dummy ->                  args_of (app_deref ~from:origdepth ~to_:depth args g) 
+          | AppUVar({ contents = g },origdepth,args) when g != dummy ->
+             args_of (app_deref ~from:origdepth ~to_:depth args g) 
           | _ -> assert false in
         match
          for_all2 (fun x y -> unif trail last_call depth x env c.depth y)
@@ -1043,14 +1044,13 @@ let program_of_ast p =
   List.map (fun (a,f) ->
    let l,m1,a = stack_term_of_ast 0 (0,[]) ConstMap.empty a in
    let (max,l),m2,f = stack_term_of_ast 0 l m1 f in
-(* FG: print should be optional *)
+(* FG: print should be optional
    let names = List.rev_map fst l in
    let env = Array.make max dummy in
    if f = truec then
     Format.eprintf "@[<hov 1>%a%a.@]\n%!" (uppterm 0 names 0 env) a (pplist (uppterm 0 names 0 env) ",") (chop f)
    else
-    Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm 0 names 0 env) a (pplist ~boxed:true (uppterm 0 names 0 env) ",") (chop f);
-
+    Format.eprintf "@[<hov 1>%a@ :-@ %a.@]\n%!" (uppterm 0 names 0 env) a (pplist ~boxed:true (uppterm 0 names 0 env) ",") (chop f);*)
    let args =
     match a with
        Const _ -> []
