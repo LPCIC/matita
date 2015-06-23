@@ -23,6 +23,8 @@ Bugs:
 
 Possible optimizations:
 
+-2 optimize the case of app_deref where we can stay in the fragment
+   after the beta
 -1. if full_deref only works on heap terms, why do we pass all that stuff?
     why not calling deref instead?
 0. Try alternative implementation for ?n == ?n
@@ -40,7 +42,6 @@ Possible optimizations:
 2. optimize neck-cuts during the indexing phase (? maybe not easy/possible)
 3. the to_heap could keep the highest non-bound variable to be cached in
    the UVar to make restriction linear
-4. compact representation of UVar^d c1 ... cn
 
 Missing:
 1. occur-check
