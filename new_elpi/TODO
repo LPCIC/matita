@@ -23,7 +23,9 @@ Bugs:
 -2. revise all the assert false/raise Failure
 -1. Introduce ES for the general case?
     Or delay the goals?
-0. turn =, or, etc. into Custom predicates?
+0. turn =, or, sigma, etc. into Custom predicates?
+   In particular, it should not be allowed to add more clauses to them
+   via implication.
 1. a & b :- c  is parsed incorrectly (wrong precedence)
    and not at all in the toplevel
 
@@ -49,6 +51,7 @@ Possible optimizations:
    the UVar to make restriction linear
 
 Missing:
+0. accumulate + ignore typing commands
 1. occur-check
 
 =============================================
