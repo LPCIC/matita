@@ -2,7 +2,7 @@ module helena.
 
 % Helena L: validator for \lambda\delta version 3 ----------------------------
 
-% aux information: C := user defined
+% age: C := user defined
 
 % sort: K := user defined
 
@@ -95,12 +95,12 @@ rtm+0 (abst L W T) S M M S (prod L W T).
 
 % upsilon, local l
 conv+ (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !,
-                                      pi x\ r+exp x m+1 r+age e+sn m+0 W => % m+pred not used
+                                      pi x\ r+exp x m+1 0 e+sn m+0 W => % m+pred not used
                                             conv+ (T1 x) S1 M1 M2 S2 T2.
 
 % local delta, updated for version 2
 conv+ (abbr V T1) S1 M1 M2 S2 T2 :- !,
-                                    pi x\ (pi m\ r+exp x m r+age e+sn m V) =>
+                                    pi x\ (pi m\ r+exp x m 0 e+sn m V) =>
                                           conv+ (T1 x) S1 M1 M2 S2 T2.
 
 conv+ T1 S1 M1 M2 S2 T2 :- rtm+0 T1 S1 M1 M S T, !, conv+ T S M M2 S2 T2.
@@ -114,12 +114,12 @@ conv+ T1 S1 M1 M2 S2 T2 :- conv+r T2 S2 M2 M1 S1 T1.
 
 % upsilon, local l
 conv+l (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !,
-                                       pi x\ r+exp x m+1 r+age e+sn m+0 W => % m+pred not used
+                                       pi x\ r+exp x m+1 0 e+sn m+0 W => % m+pred not used
                                              conv+l (T1 x) S1 M1 M2 S2 T2.
 
 % local delta, updated for version 2
 conv+l (abbr V T1) S1 M1 M2 S2 T2 :- !,
-                                     pi x\ (pi m\ r+exp x m r+age e+sn m V) =>
+                                     pi x\ (pi m\ r+exp x m 0 e+sn m V) =>
                                            conv+l (T1 x) S1 M1 M2 S2 T2.
 
 conv+l T1 S1 M1 M2 S2 T2 :- rtm+0 T1 S1 M1 M S T, !, conv+l T S M M2 S2 T2.
@@ -133,12 +133,12 @@ conv+l T1 S1 M1 M2 S2 T2 :- conv+0 T1 S1 M1 M2 S2 T2.
 
 % upsilon, local l
 conv+r (prod L W T1) S1 M1 M2 S2 T2 :- l+zero L, !,
-                                       pi x\ r+exp x m+1 r+age e+dx m+0 W => % m+pred not used
+                                       pi x\ r+exp x m+1 0 e+dx m+0 W => % m+pred not used
                                              conv+r (T1 x) S1 M1 M2 S2 T2.
 
 % local delta, updated for version 2
 conv+r (abbr V T1) S1 M1 M2 S2 T2 :- !,
-                                     pi x\ (pi m\ r+exp x m r+age e+dx m V) =>
+                                     pi x\ (pi m\ r+exp x m 0 e+dx m V) =>
                                            conv+r (T1 x) S1 M1 M2 S2 T2.
 
 conv+r T1 S1 M1 M2 S2 T2 :- rtm+0 T1 S1 M1 M S T, !, conv+r T S M M2 S2 T2.
@@ -158,8 +158,8 @@ conv+s (scons S1 V1) (scons S2 V2) :- conv+ V1 satom m+0 m+0 satom V2,
 % local l, updated for version 2 and 3
 conv+0 (prod L W1 T1) satom M1 M2 satom (prod L W2 T2) :- !,
                                                           conv+ W1 satom m+0 m+0 satom W2,
-                                                          pi x\ (r+exp x m+1 r+age e+sn m+0 W1 :- !) => % m+pred not used
-                                                                (r+exp x m+1 r+age e+dx m+0 W2)      => % m+pred not used
+                                                          pi x\ (r+exp x m+1 0 e+sn m+0 W1 :- !) => % m+pred not used
+                                                                (r+exp x m+1 0 e+dx m+0 W2)      => % m+pred not used
                                                                 conv+ (T1 x) satom M1 M2 satom (T2 x).
 
 conv+0 T S1 M M S2 T :- s+iso S1 S2, conv+s S1 S2, !.
@@ -172,7 +172,7 @@ conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T2 M2 C2 e+dx M T, conv+r T S2 M M1 S1 T1.
 
 ok+l C1 m+1 m+0 M2 T2 :- !.
 
-ok+l C1 M1 M M2 T2 :- r+exp T2 M2 C2 e+dx N U, !, C2 < C1.
+ok+l C1 M1 M M2 T2 :- r+exp T2 M2 C2 e+dx N U, !, C2 > C1.
 
 ok+l C1 M1 M M2 T2.
 
@@ -180,12 +180,12 @@ ok+l C1 M1 M M2 T2.
 
 % upsilon, local l
 appl+ (prod L W T1) S M T2 :- l+zero L, !,
-                              pi x\ (pi m1\ pi m2\ r+exp x m1 r+age e+dx m2 W :- m+pred m1 m2) =>
+                              pi x\ (pi m1\ pi m2\ r+exp x m1 0 e+dx m2 W :- m+pred m1 m2) =>
                                     appl+ (T1 x) S M T2.
 
 % local delta, updated for version 2
 appl+ (abbr V T1) S M T2 :- !,
-                             pi x\ (pi m\ r+exp x m r+age e+dx m V) =>
+                             pi x\ (pi m\ r+exp x m 0 e+dx m V) =>
                                    appl+ (T1 x) S M T2.
 
 appl+ (prod L W U) satom M V :- !, conv+ V satom m+1 m+0 satom W.
@@ -202,13 +202,13 @@ tv+ (sort N).
 % local delta updated for version 2
 tv+ (abbr V T) :- tv+ V,
                   pi x\ tv+ x =>
-                        (pi m\ pi e\ r+exp x m r+age e m V) =>
+                        (pi m\ pi e\ r+exp x m 0 e m V) =>
                         tv+ (T x).
 
 % local l updated for version 2 and 3
 tv+ (abst L W T) :- tv+ W,
                     pi x\ tv+ x =>
-                          (pi m1\ pi m2\ pi e\ r+exp x m1 r+age e m2 W :- m+pred m1 m2) =>
+                          (pi m1\ pi m2\ pi e\ r+exp x m1 0 e m2 W :- m+pred m1 m2) =>
                           tv+ (T x).
 
 % restricted applicability condition (version 1) updated for version 3
@@ -237,12 +237,14 @@ gv+ (gdec+1 C W G) :- tv+ W,
 
 % global delta updated for version 2
 gv+ (gdef+2 R G) :- g+line R C V,
+%                    printterm std_out R, print "\n",
                     tv+ V,
 %                    tv+c C V,
                     (tv+ R => (pi m\ pi e\ r+exp R m C e m V) => gv+ G).
 
 % global l updated for version 2
 gv+ (gdec+2 R G) :- g+line R C W,
+%                    printterm std_out R, print "\n",
                     tv+ W,
 %                    tv+c C W,
                     (tv+ R => (pi m1\ pi m2\ pi e\ r+exp R m1 C e m2 W :- m+pred m1 m2) => gv+ G).

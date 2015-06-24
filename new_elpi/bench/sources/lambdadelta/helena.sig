@@ -8,8 +8,6 @@ kind s type. % RTM stack
 kind m type. % RTM mode
 kind e type. % environment side
 
-type r+age int.
-
 type l+0 l.
 type l+1 l.
 type l+2 l.

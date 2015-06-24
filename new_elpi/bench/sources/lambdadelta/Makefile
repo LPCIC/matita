@@ -2,7 +2,7 @@ H = @
 
 TJCC     = $(HOME)/lpcic/teyjus/tjcc
 TJLINK   = $(HOME)/lpcic/teyjus/tjlink
-TJSIM    = $(HOME)/lpcic/teyjus/tjsim -b -m 0
+TJSIM    = $(HOME)/lpcic/teyjus/tjsim -b
 TJDEPEND = $(HOME)/lpcic/teyjus/tjdepend
 TIME     = `which time` -p -a
 
@@ -12,30 +12,30 @@ all: $(MODULES:%=%.lp)
 
 depend: .depend
 
-test: grundlagen.lp
+test: grundlagen.lp Makefile
 	@echo SYM -s main. $(<:%.lp=%)
 	$(H)$(TIME) $(TJSIM) -s main. $(<:%.lp=%)
 
-profile: profile.txt
+profile: profile.txt Makefile
 
 clear:
 	$(H)$(RM) *.lp *.lpo .depend profile.txt *~
 
-%.lpo: %.mod %.sig
+%.lpo: %.mod %.sig Makefile
 	@echo CC $*
 	$(H)$(TJCC) $*
 
-%.lp: %.lpo
+%.lp: %.lpo Makefile
 	@echo LINK $*
 	$(H)$(TJLINK) $*
 
-.depend: $(MODULES:%=%.mod) $(MODULES:%=%.sig)
+.depend: $(MODULES:%=%.mod) $(MODULES:%=%.sig) Makefile
 	@echo DEPEND $(MODULES)
 	$(H)$(TJDEPEND) $(MODULES) > $@
 
 profile.txt: TMP = tmp.txt
 
-profile.txt: grundlagen.lp
+profile.txt: grundlagen.lp Makefile
 	@echo [31 times] SYM -s main. $(<:%.lp=%)
 	$(H)for RUN in `seq 31`; do $(TIME) -o $(TMP) $(TJSIM) -s main. $(<:%.lp=%); done
 	$(H)grep user tmp.txt | sort > $@
