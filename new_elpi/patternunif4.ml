@@ -304,7 +304,6 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        else if vardepth <= from then assert false
        else assert false (* TODO: Exiting the fragment, need ES *)
     | UVar (_,_,_) -> assert false (* TO BE IMPLEMENTED *)
-    (* TODO XXXXX *)
     | AppUVar ({contents=t},vardepth,args) when t != dummy ->
        if depth = 0 then
         app_deref ~from:vardepth ~to_ args t
@@ -389,7 +388,6 @@ and eat_args depth l t =
     Lam t' when l > 0 -> eat_args (depth+1) (l-1) t'
   | UVar ({contents=t},origdepth,args) when t != dummy ->
      eat_args depth l (deref ~from:origdepth ~to_:depth args t)
-  (* TODO XXXXX ? *)
   | AppUVar  ({contents=t},origdepth,args) when t != dummy ->
      eat_args depth l (app_deref ~from:origdepth ~to_:depth args t)
   | _ -> depth,l,t
@@ -616,7 +614,6 @@ let unif trail last_call adepth a e bdepth b =
          everything leaves in adepth+depth after derefercing. *)
       unif depth (deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b
        heap
-   (* TODO XXXXX *)
    | AppUVar ({ contents = t },origdepth,args),_ when t != dummy -> 
       unif depth (app_deref ~from:origdepth ~to_:(adepth+depth) args t) bdepth b heap
    | _, UVar ({ contents = t },origdepth,args) when t != dummy ->
@@ -624,7 +621,6 @@ let unif trail last_call adepth a e bdepth b =
          everything leaves in bdepth+depth after derefercing. *)
       unif depth a bdepth (deref ~from:origdepth ~to_:(bdepth+depth) args t)
        true
-   (* TODO XXXXX *)
    | _, AppUVar ({ contents = t },origdepth,args) when t != dummy ->
      (* The arguments live in bdepth+depth; the variable lives in origdepth;
          everything leaves in bdepth+depth after derefercing. *)
