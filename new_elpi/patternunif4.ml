@@ -459,7 +459,7 @@ and app_deref ~from ~to_ args t =
   match t,args with
    | Lam t',hd::tl -> beta (hd::sub) t' tl
    | _,_ ->
-     let t' = subst from sub t in
+     let t' = subst to_ sub t in
      match args with
          [] -> t'
       | ahd::atl ->
