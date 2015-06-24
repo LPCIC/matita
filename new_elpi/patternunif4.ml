@@ -300,9 +300,9 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        end
     | UVar (_,vardepth,argsno) when delta < 0 ->
        if vardepth+argsno <= from then x
-       (* TODO: Exiting the fragment, use AppUVar *)
+       (* XXX TODO: Exiting the fragment, use AppUVar *)
        else if vardepth <= from then assert false
-       else assert false (* TODO: Exiting the fragment, need ES *)
+       else assert false (* XXX TODO: Exiting the fragment, need ES *)
     | UVar (_,_,_) -> assert false (* TO BE IMPLEMENTED *)
     | AppUVar ({contents=t},vardepth,args) when t != dummy ->
        if depth = 0 then
@@ -312,8 +312,11 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
         let t = app_deref ~from:vardepth ~to_:(from+depth) args t in
         (* Second phase: from from to to *)
         aux depth t
-    (* TODO XXXXX *)
-    | AppUVar (_,_,_) -> assert false
+    | AppUVar (r,vardepth,args) when delta < 0 ->
+       let args = List.map (aux depth) args in
+       if vardepth <= from then AppUVar (r,vardepth,args)
+       else assert false (* XXX TODO: Exiting the fragment, need ES *)
+    | AppUVar _ -> assert false (* TO BE IMPLEMENTED *)
     | Arg (i,args) when argsdepth >= to_ ->
         let a = e.(i) in
         (*Format.eprintf "%a^%d = %a\n%!" ppterm (Arg(i,[])) argsdepth ppterm a;*)
@@ -326,7 +329,6 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
          full_deref argsdepth last_call trail ~from:argsdepth ~to_:(to_+depth)
            args e a
     | Arg _ -> assert false (* I believe this case to be impossible *)
-    (* TODO XXXXX *)
     | AppArg(i,args) when argsdepth >= to_ ->
         let a = e.(i) in
         if a == dummy then
@@ -439,7 +441,7 @@ and subst fromdepth ts t =
       if vardepth+argsno <= fromdepth then orig
       (* TODO: Exiting the fragment, use AppUVar *)
       else if vardepth <= fromdepth then assert false
-      else assert false (* TODO: Exiting the fragment, need ES *)
+      else assert false (* XXX TODO: Exiting the fragment, need ES *)
    | AppUVar({ contents = t },vardepth,args) when t != dummy ->
       aux depth (app_deref ~from:vardepth ~to_:depth args t)
    (* TODO XXXXX *)
