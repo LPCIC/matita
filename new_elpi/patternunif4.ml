@@ -309,11 +309,10 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        if depth = 0 then
         app_deref ~from:vardepth ~to_ args t
        else
-        assert false (*The arguments are already in to_, not in from+depth
         (* First phase: from vardepth to from+depth *)
-        let t = app_deref ~from:vardepth ~to_:(from+depth) args t
+        let t = app_deref ~from:vardepth ~to_:(from+depth) args t in
         (* Second phase: from from to to *)
-        aux depth t*)
+        aux depth t
     (* TODO XXXXX *)
     | AppUVar (_,_,_) -> assert false
     | Arg (i,args) when argsdepth >= to_ ->
