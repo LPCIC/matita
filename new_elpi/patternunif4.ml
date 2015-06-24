@@ -126,7 +126,7 @@ let xppterm ~nice depth names argsdepth env f t =
       to depth (not passed as well) *)
    end else if nice then begin
     aux depth f (!do_deref ~from:vardepth ~to_:depth args !r)
-   end else Format.fprintf f "<%a>_%d" (aux depth) !r vardepth
+   end else Format.fprintf f "<%a>_%d" (aux vardepth) !r vardepth
   and pp_arg depth f n =
    let name= try List.nth names n with Failure _ -> "A" ^ string_of_int n in
    if try env.(n) == dummy with Invalid_argument _ -> true then
@@ -134,8 +134,8 @@ let xppterm ~nice depth names argsdepth env f t =
    (* TODO: (potential?) bug here, the argument is not lifted
       from g_depth (currently not even passed to the function)
       to depth (not passed as well) *)
-   else if nice then aux depth f env.(n)
-   else Format.fprintf f "≪%a≫ " (aux depth) env.(n)
+   else if nice then aux depth f (!do_deref ~from:argsdepth ~to_:depth 0 env.(n))
+   else Format.fprintf f "≪%a≫ " (aux argsdepth) env.(n)
   and aux depth f = function
       App (hd,x,xs) ->
         if hd==eqc then
