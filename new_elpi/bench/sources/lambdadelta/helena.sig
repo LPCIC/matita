@@ -2,12 +2,13 @@ sig helena.
 
 kind k type. % sort
 kind l type. % layer
-kind c type. % auxiliary information
 kind t type. % term
 kind g type. % global environment
 kind s type. % RTM stack
 kind m type. % RTM mode
 kind e type. % environment side
+
+type r+age int.
 
 type l+0 l.
 type l+1 l.
@@ -30,30 +31,29 @@ type appx t -> t -> t.
 type cast t -> t -> t.
 
 type gtop g.
-type gdef+1 c -> t -> (t -> g) -> g.
-type gdec+1 c -> t -> (t -> g) -> g.
+type gdef+1 int -> t -> (t -> g) -> g.
+type gdec+1 int -> t -> (t -> g) -> g.
 type gdef+2 t -> g -> g.
 type gdec+2 t -> g -> g.
 
 type satom s.
 type scons s -> t -> s.
 
-type $lt t -> t -> o.
-
 type m+pred m -> m -> o.
 type k+succ k -> k -> o.
 type l+zero l -> o.
 type l+pred l -> l -> o.
 
-type r+exp  t -> m -> e -> m -> t -> o.
+type s+iso  s -> s -> o.
+type r+exp  t -> m -> int -> e -> m -> t -> o.
 type rtm+0  t -> s -> m -> m -> s -> t -> o.
-type stack+ s -> s -> o.
 type conv+  t -> s -> m -> m -> s -> t -> o.
 type conv+l t -> s -> m -> m -> s -> t -> o.
 type conv+r t -> s -> m -> m -> s -> t -> o.
+type conv+s s -> s -> o.
 type conv+0 t -> s -> m -> m -> s -> t -> o.
-type ok+l   t -> m -> t -> o.
+type ok+l   int -> m -> m -> m -> t -> o.
 type appl+  t -> s -> m -> t -> o.
 type tv+    t -> o.
 type gv+    g -> o.
-type g+line t -> c -> t -> o.
+type g+line t -> int -> t -> o.

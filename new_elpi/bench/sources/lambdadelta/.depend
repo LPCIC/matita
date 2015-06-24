@@ -1,0 +1,4 @@
+grundlagen.lpo: grundlagen.mod grundlagen.sig helena.sig
+helena.lpo: helena.mod helena.sig 
+grundlagen.lp: grundlagen.lpo helena.lpo
+helena.lp: helena.lpo 
