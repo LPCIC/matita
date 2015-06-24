@@ -372,13 +372,13 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
        path *)
     | UVar(t,depth,args2) when from = depth+args2 ->
        UVar(t,depth,args2+args')
-    (* TODO XXXXX *)
-    | AppUVar (_,_,_) -> assert false 
+    | AppUVar (r,depth,args2) ->
+       let args = mkinterval from args' 0 in
+       AppUVar (r,depth,args2@List.map constant_of_dbl args)
     | Arg(i,args2) when from = argsdepth+args2 -> Arg(i,args2+args')
-    | UVar _
-    | Arg _ -> assert false (* We are dynamically exiting the fragment *)
-    (* TODO XXXXX *)
-    | AppArg (_,_) -> assert false 
+    | UVar _ -> assert false (* XXXX We are dynamically exiting the fragment *)
+    | Arg _
+    | AppArg (_,_) -> assert false (* not an heap term *)
     | String _ -> t
     | Int _ -> t
 
@@ -439,7 +439,7 @@ and subst fromdepth ts t =
       aux depth (deref ~from:vardepth ~to_:depth argsno g)
    | UVar(_,vardepth,argsno) as orig ->
       if vardepth+argsno <= fromdepth then orig
-      (* TODO: Exiting the fragment, use AppUVar *)
+      (* XXX TODO: Exiting the fragment, use AppUVar *)
       else if vardepth <= fromdepth then assert false
       else assert false (* XXX TODO: Exiting the fragment, need ES *)
    | AppUVar({ contents = t },vardepth,args) when t != dummy ->
@@ -467,17 +467,12 @@ and app_deref ~from ~to_ args t =
       | ahd::atl ->
          match t' with
           | Const c -> App (c,ahd,atl)
-          | Arg (n,m) -> assert false (* ONLY ON HEAP TERMS *)
-             (*(* TODO: optimize the case where we can stay in the
-                fragment *)
-             let args1 = mkinterval argsdepth m 0 in
-             AppArg (n,args1@args)*)
-          | AppArg (n,args1) -> assert false (* ONLY ON HEAP TERMS *)
-             (*AppArg(n,args1@args)*)
+          | Arg _
+          | AppArg _ -> assert false (* ONLY ON HEAP TERMS *)
           | App (c,arg,args1) -> App (c,arg,args1@args)
           | Custom (c,args1) -> Custom (c,args1@args)
           | UVar (r,n,m) ->
-             (* TODO: optimize the case where we can stay in the
+             (* XXX TODO: optimize the case where we can stay in the
                 fragment *)
              let args1 = List.map constant_of_dbl (mkinterval n m 0) in
              AppUVar (r,n,args1@args)
