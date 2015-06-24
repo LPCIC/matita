@@ -287,14 +287,17 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
          ~to_:(from+depth) args e t in
         (* Second phase: from from to to *)
         aux depth t
-    | UVar (r,_,0) when delta > 0 ->
-       let fresh = UVar(ref dummy,to_,0) in
-       if not last_call then trail := r :: !trail;
-       r := fresh;
-       (* TODO: test if it is more efficient here to return fresh or
-          the original, imperatively changed, term. The current solution
-          avoids dereference chains, but puts more pressure on the GC. *)
-       fresh
+    | UVar (r,vardepth,0) when delta > 0 ->
+       if vardepth <= to_ then x
+       else begin
+        let fresh = UVar(ref dummy,to_,0) in
+        if not last_call then trail := r :: !trail;
+        r := fresh;
+        (* TODO: test if it is more efficient here to return fresh or
+           the original, imperatively changed, term. The current solution
+           avoids dereference chains, but puts more pressure on the GC. *)
+        fresh
+       end
     | UVar (_,vardepth,argsno) when delta < 0 ->
        if vardepth+argsno <= from then x
        (* TODO: Exiting the fragment, use AppUVar *)
