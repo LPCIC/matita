@@ -24,8 +24,7 @@ Bugs:
 -1. Introduce ES for the general case?
     Or delay the goals?
 0. turn =, or, etc. into Custom predicates?
-1. fix pretty-printing of constants e.g. X = x\x
-2. a & b :- c  is parsed incorrectly (wrong precedence)
+1. a & b :- c  is parsed incorrectly (wrong precedence)
    and not at all in the toplevel
 
 Possible optimizations:
@@ -46,13 +45,11 @@ Possible optimizations:
       we need a deep pattern matching everywhere and this could slow down
       again.
    TO BE TRIED (??)
-2. optimize neck-cuts during the indexing phase (? maybe not easy/possible)
-3. the to_heap could keep the highest non-bound variable to be cached in
+2. the to_heap could keep the highest non-bound variable to be cached in
    the UVar to make restriction linear
 
 Missing:
 1. occur-check
-2. full lambda-prolog
 
 =============================================
 
