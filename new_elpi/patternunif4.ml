@@ -344,7 +344,9 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
     | Int _ -> x
   in aux 0 t
 
-(* full_deref is to be called only on heap terms and with from <= to *)
+(* full_deref performs lifting only and with from <= to
+   if called on non-heap terms, it does not turn them to heap terms
+   (if from=to_) *)
 (* Note: when full_deref is called inside restrict, it may be from > to_ *)
 (* t lives in from; args already live in to *)
 and full_deref argsdepth last_call trail ~from ~to_ args e t =
@@ -355,9 +357,10 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
  else (* O(1) reduction fragment tested here *)
   let from,args',t = eat_args from args t in
   let t = full_deref argsdepth last_call trail ~from ~to_ 0 e t in
+  if args'=0 then t
+  else
    match t with
-      _ when args'=0 -> t
-    | Lam _ -> assert false (* never happens *)
+      Lam _ -> assert false (* never happens *)
     | Const c ->
        let args = mkinterval (from+1) (args'-1) 0 in
        (App (c,constant_of_dbl from,List.map constant_of_dbl args))
@@ -376,9 +379,11 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
        let args = mkinterval from args' 0 in
        AppUVar (r,depth,args2@List.map constant_of_dbl args)
     | Arg(i,args2) when from = argsdepth+args2 -> Arg(i,args2+args')
-    | UVar _ -> assert false (* XXXX We are dynamically exiting the fragment *)
+    | AppArg (i,args2) ->
+       let args = mkinterval from args' 0 in
+       AppArg (i,args2@List.map constant_of_dbl args)
     | Arg _
-    | AppArg (_,_) -> assert false (* not an heap term *)
+    | UVar _ -> assert false (* XXXX We are dynamically exiting the fragment *)
     | String _ -> t
     | Int _ -> t
 
@@ -394,27 +399,35 @@ and eat_args depth l t =
      eat_args depth l (app_deref ~from:origdepth ~to_:depth args t)
   | _ -> depth,l,t
 
+(* Lift is to be called only on heap terms and with from <= to *)
+(* TODO: use lift in fullderef? efficient only iff it is inlined *)
+and lift ~from ~to_ t =
+ (* Dummy trail, argsdepth and e: they won't be used *)
+ if from=to_ then t
+ else to_heap 0 false (ref []) ~from ~to_ [||] t
+
 (* Deref is to be called only on heap terms and with from <= to *)
 and deref ~from ~to_ args t =
- (* TODO: Remove the assertion when we are sure *)
- assert (from <= to_);
  (* Dummy trail, argsdepth and e: they won't be used *)
  full_deref 0 false (ref []) ~from ~to_ args [||] t
 
-(* GENERALIZE THE SUBST BELOW OR IMPLEMENT A NEW ONE *)
 (* simultaneous substitution of ts for [depth,depth+|ts|)
    the substituted term must be in the heap
    the term is delifted by |ts|
-   every t in ts must be a Arg(i,0)
-   WARNING: the ts are NOT lifted *)
+   every t in ts must be either an heap term or an Arg(i,0)
+   the ts are lifted as usual *)
 and subst fromdepth ts t =
  (*Format.eprintf "subst t: %a \n%!" (uppterm 0 [] 0 [||]) t; *)
  if ts == [] then t else
  let len = List.length ts in
+ let fromdepthlen = fromdepth+len in
  let rec aux depth =
   function
    | Const c as x ->
-      if c >= fromdepth && c < fromdepth+len then List.nth ts (c-fromdepth)
+      if c >= fromdepth && c < fromdepthlen then
+       (match List.nth ts (c-fromdepth) with
+           Arg(i,0) as t -> t 
+         | t -> lift ~from:fromdepth ~to_:fromdepthlen t)
       else if c < fromdepth then x
       else constant_of_dbl (c-len) (* NOT LIFTED *)
    | Arg _
@@ -422,13 +435,16 @@ and subst fromdepth ts t =
    | App(c,x,xs) as orig ->
       let x' = aux depth x in
       let xs' = List.map (aux depth) xs in
-      if c >= fromdepth && c < fromdepth+len then
+      let xxs' = x'::xs' in
+      if c >= fromdepth && c < fromdepthlen then
        (* XXX: generalize to full subst *)
        (match List.nth ts (c-fromdepth) with
            Arg(i,0) ->
-            (try Arg(i,in_fragment fromdepth (x'::xs'))
-             with NotInTheFragment -> assert false)
-         | _ -> assert false (* precondition violated *))
+            (try Arg(i,in_fragment fromdepth xxs')
+             with NotInTheFragment -> assert false (* XXX exiting the fragment*))
+         | t ->
+            let t = lift ~from:fromdepth ~to_:depth t in
+            beta depth [] t xxs')
       else if c < fromdepth then
        if x==x' && xs==xs' then orig else App(c,x',xs')
       else App(c-len,x',xs')
@@ -444,43 +460,41 @@ and subst fromdepth ts t =
       else assert false (* XXX TODO: Exiting the fragment, need ES *)
    | AppUVar({ contents = t },vardepth,args) when t != dummy ->
       aux depth (app_deref ~from:vardepth ~to_:depth args t)
-   (* TODO XXXXX *)
-   | AppUVar _ -> assert false
+   | AppUVar(r,vardepth,args) ->
+      let args = List.map (aux depth) args in
+      if vardepth <= fromdepth then AppUVar(r,vardepth,args)
+      else assert false (* XXX TODO: Exiting the fragment, need ES *)
    | Lam t -> Lam (aux (depth+1) t)
    | String _ as str -> str 
    | Int _ as i -> i
  in
-  aux (fromdepth+List.length ts) t
+  aux fromdepthlen t
+
+and beta depth sub t args =
+ match t,args with
+  | Lam t',hd::tl -> beta depth (hd::sub) t' tl
+  | _,_ ->
+    let t' = subst depth sub t in
+    match args with
+        [] -> t'
+     | ahd::atl ->
+        match t' with
+         | Const c -> App (c,ahd,atl)
+         | Arg _
+         | AppArg _ -> assert false (* ONLY ON HEAP TERMS *)
+         | App (c,arg,args1) -> App (c,arg,args1@args)
+         | Custom (c,args1) -> Custom (c,args1@args)
+         | UVar (r,n,m) ->
+            (* XXX TODO: optimize the case where we can stay in the
+               fragment *)
+            let args1 = List.map constant_of_dbl (mkinterval n m 0) in
+            AppUVar (r,n,args1@args)
+         | AppUVar (r,depth,args1) -> AppUVar (r,depth,args1@args)
+         | Lam _ -> assert false
+         | String _ | Int _ -> assert false (* Ill-typed *)
 
 (* Deref is to be called only on heap terms and with from <= to *)
-and app_deref ~from ~to_ args t =
- (* TODO: Remove the assertion when we are sure *)
- assert (from <= to_);
- let t = deref ~from ~to_ 0 t in
- let rec beta sub t args =
-  match t,args with
-   | Lam t',hd::tl -> beta (hd::sub) t' tl
-   | _,_ ->
-     let t' = subst to_ sub t in
-     match args with
-         [] -> t'
-      | ahd::atl ->
-         match t' with
-          | Const c -> App (c,ahd,atl)
-          | Arg _
-          | AppArg _ -> assert false (* ONLY ON HEAP TERMS *)
-          | App (c,arg,args1) -> App (c,arg,args1@args)
-          | Custom (c,args1) -> Custom (c,args1@args)
-          | UVar (r,n,m) ->
-             (* XXX TODO: optimize the case where we can stay in the
-                fragment *)
-             let args1 = List.map constant_of_dbl (mkinterval n m 0) in
-             AppUVar (r,n,args1@args)
-          | AppUVar (r,depth,args1) -> AppUVar (r,depth,args1@args)
-          | Lam _ -> assert false
-          | String _ | Int _ -> assert false (* Ill-typed *)
- in
-  beta [] t args
+and app_deref ~from ~to_ args t = beta to_ [] (deref ~from ~to_ 0 t) args
 ;;
 
 do_deref := deref;;
