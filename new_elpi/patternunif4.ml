@@ -299,12 +299,14 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
            avoids dereference chains, but puts more pressure on the GC. *)
         fresh
        end
-    | UVar (_,vardepth,argsno) when delta < 0 ->
+    | UVar (r,vardepth,argsno) when delta < 0 ->
        if vardepth+argsno <= from then x
-       (* XXX TODO: Exiting the fragment, use AppUVar *)
-       else if vardepth <= from then assert false
+       else if vardepth <= from then
+        let args = mkinterval vardepth argsno 0 in
+        let args = List.map (fun c -> aux depth (constant_of_dbl c)) args in
+        AppUVar (r,vardepth,args)
        else assert false (* XXX TODO: Exiting the fragment, need ES *)
-    | UVar (_,_,_) -> assert false (* TO BE IMPLEMENTED *)
+    | UVar (_,_,_) -> assert false (* XXX Restriction TO BE IMPLEMENTED *)
     | AppUVar ({contents=t},vardepth,args) when t != dummy ->
        if depth = 0 then
         app_deref ~from:vardepth ~to_ args t
@@ -317,7 +319,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        let args = List.map (aux depth) args in
        if vardepth <= from then AppUVar (r,vardepth,args)
        else assert false (* XXX TODO: Exiting the fragment, need ES *)
-    | AppUVar _ -> assert false (* TO BE IMPLEMENTED *)
+    | AppUVar _ -> assert false (* XXX Restriction TO BE IMPLEMENTED *)
     | Arg (i,args) when argsdepth >= to_ ->
         let a = e.(i) in
         (*Format.eprintf "%a^%d = %a\n%!" ppterm (Arg(i,[])) argsdepth ppterm a;*)
@@ -383,8 +385,14 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
     | AppArg (i,args2) ->
        let args = mkinterval from args' 0 in
        AppArg (i,args2@List.map constant_of_dbl args)
-    | Arg _
-    | UVar _ -> assert false (* XXXX We are dynamically exiting the fragment *)
+    | Arg(i,argsno) ->
+       let args = mkinterval argsdepth (argsno+args) 0 in
+       let args = List.map constant_of_dbl args in
+       AppArg (i,args)
+    | UVar (r,vardepth,argsno) ->
+       let args = mkinterval vardepth (argsno+args) 0 in
+       let args = List.map constant_of_dbl args in
+       AppUVar (r,vardepth,args)
     | String _ -> t
     | Int _ -> t
 
@@ -441,7 +449,7 @@ and subst fromdepth ts t =
        (match List.nth ts (c-fromdepth) with
            Arg(i,0) ->
             (try Arg(i,in_fragment fromdepth xxs')
-             with NotInTheFragment -> assert false (* XXX exiting the fragment*))
+             with NotInTheFragment -> AppArg (i,xxs'))
          | t ->
             let t = lift ~from:fromdepth ~to_:depth t in
             beta depth [] t xxs')
@@ -453,10 +461,12 @@ and subst fromdepth ts t =
       if xs==xs' then orig else Custom(c,xs')
    | UVar({contents=g},vardepth,argsno) when g != dummy ->
       aux depth (deref ~from:vardepth ~to_:depth argsno g)
-   | UVar(_,vardepth,argsno) as orig ->
+   | UVar(r,vardepth,argsno) as orig ->
       if vardepth+argsno <= fromdepth then orig
-      (* XXX TODO: Exiting the fragment, use AppUVar *)
-      else if vardepth <= fromdepth then assert false
+      else if vardepth <= fromdepth then
+       let args = mkinterval vardepth argsno 0 in
+       let args = List.map (fun c -> aux depth (constant_of_dbl c)) args in
+       AppUVar (r,vardepth,args)
       else assert false (* XXX TODO: Exiting the fragment, need ES *)
    | AppUVar({ contents = t },vardepth,args) when t != dummy ->
       aux depth (app_deref ~from:vardepth ~to_:depth args t)
