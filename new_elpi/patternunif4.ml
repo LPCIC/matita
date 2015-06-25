@@ -437,7 +437,6 @@ and subst fromdepth ts t =
       let xs' = List.map (aux depth) xs in
       let xxs' = x'::xs' in
       if c >= fromdepth && c < fromdepthlen then
-       (* XXX: generalize to full subst *)
        (match List.nth ts (c-fromdepth) with
            Arg(i,0) ->
             (try Arg(i,in_fragment fromdepth xxs')
