@@ -150,7 +150,7 @@ let tok = lexer
   |  "::"  -> "CONS",$buf
   | ',' -> "COMMA",","
   | '&' -> "AMPERSEND",","
-  | ';' -> "SEMICOLON",","
+  | ';' -> "SEMICOLON",";"
   | '.' -> "FULLSTOP","."
   | '\\' -> "BIND","\\"
   | '/' -> "BIND","/"
