@@ -301,11 +301,12 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
        end
     | UVar (r,vardepth,argsno) when delta < 0 ->
        if vardepth+argsno <= from then x
-       else if vardepth <= from then
+       else
+        let r,vardepth,argsno =
+         decrease_depth r ~from:vardepth ~to_:from argsno in
         let args = mkinterval vardepth argsno 0 in
         let args = List.map (fun c -> aux depth (constant_of_dbl c)) args in
         AppUVar (r,vardepth,args)
-       else assert false (* XXX TODO: Exiting the fragment, need ES *)
     | UVar (_,_,_) -> assert false (* XXX Restriction TO BE IMPLEMENTED *)
     | AppUVar ({contents=t},vardepth,args) when t != dummy ->
        if depth = 0 then
@@ -316,9 +317,11 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
         (* Second phase: from from to to *)
         aux depth t
     | AppUVar (r,vardepth,args) when delta < 0 ->
-       let args = List.map (aux depth) args in
-       if vardepth <= from then AppUVar (r,vardepth,args)
-       else assert false (* XXX TODO: Exiting the fragment, need ES *)
+       let r,vardepth,argsno =
+        decrease_depth r ~from:vardepth ~to_:from 0 in
+       let args0= List.map constant_of_dbl (mkinterval vardepth argsno 0) in
+       let args = List.map (aux depth) (args0@args) in
+       AppUVar (r,vardepth,args)
     | AppUVar _ -> assert false (* XXX Restriction TO BE IMPLEMENTED *)
     | Arg (i,args) when argsdepth >= to_ ->
         let a = e.(i) in
@@ -420,6 +423,21 @@ and deref ~from ~to_ args t =
  (* Dummy trail, argsdepth and e: they won't be used *)
  full_deref 0 false (ref []) ~from ~to_ args [||] t
 
+and decrease_depth r ~from ~to_ argsno =
+ if from <= to_ then r,from,argsno
+ else
+  let newr = ref dummy in
+  let newargsno = argsno+from-to_ in
+  let newvar = UVar(newr,to_,newargsno) in
+  (* TODO: here we are not registering the operation in the
+     trail to avoid passing last_call/trail around in every single
+     function. Decrease_depth is reversible. However, does this slow
+     down? Would using a global last_call/trail speed up things? What
+     about passing around last_call/trail?
+  if not last_call then trail := r :: !trail;*)
+  r := newvar;
+  newr,to_,newargsno
+
 (* simultaneous substitution of ts for [depth,depth+|ts|)
    the substituted term must be in the heap
    the term is delifted by |ts|
@@ -463,17 +481,23 @@ and subst fromdepth ts t =
       aux depth (deref ~from:vardepth ~to_:depth argsno g)
    | UVar(r,vardepth,argsno) as orig ->
       if vardepth+argsno <= fromdepth then orig
-      else if vardepth <= fromdepth then
+      else
+       let r,vardepth,argsno =
+        decrease_depth r ~from:vardepth ~to_:fromdepth
+         argsno in
        let args = mkinterval vardepth argsno 0 in
        let args = List.map (fun c -> aux depth (constant_of_dbl c)) args in
+       (* XXX TODO: check if we can stay in the fragment, here and in
+          many other places *)
        AppUVar (r,vardepth,args)
-      else assert false (* XXX TODO: Exiting the fragment, need ES *)
    | AppUVar({ contents = t },vardepth,args) when t != dummy ->
       aux depth (app_deref ~from:vardepth ~to_:depth args t)
    | AppUVar(r,vardepth,args) ->
-      let args = List.map (aux depth) args in
-      if vardepth <= fromdepth then AppUVar(r,vardepth,args)
-      else assert false (* XXX TODO: Exiting the fragment, need ES *)
+      let r,vardepth,argsno =
+       decrease_depth r ~from:vardepth ~to_:fromdepth 0 in
+      let args0 = List.map constant_of_dbl (mkinterval vardepth argsno 0) in
+      let args = List.map (aux depth) (args0@args) in
+      AppUVar(r,vardepth,args)
    | Lam t -> Lam (aux (depth+1) t)
    | String _ as str -> str 
    | Int _ as i -> i
