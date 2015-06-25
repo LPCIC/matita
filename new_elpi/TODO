@@ -34,6 +34,8 @@ Bugs:
 
 Possible optimizations:
 
+-3 parser: test if it gets quicker defining lp directly, without using
+   LIST1 clauses + List.concat
 -2 optimize the case of app_deref where we can stay in the fragment
    after the beta
 -1. if full_deref only works on heap terms, why do we pass all that stuff?
@@ -54,7 +56,7 @@ Possible optimizations:
    the UVar to make restriction linear
 
 Missing:
-0. accumulate + ignore typing commands
+0. accumulate + fixity
 1. occur-check
 
 =============================================

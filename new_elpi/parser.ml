@@ -143,6 +143,7 @@ let tok = lexer
   [ 'A'-'Z' ident -> "CONSTANT", $buf 
   | 'a'-'z' ident -> "CONSTANT", $buf
   | number -> "INTEGER", $buf
+  | "->" -> "ARROW", $buf
   | '-' number -> "INTEGER", $buf
   | '_' -> "FRESHUV", "_"
   |  ":-"  -> "ENTAILS",$buf
@@ -185,6 +186,28 @@ let rec lex c = parser bp
        if option_eq (Stream.peek s) None then ("EOF",""), (bp, ep)
        else
        (match tok c s with
+       | "CONSTANT","module" -> "MODULE", "module"
+       | "CONSTANT","import" -> "IMPORT", "accumulate"
+       | "CONSTANT","accum_sig" -> "ACCUM_SIG", "accum_sig"
+       | "CONSTANT","use_sig" -> "USE_SIG", "use_sig"
+       | "CONSTANT","local" -> "LOCAL", "local"
+       | "CONSTANT","localkind" -> "LOCALKIND", "localkind"
+       | "CONSTANT","useonly" -> "USEONLY", "useonly"
+       | "CONSTANT","exportdef" -> "EXPORTDEF", "exportdef"
+       | "CONSTANT","kind" -> "KIND", "kind"
+       | "CONSTANT","typeabbrev" -> "TYPEABBREV", "typeabbrev"
+       | "CONSTANT","type" -> "TYPE", "type"
+
+       | "CONSTANT","end" -> "EOF", "end"
+       | "CONSTANT","accumulate" -> "ACCUMULATE", "accumulate"
+       | "CONSTANT","infixl" -> "FIXITY", "infixl"
+       | "CONSTANT","infixr" -> "FIXITY", "infixr"
+       | "CONSTANT","infix" -> "FIXITY", "infix"
+       | "CONSTANT","prefix" -> "FIXITY", "prefix"
+       | "CONSTANT","prefixr" -> "FIXITY", "prefixr"
+       | "CONSTANT","postfix" -> "FIXITY", "postfix"
+       | "CONSTANT","postfixl" -> "FIXITY", "postfixl"
+
        | "CONSTANT","pi" -> "PI", "pi"
        | "CONSTANT","sigma" -> "SIGMA", "sigma"
        | "CONSTANT","nil" -> "NIL", "nil"
@@ -194,6 +217,9 @@ let rec lex c = parser bp
        | "CONSTANT","resume" -> "RESUME","resume"
        | "CONSTANT","context" -> "CONTEXT","context"
        | x -> x), (bp, ep)
+and skip_to_dot c = parser
+  | [< '( '.' ); s >] -> lex c s
+  | [< '_ ; s >] -> skip_to_dot c s
 and comment c = parser
   | [< '( '\n' ); s >] -> lex c s
   | [< '_ ; s >] -> comment c s
@@ -287,7 +313,8 @@ let () =
 
 EXTEND
   GLOBAL: lp premise atom goal;
-  lp: [ [ cl = LIST0 clause; EOF -> true_clause::eq_clause::or_clauses@cl ] ];
+  lp: [ [ cl = LIST0 clause; EOF ->
+       true_clause::eq_clause::or_clauses@List.concat cl ] ];
 (*  name : [ [ c = CONSTANT -> c | u = UVAR -> u | FRESHUV -> "_" ] ];
   label : [ [ COLON;
               n = name;
@@ -314,7 +341,43 @@ EXTEND
          reset (); 
          ([], key_of clause, clause, name), insertion*)
          reset (); 
-         mkClause hd hyp ]];
+         [mkClause hd hyp]
+     | MODULE; CONSTANT; FULLSTOP -> []
+     | ACCUMULATE; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | IMPORT; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | ACCUM_SIG; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | USE_SIG; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | LOCAL; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | LOCAL; LIST1 CONSTANT SEP COMMA; type_; FULLSTOP -> []
+     | LOCALKIND; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | LOCALKIND; LIST1 CONSTANT SEP COMMA; kind; FULLSTOP -> []
+     | USEONLY; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | USEONLY; LIST1 CONSTANT SEP COMMA; type_; FULLSTOP -> []
+     | EXPORTDEF; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | EXPORTDEF; LIST1 CONSTANT SEP COMMA; type_; FULLSTOP -> []
+     | TYPE; LIST1 CONSTANT SEP COMMA; type_; FULLSTOP -> []
+     | KIND; LIST1 CONSTANT SEP COMMA; kind; FULLSTOP -> []
+     | TYPEABBREV; abbrform; TYPE; FULLSTOP -> []
+     | FIXITY; LIST1 CONSTANT SEP COMMA; INTEGER; FULLSTOP -> []
+    ]];
+  kind:
+    [[ TYPE -> ()
+     | TYPE; ARROW; kind -> ()
+    ]];
+  type_:
+    [[ ctype -> ()
+     | ctype; ARROW; type_ -> ()
+    ]];
+  ctype:
+    [[ CONSTANT -> ()
+     | CONSTANT; LIST1 ctype -> ()
+     | LPAREN; type_; RPAREN -> ()
+    ]];
+  abbrform:
+    [[ CONSTANT -> ()
+     | LPAREN; CONSTANT; LIST1 CONSTANT; RPAREN -> ()
+     | LPAREN; abbrform; RPAREN -> ()
+    ]];
   goal:
     [[ p = premise -> (*
          let g = sigma_abstract p in
