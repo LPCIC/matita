@@ -1,5 +1,7 @@
 Other:
 
+-1. avoid pretty-printing at the top-level UVars with depth >0
+    E.g. x\ y\ X^1 y should be converted to x\ y\ X x y.
 0. pretty-printing to LaTeX + transformation to standard presentation
    (with fresh variables, etc.)
 1. implement delay and experiment with it for:
@@ -20,6 +22,7 @@ Benchmarks:
 
 Bugs:
 
+-3. implement restriction (TODOs in the code)
 -2. revise all the assert false/raise Failure
 -1. Introduce ES for the general case?
     Or delay the goals?
