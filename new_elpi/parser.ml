@@ -98,12 +98,12 @@ let mkClause lhs rhs = lhs,rhs
 let true_clause = mkTrue, mkConj []
 
 let eq_clause =
- let v = Var "X" in
+ let v = Const (ASTFuncS.from_string "X") in
   mkEq v v, mkConj []
 
 let or_clauses =
- let v1 = Var "A" in
- let v2 = Var "B" in
+ let v1 = Const (ASTFuncS.from_string "A") in
+ let v2 = Const (ASTFuncS.from_string "B") in
   [ mkDisj [v1;v2], v1
   ; mkDisj [v1;v2], v2 ]
 
@@ -118,8 +118,7 @@ let reset () = uvmap := []
 
 let fresh_uv_names = ref (-1);;
 
-let mkUVar u = Var u
-let mkFreshUVar () = incr fresh_uv_names; Var ("_" ^ string_of_int !fresh_uv_names)
+let mkFreshUVar () = incr fresh_uv_names; Const (ASTFuncS.from_string ("_" ^ string_of_int !fresh_uv_names))
 let mkCon c = Const (ASTFuncS.from_string c)
 let mkCustom c = Custom (ASTFuncS.from_string c)
 
@@ -138,7 +137,7 @@ let lvl_name_of s =
 *)
 
 let tok = lexer
-  [ 'A'-'Z' ident -> "UVAR", $buf 
+  [ 'A'-'Z' ident -> "CONSTANT", $buf 
   | 'a'-'z' ident -> "CONSTANT", $buf
   | number -> "INTEGER", $buf
   | '-' number -> "INTEGER", $buf
@@ -379,7 +378,6 @@ EXTEND
           (match b with
               None -> mkCon c
             | Some b -> mkLam c b)
-      | u = UVAR -> (*let u, lvl = lvl_name_of u in mkUv (get_uv u) lvl*) mkUVar u
       | u = FRESHUV -> mkFreshUVar ()
       (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))*)
       | NIL -> mkNil
