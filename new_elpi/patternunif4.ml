@@ -89,6 +89,7 @@ let andc = fst (funct_of_ast F.andf)
 let orc = fst (funct_of_ast F.orf)
 let implc = fst (funct_of_ast F.implf)
 let pic = fst (funct_of_ast F.pif)
+let sigmac = fst (funct_of_ast F.sigmaf)
 let eqc = fst (funct_of_ast F.eqf)
 
 
@@ -881,6 +882,10 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
        run depth (add_clauses clauses p) g2 gs next alts lvl
     | App(c, Lam f, []) when c == pic ->
        run (depth+1) p f gs next alts lvl
+    | App(c, Lam f, []) when c == sigmac ->
+       let r = ref dummy in
+       let v = UVar(r,depth,0) in
+       run depth p (subst depth [v] f) gs next alts lvl
     | UVar ({ contents=g },_,_) when g == dummy ->
        raise (Failure "Not a predicate")
     | UVar ({ contents=g },origdepth,args) ->

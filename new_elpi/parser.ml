@@ -10,6 +10,7 @@ module type ASTFuncT =
     val implf : t
     val cutf : t
     val pif : t
+    val sigmaf : t
     val eqf : t
     val from_string : string -> t
   end;;
@@ -34,6 +35,7 @@ module ASTFuncS : ASTFuncT =
     let implf = from_string "=>"
     let cutf = from_string "!"
     let pif = from_string "pi"
+    let sigmaf = from_string "sigma"
     let eqf = from_string "="
 
   end;;
@@ -75,6 +77,7 @@ let mkCut = Const ASTFuncS.cutf
 let mkEq l r = App(Const ASTFuncS.eqf,[l;r]) 
 let mkLam x t = Lam (ASTFuncS.from_string x,t)
 let mkPi x t = App(Const ASTFuncS.pif,[mkLam x t])
+let mkSigma x t = App(Const ASTFuncS.sigmaf,[mkLam x t])
 let mkNil = Const (ASTFuncS.from_string "nil")
 let mkString str = String (ASTFuncS.from_string str)
 let mkInt i = Int i
@@ -323,12 +326,7 @@ EXTEND
   premise : [[ a = atom -> a ]];
   concl : [[ a = atom LEVEL "term" -> a ]];
   atom : LEVEL "pi"
-     [[ PI; x = CONSTANT; BIND; p = atom LEVEL "disjunction" ->
-         (* TODO: Here we are:
-            1) restricting the syntax to pis only in negative position.
-               This NEED to be relaxed.
-            2) trusting the user in only using pis in negative position. *)
-         mkPi x p
+     [[ PI; x = CONSTANT; BIND; p = atom LEVEL "disjunction" -> mkPi x p
       (*| PI; annot = bound; x = bound; BIND; p = atom LEVEL "disjuction" ->
          let (x, is_uv), annot = x, Some (fst annot) in
          let bind = if is_uv then mkSigma1 else mkPi1 annot in
@@ -342,9 +340,8 @@ EXTEND
         x = bound; BIND; p = atom LEVEL "disjuction" ->
          let (x, is_uv), annot = x, Some annot in
          let bind = if is_uv then mkSigma1 else mkPi1 annot in
-         bind (grab x 1 p)
-      | SIGMA; x = bound; BIND; p = atom LEVEL "disjuction" ->
-         mkSigma1 (grab (fst x) 1 p)*) ]];
+         bind (grab x 1 p)*)
+      | SIGMA; x=CONSTANT; BIND; p=atom LEVEL "disjunction"-> mkSigma x p]];
   atom : LEVEL "disjunction"
      [[ l = LIST1 atom LEVEL "conjunction" SEP SEMICOLON -> mkDisj l ]];
   atom : LEVEL "conjunction"
