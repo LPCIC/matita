@@ -485,10 +485,12 @@ and beta depth sub t args =
          | App (c,arg,args1) -> App (c,arg,args1@args)
          | Custom (c,args1) -> Custom (c,args1@args)
          | UVar (r,n,m) ->
-            (* XXX TODO: optimize the case where we can stay in the
-               fragment *)
-            let args1 = List.map constant_of_dbl (mkinterval n m 0) in
-            AppUVar (r,n,args1@args)
+            (try
+              let args = in_fragment (n+m) args in
+              UVar(r,n,m+args)
+             with NotInTheFragment ->
+              let args1 = List.map constant_of_dbl (mkinterval n m 0) in
+              AppUVar (r,n,args1@args))
          | AppUVar (r,depth,args1) -> AppUVar (r,depth,args1@args)
          | Lam _ -> assert false
          | String _ | Int _ -> assert false (* Ill-typed *)
