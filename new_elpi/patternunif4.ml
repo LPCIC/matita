@@ -447,7 +447,8 @@ and decrease_depth r ~from ~to_ argsno =
    every t in ts must be either an heap term or an Arg(i,0)
    the ts are lifted as usual *)
 and subst fromdepth ts t =
- (*Format.eprintf "subst t: %a \n%!" (uppterm 0 [] 0 [||]) t; *)
+ (*Format.eprintf "subst t: %a \n%!" (uppterm 0 [] 0 [||]) t;
+ List.iter (fun t -> Format.eprintf "subst ts: %a \n%!" (uppterm 0 [] 0 [||]) t) ts;*)
  if ts == [] then t else
  let len = List.length ts in
  let fromdepthlen = fromdepth+len in
@@ -457,7 +458,7 @@ and subst fromdepth ts t =
       if c >= fromdepth && c < fromdepthlen then
        (match List.nth ts (c-fromdepth) with
            Arg(i,0) as t -> t 
-         | t -> lift ~from:fromdepth ~to_:fromdepthlen t)
+         | t -> lift ~from:fromdepth ~to_:(depth-len) t)
       else if c < fromdepth then x
       else constant_of_dbl (c-len) (* NOT LIFTED *)
    | Arg _
