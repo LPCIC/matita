@@ -102,6 +102,7 @@ let rec mkinterval depth argsno n =
 ;;
 
 let do_deref = ref (fun ~from ~to_ _ _ -> assert false);;
+let do_app_deref = ref (fun ~from ~to_ _ _ -> assert false);;
 
 let xppterm ~nice depth names argsdepth env f t =
   let pp_app f pphd pparg (hd,args) =
@@ -155,6 +156,8 @@ let xppterm ~nice depth names argsdepth env f t =
        pp_app f (pp_uvar depth vardepth 0) ppconstant (r,args)
     | UVar (r,vardepth,argsno) ->
        pp_uvar depth vardepth argsno f r
+    | AppUVar (r,vardepth,terms) when !r != dummy && nice -> 
+       aux depth f (!do_app_deref ~from:vardepth ~to_:depth terms !r)
     | AppUVar (r,vardepth,terms) -> 
        pp_app f (pp_uvar depth vardepth 0) (aux depth) (r,terms)
     | Arg (n,argsno) ->
@@ -534,6 +537,7 @@ and app_deref ~from ~to_ args t = beta to_ [] (deref ~from ~to_ 0 t) args
 ;;
 
 do_deref := deref;;
+do_app_deref := app_deref;;
 
 
 (* Restrict is to be called only on heap terms *)
