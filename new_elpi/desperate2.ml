@@ -239,14 +239,17 @@ let heap_var_of_ast l n =
 
 let rec heap_term_of_ast l =
  function
-    Parser.Var v ->
-     let l,v = heap_var_of_ast l v in
-     l, v
-  | Parser.App(Parser.Const f,[]) when Parser.ASTFuncS.eq f Parser.ASTFuncS.andf ->
+  Parser.App(Parser.Const f,[]) when Parser.ASTFuncS.eq f Parser.ASTFuncS.andf ->
      l, truec
   | Parser.App(Parser.Const f,[]) ->
+     let c = (Parser.ASTFuncS.pp f).[0] in
+     if ('A' <= c && c <= 'Z') || c = '_' then
+       assert false;
      l, funct_of_ast f
   | Parser.App(Parser.Const f,tl) ->
+     let c = (Parser.ASTFuncS.pp f).[0] in
+     if ('A' <= c && c <= 'Z') || c = '_' then
+       assert false;  
      let l,rev_tl =
        List.fold_left
         (fun (l,tl) t -> let l,t = heap_term_of_ast l t in (l,t::tl))
@@ -255,9 +258,14 @@ let rec heap_term_of_ast l =
         hd1::hd2::tl -> l, App(hd1,hd2,tl)
       | _ -> assert false)
   | Parser.App(Parser.Int _,_) -> assert false
-  | Parser.Const f -> l, funct_of_ast f
+  | Parser.Const f -> 
+     let c = (Parser.ASTFuncS.pp f).[0] in
+     if ('A' <= c && c <= 'Z') || c = '_' then
+      let l,v = heap_var_of_ast l (Parser.ASTFuncS.pp f) in
+      l,v
+     else
+      l, funct_of_ast f
   | Parser.Lam _ -> assert false
-  | Parser.App(Parser.Var v, _) -> assert false
   | Parser.App(Parser.App(term1,tl1), tl) ->
      heap_term_of_ast l (Parser.App(term1,tl1@tl))
   | Parser.App(Parser.Lam (_,_), _) -> assert false
@@ -275,14 +283,17 @@ let stack_var_of_ast (f,l) n =
 
 let rec stack_term_of_ast l =
  function
-    Parser.Var v ->
-     let l,v = stack_var_of_ast l v in
-     l, v
-  | Parser.App(Parser.Const f,[]) when Parser.ASTFuncS.eq f Parser.ASTFuncS.andf ->
+  Parser.App(Parser.Const f,[]) when Parser.ASTFuncS.eq f Parser.ASTFuncS.andf ->
      l, truec
   | Parser.App(Parser.Const f,[]) ->
+     let c = (Parser.ASTFuncS.pp f).[0] in
+     if ('A' <= c && c <= 'Z') || c = '_' then
+       assert false;
      l, funct_of_ast f
   | Parser.App(Parser.Const f,tl) ->
+     let c = (Parser.ASTFuncS.pp f).[0] in
+     if ('A' <= c && c <= 'Z') || c = '_' then
+       assert false;
      let l,rev_tl =
        List.fold_left
         (fun (l,tl) t -> let l,t = stack_term_of_ast l t in (l,t::tl))
@@ -291,9 +302,14 @@ let rec stack_term_of_ast l =
         hd1::hd2::tl -> l, Struct(hd1,hd2,tl)
       | _ -> assert false)
   | Parser.App(Parser.Int _,_) -> assert false
-  | Parser.Const f -> l, funct_of_ast f
+  | Parser.Const f ->
+     let c = (Parser.ASTFuncS.pp f).[0] in
+     if ('A' <= c && c <= 'Z') || c = '_' then
+      let l,v = stack_var_of_ast l (Parser.ASTFuncS.pp f) in
+      l,v
+     else
+      l, funct_of_ast f
   | Parser.Lam _ -> assert false
-  | Parser.App(Parser.Var v, _) -> assert false
   | Parser.App(Parser.App(term1,tl1), tl) ->
      stack_term_of_ast l (Parser.App(term1,tl1@tl))
   | Parser.App(Parser.Lam (_,_), _) -> assert false

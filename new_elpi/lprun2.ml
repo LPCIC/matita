@@ -362,14 +362,20 @@ module Parsable(Var: VarT)(Func: FuncT): ParsableT
 
   let rec term_of_ast l =
    function
-      Parser.Var v ->
-       let l,v = var_of_ast l v in
-       l, AST.Var v
-    | Parser.Const f -> l, AST.App(Func.funct_of_ast f,[])
+    | Parser.Const f -> 
+       let c = (Parser.ASTFuncS.pp f).[0] in
+       if ('A' <= c && c <= 'Z') || c = '_' then
+        let l,v = var_of_ast l (Parser.ASTFuncS.pp f) in 
+        l,AST.Var(v)
+       else
+        l,AST.App(Func.funct_of_ast f,[])
     | Parser.Custom _ -> assert false   
     | Parser.String _ -> assert false
     | Parser.Int _ -> assert false
     | Parser.App(Parser.Const f,tl) ->
+       let c = (Parser.ASTFuncS.pp f).[0] in
+       if ('A' <= c && c <= 'Z') || c = '_' then
+        assert false; 
        let l,rev_tl =
          List.fold_left
           (fun (l,tl) t -> let l,t = term_of_ast l t in (l,t::tl))

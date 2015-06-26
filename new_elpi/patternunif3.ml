@@ -800,12 +800,15 @@ let stack_funct_of_ast l' f =
 
 let rec stack_term_of_ast lvl l l' =
  function
-    AST.Var v ->
-     let l,v = stack_var_of_ast l v in
-     l,l',v
-  | AST.App(AST.Const f,[]) when F.eq f F.andf ->
+    AST.App(AST.Const f,[]) when F.eq f F.andf ->
      l,l',truec
-  | AST.Const f -> let l',c=stack_funct_of_ast l' f in l,l',snd c
+  | AST.Const f -> 
+     let c = (Parser.ASTFuncS.pp f).[0] in
+     if ('A' <= c && c <= 'Z') || c = '_' then
+      let v = snd (stack_var_of_ast l (Parser.ASTFuncS.pp f)) in
+      l,l',v
+     else
+      let l',c=stack_funct_of_ast l' f in l,l',snd c
   | AST.Custom f -> l,l',Custom (fst (funct_of_ast f),[])
   | AST.App(AST.Const f,tl) ->
      let l,l',rev_tl =
@@ -813,10 +816,25 @@ let rec stack_term_of_ast lvl l l' =
         (fun (l,l',tl) t ->
           let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
         (l,l',[]) tl in
-     let l',c = stack_funct_of_ast l' f in
-     (match List.rev rev_tl with
-         hd2::tl -> l,l',App(fst c,hd2,tl)
-       | _ -> assert false)
+     let c = (Parser.ASTFuncS.pp f).[0] in
+     if ('A' <= c && c <= 'Z') || c = '_' then
+      let tl = List.rev rev_tl in
+      let tl =
+       let rec aux =
+        function
+          [] -> []
+        | Const c::tl -> c::aux tl
+        | _ -> assert false (* Not in Pattern Fragment *)
+       in
+        aux tl in
+      (match stack_var_of_ast l (Parser.ASTFuncS.pp f) with
+          l,Arg (v,[]) -> l,l',Arg(v,tl)
+        | _,_ -> assert false)
+     else 
+      let l',c = stack_funct_of_ast l' f in
+      (match List.rev rev_tl with
+          hd2::tl -> l,l',App(fst c,hd2,tl)
+        | _ -> assert false)
   | AST.App (AST.Custom f,tl) ->
      let l,l',rev_tl =
        List.fold_left
@@ -828,25 +846,7 @@ let rec stack_term_of_ast lvl l l' =
      let c = constant_of_dbl lvl in
      let l,l',t' = stack_term_of_ast (lvl+1) l ((x,(lvl,c))::l') t in
      l,l',Lam t'
-  | AST.App (AST.Var v,tl) ->
-     let l,l',rev_tl =
-       List.fold_left
-        (fun (l,l',tl) t ->
-          let l,l',t = stack_term_of_ast lvl l l' t in (l,l',t::tl))
-        (l,l',[]) tl in
-     let tl = List.rev rev_tl in
-     let tl =
-      let rec aux =
-       function
-         [] -> []
-       | Const c::tl -> c::aux tl
-       | _ -> assert false (* Not in Pattern Fragment *)
-      in
-       aux tl in
-     (match stack_var_of_ast l v with
-         l,Arg (v,[]) -> l,l',Arg(v,tl)
-       | _,_ -> assert false)
-  | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
+ | AST.App (AST.App (f,l1),l2) -> stack_term_of_ast lvl l l' (AST.App (f, l1@l2))
   | AST.App (AST.Lam _,_) ->
      (* Beta-redexes not in our language *) assert false
   | AST.App (AST.String _,_) -> assert false

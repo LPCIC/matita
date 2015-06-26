@@ -45,8 +45,7 @@ module ASTFuncS : ASTFuncT =
    would become true :- true. *)
 
 type term =
-   Var of string 
- | Const of ASTFuncS.t
+   Const of ASTFuncS.t
  | Custom of ASTFuncS.t
  | App of term * term list
  | Lam of ASTFuncS.t * term
@@ -113,7 +112,7 @@ let or_clauses =
 let mkApp =
  function
     App(c,l1)::l2 -> App(c,l1@l2)
-  | (Custom _ | Const _ | Var _) as c::l2 -> App(c,l2)
+  | (Custom _ | Const _) as c::l2 -> App(c,l2)
   | _ -> raise NotInProlog
 
 let uvmap = ref [];;

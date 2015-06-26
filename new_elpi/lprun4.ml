@@ -102,22 +102,27 @@ module Parsable: Lprun2.ParsableT
   
   let rec heap_term_of_ast l =
    function
-      Parser.Var v ->
-       let l,v = heap_var_of_ast l v in
-       l, v
-    | Parser.App(Parser.Const f,tl) ->
+   | Parser.App(Parser.Const f,tl) ->
+       let c = (Parser.ASTFuncS.pp f).[0] in
+       if ('A' <= c && c <= 'Z') || c = '_' then
+         assert false;       
        let l,rev_tl =
          List.fold_left
           (fun (l,tl) t -> let l,t = heap_term_of_ast l t in (l,t::tl))
           (l,[]) tl in
        l, AST.App(Lprun2.FuncS.funct_of_ast f,List.rev rev_tl)
     | Parser.App(Parser.Lam (x,y),tl) -> assert false (*still a warning*)
-    | Parser.Const f -> l, AST.App(Lprun2.FuncS.funct_of_ast f,[])
+    | Parser.Const f -> 
+       let c = (Parser.ASTFuncS.pp f).[0] in
+       if ('A' <= c && c <= 'Z') || c = '_' then
+        let l,v = heap_var_of_ast l (Parser.ASTFuncS.pp f) in
+        l,v
+       else
+        l, AST.App(Lprun2.FuncS.funct_of_ast f,[])
     | Parser.App(Parser.Custom _,_)
     | Parser.Custom _ -> assert false
     | Parser.App (Parser.App (f, l1), l2) ->
        heap_term_of_ast l (Parser.App (f, l1@l2))
-    | Parser.App (Parser.Var _,_)
     | Parser.App (Parser.String _, _)
     | Parser.App (Parser.Int _, _)
     | Parser.String _
@@ -132,22 +137,27 @@ module Parsable: Lprun2.ParsableT
   
   let rec stack_term_of_ast l =
    function
-      Parser.Var v ->
-       let l,v = stack_var_of_ast l v in
-       l, v
-    | Parser.App(Parser.Const f,tl) ->
+    Parser.App(Parser.Const f,tl) ->
+       let c = (Parser.ASTFuncS.pp f).[0] in
+       if ('A' <= c && c <= 'Z') || c = '_' then
+        assert false;
        let l,rev_tl =
          List.fold_left
           (fun (l,tl) t -> let l,t = stack_term_of_ast l t in (l,t::tl))
           (l,[]) tl in
        l, AST.Struct(Lprun2.FuncS.funct_of_ast f,List.rev rev_tl)
-    | Parser.Const f -> l, AST.App(Lprun2.FuncS.funct_of_ast f,[])
+    | Parser.Const f -> 
+       let c = (Parser.ASTFuncS.pp f).[0] in
+       if ('A' <= c && c <= 'Z') || c = '_' then
+        let l,v = stack_var_of_ast l (Parser.ASTFuncS.pp f) in
+        l,v
+       else
+        l, AST.App(Lprun2.FuncS.funct_of_ast f,[])
     | Parser.App(Parser.Custom _,_)
     | Parser.Custom _ -> assert false
     | Parser.App(Parser.Lam (x,y),tl) -> assert false (*still a warning*)
     | Parser.App (Parser.App (f, l1), l2) ->
        stack_term_of_ast l (Parser.App (f, l1@l2))
-    | Parser.App (Parser.Var _,_)
     | Parser.App (Parser.String _, _)
     | Parser.String _
     | Parser.App (Parser.Int _, _)
