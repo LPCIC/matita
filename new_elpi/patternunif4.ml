@@ -105,7 +105,7 @@ let rec mkinterval depth argsno n =
 let do_deref = ref (fun ~from ~to_ _ _ -> assert false);;
 let do_app_deref = ref (fun ~from ~to_ _ _ -> assert false);;
 
-let xppterm ~nice depth names argsdepth env f t =
+let xppterm ~nice depth0 names argsdepth env f t =
   let pp_app f pphd pparg (hd,args) =
    if args = [] then pphd f hd
    else
@@ -152,7 +152,14 @@ let xppterm ~nice depth names argsdepth env f t =
           Format.fprintf f "@[<hov 1>(%a@ =>@ %a)@]" (aux depth) x (aux depth) (List.hd xs)
         ) else pp_app f ppconstant (aux depth) (hd,x::xs)
     | Custom (hd,xs) -> pp_app f ppconstant (aux depth) (hd,xs)
-    | UVar (r,vardepth,argsno) when !r == dummy || not nice ->
+    | UVar (r,vardepth,argsno) when not nice ->
+       let args = mkinterval vardepth argsno 0 in
+       pp_app f (pp_uvar depth vardepth 0) ppconstant (r,args)
+    | UVar (r,vardepth,argsno) when !r == dummy ->
+       let diff = vardepth - depth0 in
+       let diff = if diff >= 0 then diff else 0 in
+       let vardepth = vardepth - diff in
+       let argsno = argsno + diff in
        let args = mkinterval vardepth argsno 0 in
        pp_app f (pp_uvar depth vardepth 0) ppconstant (r,args)
     | UVar (r,vardepth,argsno) ->
@@ -173,7 +180,7 @@ let xppterm ~nice depth names argsdepth env f t =
     | String str -> Format.fprintf f "\"%s\"" (Parser.ASTFuncS.pp str)
     | Int i -> Format.fprintf f "%d" i
   in
-    aux depth f t
+    aux depth0 f t
 ;;
 
 (* pp for first-order prolog *) 
