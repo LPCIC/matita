@@ -38,7 +38,7 @@ module ASTFuncS : ASTFuncT =
     let pif = from_string "pi"
     let sigmaf = from_string "sigma"
     let eqf = from_string "="
-    let isf = from_string "^is"
+    let isf = from_string "is"
 
   end;;
 
@@ -164,7 +164,6 @@ let tok = lexer
   | '|' -> "PIPE","|"
   | "=>" -> "IMPL", $buf
   | '=' -> "EQUAL","="
-  | "^is" -> "IS","^is"
   | '<' -> "LT","<"
   | '>' -> "GT",">"
   | '$' 'a'-'z' ident -> "BUILTIN",$buf
@@ -216,6 +215,7 @@ let rec lex c = parser bp
        | "CONSTANT","nil" -> "NIL", "nil"
        | "CONSTANT","delay" -> "DELAY","delay"
        | "CONSTANT","in" -> "IN","in"
+       | "CONSTANT","is" -> "IS","is"
        | "CONSTANT","with" -> "WITH","with"
        | "CONSTANT","resume" -> "RESUME","resume"
        | "CONSTANT","context" -> "CONTEXT","context"
@@ -308,7 +308,7 @@ let check_clause x = ()
 let check_goal x = ()*)
 
 let atom_levels =
-  ["pi";"disjunction";"conjunction";"conjunction2";"implication";"equality";"is";"term";"app";"simple";"list"]
+  ["pi";"disjunction";"conjunction";"conjunction2";"implication";"equality";"term";"app";"simple";"list"]
 
 let () =
   Grammar.extend [ Grammar.Entry.obj atom, None,
@@ -421,10 +421,10 @@ EXTEND
           mkImpl p a ]];
   atom : LEVEL "equality"
      [[ a = atom; EQUAL; b = atom LEVEL "term" ->
-          mkEq a b ]];
-  atom : LEVEL "is"
-     [[ a = atom; IS; b = atom LEVEL "term" ->
-          mkIs a b ]];
+          mkEq a b
+      | a = atom; IS; b = atom LEVEL "term" ->
+          mkIs a b
+     ]];
   atom : LEVEL "term"
      [[ l = LIST1 atom LEVEL "app" SEP CONS ->
           if List.length l = 1 then List.hd l
