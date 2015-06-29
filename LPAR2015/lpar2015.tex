@@ -1,0 +1,66 @@
+% LLNCStmpl.tex
+% Template file to use for LLNCS papers prepared in LaTeX
+%websites for more information: http://www.springer.com
+%http://www.springer.com/lncs
+
+\documentclass{llncs}
+%Use this line instead if you want to use running heads (i.e. headers on each page):
+%\documentclass[runningheads]{llncs}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{url}
+
+\begin{document}
+\title{Title }
+
+%If you're using runningheads you can add an abreviated title for the running head on odd pages using the following
+%\titlerunning{abreviated title goes here}
+%and an alternative title for the table of contents:
+%\toctitle{table of contents title}
+
+%\subtitle{Subtitle Goes Here}
+
+%For a single author
+%\author{Author Name}
+
+%For multiple authors:
+
+\author{Authors}
+
+
+%If using runnningheads you can abbreviate the author name on even pages:
+%\authorrunning{abbreviated author name}
+%and you can change the author name in the table of contents
+%\tocauthor{enhanced author name}
+
+%For a single institute
+\institute{Department of Computer Science,
+University of Bologna\\ 
+Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
+\email{emails@cs.unibo.it}
+\and INRIA Sophia Antipolis\\ 2004 route des Lucioles - BP 93, 06902 Sophia Antipolis Cedex, France
+\email{emails@inria.fr}}
+
+% If authors are from different institutes
+%\institute{First Institute Name \email{email address} \and Second Institute Name\thanks{Thank you to...} \email{email address}}
+
+%to remove your email just remove '\email{email address}'
+% you can also remove the thanks footnote by removing '\thanks{Thank you to...}'
+
+
+\maketitle
+
+\begin{abstract}
+abstract here
+\end{abstract}
+
+
+\section{Introduction}
+section \cite{ref}. 
+
+
+\bibliographystyle{plain}
+\bibliography{reference}
+
+
+\end{document} 
