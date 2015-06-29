@@ -91,6 +91,7 @@ let implc = fst (funct_of_ast F.implf)
 let pic = fst (funct_of_ast F.pif)
 let sigmac = fst (funct_of_ast F.sigmaf)
 let eqc = fst (funct_of_ast F.eqf)
+let isc = fst (funct_of_ast F.isf)
 
 
 let m = ref [];;
@@ -921,6 +922,9 @@ let make_runtime : ('a -> 'b -> 'k) * ('k -> 'k) =
     | App(c, g1, [g2]) when c == implc ->
        let clauses = clausify 0 depth [] [] g1 in
        run depth (add_clauses clauses p) g2 gs next alts lvl
+    | App(c, g1, [g2]) when c == isc ->
+       let eq = App(eqc, g1, [g2]) in
+       run depth p eq gs next alts lvl 
     | App(c, Lam f, []) when c == pic ->
        run (depth+1) p f gs next alts lvl
     | App(c, Lam f, []) when c == sigmac ->

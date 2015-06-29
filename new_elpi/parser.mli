@@ -12,6 +12,7 @@ module type ASTFuncT =
     val pif : t
     val sigmaf : t
     val eqf : t
+    val isf : t
     val from_string : string -> t
   end;;
 

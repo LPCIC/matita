@@ -12,6 +12,7 @@ module type ASTFuncT =
     val pif : t
     val sigmaf : t
     val eqf : t
+    val isf : t
     val from_string : string -> t
   end;;
 
@@ -37,6 +38,7 @@ module ASTFuncS : ASTFuncT =
     let pif = from_string "pi"
     let sigmaf = from_string "sigma"
     let eqf = from_string "="
+    let isf = from_string "^is"
 
   end;;
 
@@ -88,6 +90,7 @@ let mkSeq l =
   | hd::tl -> App(Const (ASTFuncS.from_string "::"),[hd;aux tl])
  in
   aux l
+let mkIs x f = App(Const ASTFuncS.isf,[x;f])
 
 exception NotInProlog;;
 
@@ -161,6 +164,7 @@ let tok = lexer
   | '|' -> "PIPE","|"
   | "=>" -> "IMPL", $buf
   | '=' -> "EQUAL","="
+  | "^is" -> "IS","^is"
   | '<' -> "LT","<"
   | '>' -> "GT",">"
   | '$' 'a'-'z' ident -> "BUILTIN",$buf
@@ -304,7 +308,7 @@ let check_clause x = ()
 let check_goal x = ()*)
 
 let atom_levels =
-  ["pi";"disjunction";"conjunction";"conjunction2";"implication";"equality";"term";"app";"simple";"list"]
+  ["pi";"disjunction";"conjunction";"conjunction2";"implication";"equality";"is";"term";"app";"simple";"list"]
 
 let () =
   Grammar.extend [ Grammar.Entry.obj atom, None,
@@ -418,6 +422,9 @@ EXTEND
   atom : LEVEL "equality"
      [[ a = atom; EQUAL; b = atom LEVEL "term" ->
           mkEq a b ]];
+  atom : LEVEL "is"
+     [[ a = atom; IS; b = atom LEVEL "term" ->
+          mkIs a b ]];
   atom : LEVEL "term"
      [[ l = LIST1 atom LEVEL "app" SEP CONS ->
           if List.length l = 1 then List.hd l
