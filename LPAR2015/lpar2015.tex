@@ -9,6 +9,7 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{url}
+\usepackage{multirow}
 
 \begin{document}
 \title{Title }
@@ -58,9 +59,36 @@ abstract here
 \section{Introduction}
 section \cite{ref}. 
 
+%  \begin{tabular}{ | l | l | l | p{5cm} |}
+
+
+
+
+\begin{center}
+
+ \begin{table}
+  \begin{tabular}{|p{1.1cm}||p{1.1cm}|p{1.1cm}|p{1.1cm}||p{1.1cm}|p{1.1cm}|p{1.1cm}||p{1.1cm}|p{1.1cm}|p{1.1cm}|}
+    \hline
+      \multicolumn{1}{|c||}{Test} &
+      \multicolumn{3}{|c||}{Elpi} &
+      \multicolumn{3}{|c||}{Teyjus} &
+      \multicolumn{3}{|c|}{Ratio(Elpi/Teyjus)} \\
+    \hline
+      & memory & clock time & user time & memory & clock time & user time & memory & clock time & user time \\
+    \hline
+    XXX & XXX & ZZZ & AAA & BBB & CCC & DDD & CCC & EEE & FFF \\
+    \hline
+    XXX & XXX & ZZZ & AAA & BBB & CCC & DDD & CCC & EEE & FFF \\
+    \hline
+    XXX & XXX & ZZZ & AAA & BBB & CCC & DDD & CCC & EEE & FFF \\
+    \hline
+  \end{tabular}
+ \end{table}
+
+ \end{center}
+
 
 \bibliographystyle{plain}
 \bibliography{reference}
-
 
 \end{document} 
