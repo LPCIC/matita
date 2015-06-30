@@ -297,6 +297,13 @@ remains in the fragment during computation, or they can be slightly modified
 to achieve that property.
 
 \section{\elpi: an Embedded \lp{} Interpreter.}\label{sec:elpi}
+The current version of \elpi, together with the benchmarks presented in
+the next section, can be downloaded at \CSC{\url{http://xxxxx}}. The intepreter
+is entirely written in OCaml and it is \CSC{XXX} lines long. It augments the language presented in the paper with Prolog-style cuts and a few custom predicates for printing. The name is due to the fact that we eventually plan to augment the language with constraints and then embed it in the implementation of interactive theorem provers like Coq, that are often written in OCaml.
+
+We carefully wrote the code so that unrechable terms in \lp{} are encoded by unreachable terms in OCaml. Therefore we inherit garbage collection from the OCaml runtime. The algebraic datatype used to encode terms has different constructors for occurrences of terms in the \frag, and for occurrences outside the fragment. In particular an occurrence $X^j x_j \ldots x_{j+k-1}$ is simply represented as a triple $\langle r,j,k\rangle$ where $r$ is a reference to the term
+$X$ is instantiated to, or to a dummy term if $X$ is still unbound. Finally, we carefully cherry picked some design decisions from the WAM, implementing our own variations in several places. The variations have been made necessary to decrease the pressure on the garbage collector of OCaml, that is responsible for a significant percentage of the running time. For example, the heap and the stack are not organized as large arrays of mostly unused cells because otherwise the garbage collector needs to traverse the arrays at every minor and major collection. Similarly, we employ a mix of mutable and persistent data structures, avoiding mutable structures for data that is likely to survive, in order to avoid the penalty of the write barrier on data in the old generation~\cite{???}.
+Further details will be reported in a future work due to lack of space.
 
 \section{Benchmarks.}\label{sec:benchmarks}
 
