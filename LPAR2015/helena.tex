@@ -12,6 +12,7 @@ some former typed $\lambda$-calculi including
 $Aut-QE$, the Automath dialect in which the ``Grundlagen'' was
 originally written, and Pure Type Systems like $\lambda C$.
 
+%FG: comment this paragraph in case of need
 Current verification algorithms for typed systems follow
 a well-established pattern prescribing a reduction
 machine to compute weak head normal forms, a comparator to assert
@@ -27,7 +28,8 @@ asserting that this term has a specified type, whereas
 validating a term means asserting that this term has 
 some unspecified type.
 
-The validator for $\lambda\delta$ has been implemented in Caml,
+A validator for $\lambda\delta$, named Helena,
+has been implemented in Caml,
 and our \lp{} implementation follows it closely.
 Nevertheless, the \lp{} code is much simpler that the
 corresponding Caml code, and consists of just 52 clauses.
@@ -39,13 +41,15 @@ Overall, the tree representation of these terms consists of
 754579 nodes.
 Due to this huge amount of data, the validation with Teyjus is work in
 progress.
-On the other hand, we can present the translated ``Grundlagen'' to Coq.
+On the other hand, we can present the translated ``Grundlagen'' to Coq
+\cite{lambdadeltaJ3a}.
+
 \begin{center}
 \begin{tabular}{|l|c|c|c|}
 \hline
 \multicolumn{4}{|c|}{User time range (s) for 31 runs}\\
 \hline
-Execution   & Caml                & \elpi               & Coq                 \\
+Execution   & Helena              & \elpi               & Coq                 \\
 \hline
 compiled    & from 01.02 to 01.05 & not applicable      & from 24.26 to 24.43 \\
 \hline
