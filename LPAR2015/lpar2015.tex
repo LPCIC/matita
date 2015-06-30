@@ -67,8 +67,8 @@ the code compiled by Teyjus, that is believed to be the best compiler
 available for \lp. The key insight is the identification of a fragment of
 the language, that we call \frag, that occurs quite naturally in \lp{}
 programs and that admits constant time reduction and unification rules.
-The implementation exploits De Brujin levels and no explicit substitutions,
-whereas Teyjus is based on De Brujin indexes and explicit subtitutions (the
+The implementation exploits De Bruijn levels and no explicit substitutions,
+whereas Teyjus is based on De Bruijn indexes and explicit substitutions (the
 suspension calculus).
 \end{abstract}
 
@@ -232,7 +232,7 @@ $\forall X.P$ and $\exists X.Q$ bind $X$ respectively in $P$ and $Q$.
 Formulas are identified up to $\alpha$-equality as usual.
 
 \paragraph{Definition and expressivity of the \frag}
-The De Brujin level of a name $x$ in an expression is the number of binders to be crossed when traversing the expression from the root towards the leaves before finding the binder for $x$~\cite{debruijnlevel}. For example, in the following expression every variable $x_i$ has level $i$: $\forall x_0.\exists X^1.\lambda x_1.\lambda x_2. \exists X^3. p~(X^1~x^1) X^3$. Every expression can be
+The De Bruijn level of a name $x$ in an expression is the number of binders to be crossed when traversing the expression from the root towards the leaves before finding the binder for $x$~\cite{debruijnlevel}. For example, in the following expression every variable $x_i$ has level $i$: $\forall x_0.\exists X^1.\lambda x_1.\lambda x_2. \exists X^3. p~(X^1~x^1) X^3$. Every expression can be
 $\alpha$-converted so that every name is renamed to $x_i$ where $i$ is its level. In the rest of the discussion we assume every term to be renamed in this way. Similarly, we can rename every variable $X$ to $X^j$ where $j$ is the smallest number such that $X^j$ has visibility of all names smaller than $j$. In the example above, $X^1$ has visibility only of $x^0$, and $X^3$ has visibility of $\{x^0,x^1,x^2\}$.
 
 An expression is in the \frag{} iff every occurrence of an existentially quantified $X^j$ occurs applied to $x_j \ldots x_{j+k-1}$ for $k >= 0$.
@@ -268,12 +268,12 @@ problem of the kind $X^{j+k} \equiv \mathcal{E}$, that is immediately solved
 by instantiating $X^{j+k}$ with $\mathcal{E}$ if the free names of $E$ are
 known to be a subset of $\{x_0,\ldots,x_{j+k-1}\}$.
 
-Finally, another benefit of working with De Brujin levels is that the
+Finally, another benefit of working with De Bruijn levels is that the
 $\forall$-introduction rule can also be implemented in constant time as well
 because there is no need to replace the bound variable with a fresh name.
 The price to pay is an additional complexity in the backchain rule: when
 a clause is selected, the clause needs to be $\alpha$-converted --- lifted
-in De Brujin indexes/levels terminology --- to move it in the current scope.
+in De Bruijn indexes/levels terminology --- to move it in the current scope.
 For example, if the query is \verb+ pi x_0\ r x_0+ and \verb+r X :- pi x_0\ pi x_1\ p x_0 x_1 X+ is a clause, after two inferences the new query becomes
 \verb+pi x_1\ pi x_2\ p x_1 x_2 x_0+ because the introduction rule for
 \verb+pi+ has already fixed the name \verb+x_0+.
