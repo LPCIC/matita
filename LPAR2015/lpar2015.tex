@@ -13,7 +13,6 @@
 \usepackage{multirow}
 \usepackage{color}
 
-
 \begin{document}
 \title{A Fast Intepreter for \lp}
 
@@ -54,7 +53,7 @@ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
 %to remove your email just remove '\email{email address}'
 % you can also remove the thanks footnote by removing '\thanks{Thank you to...}'
 
-\newcommand{\frag}{Reduction Free Fragment}
+\newcommand{\frag}{Reduction-Free Fragment}
 \newcommand{\lp}{$\lambda$Prolog}
 \newcommand{\elpi}{ELPI}
 \newcommand{\CSC}[1]{\textcolor{red}{#1}}
@@ -63,7 +62,7 @@ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
 
 \begin{abstract}
 We present a new interpreter for \lp{} that runs consistently faster than
-the code compiled by Teyjus, that is believed to be the best compiler
+the bytecode compiled by Teyjus, that is believed to be the best suite
 available for \lp. The key insight is the identification of a fragment of
 the language, that we call \frag, that occurs quite naturally in \lp{}
 programs and that admits constant time reduction and unification rules.
@@ -71,7 +70,6 @@ The implementation exploits De Bruijn levels and no explicit substitutions,
 whereas Teyjus is based on De Bruijn indexes and explicit substitutions (the
 suspension calculus).
 \end{abstract}
-
 
 \section{Introduction and State of the Art}
 \lp{} is a logic programming language based on an intuitionistic fragment
@@ -306,6 +304,8 @@ $X$ is instantiated to, or to a dummy term if $X$ is still unbound. Finally, we 
 Further details will be reported in a future work due to lack of space.
 
 \section{Benchmarks.}\label{sec:benchmarks}
+
+\input{helena}
 
 %  \begin{tabular}{ | l | l | l | p{5cm} |}
 

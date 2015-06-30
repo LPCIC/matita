@@ -1,0 +1,40 @@
+\subsection{A Relevant Test Case: the ``Grundlagen'' Verified}
+
+As a relevant test case for ELPI,
+we implemented in the \frag{}
+a validator for the latest version of the formal system $\lambda\delta$
+\cite{lambdadeltaJ3a}, and used this validator to verify the
+``Grundlagen'' \cite{Jut79} translated in a Pure Type System
+\cite{Brn92}.
+
+The formal system $\lambda\delta$ is a framework that can faithfully embed
+some former typed $\lambda$-calculi including 
+$Aut-QE$, the Automath dialect in which the ``Grundlagen'' was
+originally written, and Pure Type Systems like $\lambda C$.
+
+Current verification algorithms for typed systems follow
+a well-established pattern prescribing a reduction
+machine to compute weak head normal forms, a comparator to assert
+converibility by levels, and a checker responable for type inference.
+The verification algorithm for $\lambda\delta$ 
+deviates slightly from this pattern in that
+type checking is replaced by validation, and in that
+type inference is delegated to the (extended) reduction machine. 
+The performance benefits of this approach are documented in
+\cite{lambdadeltaJ3a}.
+We whish to recall that type checking a term means 
+asserting that this term has a specified type, whereas
+validating a term means asserting that this term has 
+some unspecified type.
+
+The validator for $\lambda\delta$ has been implemented in Caml,
+and our \lp{} implementation follows it closely.
+Nevertheless, the \lp{} code is much simpler that the
+corresponding Caml code, and consists of just 52 clauses.
+
+The translated ``Grundlagen'' is a theory comprising 
+32 declarations and 6879 definitions, for a total of 6911 items.
+Each item is a term to be verified.
+
+Alltogether, the tree representation of these terms consists of
+754579 nodes.
