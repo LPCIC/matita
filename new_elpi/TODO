@@ -8,6 +8,8 @@ Other:
    a) unif outside the fragment
    b) avoid the creation of Explicit Substitutions ??
    c) avoid failure of the "is" predicate?
+2. The brackets it Teyjus are needed for the right precedence,
+   for example look at reduce.mod.
 
 Benchmarks:
 
