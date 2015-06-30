@@ -37,5 +37,12 @@ type ten2two e -> mylist e -> o.
 type ten2two_aux e -> mylist e -> o.
 type two2ten mylist e -> e -> o.
 type main o.
+type once o.
+type iter0 e -> o -> o.
+type plus0 e -> e -> e -> o.
+type mult0 e -> e -> e -> o.
+type exp0 e -> e -> e -> o.
+
+
 
 
