@@ -50,3 +50,4 @@ type plus0 i -> i -> i -> o.
 type mult0 i -> i -> i -> o.
 type exp0 i -> i -> i -> o.
 type zero i.
+type s i -> i.
