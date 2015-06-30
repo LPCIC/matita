@@ -3,7 +3,25 @@
 
 module zebra.
 
+iter0 zero X.
+iter0 (s N) X :- X, iter0 N X.
+
+plus0 zero X X.
+plus0 (s X) Y (s S) :- plus0 X Y S.
+
+mult0 zero X zero.
+mult0 (s X) Y Z :- mult0 X Y K, plus0 Y K Z.
+
+exp0 zero X (s zero).
+exp0 (s X) Y Z :- exp0 X Y K, mult0 Y K Z.
+
 main :-
+ TEN = s (s (s (s (s (s (s (s (s (s zero))))))))),
+ mult0 TEN TEN HUNDR,
+ iter0 HUNDR once.
+
+
+once :-
 	houses Houses,
 	member (house red english Dummy1 Dummy2 Dummy3) Houses,
 	member (house Dummy4 spanish dog Dummy5 Dummy6) Houses,

@@ -44,3 +44,9 @@ type next_to i -> i -> mylist i -> o.
 type member i -> mylist i -> o.
 type print_houses mylist i -> o.
 type main o.
+type once o.
+type iter0 i -> o -> o.
+type plus0 i -> i -> i -> o.
+type mult0 i -> i -> i -> o.
+type exp0 i -> i -> i -> o.
+type zero i.
