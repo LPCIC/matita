@@ -1,6 +1,6 @@
 \subsection{A Relevant Test Case: the ``Grundlagen'' Verified}
 
-As a relevant test case for ELPI,
+As a relevant test case for \elpi,
 we implemented in the \frag{}
 a validator for the latest version of the formal system $\lambda\delta$
 \cite{lambdadeltaJ3a}, and used this validator to verify the
@@ -35,6 +35,21 @@ corresponding Caml code, and consists of just 52 clauses.
 The translated ``Grundlagen'' is a theory comprising 
 32 declarations and 6879 definitions, for a total of 6911 items.
 Each item is a term to be verified.
-
-Alltogether, the tree representation of these terms consists of
+Overall, the tree representation of these terms consists of
 754579 nodes.
+Due to this huge amount of data, the validation with Teyjus is work in
+progress.
+On the other hand, we can present the translated ``Grundlagen'' to Coq.
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\multicolumn{4}{|c|}{User time range (s) for 31 runs}\\
+\hline
+Execution   & Caml                & \elpi               & Coq                 \\
+\hline
+compiled    & from 01.02 to 01.05 & not applicable      & from 24.26 to 24.43 \\
+\hline
+interpreted & \FG{TO BE MEASURED} & from 27.52 to 27.82 & from 94.18 to 95.78 \\
+\hline
+\end{tabular}
+\end{center}
