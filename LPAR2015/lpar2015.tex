@@ -15,7 +15,7 @@
 
 
 \begin{document}
-\title{Title }
+\title{A Fast Intepreter for \lp}
 
 %If you're using runningheads you can add an abreviated title for the running head on odd pages using the following
 %\titlerunning{abreviated title goes here}
@@ -29,7 +29,10 @@
 
 %For multiple authors:
 
-\author{Authors}
+\author{Cvetan Dunchev$^1$ \and
+        Ferruccio Guidi$^1$ \and
+        Claudio Sacerdoti Coen$^1$ \and
+        Enrico Tassi$^2$}
 
 
 %If using runnningheads you can abbreviate the author name on even pages:
@@ -41,9 +44,9 @@
 \institute{Department of Computer Science,
 University of Bologna\\ 
 Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
-\email{emails@cs.unibo.it}
+\email{name.surname@unibo.it}
 \and INRIA Sophia Antipolis\\ 2004 route des Lucioles - BP 93, 06902 Sophia Antipolis Cedex, France
-\email{emails@inria.fr}}
+\email{name.surname@inria.fr}}
 
 % If authors are from different institutes
 %\institute{First Institute Name \email{email address} \and Second Institute Name\thanks{Thank you to...} \email{email address}}
@@ -59,7 +62,14 @@ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
 \maketitle
 
 \begin{abstract}
-abstract here
+We present a new interpreter for \lp{} that runs consistently faster than
+the code compiled by Teyjus, that is believed to be the best compiler
+available for \lp. The key insight is the identification of a fragment of
+the language, that we call \frag, that occurs quite naturally in \lp{}
+programs and that admits constant time reduction and unification rules.
+The implementation exploits De Brujin levels and no explicit substitutions,
+whereas Teyjus is based on De Brujin indexes and explicit subtitutions (the
+suspension calculus).
 \end{abstract}
 
 
@@ -285,6 +295,8 @@ computation rules, and terms outside the fragment. Our limited experience so
 far, however, is that several programs initially written in the fragment
 remains in the fragment during computation, or they can be slightly modified
 to achieve that property.
+
+\section{\elpi: an Embedded \lp{} Interpreter.}\label{sec:elpi}
 
 \section{Benchmarks.}\label{sec:benchmarks}
 
