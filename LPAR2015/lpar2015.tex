@@ -7,6 +7,7 @@
 %Use this line instead if you want to use running heads (i.e. headers on each page):
 %\documentclass[runningheads]{llncs}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{url}
 \usepackage{multirow}
@@ -52,6 +53,7 @@ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
 
 \newcommand{\frag}{Reduction Free Fragment}
 \newcommand{\lp}{$\lambda$Prolog}
+\newcommand{\elpi}{ELPI}
 \newcommand{\CSC}[1]{\textcolor{red}{#1}}
 
 \maketitle
@@ -94,25 +96,112 @@ cbn (app M N) R :-
 \end{minipage}
 \end{tabular}
 \end{center}
-\caption{\label{example1} Examples}
+\caption{\label{example1} Examples 1 (on the left) and 2 (on the right).}
 \end{table}
-In Figure~\ref{example1} we show a type-checker and a weak CBN evaluator for the
+In Table~\ref{example1} we show a type-checker and a weak CBN evaluator for the
 $\lambda$-calculus. The $\lambda$-term $(\lambda x.xx)$ is encoded in
 $\lambda$-tree syntax as \verb+(lam (x\ app x x))+ where \verb+x\F+ is
 the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+, and
-\verb+lam+ is the constructor for object-level abstraction, that takes in
-input a function of type $\mathcal{T} \to \mathcal{T}$ and returns a term
-of type $\mathcal{T}$, with $\mathcal{T}$ the type of representations of
-$\lambda$-terms. \verb+app+ takes two terms of type $\mathcal{T}$ and builds
-their object-level application, again of type $\mathcal{T}$.
+\verb+lam+ is the constructor for object-level abstraction, that builds
+a term of type $\mathcal{T}$ from a function of type
+$\mathcal{T} \to \mathcal{T}$, with $\mathcal{T}$ the type of representations
+of $\lambda$-terms. \verb+app+ takes two terms of type $\mathcal{T}$ and builds
+their object-level application of type $\mathcal{T}$.
 
-The first half of the example shows a typical pattern in \lp: in order to analyze a term with binders, one needs to do the recursion under the binder. This is achieve exploiting the forall quantifier \verb+pi x\G+ together with logical
-implication \verb+F => G+. With the forall quantifier we declare a new local constant \verb+x+, meant to be fresh, i.e. different from any other name bound in \verb+G+ or in the current program. Logical implication is used to temporarily augment the program with the new formula \verb+F+ --- to be understood as a new clause --- that is retracted as soon as the premise goes out of scope. Denotationally, these are just the standard rules for introduction of implication and the universal quantifier. Looking at the example, the functional term \verb+F+ is applied to \verb+x+, replacing the variable bound in \verb+F+ with the fresh name \verb+x+: \verb+F x+ is therefore the body of our object-level $\lambda$-abstraction after $\alpha$-conversion to \verb+x+ of the bound name. The implication is used to assume \verb+A+ to be the type of \verb+x+, in order to prove that the body of the abstraction has type \verb+B+ and therefore the whole abstraction has type \verb+impl A B+ (i.e. $A \to B$ in standard notation). Note that, unlike in the standard presentation of the typing rules, we do not need to manipulate an explicit context $\Gamma$ to type the free variables. Instead the assumptions of the form \verb+of x A+ are just added to the program clauses, and \lp{} takes care of dropping them from the context when \verb+x+ goes out of scope.
+The first half of the example shows a typical pattern in \lp: in order to analyze a term with binders, one needs to do the recursion under the binder. This is achieved exploiting the forall quantifier \verb+pi x\G+ together with logical
+implication \verb+F => G+. Operationally: the forall quantifier declares a new local constant \verb+x+, meant to be fresh, i.e. different from any other name bound in \verb+G+ or in the current program; logical implication temporarily augments the program with the new formula \verb+F+ --- to be understood as a new clause --- that is retracted as soon as the premise goes out of scope. Denotationally, these are just the standard rules for introduction of implication and the universal quantifier.
 
-In this first example, the meta-level $\beta$-reduction is only employed in \verb+F x+ to match the body of a $\lambda$-abstraction after $\alpha$-converting the bound variable to a fresh one. The second example shows a radically different pattern: in order to implement object-level substituion --- and thus $\beta$-reduction--- we use the meta-level $\beta$-reduction. For example, if
+Looking at the example, the functional term \verb+F+ is applied to \verb+x+, replacing the variable bound in \verb+F+ with the fresh name \verb+x+: \verb+F x+ is therefore the body of our object-level $\lambda$-abstraction after $\alpha$-conversion to \verb+x+ of the bound name. The implication is used to assume \verb+A+ to be the type of \verb+x+, in order to prove that the body of the abstraction has type \verb+B+ and therefore the whole abstraction has type \verb+impl A B+ (i.e. $A \to B$ in standard notation). Note that, unlike in the standard presentation of the typing rules, we do not need to manipulate an explicit context $\Gamma$ to type the free variables. Instead the assumptions of the form \verb+of x A+ are just added to the program clauses, and \lp{} takes care of dropping them from the context when \verb+x+ goes out of scope.
+
+In this first example, the meta-level $\beta$-reduction is only employed in \verb+F x+ to match the body of a $\lambda$-abstraction after $\alpha$-converting the bound variable to a fresh one. In particular, $\beta$-reduction only replaces a name with another name.
+The second example shows a radically different pattern: in order to implement object-level substituion --- and thus object-level $\beta$-reduction--- we use the meta-level $\beta$-reduction. For example, if
 \verb+F+ is \verb+x\ app x x+, then \verb+F N+ reduces to \verb+app N N+.
+Note that in this case $\beta$-reduction is fully general, because it replaces
+a name with a term.
 
-\section{The~\frag.}
+The main issue with variables of higher type applied to generic terms is
+that they trigger the flexible-flexible and flexible-rigid cases of
+higher order unification: for example \verb+F t = pair t t+ has no most general
+unifier, and it admits either one or four solutions. While there are implementations~\cite{isabelle?} of \lp{} that enumerate all solutions according to Huet's algorithm~\cite{???}, Teyjus 2.0 behaves differently: all flexible-flexible and flexible-rigid unification problems outside the pattern fragment are postponed until the variable is instantiated. If the computation ends with postponed problems, those are reported to the users as disagreement pairs.
+
+\begin{table}
+\begin{center}
+\hspace{-1.5cm}
+\begin{tabular}{c@{~~}|@{~~}c}
+\begin{minipage}{5.0cm}
+\begin{verbatim}
+cbn (lam F) (lam F).
+cbn (app (lam F) N) M :-
+   subst F N B, cbn B M.
+cbn (app M N) R :-
+   cbn M MM, cbn (app MM N) R.
+
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{5.0cm}
+\begin{verbatim}
+subst F N B :-
+   pi x\ copy x N => copy (F x) B.
+copy (lam F1) (lam F2) :-
+   pi x\ copy x x => copy (F1 x) (F2 x).
+copy (app M1 N1) (app M2 N2) :-
+   copy M1 M2, copy N1 N2.
+\end{verbatim}
+\end{minipage}
+\end{tabular}
+\end{center}
+\caption{\label{example3} Example 3: Weak CBN implemented in the pattern fragment.}
+\end{table}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{c@{~~}|@{~~}c}
+\begin{minipage}{5.0cm}
+\begin{verbatim}
+forall P [].
+forall P [X|XS] :-
+   P X, forall P XS.
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{5.0cm}
+\begin{verbatim}
+\end{verbatim}
+\end{minipage}
+\end{tabular}
+\end{center}
+\caption{\label{example4} Example 4: an higher order predicate whose definition is not in the pattern fragment.}
+\end{table}
+
+The pattern fragment, discovered by Dale Miller in~\cite{???}, is a well-behaved fragment of higher-order unification that is stable under \lp{} resolution. I.e. if the syntax of the program is in the fragment, all unification problems will only involve terms that are still in the fragment. Moreover, all unification problems in the pattern fragment admit a most general unifier, even in the flexible-flexible and flexible-rigid case. The fragment is easily defined as follows: a variable \verb+X+ can only be applied to a list of distinct names, and only if those names are not in the scope of \verb+X+.
+Example 1 is written in the pattern fragment: \verb+F+ is applied to \verb+x+,
+and \verb+F+ is universally quantified before \verb+x+, that therefore is not
+in the scope of \verb+F+. Example 2, instead, is not in the fragment because
+of \verb+F N+ where \verb+N+ is not a name. However, at the expense of some
+verbosity, it is possible to rewrite Example 2 to force it in the pattern
+fragment (see Table~\ref{example3}). The definition of higher order predicates
+like in Table~\ref{example4}, is, however, typically outside the pattern
+fragment.
+
+One important property of the pattern fragment is that $\beta$-reduction can
+only substitute names with other names. This property, however, is not
+easily exploitable and an implementation still needs to traverse the body
+of the abstraction to do the replacing. If we look at Example 1, we see that
+in order to type-check a $\lambda$-abstraction the operational semantics
+requires to first traverse all the body just to replace a bound name with a
+fresh one. This is a major source of inefficiency that is hardly justified.
+To cope with it, Teyjus 2.0 invented the \emph{suspension calculus}~\cite{susp1,susp2}, a form of explicit substitution calculus that propagates the substitution lazily (and that works also outside the pattern fragment). Some benchmarks~\cite{susp3} concluded that adopting the suspension calculus provides a significant speedup over a naive implementation of susbtitution. Nevertheless, programs compiled with Teyjus are quite slow and, at least in cases like Example~1, the whole idea of substituting bound names with fresh names, in the spirit of the locally nameless approach~\cite{???}, seems a waste of time.
+
+In~\ref{sec:fragment} we will identify a sub-fragment of the pattern fragment
+that we call~\frag. In the remaining sections we will present an interpreter
+for \lp, written in OCaml and called \elpi{} (Embedded \lp{} Interpreter), that exploits the \frag, and we will compare it to Teyjus on a few benchmarks.
+\elpi{} is consistently faster than Teyjus on every test, sometimes up to
+\CSC{XXXX} times.
+
+\section{The~\frag.}\label{sec:fragment}
+
+\section{Benchmarks.}\label{sec:benchmarks}
 
 %  \begin{tabular}{ | l | l | l | p{5cm} |}
 
