@@ -10,6 +10,8 @@
 \usepackage{graphicx}
 \usepackage{url}
 \usepackage{multirow}
+\usepackage{color}
+
 
 \begin{document}
 \title{Title }
@@ -48,6 +50,9 @@ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
 %to remove your email just remove '\email{email address}'
 % you can also remove the thanks footnote by removing '\thanks{Thank you to...}'
 
+\newcommand{\frag}{Reduction Free Fragment}
+\newcommand{\lp}{$\lambda$Prolog}
+\newcommand{\CSC}[1]{\textcolor{red}{#1}}
 
 \maketitle
 
@@ -56,8 +61,58 @@ abstract here
 \end{abstract}
 
 
-\section{Introduction}
-section \cite{ref}. 
+\section{Introduction and State of the Art}
+\lp{} is a logic programming language based on an intuitionistic fragment
+of Church's Simple Theory of Types. An extensive introduction to the language
+with examples can be found in~\cite{dalebook}. Teyjus 2.0~\cite{teyjus} is a compiler for \lp{} implemented by the research team of Gopalan Nadathur. It is considered to be the fastest available implementation of the language. Previous slower implementations are described in~\cite{}. \CSC{OTHER IMPLEMENTATIONS IN ISABELLE ETC. MISSING}
+
+The main difference with respect to Prolog is that \lp{} manipulates $\lambda$-tree expressions, i.e. syntax containing binders. Therefore the natural application of \lp{} is metaprogramming (see~\cite{thefrenchguy} for an interesting discussion), including: automatic generation of programs from specifications; animation of operational semantics; implementation of type checking algorithms; program transformations. Via the Curry-Howard isomorphism~\cite{curryhoward}, a type-checker is a proof-checker, the main component of an interactive theorem prover (ITP). Indeed the motivation of our interest in the language is that we are looking for the best programming language to implement an ITP, and we currently believe that an extension of \lp{} with Constraints (\`a la CLP) is the best choice.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{c@{~~}|@{~~}c}
+A type checker for the simply typed $\lambda$-calculus. &
+Weak CBN reduction for the $\lambda$-calculus.\\\hline
+\begin{minipage}{5.0cm}
+\begin{verbatim}
+of (app M N) B :-
+   of M (impl A B), of N A.
+of (lam F) (impl A B) :-
+   pi x\ of x A => of (F x) B.
+
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{5.0cm}
+\begin{verbatim}
+cbn (lam F) (lam F).
+cbn (app (lam F) N) M :-
+   cbn (F N) M.
+cbn (app M N) R :-
+   cbn M MM, cbn (app MM N) R.
+\end{verbatim}
+\end{minipage}
+\end{tabular}
+\end{center}
+\caption{\label{example1} Examples}
+\end{table}
+In Figure~\ref{example1} we show a type-checker and a weak CBN evaluator for the
+$\lambda$-calculus. The $\lambda$-term $(\lambda x.xx)$ is encoded in
+$\lambda$-tree syntax as \verb+(lam (x\ app x x))+ where \verb+x\F+ is
+the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+, and
+\verb+lam+ is the constructor for object-level abstraction, that takes in
+input a function of type $\mathcal{T} \to \mathcal{T}$ and returns a term
+of type $\mathcal{T}$, with $\mathcal{T}$ the type of representations of
+$\lambda$-terms. \verb+app+ takes two terms of type $\mathcal{T}$ and builds
+their object-level application, again of type $\mathcal{T}$.
+
+The first half of the example shows a typical pattern in \lp: in order to analyze a term with binders, one needs to do the recursion under the binder. This is achieve exploiting the forall quantifier \verb+pi x\G+ together with logical
+implication \verb+F => G+. With the forall quantifier we declare a new local constant \verb+x+, meant to be fresh, i.e. different from any other name bound in \verb+G+ or in the current program. Logical implication is used to temporarily augment the program with the new formula \verb+F+ --- to be understood as a new clause --- that is retracted as soon as the premise goes out of scope. Denotationally, these are just the standard rules for introduction of implication and the universal quantifier. Looking at the example, the functional term \verb+F+ is applied to \verb+x+, replacing the variable bound in \verb+F+ with the fresh name \verb+x+: \verb+F x+ is therefore the body of our object-level $\lambda$-abstraction after $\alpha$-conversion to \verb+x+ of the bound name. The implication is used to assume \verb+A+ to be the type of \verb+x+, in order to prove that the body of the abstraction has type \verb+B+ and therefore the whole abstraction has type \verb+impl A B+ (i.e. $A \to B$ in standard notation). Note that, unlike in the standard presentation of the typing rules, we do not need to manipulate an explicit context $\Gamma$ to type the free variables. Instead the assumptions of the form \verb+of x A+ are just added to the program clauses, and \lp{} takes care of dropping them from the context when \verb+x+ goes out of scope.
+
+In this first example, the meta-level $\beta$-reduction is only employed in \verb+F x+ to match the body of a $\lambda$-abstraction after $\alpha$-converting the bound variable to a fresh one. The second example shows a radically different pattern: in order to implement object-level substituion --- and thus $\beta$-reduction--- we use the meta-level $\beta$-reduction. For example, if
+\verb+F+ is \verb+x\ app x x+, then \verb+F N+ reduces to \verb+app N N+.
+
+\section{The~\frag.}
 
 %  \begin{tabular}{ | l | l | l | p{5cm} |}
 
