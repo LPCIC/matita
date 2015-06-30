@@ -211,20 +211,32 @@ for \lp, written in OCaml and called \elpi{} (Embedded \lp{} Interpreter), that 
 \begin{center}
 
  \begin{table}
-  \begin{tabular}{|p{1.1cm}||p{1.1cm}|p{1.1cm}|p{1.1cm}||p{1.1cm}|p{1.1cm}|p{1.1cm}||p{1.1cm}|p{1.1cm}|p{1.1cm}|}
+  \begin{tabular}{|p{1.2cm}||p{1.1cm}|p{1.1cm}|p{1.3cm}||p{1.1cm}|p{1.1cm}|p{1.3cm}||p{1.1cm}|p{1.1cm}|p{1.3cm}|}
     \hline
       \multicolumn{1}{|c||}{Test} &
-      \multicolumn{3}{|c||}{Elpi} &
+      \multicolumn{3}{|c||}{ELPI} &
       \multicolumn{3}{|c||}{Teyjus} &
-      \multicolumn{3}{|c|}{Ratio(Elpi/Teyjus)} \\
+      \multicolumn{3}{|c|}{Ratio(Teyjus/ELPI)} \\
     \hline
-      & memory & clock time & user time & memory & clock time & user time & memory & clock time & user time \\
+      & user time & clock time & memory & user time & clock time & memory & user time & clock time & memory \\
     \hline
-    XXX & XXX & ZZZ & AAA & BBB & CCC & DDD & CCC & EEE & FFF \\
+    crypt & 3.46 & 3.46 & 25828k & 6.60 & 6.59 & 18048k & 1.90 & 1.904 & 0.698 \\
     \hline
-    XXX & XXX & ZZZ & AAA & BBB & CCC & DDD & CCC & EEE & FFF \\
+    fast\_mu & 1.42 & 1.42 & 5928k & 2.21 & 2.21 & 8344k & 1.55 & 1.55 & 1.407 \\
     \hline
-    XXX & XXX & ZZZ & AAA & BBB & CCC & DDD & CCC & EEE & FFF \\
+    lambda3 & 1.91 & 1.91 & 5068k & 5.46 & 5.45 & 237860k & 2.858 & 2.853 & 46.93 \\
+    \hline
+    mu & 1.83 & 1.83 & 5716k & 3.62 & 3.62 & 50076k & 1.97 & 1.97 & 8.76 \\
+    \hline
+    queens & 1.37 & 1.33  & 108140k & 2.02 & 2.02 & 69968k & 1.47 & 1.51 & 0.647 \\
+    \hline
+    rev14 & 0.10 & 0.10 & 21552k & 0.17 & 0.16 & 43540k & 1.70 & 1.60 & 2.02 \\
+    \hline
+    zebra & 0.85 & 0.85 & 6944k & 1.89 & 1.89 & 8412k & 2.22 & 2.22 & 1.21 \\
+    \hline
+    ski & ... & ... & ... & ... & ... & ... & ... & ... & ... \\
+    \hline
+    reduce & 0.55 & 0.54 & 30628k & ... & ... & ... & ... & ... & ... \\
     \hline
   \end{tabular}
  \end{table}
@@ -232,6 +244,9 @@ for \lp, written in OCaml and called \elpi{} (Embedded \lp{} Interpreter), that 
  \end{center}
 
 
+
+ 
+ 
 \bibliographystyle{plain}
 \bibliography{reference}
 
