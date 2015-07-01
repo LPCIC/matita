@@ -88,17 +88,9 @@ let _ =
    else if argv.(1) = "-list" then
     (print_implementations (); exit 0)
    else 1,`OneInteractive 1 in
-  let b = Buffer.create 1024 in
-  for i=j to argn - 1 do
-    Printf.eprintf "loading %s\n" argv.(i);
-      let ic = open_in argv.(i) in
-      try
-        while true do Buffer.add_string b (input_line ic^"\n") done;
-        assert false
-      with End_of_file -> ()
-  done;
-  let p = Buffer.contents b in
-  let p = Parser.parse_program p in
+  let filenames = ref [] in
+  for i=j to argn - 1 do filenames := argv.(i)::!filenames done;
+  let p = Parser.parse_program (List.rev !filenames) in
   let g =
     match test with
     | `AllBatch | `OneBatch _ | `PPprologBatch _ -> "main."

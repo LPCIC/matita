@@ -118,14 +118,64 @@ let mkApp =
   | (Custom _ | Const _) as c::l2 -> App(c,l2)
   | _ -> raise NotInProlog
 
-let uvmap = ref [];;
-let reset () = uvmap := []
+(*let uvmap = ref [];;
+let reset () = uvmap := []*)
 
 let fresh_uv_names = ref (-1);;
 
 let mkFreshUVar () = incr fresh_uv_names; Const (ASTFuncS.from_string ("_" ^ string_of_int !fresh_uv_names))
 let mkCon c = Const (ASTFuncS.from_string c)
 let mkCustom c = Custom (ASTFuncS.from_string c)
+
+let parsed = ref [];;
+
+let parse_one e filename =
+ let filename =
+  if Sys.file_exists filename then filename
+  else if Filename.check_suffix filename ".elpi" then
+   (* Backward compatibility with Teyjus *) 
+   Filename.chop_extension filename ^ ".mod"
+  else if Filename.check_suffix filename ".mod" then
+   (* Backward compatibility with Teyjus *) 
+   Filename.chop_extension filename ^ ".elpi"
+  else raise (Failure ("file not found: " ^ filename)) in
+ if List.mem filename !parsed then begin
+  Printf.eprintf "already loaded %s\n%!" filename;
+  []
+ end else begin
+  Printf.eprintf "loading %s\n%!" filename;
+  parsed := filename::!parsed ;
+  let ch = open_in filename in
+  try let res = Grammar.Entry.parse e (Stream.of_channel ch) in close_in ch;res
+  with Ploc.Exc(l,(Token.Error msg | Stream.Error msg)) ->
+    close_in ch;
+    let last = Ploc.last_pos l in
+    let ctx_len = 70 in
+    let ctx =
+      let start = max 0 (last - ctx_len) in
+      let s = String.make 100 '\007' in
+      let ch = open_in filename in
+      (try really_input ch s 0 100 with End_of_file -> ());
+      close_in ch;
+      let last = String.index s '\007' in
+      "…" ^ String.sub s start last ^ "…" in
+    raise (Stream.Error(Printf.sprintf "%s\nnear: %s" msg ctx))
+  | Ploc.Exc(_,e) -> close_in ch; raise e
+ end
+
+let parse e filenames = List.concat (List.map (parse_one e) filenames)
+
+let parse_string e s =
+  try Grammar.Entry.parse e (Stream.of_string s)
+  with Ploc.Exc(l,(Token.Error msg | Stream.Error msg)) ->
+    let last = Ploc.last_pos l in
+    let ctx_len = 70 in
+    let ctx =
+      let start = max 0 (last - ctx_len) in
+      let len = min 100 (min (String.length s - start) last) in
+      "…" ^ String.sub s start len ^ "…" in
+    raise (Stream.Error(Printf.sprintf "%s\nnear: %s" msg ctx))
+  | Ploc.Exc(_,e) -> raise e
 
 let rec number = lexer [ '0'-'9' number | '0'-'9' ]
 let rec ident =
@@ -316,8 +366,7 @@ let () =
 
 EXTEND
   GLOBAL: lp premise atom goal;
-  lp: [ [ cl = LIST0 clause; EOF ->
-       true_clause::eq_clause::or_clauses@List.concat cl ] ];
+  lp: [ [ cl = LIST0 clause; EOF -> List.concat cl ] ];
 (*  name : [ [ c = CONSTANT -> c | u = UVAR -> u | FRESHUV -> "_" ] ];
   label : [ [ COLON;
               n = name;
@@ -343,13 +392,16 @@ EXTEND
          check_clause clause;
          reset (); 
          ([], key_of clause, clause, name), insertion*)
-         reset (); 
+         (*reset ();*)
          [mkClause hd hyp]
      | MODULE; CONSTANT; FULLSTOP -> []
-     | ACCUMULATE; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | ACCUMULATE; filenames=LIST1 CONSTANT SEP COMMA; FULLSTOP ->
+        parse lp (List.map (fun fn -> fn ^ ".mod") filenames)
      | IMPORT; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
-     | ACCUM_SIG; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
-     | USE_SIG; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
+     | ACCUM_SIG; filenames=LIST1 CONSTANT SEP COMMA; FULLSTOP ->
+        parse lp (List.map (fun fn -> fn ^ ".sig") filenames)
+     | USE_SIG; filenames=LIST1 CONSTANT SEP COMMA; FULLSTOP ->
+        parse lp (List.map (fun fn -> fn ^ ".sig") filenames)
      | LOCAL; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
      | LOCAL; LIST1 CONSTANT SEP COMMA; type_; FULLSTOP -> []
      | LOCALKIND; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
@@ -387,7 +439,7 @@ EXTEND
          check_goal g;
          reset ();
          g*)
-         reset (); 
+         (*reset (); *)
          p ]];
   premise : [[ a = atom -> a ]];
   concl : [[ a = atom LEVEL "term" -> a ]];
@@ -481,21 +533,8 @@ EXTEND
     ];*)
 END
 
-let parse e s =
-  reset ();
-  try Grammar.Entry.parse e (Stream.of_string s)
-  with Ploc.Exc(l,(Token.Error msg | Stream.Error msg)) ->
-    let last = Ploc.last_pos l in
-    let ctx_len = 70 in
-    let ctx =
-      let start = max 0 (last - ctx_len) in
-      let len = min 100 (min (String.length s - start) last) in
-      "…" ^ String.sub s start len ^ "…" in
-    raise (Stream.Error(Printf.sprintf "%s\nnear: %s" msg ctx))
-  | Ploc.Exc(_,e) -> raise e
-
-let parse_program (*?(ontop=[])*) s : program =
-  (* let insertions = parse lp s in
+let parse_program (*?(ontop=[])*) ~filenames : program =
+  (* let insertions = parse plp s in
   let insert prog = function
     | item, (`Here | `End) -> prog @ [item]
     | item, `Begin -> item :: prog
@@ -514,7 +553,7 @@ let parse_program (*?(ontop=[])*) s : program =
           raise (Stream.Error ("unable to insert clause "^CN.to_string name));
         newprog in
   List.fold_left insert ontop insertions*)
-  parse lp s
+  true_clause::eq_clause::or_clauses@parse lp filenames
 
-let parse_goal s : goal = parse goal s
+let parse_goal s : goal = parse_string goal s
 (*let parse_data s : data = parse atom s*)
