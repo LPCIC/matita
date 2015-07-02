@@ -1,13 +1,16 @@
 \subsection{A Relevant Test Case: the ``Grundlagen'' Verified}
+\label{grundlagen}
 
 As a relevant test case for \elpi,
 we implemented in the \frag{}
-a validator for the latest version of the formal system $\lambda\delta$
-\cite{lambdadeltaJ3a}, and used this validator to verify the
+a validator for the latest version of the formal system $\lambda\delta$,
+and used this validator to verify the
 ``Grundlagen'' \cite{Jut79} translated in a Pure Type System
 \cite{Brn92}.
 
-The formal system $\lambda\delta$ is a framework that can faithfully embed
+The formal system $\lambda\delta$ \cite{lambdadeltaJ1},
+improved in \cite{lambdadeltaJ2a,lambdadeltaJ3a},
+is a framework that embeds
 some former typed $\lambda$-calculi including 
 $Aut-QE$, the Automath dialect in which the ``Grundlagen'' was
 originally written, and Pure Type Systems like $\lambda C$.
@@ -36,7 +39,22 @@ corresponding Caml code, and consists of just 52 clauses.
 
 The translated ``Grundlagen'' is a theory comprising 
 32 declarations and 6879 definitions, for a total of 6911 items.
-Each item is a term to be verified.
+Each item is a term to be verified, written in the raw syntax of
+$\lambda C$ with constants type casts. The sort $\square$ never
+appears explicitly and the sorts \emph{set} or \emph{prop}
+are used in place of the sort $\ast$.
+
+The term in each definition is a type cast in a 
+context of $\lambda$-abstractions corresponding to the ``block openers''
+of $Aut-QE$.
+On the other hand, the term in each declaration (that is, a type) is
+given in a context of $\Pi$-abstractions.
+
+
+
+
+
+
 Overall, the tree representation of these terms consists of
 754579 nodes.
 Due to this huge amount of data, the validation with Teyjus is work in
