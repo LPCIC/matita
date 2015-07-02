@@ -153,7 +153,7 @@ let parse_one e filename =
     let ctx_len = 70 in
     let ctx =
       let start = max 0 (last - ctx_len) in
-      let s = String.make 100 '\007' in
+      let s = String.make 101 '\007' in
       let ch = open_in filename in
       (try really_input ch s 0 100 with End_of_file -> ());
       close_in ch;
