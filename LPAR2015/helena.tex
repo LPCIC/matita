@@ -19,14 +19,14 @@ originally written, and Pure Type Systems like $\lambda C$.
 Current verification algorithms for typed systems follow
 a well-established pattern prescribing a reduction
 machine to compute weak head normal forms, a comparator to assert
-converibility by levels, and a checker responable for type inference.
+convertibility by levels, and a checker responsible for type inference.
 The verification algorithm for $\lambda\delta$ 
 deviates slightly from this pattern in that
 type checking is replaced by validation, and in that
 type inference is delegated to the (extended) reduction machine. 
 The performance benefits of this approach are documented in
 \cite{lambdadeltaJ3a}.
-We whish to recall that type checking a term means 
+We wish to recall that type checking a term means
 asserting that this term has a specified type, whereas
 validating a term means asserting that this term has 
 some unspecified type.
@@ -50,16 +50,12 @@ of $Aut-QE$.
 On the other hand, the term in each declaration (that is, a type) is
 given in a context of $\Pi$-abstractions.
 
-
-
-
-
-
 Overall, the tree representation of these terms consists of
 754579 nodes.
 Due to this huge amount of data, the validation with Teyjus is work in
 progress.
-On the other hand, we can present the translated ``Grundlagen'' to Coq
+On the other hand, we can present the translated ``Grundlagen'' to Coq.
+
 \cite{lambdadeltaJ3a}.
 
 \begin{center}
@@ -69,9 +65,9 @@ On the other hand, we can present the translated ``Grundlagen'' to Coq
 \hline
 Execution   & Helena              & \elpi               & Coq                 \\
 \hline
-compiled    & from 01.02 to 01.05 & not applicable      & from 24.26 to 24.43 \\
+compiled    & from 01.17 to 01.20 & not applicable      & from 24.26 to 24.43 \\
 \hline
-interpreted & \FG{TO BE MEASURED} & from 27.52 to 27.82 & from 94.18 to 95.78 \\
+interpreted & from 08.74 to 08.78 & from 27.52 to 27.82 & from 94.18 to 95.78 \\
 \hline
 \end{tabular}
 \end{center}
