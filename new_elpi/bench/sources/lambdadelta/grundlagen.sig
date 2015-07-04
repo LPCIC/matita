@@ -3,9 +3,7 @@ sig grundlagen.
 accum_sig helena.
 
 type main o.
-type grundlagen1 g -> o.
-type grundlagen2 g -> o.
-type grundlagen g -> o.
+type grundlagen o.
 
 type k+prop k.
 type k+set k.

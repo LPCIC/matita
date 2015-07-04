@@ -29,6 +29,7 @@ type appx t -> t -> t.
 type cast t -> t -> t.
 
 type gtop g.
+type genv int -> g.
 type gdef+1 int -> t -> (t -> g) -> g.
 type gdec+1 int -> t -> (t -> g) -> g.
 type gdef+2 t -> g -> g.
@@ -55,5 +56,4 @@ type appl+  t -> s -> m -> t -> o.
 type tv+    t -> o.
 type gv+    g -> o.
 type g+line t -> int -> t -> o.
-
-type append g -> g -> g -> o.
+type g+list int -> g -> o.

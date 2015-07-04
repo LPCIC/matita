@@ -223,6 +223,8 @@ tv+ (cast U T) :- tv+ U, tv+ T, conv+ T satom m+1 m+0 satom U.
 
 gv+ gtop.
 
+gv+ (genv C) :- g+list C G, gv+ G.
+
 % global delta updated for version 2
 gv+ (gdef+1 C V G) :- tv+ V,
                       pi x\ tv+ x =>
@@ -237,7 +239,7 @@ gv+ (gdec+1 C W G) :- tv+ W,
 
 % global delta updated for version 2
 gv+ (gdef+2 R G) :- g+line R C V,
-%                   printterm std_out R, print "\n",
+%                    printterm std_out R, print "\n",
                     tv+ V,
 %                    tv+c C V,
                     (tv+ R => (pi m\ pi e\ r+exp R m C e m V) => gv+ G).
@@ -267,15 +269,3 @@ l+pred l+1 l+0.
 l+pred l+2 l+1.
 
 l+pred l+y l+y.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-append gtop X X.
-append (gdef+2 N R) Y (gdef+2 N Z) :-
- append R Y Z.
-append (gdec+2 N R) Y (gdec+2 N Z) :-
- append R Y Z.
-append (gdef+1 A B R) Y (gdef+1 A B Z) :-
- pi x\ append (R x) Y (Z x).
-append (gdec+1 A B R) Y (gdec+1 A B Z) :-
- pi x\ append (R x) Y (Z x).
