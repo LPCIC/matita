@@ -96,7 +96,7 @@ program transformations and implementation of type checking algorithms.
 
 Via the Curry-Howard isomorphism, a type-checker is a proof-checker, the main
 component of an interactive theorem prover (ITP). Indeed the motivation of our
-interest in the language is that we are looking for the best 
+interest in \lp{} is that we are looking for the best 
 language to implement the so called \emph{elaborator} component of an ITP.
 The elaborator is used to type check the terms input by
 the user.  Such data, for conciseness reasons, is typically incomplete and
@@ -473,16 +473,24 @@ Further details will be reported in a future work due to lack of space.
 
 \input{helena}
 
-In the following table we compare the performance of ELPI and Teyjus over several benchmarks 
-devided into 3 groups. 
-The first group contains 4 first-order problems taken from the Aquarius suite. The problems 
-are the well known logic games such as the crtypto-multiplication, $\mu$-puzzle, 
-generalized eight queens problem and the Einstein's zebra puzzle, respectively. The second group contains 
-2 higher-order problems within the fragment. The first one generates a long term with nested 
-lambdas. Teyjus fails to manipulate terms with nesting factor more than $2^{16}$. The second 
-example shows a few applications of the {\bf cbv} function defined above over the 
-Church numerals. Here again Teyjus fails. The third group contains a single higher-order 
-example from the Teyjus suite. It is outside the fragment. 
+In the following table we compare the performance of ELPI and Teyjus over
+several benchmarks divided into 3 groups.  The first group contains 4
+first-order problems taken from the Aquarius suite. The problems are the well
+known logic games such as the crypto-multiplication, $\mu$-puzzle,
+generalized eight queens problem and the Einstein's zebra puzzle,
+respectively.
+
+The second group contains 2 higher-order problems within the fragment. The
+first one builds the $n$-th projection  and type checks it with the \verb+of+
+program in Example 1.  Due to limitations in \tedius{} we reached a max
+value of 321 for $n$ and we iterate the test a thousands of times.
+% fails to manipulate terms with nesting factor more than $2^{16}$. 
+The second
+example shows a few applications of the {\bf cbv} function defined above over
+the Church numerals, the larger one being computed is $5^5$.
+
+The third group contains a single higher-order example from the \tedius{}
+suite.  It is outside the fragment. 
 
 \begin{center}
 
@@ -507,9 +515,9 @@ example from the Teyjus suite. It is outside the fragment.
     zebra &  0.85 & 6,944 &  1.89 & 8,412 &  0.44 & 0.82 \\
     \hline     
     \hline
-    lambda3 &  1.91 & 5,068 &  5.45 & 237,860 &  2.85 & 0.02 \\
+    lambda3 &  1.91 & 5,068 &  5.45 & 237,860 &  0.35 & 0.02 \\
     \hline
-    reduce &  0.54 & 30,628 &   ... & ...   & ... & ... \\
+    reduce &  0.16 & 8,500 &   9.04 & 74,624  & 0.02 & 0.11 \\
     \hline
     \hline
     ski &  1.30 & 21,668 &  2.68 & 8,896  & 0.48 & 2.43 \\

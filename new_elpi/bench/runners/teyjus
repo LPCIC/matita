@@ -1,4 +1,6 @@
 #!/bin/sh
+#set -x
+set -e
 NAME=`basename $1`
 BASE=${TOP}/../teyjus/source
 

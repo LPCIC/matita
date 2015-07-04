@@ -27,5 +27,11 @@ main :-
  cbv (app (app PLUS TWO) ONE) THREE,
  cbv (app (app EXP TWO) THREE) NINE,
  cbv (app (app MULT TWO) TWO) FOUR,
+ cbv (app (app PLUS THREE) TWO) FIVE,
  cbv (app (app PLUS FOUR) TWO) SIX,
- cbv (app (app EXP SIX) SIX) RES.
+ cbv (app (app EXP FIVE) FIVE) RES,
+ cbv (app (app EXP FIVE) FIVE) RES,
+ cbv (app (app EXP FIVE) FIVE) RES,
+ cbv (app (app EXP FIVE) FIVE) RES,
+ cbv (app (app EXP FIVE) FIVE) RES,
+ cbv (app (app EXP FIVE) FIVE) RES.
