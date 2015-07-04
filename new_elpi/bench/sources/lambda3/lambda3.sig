@@ -10,7 +10,7 @@ type termify (mylist a) -> t -> o.
 type impl ty -> ty -> ty.
 type appl t -> t -> t.
 type lam (t -> t) -> t.
-type test t -> ty -> o .
+type test t -> o .
 type x0 a.
 type x1 a.
 type x2 a.
@@ -30,7 +30,7 @@ type plus i -> i -> i -> o.
 type mult i -> i -> i -> o.
 type exp i -> i -> i -> o.
 type iter i -> o -> o.
-type once o.
+type once t -> o.
 type main o. 
 
 kind mylist type -> type.

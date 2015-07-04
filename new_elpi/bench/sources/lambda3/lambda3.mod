@@ -9,7 +9,7 @@ append xnil L L .
 termify xnil (lam x\x).
 termify (xcons X XS) (lam F) :- pi c\ termify XS (F c).
 
-test L Z :- 
+test L :- 
   X1 = (xcons x0 (xcons x1 (xcons x2 (xcons x3 (xcons x4 (xcons x5 (xcons x6 (xcons x7 (xcons x8 (xcons x9 (xcons x10 xnil))))))))))), 
   append X1 X1 X2 ,
   append X2 X2 X3 ,
@@ -29,10 +29,9 @@ test L Z :-
    % append X16 X16 X17 ,
    % append X17 X17 X18 ,
    X = X6 ,
-   termify X L , 
-   of L Z . 
+   termify X L.
 
-once :- test L Z.
+once L :- of L Z.
 
 iter zero X.
 iter (s N) X :- X, iter N X.
@@ -49,4 +48,5 @@ exp (s X) Y Z :- exp X Y K, mult Y K Z.
 main :-
  TEN = s (s (s (s (s (s (s (s (s (s zero))))))))),
  exp (s (s (s zero))) TEN THOUSAND,
- iter THOUSAND once.
+ test L,
+ iter THOUSAND (once L).

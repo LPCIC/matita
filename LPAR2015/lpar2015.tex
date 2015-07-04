@@ -481,9 +481,10 @@ generalized eight queens problem and the Einstein's zebra puzzle,
 respectively.
 
 The second group contains 2 higher-order problems within the fragment. The
-first one builds the $n$-th projection  and type checks it with the \verb+of+
-program in Example 1.  Due to limitations in \tedius{} we reached a max
-value of 321 for $n$ and we iterate the test a thousands of times.
+first one builds the $n$-th projection and type checks it with the \verb+of+
+program in Example 1 a thousands of times.
+Due to limitations in \tedius{} we reached a max
+value of 321 for $n$.
 % fails to manipulate terms with nesting factor more than $2^{16}$. 
 The second
 example shows a few applications of the {\bf cbv} function defined above over
@@ -515,7 +516,7 @@ suite.  It is outside the fragment.
     zebra &  0.85 & 6,944 &  1.89 & 8,412 &  0.44 & 0.82 \\
     \hline     
     \hline
-    lambda3 &  1.91 & 5,068 &  5.45 & 237,860 &  0.35 & 0.02 \\
+    lambda3 &  0.30 & 6,080 &  5.64 & 239,892 &  0.05 & 0.02 \\
     \hline
     reduce &  0.16 & 8,500 &   9.04 & 74,624  & 0.02 & 0.11 \\
     \hline
