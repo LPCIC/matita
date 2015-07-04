@@ -1016,9 +1016,18 @@ g+line l_e_bij_h 6747
        (abst l+2 (sort k+set) nsigma\ (abst l+2 (sort k+set) tau\ (abst l+2 (sort k+set) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appr f (appr tau (appr nsigma l_e_bijective))) bf\ (abst l+2 (appr g (appr upsilon (appr tau l_e_bijective))) bg\ (cast (abst l+1 nsigma x\ upsilon) (abst l+2 nsigma x\ (appr (appr x f) g))))))))))
 .
 
-main :- grundlagen.
 
-grundlagen :- gv+ 
+g+line l_e_bij_t1 6746
+       (abst l+2 (sort k+set) nsigma\ (abst l+2 (sort k+set) tau\ (abst l+2 (sort k+set) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appr f (appr tau (appr nsigma l_e_bijective))) bf\ (abst l+2 (appr g (appr upsilon (appr tau l_e_bijective))) bg\ (cast (appr (appr bg (appr bf (appr g (appr f (appr upsilon (appr tau (appr nsigma l_e_bij_h))))))) (appr upsilon (appr nsigma l_e_injective))) (appr (appr bg (appr (appr g (appr upsilon (appr tau l_e_surjective))) (appr (appr g (appr upsilon (appr tau l_e_injective))) l_ande1))) (appr (appr bf (appr (appr f (appr tau (appr nsigma l_e_surjective))) (appr (appr f (appr tau (appr nsigma l_e_injective))) l_ande1))) (appr g (appr f (appr upsilon (appr tau (appr nsigma l_e_inj_th4)))))))))))))))
+.
+
+g+line l_e_bij_t2 6745
+       (abst l+2 (sort k+set) nsigma\ (abst l+2 (sort k+set) tau\ (abst l+2 (sort k+set) upsilon\ (abst l+2 (abst l+1 nsigma x\ tau) f\ (abst l+2 (abst l+1 tau x\ upsilon) g\ (abst l+2 (appr f (appr tau (appr nsigma l_e_bijective))) bf\ (abst l+2 (appr g (appr upsilon (appr tau l_e_bijective))) bg\ (cast (appr (appr bg (appr bf (appr g (appr f (appr upsilon (appr tau (appr nsigma l_e_bij_h))))))) (appr upsilon (appr nsigma l_e_surjective))) (appr (appr bg (appr (appr g (appr upsilon (appr tau l_e_surjective))) (appr (appr g (appr upsilon (appr tau l_e_injective))) l_ande2))) (appr (appr bf (appr (appr f (appr tau (appr nsigma l_e_surjective))) (appr (appr f (appr tau (appr nsigma l_e_injective))) l_ande2))) (appr g (appr f (appr upsilon (appr tau (appr nsigma l_e_surj_th1)))))))))))))))
+.
+
+main :- grundlagen X, gv+ X.
+
+grundlagen1
 
 (gdef+2 l_imp
 (gdef+2 l_mp
@@ -1274,6 +1283,15 @@ grundlagen :- gv+
 (gdef+2 l_e_surj_th1
 (gdef+2 l_e_bij_h
 gtop)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-
 .
 
+grundlagen2
+(gdef+2 l_e_bij_t1
+(gdef+2 l_e_bij_t2
+gtop))
+.
+
+grundlagen X :-
+ grundlagen1 Y,
+ grundlagen2 Z,
+ append Y Z X.

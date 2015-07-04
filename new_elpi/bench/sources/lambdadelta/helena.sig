@@ -55,3 +55,5 @@ type appl+  t -> s -> m -> t -> o.
 type tv+    t -> o.
 type gv+    g -> o.
 type g+line t -> int -> t -> o.
+
+type append g -> g -> g -> o.
