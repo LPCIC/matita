@@ -1,10 +1,10 @@
 H   = @
 TMP = tmp.txt
 
-TJCC     = $(HOME)/git/lpcic/teyjus/tjcc
-TJLINK   = $(HOME)/git/lpcic/teyjus/tjlink
-TJSIM    = $(HOME)/git/lpcic/teyjus/tjsim -b
-TJDEPEND = $(HOME)/git/lpcic/teyjus/tjdepend
+TJCC     = ../../../../teyjus/tjcc
+TJLINK   = ../../../../teyjus/tjlink
+TJSIM    = ../../../../teyjus/tjsim -b
+TJDEPEND = ../../../../teyjus/tjdepend
 TIME     = `which time` -p -a -f "%U" -o $(TMP)
 ADD      = ./add.opt -a 3
 

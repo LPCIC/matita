@@ -1301,6 +1301,9 @@ g+list 1
 (gdef+2 l_imp_th4
 (gdef+2 l_imp_th5
 (gdef+2 l_imp_th6
+(genv 2))))))))))))))))).
+
+g+list 2
 (gdef+2 l_imp_th7
 (gdef+2 l_cp
 (gdef+2 l_obvious
@@ -1317,6 +1320,9 @@ g+list 1
 (gdef+2 l_ec_th4
 (gdef+2 l_and
 (gdef+2 l_andi
+(genv 3))))))))))))))))).
+
+g+list 3
 (gdef+2 l_ande1
 (gdef+2 l_ande2
 (gdef+2 l_comand
@@ -1333,6 +1339,9 @@ g+list 1
 (gdef+2 l_or_th1
 (gdef+2 l_or_th2
 (gdef+2 l_ore2
+(genv 4))))))))))))))))).
+
+g+list 4
 (gdef+2 l_ore1
 (gdef+2 l_comor
 (gdef+2 l_or_th3
@@ -1349,6 +1358,9 @@ g+list 1
 (gdef+2 l_or_th13
 (gdef+2 l_or_th14
 (gdef+2 l_or_th15
+(genv 5))))))))))))))))).
+
+g+list 5
 (gdef+2 l_or_th16
 (gdef+2 l_or_th17
 (gdef+2 l_orec
@@ -1365,6 +1377,9 @@ g+list 1
 (gdef+2 l_iff
 (gdef+2 l_iffi
 (gdef+2 l_iff_th1
+(genv 6))))))))))))))))).
+
+g+list 6
 (gdef+2 l_iff_th2
 (gdef+2 l_iffe1
 (gdef+2 l_iffe2
@@ -1381,6 +1396,9 @@ g+list 1
 (gdef+2 l_iff_th9
 (gdef+2 l_iff_th10
 (gdef+2 l_iff_th11
+(genv 7))))))))))))))))).
+
+g+list 7
 (gdef+2 l_iff_th12
 (gdef+2 l_iff_th13
 (gdef+2 l_iff_th14
@@ -1397,6 +1415,9 @@ g+list 1
 (gdef+2 l_iff_thorec1
 (gdef+2 l_iff_thorec2
 (gdef+2 l_all
+(genv 8))))))))))))))))).
+
+g+list 8
 (gdef+2 l_alle
 (gdef+2 l_all_th1
 (gdef+2 l_non
@@ -1413,6 +1434,9 @@ g+list 1
 (gdef+2 l_some_th4
 (gdef+2 l_some_th5
 (gdef+2 l_some_t5
+(genv 9))))))))))))))))).
+
+g+list 9
 (gdef+2 l_some_t6
 (gdef+2 l_someapp
 (gdef+2 l_some_th6
@@ -1429,6 +1453,9 @@ g+list 1
 (gdef+2 l_or3i2
 (gdef+2 l_or3i3
 (gdef+2 l_or3_th6
+(genv 10))))))))))))))))).
+
+g+list 10
 (gdef+2 l_or3_th7
 (gdef+2 l_or3_th8
 (gdef+2 l_or3app
@@ -1445,6 +1472,9 @@ g+list 1
 (gdef+2 l_and3_th6
 (gdef+2 l_ec3
 (gdef+2 l_ec3_th1
+(genv 11))))))))))))))))).
+
+g+list 11
 (gdef+2 l_ec3_th2
 (gdef+2 l_ec3_th3
 (gdef+2 l_ec3_th4
@@ -1461,6 +1491,9 @@ g+list 1
 (gdef+2 l_ec3_th8
 (gdef+2 l_ec3_th9
 (gdef+2 l_ec3i1
+(genv 12))))))))))))))))).
+
+g+list 12
 (gdef+2 l_ec3i2
 (gdef+2 l_ec3i3
 (gdef+2 l_ec3_t1
@@ -1477,6 +1510,9 @@ g+list 1
 (gdec+2 l_e_is
 (gdec+2 l_e_refis
 (gdec+2 l_e_isp
+(genv 13))))))))))))))))).
+
+g+list 13
 (gdef+2 l_e_symis
 (gdef+2 l_e_tris
 (gdef+2 l_e_tris1
@@ -1493,6 +1529,9 @@ g+list 1
 (gdef+2 l_e_amone
 (gdef+2 l_e_amonee
 (gdef+2 l_e_one
+(genv 14))))))))))))))))).
+
+g+list 14
 (gdef+2 l_e_onei
 (gdef+2 l_e_onee1
 (gdef+2 l_e_onee2
@@ -1509,6 +1548,9 @@ g+list 1
 (gdef+2 l_e_inj_th1
 (gdef+2 l_e_inj_th2
 (gdef+2 l_e_inj_th3
+(genv 15))))))))))))))))).
+
+g+list 15
 (gdef+2 l_e_soft
 (gdef+2 l_e_inverse
 (gdef+2 l_e_ists1
@@ -1525,6 +1567,9 @@ g+list 1
 (gdef+2 l_e_invf
 (gdef+2 l_e_thinvf1
 (gdef+2 l_e_thinvf2
+(genv 16))))))))))))))))).
+
+g+list 16
 (gdef+2 l_e_inj_h
 (gdef+2 l_e_inj_t4
 (gdef+2 l_e_inj_t5
@@ -1535,16 +1580,13 @@ g+list 1
 (gdef+2 l_e_surj_t3
 (gdef+2 l_e_surj_t4
 (gdef+2 l_e_surj_t5
-(genv 2))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))).
-
-g+list 2
 (gdef+2 l_e_surj_t6
 (gdef+2 l_e_surj_th1
 (gdef+2 l_e_bij_h
 (gdef+2 l_e_bij_t1
 (gdef+2 l_e_bij_t2
 (gdef+2 l_e_bij_th1
-gtop)))))).
+gtop)))))))))))))))).
 
 main :- grundlagen.
 

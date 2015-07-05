@@ -251,6 +251,10 @@ gv+ (gdec+2 R G) :- g+line R C W,
 %                    tv+c C W,
                     (tv+ R => (pi m1\ pi m2\ pi e\ r+exp R m1 C e m2 W :- m+pred m1 m2) => gv+ G).
 
+gv+3 R :- g+line R C T,
+          printterm std_out T, print "\n",
+          tv+ T.
+
 % Additions ------------------------------------------------------------------
 
 % LAYERS FOR PTS, LAMBDA-INFINITY, AUT-68, AUT-QE %%%%%%%%%%%%%%%%%%%%%%%%%%%%

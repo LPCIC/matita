@@ -57,3 +57,4 @@ type tv+    t -> o.
 type gv+    g -> o.
 type g+line t -> int -> t -> o.
 type g+list int -> g -> o.
+type gv+3   t -> o.
