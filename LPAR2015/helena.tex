@@ -35,7 +35,9 @@ A validator for $\lambda\delta$, named Helena,
 has been implemented in Caml,
 and our \lp{} implementation follows it closely.
 Nevertheless, the \lp{} code is much simpler that the
-corresponding Caml code, and consists of just 52 clauses.
+corresponding Caml code (441 lines), and consists of just 52 clauses.
+In particular, the built-in environment of the \lp{} engine is used in place of
+the environments explicitly implemented in Caml. 
 
 The translated ``Grundlagen'' is a theory comprising 
 32 declarations and 6879 definitions, for a total of 6911 items.
@@ -52,18 +54,41 @@ given in a context of $\Pi$-abstractions.
 
 Overall, the tree representation of these terms consists of
 754579 nodes.
-Due to this huge amount of data, the validation with Teyjus is work in
-progress.
-On the other hand, we can present the translated ``Grundlagen'' to Coq.
+This huge amount of data seems to overwhelm the capabilities of Teyjus,
+which is limited by design restrictions.
+Therefore, as of now, we can verify with this system
+just the first 255 items of the ``Grundlagen''.
 
+On the other hand, we can present the full ``Grundlagen'' to Coq
 \cite{lambdadeltaJ3a}.
+
+In the tables below, we compare preprocessing (Pre), and verification
+(Ver) for Helena, \elpi, Teyjus, and Coq.
+Depending on the system,
+verification refers to validation, type checking, and (bytecode) execution,
+while preprocessing accounts for parsing, internalization, compilation,
+linking, and refinement.
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\multicolumn{3}{|c|}{User time range (s) for 31 runs (255 items only)}\\
+\hline
+Task & \elpi               & Teyjus              \\
+\hline
+Pre  & from 00.07 to 00.09 & from 03.24 to 03.31 \\
+\hline
+Ver & from 00.20 to 00.22 & from 02.13 to 02.26 \\
+\hline
+\end{tabular}
+\end{center}
 
 \begin{center}
 \begin{tabular}{|l|c|c|c|}
 \hline
-\multicolumn{4}{|c|}{User time range (s) for 31 runs}\\
+\multicolumn{4}{|c|}{User time range (s) for 31 runs (all items)}\\
 \hline
-Execution   & Helena              & \elpi               & Coq                 \\
+Pre + Ver  & Helena               & \elpi               & Coq                 \\
 \hline
 compiled    & from 01.14 to 01.18 & not applicable      & from 24.26 to 24.43 \\
 \hline
