@@ -31,10 +31,7 @@
 
 %For multiple authors:
 
-\author{Cvetan Dunchev$^1$ \and
-        Ferruccio Guidi$^1$ \and
-        Claudio Sacerdoti Coen$^1$ \and
-        Enrico Tassi$^2$}
+\author{Cvetan~Dunchev,$^1$~Ferruccio~Guidi,$^1$~Claudio~Sacerdoti~Coen$^1$~and~Enrico~Tassi$^2$}
 
 
 %If using runnningheads you can abbreviate the author name on even pages:
@@ -114,12 +111,17 @@ completely in OCaml can be easily embedded in OCaml softwares, like Coq.
 In particular we focus on the insight that makes ELPI fast when dealing with
 binders by identifying a reduction free fragment (RFF) of \lp{} that, if
 implemented correctly, has constant-time unification and reduction operations.
-We analyze the role  of beta reduction in section 2, ho unification in section 3, define the fragment in section 4, asses the result in section 5.
+We analyze the role  of $\beta$-reduction in Section~\ref{sec:beta} and
+higher order unification in Section~\ref{sec:ho}; we discuss bound names
+representations in Section~\ref{sec:dbl}; we define the RFF 
+in Section~\ref{sec:fragment} and we asses the results in
+Section~\ref{sec:benchmarks}.
 
 % We don't mention constraints here, too much vapor ware IMO.
 %\lp{} with Constraints (\`a la CLP) is the best choice.
 
 \section{The two roles of $\beta$-reduction in \lp{}}
+\label{sec:beta}
 
 \begin{example}[b]
 \begin{center}
@@ -201,6 +203,7 @@ This distinction is crucial in the definition of the RFF in
 Section~\ref{sec:fragment}.
 
 \section{Higher Order unification}% and captures}
+\label{sec:ho}
 
 Unification in the presence of binders raises two both theoretical and
 practical concerns. First, the absence of most general unifiers (MGUs) makes
@@ -309,13 +312,15 @@ performs the beta reduction in a lazy way using an explicit substitution calculu
 % fragment.
 
 \section{Bound variables}
+\label{sec:dbl}
 
 The last missing ingredient to define the RFF and explain why it can be
 implemented efficiently is to see how systems manipulating $\lambda$-terms
 accommodate
 $\alpha$-equivalence.  Bound variables are not represented by using
 real names, but canonical ``names'' (or better numbers).  De Bruijn introduced
-two, dual, canonical naming schemas for lambda terms: indexes (DBI) and levels
+two, dual, canonical naming schemas for lambda terms in~\cite{debruijnlevel}:
+indexes (DBI) and levels
 (DBL).  In the former a variable is named $n$ if its binder is found by
 crossing $n$ binders going in the direction of the root.  In the latter a
 variable named $n$ is bound by the $n$-th binder one encounters in the path
