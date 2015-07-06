@@ -1,4 +1,4 @@
-module reduce.
+module reduce_cbv.
 
 copy (app M N) (app M2 N2) :- copy M M2, copy N N2.
 copy (lam F) (lam F2) :- pi x\ copy x x => copy (F x) (F2 x).
