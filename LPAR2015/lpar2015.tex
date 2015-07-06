@@ -15,7 +15,8 @@
 \usepackage{float}
 
 \floatstyle{plain} \newfloat{example}{thp}{lop} \floatname{example}{\textbf{Example}}
-
+\newtheorem{mydef}{Definition}
+\newtheorem{myprop}{Property}
 \begin{document}
 \title{ELPI: A Fast, embeddable, \lp{} interpreter}
 
@@ -362,9 +363,6 @@ are treated exactly as constants, and their name is exactly the level at
 which the occur in the context.  From now on, we subscript bound variables
 with their corresponding name in DBL convention.
 
-I HAVE ENOUGH FOR TODAY
-
-
 %One important property of the pattern fragment is that $\beta$-reduction can
 %only substitute names with other names. This property, however, is not
 %easily exploitable and an implementation still needs to traverse the body
@@ -381,98 +379,232 @@ I HAVE ENOUGH FOR TODAY
 %We anticipate that \elpi{} is consistently faster than \tedius{} on every test, sometimes up to \CSC{XXXX} times.
 
 \section{The~\frag.}\label{sec:fragment}
-The abstract syntax of \lp{} is defined as follow:
+\lp{} is a truly higher order language: even clauses can be
+passed around, unified, etc.  Nevertheless this plays no role here, so
+we exclude from the syntax of terms the one of formulas.
+
 $$\begin{array}{l}
-   Q ::= \forall x.Q ~|~ P \Rightarrow Q ~|~ Q \wedge Q ~|~ T ~|~ \exists X.Q \\
-   P ::= \forall X.P ~|~ Q \Rightarrow P ~|~ P \wedge P ~|~ T\\
-   T ::= c ~|~ x ~|~ X ~|~ \lambda x.A ~|~ T~A\\
-   A ::= Q ~|~ P
+   t ::= x_i ~|~ X^j ~|~ \lambda x_i.t ~|~ t~t
 \end{array}$$
-where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
-higher order, there is no distinction between formulas and terms, and both queries and clauses can be passed as arguments to predicates. Note also that $\forall$ binds local constants in positive position, and existentially quantified variables in negative position, according to the logical equivalence
-$(\forall x.P) \Rightarrow Q \equiv \exists x.(P \Rightarrow Q)$. Disjunction
-is definable, but the derivational semantics is complete only if it is used in
-positive formulas (like for the existential quantifiers). We let $\mathcal{E}$ range over all syntactic categories above, and we call $\mathcal{E}$ an expression.
 
-The concrete syntax differs from the abstract syntax in a few ways: \verb+pi x\+ and \verb+sigma x\+ are used in place of $\forall x.$ and $\exists x.$; $P \Rightarrow Q$ can be written as \verb+P => Q+ or as \verb+Q :- P+; conjunction is written using commas; $\lambda x.$ is written \verb+x\+. A program is just a list of clauses terminated by dots. All free uppercase names in a clause are implicitly universally quantified around the clause. The user writes a query to be resolved against a program. All free uppercase names in the query are also implicitly existentially quantified. The semantics of the pair program/clause is a new query obtained as the implication between the $n$-ary conjunction of all the clauses and the user provided query.
+Since variables follow the DBL representation, we don't have a case
+for constants: when $i < 0$ then $x_i$ represents a global constant,
+like \verb+app+ or \verb+lam+ in Example~\ref{example1}.  Since the
+level of a variable completely identifies it, when we write
+$x_i \ldots x_{i+k}$ we mean $k$ distinct bound (i.e. $i \geq 0$) variables.
+The non-null superscript $j$ annotates unification variables with their
+visibility scope.  A variable $X^j$ has visibility of all names strictly
+smaller than $j$. E.g.  $X^1$ has visibility only of $x^0$, and $X^3$ has
+visibility of $\{x^0,x^1,x^2\}$.  Technically a binder needs no
+name when bound variables are named following a De Bruijn convention.
+Still we write it to ease reading.
 
-$\lambda x.A$ and $\forall x.Q$ bind $x$ respectively in $A$ and $Q$;
-$\forall X.P$ and $\exists X.Q$ bind $X$ respectively in $P$ and $Q$.
-Formulas are identified up to $\alpha$-equality as usual.
+\begin{mydef}[RFF]
+A term is in the Reduction Free Fragment if and only if
+every occurrence of a unification variable $X^j$ occurs applied to
+$x_j \ldots x_{j+k-1}$ for $k >= 0$.
+\end{mydef}
 
-\paragraph{Definition and expressivity of the \frag}
-The De Bruijn level of a name $x$ in an expression is the number of binders to be crossed when traversing the expression from the root towards the leaves before finding the binder for $x$~\cite{debruijnlevel}. For example, in the following expression every variable $x_i$ has level $i$: $\forall x_0.\exists X^1.\lambda x_1.\lambda x_2. \exists X^3. p~(X^1~x^1) X^3$. Every expression can be
-$\alpha$-converted so that every name is renamed to $x_i$ where $i$ is its level. In the rest of the discussion we assume every term to be renamed in this way. Similarly, we can rename every variable $X$ to $X^j$ where $j$ is the smallest number such that $X^j$ has visibility of all names smaller than $j$. In the example above, $X^1$ has visibility only of $x^0$, and $X^3$ has visibility of $\{x^0,x^1,x^2\}$.
+Note that when $k$ is $0$ the variable is not applied.  Another way to
+put it is that a term is in the RFF iff all unification variables see
+a (complete, no hole) prefix of the \lp{} context seen as a ordered list.
+Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and
+$X^2~x_3~x_2$ are not.
 
-An expression is in the \frag{} iff every occurrence of an existentially quantified $X^j$ occurs applied to $x_j \ldots x_{j+k-1}$ for $k >= 0$.
+Observe that the programs in Example~\ref{example1} (when \verb+cbn+ is
+rewritten to be in the pattern fragment as in Section~\ref{sec:ho}) are in
+the RFF.  Also, every Prolog program is in the RFF. As we will see
+in~Section~\ref{sec:benchmarks}, a
+type-checker for a dependently typed language
+and evaluator based on a reduction machine are also naturally in RFF,
+showing that the fragment is already quite expressive.
 
-Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and $X^2~x_3~x_2$ are not.
 
-Observe that Example 1 and 3 in Tables~\ref{example1,example3} are in \frag, and that most occurrences of existentially quantified variables in Example 2 are in \frag{} as well. Every Prolog program is also in \frag. As we will see in~Section~\ref{grundlagen}, a type-checker for a dependently typed language and and evaluator based on a reduction machine are also naturally in \frag, showing that the fragment is already quite expressive.
+% where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
+% higher order, there is no distinction between formulas and terms, and both queries and clauses can be passed as arguments to predicates. Note also that $\forall$ binds local constants in positive position, and existentially quantified variables in negative position, according to the logical equivalence
+% $(\forall x.P) \Rightarrow Q \equiv \exists x.(P \Rightarrow Q)$. Disjunction
+% is definable, but the derivational semantics is complete only if it is used in
+% positive formulas (like for the existential quantifiers). We let $\mathcal{E}$ range over all syntactic categories above, and we call $\mathcal{E}$ an expression.
+% 
+% The concrete syntax differs from the abstract syntax in a few ways: \verb+pi x\+ and \verb+sigma x\+ are used in place of $\forall x.$ and $\exists x.$; $P \Rightarrow Q$ can be written as \verb+P => Q+ or as \verb+Q :- P+; conjunction is written using commas; $\lambda x.$ is written \verb+x\+. A program is just a list of clauses terminated by dots. All free uppercase names in a clause are implicitly universally quantified around the clause. The user writes a query to be resolved against a program. All free uppercase names in the query are also implicitly existentially quantified. The semantics of the pair program/clause is a new query obtained as the implication between the $n$-ary conjunction of all the clauses and the user provided query.
+% 
+% $\lambda x.A$ and $\forall x.Q$ bind $x$ respectively in $A$ and $Q$;
+% $\forall X.P$ and $\exists X.Q$ bind $X$ respectively in $P$ and $Q$.
+% Formulas are identified up to $\alpha$-equality as usual.
+% 
+% \paragraph{Definition and expressivity of the \frag}
+% The De Bruijn level of a name $x$ in an expression is the number of binders to be crossed when traversing the expression from the root towards the leaves before finding the binder for $x$~\cite{debruijnlevel}. For example, in the following expression every variable $x_i$ has level $i$: $\forall x_0.\exists X^1.\lambda x_1.\lambda x_2. \exists X^3. p~(X^1~x^1) X^3$. Every expression can be
+% $\alpha$-converted so that every name is renamed to $x_i$ where $i$ is its level. In the rest of the discussion we assume every term to be renamed in this way. Similarly, we can rename every variable $X$ to $X^j$ where $j$ is the smallest number such that $X^j$ has visibility of all names smaller than $j$. In the example above, $X^1$ has visibility only of $x^0$, and $X^3$ has visibility of $\{x^0,x^1,x^2\}$.
+% 
+% An expression is in the \frag{} iff every occurrence of an existentially quantified $X^j$ occurs applied to $x_j \ldots x_{j+k-1}$ for $k >= 0$.
+% 
+% Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and $X^2~x_3~x_2$ are not.
 
-\paragraph{Computational properties of the \frag}
-First of all, observe that the \frag{} is a sub-fragment of the pattern fragment. Therefore an unification problem $X^j~x_j\ldots x_{j+k-1} \equiv \mathcal{E}$ admits a most general unifier.
+\begin{myprop}[Decidability of HO unification]
+Being the RFF included in the pattern-fragment, higher order unification is
+decidable for the RFF.
+\end{myprop}
+In other words, each problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
+admits a MGU.
 
-The most interesting property of the \frag, which also justify its name, is the following. Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables, i.e. such that for every $X^j$ all names $x_i$ occurring in $X^j \sigma$ are s.t. $i < j$. Let $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.\mathcal{E}$. Then
+The most interesting property of the RFF, which also justify its name, is the
+following one. 
+
+\begin{myprop}[Constant time weak head $\beta$-reduction]
+Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables.  Then the weak head normal form of $(X^j~x_j \ldots x_{j+k-1}) \sigma$
+can be computed in constant time.
+\end{myprop}
+
+A valid substitution assigns to $X^j$ a term $t$ of the right type (as in simply
+type lambda calculus) and that has all free variable visible by $X^j$ (all
+$x_i$ are such that $i < j$).  Let $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$. Then
+
 \begin{equation}\label{deffrag}(X^j~x_j \ldots x_{j+k-1}) \sigma
  = \left\{ \begin{array}{ll}
-\mathcal{E}~x_{j+n+1} \ldots x_{j+k-1} & \mbox{if $n+1 < k$} \\
-\lambda x_{j+k}. \ldots \lambda x_{j+n}.\mathcal{E} & \mbox{otherwise}
+t~x_{j+n+1} \ldots x_{j+k-1} & \mbox{if $n+1 < k$} \\
+\lambda x_{j+k}. \ldots \lambda x_{j+n}.t & \mbox{otherwise}
       \end{array} \right.\end{equation}
 
-In equation~\ref{deffrag}, the equality is syntactical, i.e. no $\alpha$-conversion of $\mathcal{E}$ is required. Therefore the $\beta$-reductions triggered
-by the susbtitution of $X^j$ require constant time and no pass over the term.
-Note that, once all $\beta$-redex that occur syntactically in the term are
-fired at compile time, or if explicitly written $\beta$-redexes are forbidden,
-then every $\beta$-redex in the computation is triggered by the substitution
-of an existentially quantified variable. Therefore, if the program is and
-remains in the \frag, then all $\beta$-reductions can be implemented in
-constant time.
+In equation~\ref{deffrag} the equality is syntactical: no lifting
+of $t$ is required. Therefore the $\beta$-reductions triggered
+by the substitution of $X^j$ require constant time and no pass over the term.
 
-In a similar way, also unification can be implemented very easily observing
-that $X^j~x_j\ldots x_{j+k-1}$ can always be rewritten as
-$X^{j+k}$ instantiating $X^j$ with $\lambda x_j. \ldots \lambda x_{j+k-1}. X^{j+k}$ for a fresh existentially quantified variable $X^{j+k}$. Therefore every
-unification problem in the \frag{} can be reduced in linear time in $k$ to a
-problem of the kind $X^{j+k} \equiv \mathcal{E}$, that is immediately solved
-by instantiating $X^{j+k}$ with $\mathcal{E}$ if the free names of $E$ are
-known to be a subset of $\{x_0,\ldots,x_{j+k-1}\}$.
+\begin{myprop}[Constant time unification]
+A unification problem of the form  $X^j~x_j\ldots x_{j+k-1} \equiv t$
+admits a constant time unification.
+\end{myprop}
 
-Finally, another benefit of working with De Bruijn levels is that the
-$\forall$-introduction rule can also be implemented in constant time as well
-because there is no need to replace the bound variable with a fresh name.
-The price to pay is an additional complexity in the backchain rule: when
-a clause is selected, the clause needs to be $\alpha$-converted --- lifted
-in De Bruijn indexes/levels terminology --- to move it in the current scope.
-For example, if the query is \verb+ pi x_0\ r x_0+ and \verb+r X :- pi x_0\ pi x_1\ p x_0 x_1 X+ is a clause, after two inferences the new query becomes
-\verb+pi x_1\ pi x_2\ p x_1 x_2 x_0+ because the introduction rule for
-\verb+pi+ has already fixed the name \verb+x_0+.
+The unification problem $X^j~x_j\ldots x_{j+k-1} \equiv t$ can always be
+rewritten in $X^j \equiv \lambda x_j. \ldots \lambda x_{j+k-1}. Y^{j+k} \land
+Y^{j+k} \equiv t$.  The former is a trivial assignment that requires no check.
+The latter can be implemented in constant time when no occur-check is needed
+for $X$ and if one caches in the terms the level of the highest free variable.
+Avoiding useless occur-check is a typical optimization of the Warren Abstract
+Machine (WAM), E.g. when $X$ occurs linearly in the head of a clause.
+Caching in the terms the maximum free level is economical in terms of space
+(just one integer) and is something one can also  pre-compute on the input term
+in linear time.  With such maximum level $l$ at hand the problem
+$Y^{j+k} \equiv t$ can be decided in constant time by simply comparing $j+k$
+with $l$.
 
-\paragraph{Instability of the \frag}
-Unlike the pattern fragment, the \frag{} is unstable for computation.
-I.e. there are simple examples where the program and the initial query are
-written in the fragment, but during execution we generate terms outside the
-fragment (but still in the pattern fragment). This is a consequence of the
-need for lifting clauses during backchaining.
-Consider example~5 in Table~\ref{example4}.
-After two inference steps the term \verb+(x1\ X^0 x0 x1)+, that is in
-the fragment and assigned to \verb+Y+, is moved under \verb+pi x0+ becoming
-\verb+r (x2\ X^0 x0 x2)+. The latter is no longer in the fragment.
+These properties let us implement the introduction rule for the $\forall$
+quantifier, i.e. the operational semantics of \verb+pi+ in constant time for
+terms in the RFF.  A step by step example follows.
 
+\paragraph{Backchaining clauses in DBL notation.}
+\label{ssec:price}
+
+\begin{center}
+\small
+\begin{tabular}{c|l}
+Context & Goals and refreshed program clause \\\hline
+& \verb+of (lam x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) T+$^0$  \\
+& \verb+of (lam F+$^0$\verb+) (impl A+$^0$\verb+ B+$^0$\verb+) :- pi x+$_0$\verb+\ of x+$_0$\verb+ A+$^0$\verb+ => of (F+$^0$\verb+ x+$_0$\verb+) B+$^0$ \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) B+$^0$  \\
+& \verb+of (lam G+$^1$\verb+) (impl C+$^1$\verb+ D+$^1$\verb+) :- pi x+$_1$\verb+\ of x+$_1$\verb+ C+$^1$\verb+ => of (G+$^1$\verb+ x+$_1$\verb+) D+$^1$\verb++  \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (app x+$_0$\verb+ x+$_1$\verb+) D+$^0$  \\
+\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of (app M+$^2$\verb+ N+$^2$\verb+) S+$^2$\verb+ :- of M+$^2$\verb+ (impl R+$^2$\verb+ S+$^2$\verb+), of N+$^2$\verb+ R+$^2$  \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of x+$_0$\verb+ (impl R+$^2$\verb+ S+$^0$\verb+), of x+$_1$\verb+ R+$^2$  \\
+\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ &  \\\hline
+\end{tabular}
+\end{center}
+
+After the first resolution step we obtain
+\verb+F+$^0$\verb+:= x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$
+and \verb+T+$^0$\verb+:= impl A+$^0$\verb+ B+$^0$.  The extra clause
+about \verb+x+$_0$ in the context and a new subgoal.
+Note that the redex \verb+(F+$^0$\verb+ x+$_0$\verb+)+ is in the RFF and
+thanks to equation~\ref{deffrag} weak head normalizes in constant time
+to \verb+(lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+)+.
+The same phenomenon arises in the second step,
+where we obtain \verb+G+$^1$\verb+:= x+$_1$\verb+\app x+$_0$\verb+ x+$_1$
+and we generate the redex \verb+(G+$^1$\verb+ x+$_1$\verb+)+.
+Unification variables are refreshed in the context under with
+the clause is used, e.g. \verb+C+ is placed at level 1 initially,
+but in consequence to a unification step they may be \emph{pruned}
+when occurring in a term assigned to a lower level unification
+variable, as happens in the unification problem
+\verb+(B+$^0$\verb+=impl C+$^1$\verb+D+$^1$\verb+)+ that prunes
+\verb+C+ and \verb+D+.
+
+The choice of using DBL for bound variables has two important
+effects, a good and a bad one.  First, clauses containing no bound variables, like
+\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ , requires no processing.
+If one uses DBI...
+The drawback is that clauses with bound variables, like the one for \verb+lam+,
+need to be lifted: the first time the bound variable is named \verb+x+$_0$,
+while the second time \verb+x+$_1$. This renaming, thanks again to property X of DBL
+can be performed in constant time, using the very same machinery one uses to
+refresh the unif variables.  E.g. in the WAM the unification involving the head
+of a clause is always executed by assigning variable to fresh stack cells
+(i.e. the clause is not refreshed, just the stack pointer is incremented).
+One can represent the locally bound variable as an extra unification variable,
+and initialize, when \verb+pi+ is crossed, the corresponding stack cell to
+the first \verb+x+$_i$ no yet in the context.
+
+\paragraph{Stability of the RFF.}
+Unlike the pattern fragment, the RFF is not stable under \lp{} resolution.
+The cause is that a clause that contains only terms in the RFF, because
+of the lifting phenomenon in the previous paragraph may generate terms
+outside the fragment.
 Therefore, and contrarily to what happens with the pattern fragment, an
-implementation must handle both terms in the fragment, with their efficient
+implementation must handle both terms in the RFF, with their efficient
 computation rules, and terms outside the fragment. Our limited experience so
 far, however, is that several programs initially written in the fragment
-remains in the fragment during computation, or they can be slightly modified
-to achieve that property.
+remains in the fragment during computation, or they can be slightly modified to
+achieve that property.
 
-\section{\elpi: an Embedded \lp{} Interpreter.}\label{sec:elpi}
-The current version of \elpi, together with the benchmarks presented in
-the next section, can be downloaded at \CSC{\url{http://xxxxx}}. The intepreter
-is entirely written in OCaml and it is \CSC{XXX} lines long. It augments the language presented in the paper with Prolog-style cuts and a few custom predicates for printing. The name is due to the fact that we eventually plan to augment the language with constraints and then embed it in the implementation of interactive theorem provers like Coq, that are often written in OCaml.
 
-We carefully wrote the code so that unrechable terms in \lp{} are encoded by unreachable terms in OCaml. Therefore we inherit garbage collection from the OCaml runtime. The algebraic datatype used to encode terms has different constructors for occurrences of terms in the \frag, and for occurrences outside the fragment. In particular an occurrence $X^j x_j \ldots x_{j+k-1}$ is simply represented as a triple $\langle r,j,k\rangle$ where $r$ is a reference to the term
-$X$ is instantiated to, or to a dummy term if $X$ is still unbound. Finally, we carefully cherry picked some design decisions from the WAM, implementing our own variations in several places. The variations have been made necessary to decrease the pressure on the garbage collector of OCaml, that is responsible for a significant percentage of the running time. For example, the heap and the stack are not organized as large arrays of mostly unused cells because otherwise the garbage collector needs to traverse the arrays at every minor and major collection. Similarly, we employ a mix of mutable and persistent data structures, avoiding mutable structures for data that is likely to survive, in order to avoid the penalty of the write barrier on data in the old generation~\cite{???}.
-Further details will be reported in a future work due to lack of space.
+% The term $X^j~x_j\ldots x_{j+k-1}$ can always be rewritten as
+% $Y^{j+k}$ instantiating $X^j$ with $\lambda x_j. \ldots \lambda x_{j+k-1}. X^{j+k}$ for a fresh existentially quantified variable $X^{j+k}$. Therefore every
+% unification problem in the \frag{} can be reduced in linear time in $k$ to a
+% problem of the kind $X^{j+k} \equiv \mathcal{E}$, that is immediately solved
+% by instantiating $X^{j+k}$ with $\mathcal{E}$ if the free names of $E$ are
+% known to be a subset of $\{x_0,\ldots,x_{j+k-1}\}$.
+% 
+% Note that, once all $\beta$-redex that occur syntactically in the term are
+% fired at compile time, or if explicitly written $\beta$-redexes are forbidden,
+% then every $\beta$-redex in the computation is triggered by the substitution
+% of an existentially quantified variable. Therefore, if the program is and
+% remains in the RFF, then all $\beta$-reductions can be implemented in
+% constant time.
+% 
+% Finally, another benefit of working with De Bruijn levels is that the
+% $\forall$-introduction rule can also be implemented in constant time as well
+% because there is no need to replace the bound variable with a fresh name.
+% The price to pay is an additional complexity in the backchain rule: when
+% a clause is selected, the clause needs to be $\alpha$-converted --- lifted
+% in De Bruijn indexes/levels terminology --- to move it in the current scope.
+% For example, if the query is \verb+ pi x_0\ r x_0+ and \verb+r X :- pi x_0\ pi x_1\ p x_0 x_1 X+ is a clause, after two inferences the new query becomes
+% \verb+pi x_1\ pi x_2\ p x_1 x_2 x_0+ because the introduction rule for
+% \verb+pi+ has already fixed the name \verb+x_0+.
+% 
+% \paragraph{Instability of the \frag}
+% Unlike the pattern fragment, the \frag{} is unstable for computation.
+% I.e. there are simple examples where the program and the initial query are
+% written in the fragment, but during execution we generate terms outside the
+% fragment (but still in the pattern fragment). This is a consequence of the
+% need for lifting clauses during backchaining.
+% Consider example~5 in Table~\ref{example4}.
+% After two inference steps the term \verb+(x1\ X^0 x0 x1)+, that is in
+% the fragment and assigned to \verb+Y+, is moved under \verb+pi x0+ becoming
+% \verb+r (x2\ X^0 x0 x2)+. The latter is no longer in the fragment.
+% 
+% Therefore, and contrarily to what happens with the pattern fragment, an
+% implementation must handle both terms in the fragment, with their efficient
+% computation rules, and terms outside the fragment. Our limited experience so
+% far, however, is that several programs initially written in the fragment
+% remains in the fragment during computation, or they can be slightly modified
+% to achieve that property.
+% 
+% \section{\elpi: an Embedded \lp{} Interpreter.}\label{sec:elpi}
+% The current version of \elpi, together with the benchmarks presented in
+% the next section, can be downloaded at \CSC{\url{http://xxxxx}}. The intepreter
+% is entirely written in OCaml and it is \CSC{XXX} lines long. It augments the language presented in the paper with Prolog-style cuts and a few custom predicates for printing. The name is due to the fact that we eventually plan to augment the language with constraints and then embed it in the implementation of interactive theorem provers like Coq, that are often written in OCaml.
+% 
+% We carefully wrote the code so that unrechable terms in \lp{} are encoded by unreachable terms in OCaml. Therefore we inherit garbage collection from the OCaml runtime. The algebraic datatype used to encode terms has different constructors for occurrences of terms in the \frag, and for occurrences outside the fragment. In particular an occurrence $X^j x_j \ldots x_{j+k-1}$ is simply represented as a triple $\langle r,j,k\rangle$ where $r$ is a reference to the term
+% $X$ is instantiated to, or to a dummy term if $X$ is still unbound. Finally, we carefully cherry picked some design decisions from the WAM, implementing our own variations in several places. The variations have been made necessary to decrease the pressure on the garbage collector of OCaml, that is responsible for a significant percentage of the running time. For example, the heap and the stack are not organized as large arrays of mostly unused cells because otherwise the garbage collector needs to traverse the arrays at every minor and major collection. Similarly, we employ a mix of mutable and persistent data structures, avoiding mutable structures for data that is likely to survive, in order to avoid the penalty of the write barrier on data in the old generation~\cite{???}.
+% Further details will be reported in a future work due to lack of space.
 
 \section{Benchmarks.}\label{sec:benchmarks}
 
@@ -536,3 +668,4 @@ suite.  It is outside the fragment.
 \bibliography{reference}
 
 \end{document} 
+% vim: make
