@@ -1,4 +1,8 @@
+grundlagen3.lpo: grundlagen3.mod grundlagen3.sig grundlagen2.sig grundlagen.sig helena.sig
+grundlagen2.lpo: grundlagen2.mod grundlagen2.sig grundlagen.sig helena.sig
 grundlagen.lpo: grundlagen.mod grundlagen.sig helena.sig
 helena.lpo: helena.mod helena.sig 
+grundlagen3.lp: grundlagen3.lpo grundlagen2.lpo grundlagen.lpo helena.lpo
+grundlagen2.lp: grundlagen2.lpo grundlagen.lpo helena.lpo
 grundlagen.lp: grundlagen.lpo helena.lpo
 helena.lp: helena.lpo 

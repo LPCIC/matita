@@ -8,13 +8,13 @@ TJDEPEND = ../../../../teyjus/tjdepend
 TIME     = `which time` -p -a -f "%U" -o $(TMP)
 ADD      = ./add.opt -a 3
 
-MODULES = helena grundlagen
+MODULES = helena grundlagen grundlagen2 grundlagen3
 
 all: $(MODULES:%=%.lp)
 
 depend: .depend
 
-test: grundlagen.lp Makefile
+test: grundlagen3.lp Makefile
 	@echo SYM -s main. $(<:%.lp=%)
 	$(H)$(TIME) $(TJSIM) -s main. $(<:%.lp=%)
 
@@ -35,13 +35,13 @@ clear:
 	@echo DEPEND $(MODULES)
 	$(H)$(TJDEPEND) $(MODULES) > $@
 
-profile.txt: grundlagen.lp Makefile
+profile.txt: grundlagen3.lp Makefile
 	@echo [31 times] SYM -s main. $(<:%.lp=%)
 	$(H)for RUN in `seq 31`; do $(TIME) $(TJSIM) -s main. $(<:%.lp=%); done
 	$(H)sort $(TMP) | uniq > $@
 	$(H)$(RM) $(TMP)
 
-pippo: LINE = $(TIME) $(TJCC) helena; $(TIME) $(TJCC) grundlagen; $(TIME) $(TJLINK) grundlagen
+pippo: LINE = $(TIME) $(TJCC) helena; $(TIME) $(TJCC) grundlagen3; $(TIME) $(TJLINK) grundlagen3
 
 pippo:
 	$(H)$(RM) $(TMP)

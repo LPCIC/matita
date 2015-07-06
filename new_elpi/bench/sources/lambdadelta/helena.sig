@@ -56,5 +56,7 @@ type appl+  t -> s -> m -> t -> o.
 type tv+    t -> o.
 type gv+    g -> o.
 type g+line t -> int -> t -> o.
+type g+line1 t -> int -> t -> o.
+type g+line2 t -> int -> t -> o.
 type g+list int -> g -> o.
 type gv+3   t -> o.

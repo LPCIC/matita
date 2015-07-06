@@ -255,6 +255,9 @@ gv+3 R :- g+line R C T,
           printterm std_out T, print "\n",
           tv+ T.
 
+g+line R C W :- g+line1 R C W, !.
+g+line R C W :- g+line2 R C W.
+
 % Additions ------------------------------------------------------------------
 
 % LAYERS FOR PTS, LAMBDA-INFINITY, AUT-68, AUT-QE %%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -2,9 +2,9 @@ sig grundlagen.
 
 accum_sig helena.
 
-type main o.
-type grundlagen o.
-type chunk int -> o.
+%type main o.
+%type grundlagen o.
+%type chunk int -> o.
 
 type k+prop k.
 type k+set k.
