@@ -320,14 +320,14 @@ implemented efficiently is to see how systems manipulating $\lambda$-terms
 accommodate
 $\alpha$-equivalence.  Bound variables are not represented by using
 real names, but canonical ``names'' (or better numbers).  De Bruijn introduced
-two, dual, canonical naming schemas for lambda terms in~\cite{debruijnlevel}:
+two, dual, naming schemas for lambda terms in~\cite{debruijnlevel}:
 indexes (DBI) and levels
 (DBL).  In the former a variable is named $n$ if its binder is found by
 crossing $n$ binders going in the direction of the root.  In the latter a
 variable named $n$ is bound by the $n$-th binder one encounters in the path
 from the root to the variable.
-
-\begin{table}
+In the following table we write the term $\lambda x.(\lambda y.\lambda z.f~x~y~z)~x$ and its reduct in the two notations:
+%\begin{table}
 \begin{center}
 \begin{tabular}{c@{~~}|@{~~}c}
 	Indexes & Levels\\\hline
@@ -337,12 +337,7 @@ $\lambda x.\lambda z.f~x_1~x_1~z_0$ &
 $\lambda x.\lambda z.f~x_0~x_0~z_1$ \\
 \end{tabular}
 \end{center}
-\caption{\label{example2}
-De Bruijn notations for
-$\lambda x.(\lambda y.\lambda z.f~x~y~z)~x$
-and its reduct}
-\end{table}
-
+%\end{table}
 In both notations when a binder is removed and the corresponding variable
 substituted some ``renaming'' (called lifting) has to be performed.  
 The DBI convention is way more popular than the DBL one and \tedius{}
@@ -351,17 +346,21 @@ fact that weak head normalization is easier to code: the argument of the
 redex, being at the top level of the term, is always closed and hence
 invariant by lifting.
 
-In \elpi{} we chose DBL by observing the following two phenomena:
-first, the name of a variable is context independent, i.e. $x$ is
+In \elpi{} we chose DBL by observing the following two properties.
+\begin{description}
+\item[DBL$_1$] the name of a variable is context independent, i.e. $x$ is
 always named $x_0$, while with indexes its name depends on the depth at
-which it occurs; second
+which it occur
+\item[DBL$_2$]
 when $\beta$-reduction occurs deep in the term, here under the context
 of the $x$ variable, the occurrences of the variables in the context do
 not change name, i.e. $x$ is named $x_0$ in the initial and in the reduct
-term.  Another way to put it is that variables already pushed in the context
-are treated exactly as constants, and their name is exactly the level at
-which the occur in the context.  From now on, we subscript bound variables
-with their corresponding name in DBL convention.
+term.
+\end{description}
+Another way to put it is that variables already pushed in the context
+are treated \emph{exactly as constants}, and their name is the level at
+which the occur in the context.  From now on we subscript variables
+with their name in DBL convention.
 
 %One important property of the pattern fragment is that $\beta$-reduction can
 %only substitute names with other names. This property, however, is not
@@ -458,13 +457,11 @@ can be computed in constant time.
 A valid substitution assigns to $X^j$ a term $t$ of the right type (as in simply
 type lambda calculus) and that has all free variable visible by $X^j$ (all
 $x_i$ are such that $i < j$).  Let $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$. Then
-
 \begin{equation}\label{deffrag}(X^j~x_j \ldots x_{j+k-1}) \sigma
  = \left\{ \begin{array}{ll}
 t~x_{j+n+1} \ldots x_{j+k-1} & \mbox{if $n+1 < k$} \\
 \lambda x_{j+k}. \ldots \lambda x_{j+n}.t & \mbox{otherwise}
       \end{array} \right.\end{equation}
-
 In equation~\ref{deffrag} the equality is syntactical: no lifting
 of $t$ is required. Therefore the $\beta$-reductions triggered
 by the substitution of $X^j$ require constant time and no pass over the term.
