@@ -10,15 +10,18 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{url}
-\usepackage{multirow}
 \usepackage{color}
 \usepackage{float}
+\usepackage{tabularx}
+\usepackage{multirow}
+\setlength{\extrarowheight}{1pt}
+\usepackage{fancyvrb}
 
 \floatstyle{plain} \newfloat{example}{thp}{lop} \floatname{example}{\textbf{Example}}
 \newtheorem{mydef}{Definition}
 \newtheorem{myprop}{Property}
 \begin{document}
-\title{ELPI: A Fast, embeddable, \lp{} interpreter}
+\title{ELPI: fast, Embeddable, \lp{} Interpreter}
 
 %If you're using runningheads you can add an abreviated title for the running head on odd pages using the following
 %\titlerunning{abreviated title goes here}
@@ -98,20 +101,21 @@ interest in \lp{} is that we are looking for the best
 language to implement the so called \emph{elaborator} component of an ITP.
 The elaborator is used to type check the terms input by
 the user.  Such data, for conciseness reasons, is typically incomplete and
-the ITP is expected to infer what is lacking.  The possibility to
+the ITP is expected to infer what is missing.  The possibility to
 extend the built in elaborator with user provided ``logic programs'' (in the
 form of type classes or unification hints) to infer the missing pieces of
 information turned out to be a key ingredient in successful formalizations
-like~\cite{gonthier:hal-00816699}.  Embedding in an ITP a \lp{} interpreter
+like~\cite{gonthier:hal-00816699}.  Embedding a \lp{} interpreter in an ITP 
 would enable the elaborator and its extensions to be expressed in the same,
-high level, language.  A crucial constraint is the efficiency of the embedded
-\lp{} interpreter.
+high level, language.  A crucial requisite for this plan to be realistic is
+the efficiency of the \lp{} interpreter.
 
 In this paper we introduce ELPI, a fast \lp{} interpreter that being written
-completely in OCaml can be easily embedded in OCaml softwares, like Coq.
+entirely in OCaml can be easily embedded in OCaml softwares, like Coq.
 In particular we focus on the insight that makes ELPI fast when dealing with
 binders by identifying a reduction free fragment (RFF) of \lp{} that, if
-implemented correctly, has constant-time unification and reduction operations.
+implemented correctly, admits constant-time unification and reduction
+operations.
 We analyze the role  of $\beta$-reduction in Section~\ref{sec:beta} and
 higher order unification in Section~\ref{sec:ho}; we discuss bound names
 representations in Section~\ref{sec:dbl}; we define the RFF 
@@ -126,23 +130,23 @@ Section~\ref{sec:benchmarks}.
 
 \begin{example}[b]
 \begin{center}
-\begin{tabular}{c@{~~}|@{~~}c}
+\begin{tabular}{cc}
 \begin{minipage}{4.8cm}
-\begin{verbatim}
+\begin{Verbatim}[numbers=left,numbersep=1pt,frame=leftline]
 of (app M N) B :-
-  of M (impl A B), of N A.
-of (lam F) (impl A B) :-
+  of M (arr A B), of N A.
+of (lam F) (arr A B) :-
   pi x\ of x A => of (F x) B.
-\end{verbatim}
-\end{minipage}
+\end{Verbatim}
+\end{minipage}~~
 &
-\begin{minipage}{6.2cm}
-\begin{verbatim}
+~~~\begin{minipage}{6.5cm}
+\begin{Verbatim}[numbers=left,firstnumber=5,numbersep=1pt,frame=leftline]
 cbn (lam F) (lam F).
 cbn (app (lam F) N) M :- cbn (F N) M.
 cbn (app M N) R :-
   cbn M (lam F), cbn (app (lam F) N) R.
-\end{verbatim}
+\end{Verbatim}
 \end{minipage}
 \end{tabular}
 \end{center}
@@ -161,13 +165,13 @@ of $\lambda$-terms. \verb+app+ takes two terms of type $\mathcal{T}$ and builds
 their object-level application of type $\mathcal{T}$.  Following the tradition of Prolog, capitals letters denote unification variables.
 
 The second clause for the \verb+of+ predicate shows a recurrent pattern in
-\lp: in order to analyze an higher order term, one needs to do the recurse
+\lp: in order to analyze an higher order term, one needs to recurse
 under a binder. This is achieved
 exploiting the forall quantifier \verb+pi x\G+ together with logical
-implication \verb+F(x) => G+. Operationally: the forall quantifier declares a
+implication \verb+F => G+. Operationally: the forall quantifier declares a
 new local constant \verb+x+, meant to be fresh in the entire program;
 logical implication temporarily
-augments the proof context with the new formula \verb+F+ about \verb+x+.
+augments the program with the new formula \verb+F+ about \verb+x+.
 Denotationally, these are just the standard rules for introduction of
 implication and the universal quantifier.
 
@@ -179,17 +183,16 @@ constant \verb+x+.
 The implication is used to
 assume \verb+A+ to be the type of \verb+x+, in order to prove that the body of
 the abstraction has type \verb+B+ and therefore the whole abstraction has type
-\verb+(impl A B)+ (i.e. $A \to B$). Note that, unlike in
+\verb+(arr A B)+ (i.e. $A \to B$). Note that, unlike in
 the standard presentation of the typing rules, we do not need to manipulate an
 explicit context $\Gamma$ to type the free variables. Instead the assumptions
-of the form \verb+of x A+ are just added to the program clauses, and \lp{}
-takes care of dropping them from the context when \verb+x+ goes out of scope.
-
-If the initial goal is
-\verb+of (lam (w\ app w w)) T+ by applying the second clause we assign
-\verb+(impl A B)+ to \verb+T+ and generate
-a new goal \verb+of (app c c) B+ (where \verb+c+ is the fresh constant
-substituted for \verb+w+) to be solved with the extra clause \verb+of c A+
+of the form \verb+(of x A)+ are just added to the program's clauses, and \lp{}
+takes care of dropping them when \verb+x+ goes out of scope.
+Example: if the initial goal is
+\verb+(of (lam (w\ app w w)) T)+ by applying the second clause we assign
+\verb+(arr A B)+ to \verb+T+ and generate
+a new goal \verb+(of (app c c) B)+ (where \verb+c+ is the fresh constant
+substituted for \verb+w+) to be solved with the extra clause \verb+(of c A)+
 at disposal.
 
 In this first example, the meta-level $\beta$-reduction is only employed
@@ -206,15 +209,14 @@ Section~\ref{sec:fragment}.
 \section{Higher Order unification}% and captures}
 \label{sec:ho}
 
-Unification in the presence of binders raises two both theoretical and
-practical concerns. First, the absence of most general unifiers (MGUs) makes
-one of the primitive operations of \lp{} very delicate.  Second, avoiding
-captures (i.e. checking a unification variable is only instantiated with a
-term containing bound variable in scope) is both tricky and, as we will see,
-expensive.
+Unification in the presence of binders raises two %theoretical and practical
+problems. First, the absence of most general unifiers (MGUs) makes
+one of the primitive operations of \lp{} very delicate.  Second, one has
+to find a way to avoid captures, i.e. check that unification variables
+are instantiated with terms containing only bound variable in their scope.
 
 To cope with the absence of MGUs, Dale Miller identified
-in~\cite{Miller91alogic} a well-behaved fragment (\Ll{}) of higher-order
+in~\cite{Miller91alogic} a well-behaved fragment (\Ll{}) of higher-order (HO)
 unification that admits MGUs and is stable under \lp{} resolution. 
 The restriction defining \Ll{} is that unification variables can
 only be applied to (distinct) variables (i.e. not arbitrary terms) that are
@@ -223,22 +225,23 @@ Such fragment can effectively serve as a primitive for a
 programming language and indeed \tedius{} 2.0 is built around this fragment:
 no attempt to enumerate all possible unifiers is performed, and unification
 %\marginpar{cite huet? no space IMO}
-problem falling outside \Ll{} are just delayed.  Many interesting \lp{}
-programs can be rewritten to fall in the fragment.
-For example the \verb+cbn+ one as written in example 1 falls outside \Ll{},
-since it contains \verb+(F N)+, but can be coded expressing directly
-the substitution of the meta-language in \lp{} as follows.
+problems falling outside \Ll{} are just delayed.  Many interesting \lp{}
+programs can be rewritten to fall in the fragment. For example, we can
+make \verb+cbn+ of Example~\ref{example1} stay in \Ll{} by replacing
+line 6 (that contains the offending \verb+(F N)+ term) with the following code:
+\vspace{-0.4em}
 \begin{center}
 \small
 \begin{minipage}{10cm}
-\begin{verbatim}
+\begin{Verbatim}[numbers=left,numbersep=1pt,frame=leftline]
 cbn (app (lam F) N) M :- subst F N B, cbn B M.
 subst F N B :- pi x\ copy x N => copy (F x) B.
 copy (lam F1) (lam F2) :- pi x\ copy x x => copy (F1 x) (F2 x).
 copy (app M1 N1) (app M2 N2) :- copy M1 M2, copy N1 N2.
-\end{verbatim}
+\end{Verbatim}
 \end{minipage}
 \end{center}
+\vspace{-0.3em}
 The idea of \verb+subst+ is that the term \verb+F+ is recursively copied in
 the following way: each bound variable is copied in itself but for the top one
 that is replaced by \verb+N+.
@@ -247,11 +250,11 @@ in~\cite[page 199]{Miller:2012:PHL:2331097}.
 The \verb+of+ program falls naturally in \Ll{}, since \verb+F+ is only applied
 the fresh variable \verb+x+ (all unification variables in a \lp{} program are
 implicitly existentially bound in front of the clause, so \verb+F+ does not
-see \verb+x+ already).  The same holds for \verb+copy+.
+see \verb+x+).  The same holds for \verb+copy+.
 
 To correctly implement HO unification, even in the restricted \Ll{} fragment,
 one typically tracks the \emph{level} of unification variables an fresh constants.  The proof theoretic interpretation of a \lp{} execution as an intuitionistic proof gives the following reading: unification is taking place under
-a mixed prefix of $\forall$ and $\exists$ quantifiers; their ordered
+a mixed prefix of $\forall$ and $\exists$ quantifiers; their order
 determines if a unification variable (an existential) can be assigned to
 (proved by) a term that contain a universally quantified variable.
 E.g. $\forall x,\exists Y, Y = x$ is always provable while
@@ -264,11 +267,12 @@ is extended and the constant is placed at such level.  From now on we will
 write levels in superscript.  If we run the program
 \marginpar{sketched}
 \verb+(of (lam f\lam w\app f w) T)+ after two steps the goal is
-\verb+(of (app c+$^1$\verb+ d+$^2$\verb+) T+$^0$\verb+)+. T is at level 0 because we don't pass to it x in the lam rule, so we never extend its range.
-Replacing f and w by fresh constant anntoated with a level is the implemetation
-technique adopted by \tedius{} to make unif cation be able to check
-levels correctly.  to avoid traversing the term at each pi it
-performs the beta reduction in a lazy way using an explicit substitution calculus.  In the RFF we will be able to completely avoid such substitution.
+\verb+(of (app c+$^1$\verb+ d+$^2$\verb+) T+$^0$\verb+)+.
+Replacing \verb+f+ and \verb+w+ by fresh constant annotated with a level is the
+implementation technique adopted by \tedius{} to make unification able to
+check levels correctly.  As an optimization \tedius{} performs the beta
+reduction in a lazy way using an explicit substitution calculus.  In the RFF we
+will be able to completely avoid such substitution.
 
 
 % 
@@ -328,15 +332,16 @@ variable named $n$ is bound by the $n$-th binder one encounters in the path
 from the root to the variable.
 In the following table we write the term $\lambda x.(\lambda y.\lambda z.f~x~y~z)~x$ and its reduct in the two notations:
 %\begin{table}
+\vspace{-0.8em}
 \begin{center}
-\begin{tabular}{c@{~~}|@{~~}c}
-	Indexes & Levels\\\hline
-$\lambda x.(\lambda y.\lambda z.f~x_2~y_1~z_0)~x_0$ &
-$\lambda x.(\lambda y.\lambda z.f~x_0~y_1~z_2)~x_0$ \\
-$\lambda x.\lambda z.f~x_1~x_1~z_0$ &
+\begin{tabular}{r@{~~}c@{~$\to_\beta$~}c}
+Indexes: & $\lambda x.(\lambda y.\lambda z.f~x_2~y_1~z_0)~x_0$ &
+$\lambda x.\lambda z.f~x_1~x_1~z_0$  \\
+Levels: & $\lambda x.(\lambda y.\lambda z.f~x_0~y_1~z_2)~x_0$ &
 $\lambda x.\lambda z.f~x_0~x_0~z_1$ \\
 \end{tabular}
 \end{center}
+\vspace{-0.2em}
 %\end{table}
 In both notations when a binder is removed and the corresponding variable
 substituted some ``renaming'' (called lifting) has to be performed.  
@@ -346,15 +351,15 @@ fact that weak head normalization is easier to code: the argument of the
 redex, being at the top level of the term, is always closed and hence
 invariant by lifting.
 
-In \elpi{} we chose DBL by observing the following two properties.
+In \elpi{} we chose DBL because of the following two properties:
 \begin{description}
-\item[DBL$_1$] the name of a variable is context independent, i.e. $x$ is
+\item[DBL1] the name of a variable is context independent, i.e. $x$ is
 always named $x_0$, while with indexes its name depends on the depth at
-which it occur
-\item[DBL$_2$]
-when $\beta$-reduction occurs deep in the term, here under the context
-of the $x$ variable, the occurrences of the variables in the context do
-not change name, i.e. $x$ is named $x_0$ in the initial and in the reduct
+which it occur;
+\item[DBL2]
+when $\beta$-reduction occurs under a context the variables bound
+in such context do not change name. In our example, since the reduction occurs
+under the binder for $x$, $x$ is named $x_0$ in the initial and in the reduct
 term.
 \end{description}
 Another way to put it is that variables already pushed in the context
@@ -381,18 +386,19 @@ with their name in DBL convention.
 \lp{} is a truly higher order language: even clauses can be
 passed around, unified, etc.  Nevertheless this plays no role here, so
 we exclude from the syntax of terms the one of formulas.
-
+\vspace{-0.5em}
 $$\begin{array}{l}
    t ::= x_i ~|~ X^j ~|~ \lambda x_i.t ~|~ t~t
 \end{array}$$
-
+\vspace{-0.1em}
 Since variables follow the DBL representation, we don't have a case
 for constants: when $i < 0$ then $x_i$ represents a global constant,
 like \verb+app+ or \verb+lam+ in Example~\ref{example1}.  Since the
 level of a variable completely identifies it, when we write
 $x_i \ldots x_{i+k}$ we mean $k$ distinct bound (i.e. $i \geq 0$) variables.
-The non-null superscript $j$ annotates unification variables with their
-visibility scope.  A variable $X^j$ has visibility of all names strictly
+The superscript $j$ annotates unification variables with their
+visibility range ($0 \leq j$, since all global constants are in range).  
+A variable $X^j$ has visibility of all names strictly
 smaller than $j$. E.g.  $X^1$ has visibility only of $x^0$, and $X^3$ has
 visibility of $\{x^0,x^1,x^2\}$.  Technically a binder needs no
 name when bound variables are named following a De Bruijn convention.
@@ -400,7 +406,7 @@ Still we write it to ease reading.
 
 \begin{mydef}[RFF]
 A term is in the Reduction Free Fragment if and only if
-every occurrence of a unification variable $X^j$ occurs applied to
+every occurrence of a unification variable $X^j$ is applied to
 $x_j \ldots x_{j+k-1}$ for $k >= 0$.
 \end{mydef}
 
@@ -416,7 +422,7 @@ the RFF.  Also, every Prolog program is in the RFF. As we will see
 in~Section~\ref{sec:benchmarks}, a
 type-checker for a dependently typed language
 and evaluator based on a reduction machine are also naturally in RFF,
-showing that the fragment is already quite expressive.
+showing that, in practice, the fragment is quite expressive.
 
 
 % where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
@@ -443,75 +449,76 @@ showing that the fragment is already quite expressive.
 Being the RFF included in the pattern-fragment, higher order unification is
 decidable for the RFF.
 \end{myprop}
-In other words, each problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
-admits a MGU.
+%In other words, each problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
+%admits a MGU.
 
 The most interesting property of the RFF, which also justify its name, is the
 following one. 
 
-\begin{myprop}[Constant time weak head $\beta$-reduction]
-Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables.  Then the weak head normal form of $(X^j~x_j \ldots x_{j+k-1}) \sigma$
+\begin{myprop}[Constant time head $\beta$-reduction]
+Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables.  Then the head normal form of $(X^j~x_j \ldots x_{j+k-1}) \sigma$
 can be computed in constant time.
 \end{myprop}
 
 A valid substitution assigns to $X^j$ a term $t$ of the right type (as in simply
-type lambda calculus) and that has all free variable visible by $X^j$ (all
-$x_i$ are such that $i < j$).  Let $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$. Then
+type lambda calculus) and that has all free variables visible by $X^j$ (all
+$x_i$ are such that $i < j$).  
+Let $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$. Then
 \begin{equation}\label{deffrag}(X^j~x_j \ldots x_{j+k-1}) \sigma
  = \left\{ \begin{array}{ll}
 t~x_{j+n+1} \ldots x_{j+k-1} & \mbox{if $n+1 < k$} \\
 \lambda x_{j+k}. \ldots \lambda x_{j+n}.t & \mbox{otherwise}
       \end{array} \right.\end{equation}
-In equation~\ref{deffrag} the equality is syntactical: no lifting
-of $t$ is required. Therefore the $\beta$-reductions triggered
-by the substitution of $X^j$ require constant time and no pass over the term.
+Thanks to property \textbf{DBL2}, Equation~\ref{deffrag} is
+\emph{syntactical}: no lifting of $t$ is required.
+Therefore the $\beta$-reductions triggered by the substitution of $X^j$ takes
+constant time.
 
 \begin{myprop}[Constant time unification]
 A unification problem of the form  $X^j~x_j\ldots x_{j+k-1} \equiv t$
-admits a constant time unification.
+can be solved in constant time.
 \end{myprop}
 
 The unification problem $X^j~x_j\ldots x_{j+k-1} \equiv t$ can always be
-rewritten in $X^j \equiv \lambda x_j. \ldots \lambda x_{j+k-1}. Y^{j+k} \land
-Y^{j+k} \equiv t$.  The former is a trivial assignment that requires no check.
-The latter can be implemented in constant time when no occur-check is needed
+rewritten as two simpler problems: $X^j \equiv \lambda x_j. \ldots \lambda x_{j+k-1}. Y^{j+k}$ and $Y^{j+k} \equiv t$ for a fresh $Y$.
+The former is a trivial assignment that requires no check.
+The latter can be implemented in constant time if: no occur-check is needed
 for $X$ and if one caches in the terms the level of the highest free variable.
 Avoiding useless occur-check is a typical optimization of the Warren Abstract
-Machine (WAM), E.g. when $X$ occurs linearly in the head of a clause.
+Machine (WAM), e.g. when $X$ occurs linearly in the head of a clause.
 Caching in the terms the maximum free level is economical in terms of space
-(just one integer) and is something one can also  pre-compute on the input term
-in linear time.  With such maximum level $l$ at hand the problem
-$Y^{j+k} \equiv t$ can be decided in constant time by simply comparing $j+k$
-with $l$.
+(just one integer) and is something one typically pre-computes on the input
+term in linear time.  With such maximum level $l$ at hand the problem $Y^{j+k}
+\equiv t$ can be decided by simply comparing $j+k$ with $l$.
+These properties enable us to implement the operational semantics of \verb+pi+
+in constant time for terms in the RFF.
 
-These properties let us implement the introduction rule for the $\forall$
-quantifier, i.e. the operational semantics of \verb+pi+ in constant time for
-terms in the RFF.  A step by step example follows.
-
-\paragraph{Backchaining clauses in DBL notation.}
-\label{ssec:price}
+We detail an example.
+The first column gathers the fresh constants and extra clauses. The
+second one shows the current goal(s) and the program clause that is
+used to back chain.
 
 \begin{center}
 \small
 \begin{tabular}{c|l}
 Context & Goals and refreshed program clause \\\hline
 & \verb+of (lam x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) T+$^0$  \\
-& \verb+of (lam F+$^0$\verb+) (impl A+$^0$\verb+ B+$^0$\verb+) :- pi x+$_0$\verb+\ of x+$_0$\verb+ A+$^0$\verb+ => of (F+$^0$\verb+ x+$_0$\verb+) B+$^0$ \\\hline
+& \verb+of (lam F+$^0$\verb+) (arr A+$^0$\verb+ B+$^0$\verb+) :- pi x+$_0$\verb+\ of x+$_0$\verb+ A+$^0$\verb+ => of (F+$^0$\verb+ x+$_0$\verb+) B+$^0$ \\\hline
 \verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) B+$^0$  \\
-& \verb+of (lam G+$^1$\verb+) (impl C+$^1$\verb+ D+$^1$\verb+) :- pi x+$_1$\verb+\ of x+$_1$\verb+ C+$^1$\verb+ => of (G+$^1$\verb+ x+$_1$\verb+) D+$^1$\verb++  \\\hline
+& \verb+of (lam G+$^1$\verb+) (arr C+$^1$\verb+ D+$^1$\verb+) :- pi x+$_1$\verb+\ of x+$_1$\verb+ C+$^1$\verb+ => of (G+$^1$\verb+ x+$_1$\verb+) D+$^1$\verb++  \\\hline
 \verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (app x+$_0$\verb+ x+$_1$\verb+) D+$^0$  \\
-\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of (app M+$^2$\verb+ N+$^2$\verb+) S+$^2$\verb+ :- of M+$^2$\verb+ (impl R+$^2$\verb+ S+$^2$\verb+), of N+$^2$\verb+ R+$^2$  \\\hline
-\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of x+$_0$\verb+ (impl R+$^2$\verb+ S+$^0$\verb+), of x+$_1$\verb+ R+$^2$  \\
-\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ &  \\\hline
+\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of (app M+$^2$\verb+ N+$^2$\verb+) S+$^2$\verb+ :- of M+$^2$\verb+ (arr R+$^2$\verb+ S+$^2$\verb+), of N+$^2$\verb+ R+$^2$  \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of x+$_0$\verb+ (arr R+$^2$\verb+ S+$^0$\verb+), of x+$_1$\verb+ R+$^2$  \\
+\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of x+$_0$\verb+ A+$^0$\hspace{4pt}\verb+        , of x+$_1$\verb+ C+$^0$ \\\hline
 \end{tabular}
 \end{center}
 
-After the first resolution step we obtain
-\verb+F+$^0$\verb+:= x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$
-and \verb+T+$^0$\verb+:= impl A+$^0$\verb+ B+$^0$.  The extra clause
+After the first step we obtain
+\verb+F+$^0$\verb+:= x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$;
+\verb+T+$^0$\verb+:= arr A+$^0$\verb+ B+$^0$; the extra clause
 about \verb+x+$_0$ in the context and a new subgoal.
 Note that the redex \verb+(F+$^0$\verb+ x+$_0$\verb+)+ is in the RFF and
-thanks to equation~\ref{deffrag} weak head normalizes in constant time
+thanks to Equation~\ref{deffrag} head normalizes in constant time
 to \verb+(lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+)+.
 The same phenomenon arises in the second step,
 where we obtain \verb+G+$^1$\verb+:= x+$_1$\verb+\app x+$_0$\verb+ x+$_1$
@@ -520,36 +527,41 @@ Unification variables are refreshed in the context under with
 the clause is used, e.g. \verb+C+ is placed at level 1 initially,
 but in consequence to a unification step they may be \emph{pruned}
 when occurring in a term assigned to a lower level unification
-variable, as happens in the unification problem
-\verb+(B+$^0$\verb+=impl C+$^1$\verb+D+$^1$\verb+)+ that prunes
-\verb+C+ and \verb+D+.
+variable. Example:  unifying 
+\verb+B+$^0$ with \verb+(arr C+$^1$\verb+ D+$^1$\verb+)+ prunes
+\verb+C+ and \verb+D+ to level 0.
 
-The choice of using DBL for bound variables has two important
-effects, a good and a bad one.  First, clauses containing no bound variables, like
-\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ , requires no processing.
-If one uses DBI...
-The drawback is that clauses with bound variables, like the one for \verb+lam+,
-need to be lifted: the first time the bound variable is named \verb+x+$_0$,
-while the second time \verb+x+$_1$. This renaming, thanks again to property X of DBL
-can be performed in constant time, using the very same machinery one uses to
-refresh the unif variables.  E.g. in the WAM the unification involving the head
-of a clause is always executed by assigning variable to fresh stack cells
-(i.e. the clause is not refreshed, just the stack pointer is incremented).
-One can represent the locally bound variable as an extra unification variable,
-and initialize, when \verb+pi+ is crossed, the corresponding stack cell to
-the first \verb+x+$_i$ no yet in the context.
+The choice of using DBL for bound variables is both an advantage and a
+complication here.
+Clauses containing no bound variables, like
+\verb+(of x+$_0$\verb+ A+$^0$\verb+)+, require no processing thanks to
+\textbf{DBL1}: they can be indexed as they are, since the name \verb+x+$_0$
+is stable.
+The drawback is that clauses with bound variables, like the one 
+used in the first two back chains, need to be lifted: the first time the
+bound variable is named \verb+x+$_0$,
+while the second time \verb+x+$_1$.
+Luckily, this renaming, thanks property \textbf{DBL1}
+can be performed in constant time using the very same machinery one uses to
+refresh the unification variables.
+E.g. when the WAM unifies the head of a clauses it assigns 
+fresh stack cells: the clause is not really refreshed and the stack
+pointer is simply incremented.  One can represent the locally bound variable as
+an extra unification variable, and initialize, when \verb+pi+ is crossed, the
+corresponding stack cell to the first \verb+x+$_i$ free in the context.
 
 \paragraph{Stability of the RFF.}
-Unlike the pattern fragment, the RFF is not stable under \lp{} resolution.
-The cause is that a clause that contains only terms in the RFF, because
-of the lifting phenomenon in the previous paragraph may generate terms
-outside the fragment.
-Therefore, and contrarily to what happens with the pattern fragment, an
-implementation must handle both terms in the RFF, with their efficient
-computation rules, and terms outside the fragment. Our limited experience so
-far, however, is that several programs initially written in the fragment
-remains in the fragment during computation, or they can be slightly modified to
-achieve that property.
+Unlike \Ll{}, the RFF is not stable under \lp{} resolution:
+a clause that contains only terms in the RFF
+may generate terms
+outside the fragment
+because
+of the lifting phenomenon explained the previous paragraph.\marginpar{resurrect Claudio's example?}
+Therefore an implementation must handle both terms in the RFF, with their
+efficient computation rules, and terms outside the fragment. Our limited
+experience so far, however, is that several programs initially written in the
+fragment remains in the fragment during computation, or they can be slightly
+modified to achieve that property.
 
 
 % The term $X^j~x_j\ldots x_{j+k-1}$ can always be rewritten as
