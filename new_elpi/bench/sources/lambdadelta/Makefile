@@ -8,9 +8,9 @@ TJDEPEND = ../../../../teyjus/tjdepend
 TIME     = `which time` -p -a -f "%U" -o $(TMP)
 ADD      = ./add.opt -a 3
 
-MODULES = helena grundlagen grundlagen2 grundlagen3
+MODULES = $(shell cat Make)
 
-all: $(MODULES:%=%.lp)
+all: grundlagen.lp
 
 depend: .depend
 
@@ -20,7 +20,7 @@ test: grundlagen3.lp Makefile
 
 profile: profile.txt Makefile
 
-clear:
+clean:
 	$(H)$(RM) *.lp *.lpo .depend profile.txt *~
 
 %.lpo: %.mod %.sig Makefile
@@ -50,7 +50,9 @@ pippo:
 	$(H)$(RM) $(TMP)
 
 ifneq ($(MAKECMDGOALS), depend)
+ifneq ($(MAKECMDGOALS), clean)
    include .depend   
 endif
+endif
 
-.PHONY: all depend test profile clear
+.PHONY: all depend test profile clean

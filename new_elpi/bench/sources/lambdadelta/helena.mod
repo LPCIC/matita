@@ -239,24 +239,21 @@ gv+ (gdec+1 C W G) :- tv+ W,
 
 % global delta updated for version 2
 gv+ (gdef+2 R G) :- g+line R C V,
-%                    printterm std_out R, print "\n",
+                    printterm std_out R, print "\n",
                     tv+ V,
 %                    tv+c C V,
                     (tv+ R => (pi m\ pi e\ r+exp R m C e m V) => gv+ G).
 
 % global l updated for version 2
 gv+ (gdec+2 R G) :- g+line R C W,
-%                    printterm std_out R, print "\n",
+                    printterm std_out R, print "\n",
                     tv+ W,
 %                    tv+c C W,
                     (tv+ R => (pi m1\ pi m2\ pi e\ r+exp R m1 C e m2 W :- m+pred m1 m2) => gv+ G).
 
 gv+3 R :- g+line R C T,
-          printterm std_out T, print "\n",
+%          printterm std_out T, print "\n",
           tv+ T.
-
-g+line R C W :- g+line1 R C W, !.
-g+line R C W :- g+line2 R C W.
 
 % Additions ------------------------------------------------------------------
 
