@@ -615,59 +615,61 @@ modified to achieve that property.
 
 \section{Assessment and conclusions}\label{sec:benchmarks}
 
-In the following table we compare the performance of ELPI and Teyjus over
-several benchmarks divided into 3 groups.  The first group contains 4
-first-order problems taken from the Aquarius suite. The problems are the well
-known logic games such as the crypto-multiplication, $\mu$-puzzle,
-generalized eight queens problem and the Einstein's zebra puzzle,
-respectively.
+We asses the performances of \elpi{} on a set of synthetic benchmarks and
+a real application.  Synthetic benchmarks are divided into three groups:
+first order programs from the Aquarius test suite (the
+crypto-multiplication, $\mu$-puzzle,
+generalized eight queens problem and the Einstein's zebra puzzle);
+higher order programs falling in the RFF fragment; and an higher
+order program falling outside RFF taken from the test suite of
+\tedius{} normalizing expressions in the SKI calculus.
 
-The second group contains 2 higher-order problems within the fragment. The
-first one builds the $n$-th projection and type checks it with the \verb+of+
-program in Example 1 a thousands of times.
-Due to limitations in \tedius{} we reached a max
-value of 321 for $n$.
-% fails to manipulate terms with nesting factor more than $2^{16}$. 
-The second
-example shows a few applications of the {\bf cbv} function defined above over
-the Church numerals, the larger one being computed is $5^5$.
-
-The third group contains a single higher-order example from the \tedius{}
-suite.  It is outside the fragment. 
+The programs in the RFF are respectively type checking lambda terms using
+the \verb+of+ program of Example~\ref{example1} and reducing expressions like
+$5^5$ using Church numerals using a call by value strategy. \verb+lambda3+ was
+specifically conceived to measure the cost of moving under binders.
 
 \begin{center}
-
+  \scriptsize 
   \begin{tabular}{|p{1.5cm}||c|r||c|r||c|c|}
     \hline
       \multicolumn{1}{|c||}{Test} &
       \multicolumn{2}{|c||}{ELPI} &
       \multicolumn{2}{|c||}{\tedius{}} &
-    \multicolumn{2}{|c|}{ELPI/\tedius{}} \\
+      \multicolumn{2}{|c|}{ELPI/\tedius{}} \\
     \hline
     &  time (s)     & space (Kb)  & time (s) & space (Kb) &  time & space \\
     
     \hline
     \hline
-    crypt &  3.46 & 25,828  & 6.59 & 18,048 &  0.52 & 1.43 \\
+    crypto-mult &  3.46 & 25,828  & 6.59 & 18,048 &  0.52 & 1.43 \\
     \hline    
-    mu &  1.83 & 5,716 &  3.62 & 50,076 &  0.50 & 0.11 \\
+    $\mu$-puzzle &  1.83 & 5,716 &  3.62 & 50,076 &  0.50 & 0.11 \\
     \hline
     queens &  1.33  & 108,140 &  2.02 & 69,968 &  0.65 & 1.54 \\
     \hline    
     zebra &  0.85 & 6,944 &  1.89 & 8,412 &  0.44 & 0.82 \\
     \hline     
     \hline
-    lambda3 &  0.30 & 6,080 &  5.64 & 239,892 &  0.05 & 0.02 \\
+    typeof &  0.30 & 6,080 &  5.64 & 239,892 &  0.05 & 0.02 \\
     \hline
-    reduce &  0.15 & 7,288 &   11.17 & 80,736  & 0.01 & 0.08 \\
+    reduce\_cbv &  0.15 & 7,288 &   11.17 & 80,736  & 0.01 & 0.08 \\
     \hline
     \hline
-    ski &  1.30 & 21,668 &  2.68 & 8,896  & 0.48 & 2.43 \\
+    SKI &  1.30 & 21,668 &  2.68 & 8,896  & 0.48 & 2.43 \\
     \hline
     
   \end{tabular}
+\end{center}
 
- \end{center}
+The table shows that \elpi{} shines on programs in the RFF, and compares well
+outside it.  It is hard to understand why \elpi{} is faster than \tedius{}
+outside RFF, since all the optimizations we used are inspired by the
+literature about the WAM, on which \tedius{} is also based.  Our guess is that
+the OCaml garbage collector, well known for its efficiency, is responsible for
+the difference. Especially because we heavily optimized our code to lower the
+pressure on it to let it perform at the best of its
+capabilities.
 
 \input{helena}
  
