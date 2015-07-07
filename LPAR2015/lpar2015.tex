@@ -159,7 +159,7 @@ cbn (app M N) R :-
 We introduce \lp{} and discuss the role of $\beta$-reduction on the
 Example~\ref{example1}. The $\lambda$-term %$\Delta$ defined as 
 $(\lambda x.xx)$ is encoded %in $\lambda$-tree syntax 
-as \verb+(lam (x\ app x x))+ where \verb+x\F+ is
+as \verb+(lam (x\ app x x))+ where \verb+x\ F+ is
 the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+, and
 \verb+lam+ is the constructor for object-level abstraction, that builds
 a term of type $\mathcal{T}$ from a function of type
@@ -462,7 +462,7 @@ can be computed in constant time.
 \end{myprop}
 
 A valid substitution assigns to $X^j$ a term $t$ of the right type (as in simply
-type lambda calculus) and that has all free variables visible by $X^j$ (all
+typed $lambda$-calculus) and that has all free variables visible by $X^j$ (all
 $x_i$ are such that $i < j$).  
 Let $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$. Then
 \begin{equation}\label{deffrag}(X^j~x_j \ldots x_{j+k-1}) \sigma
@@ -697,19 +697,19 @@ naturally falls in \rff{}.
 Nevertheless, the \lp{} code is much simpler that the corresponding OCaml code
 and consists of just 52 clauses.  In particular, the automatic
 context management provided by the \lp{} runtime is used in place of the
-environment the OCaml code has to explicitly handle. 
+environment that the OCaml code has to explicitly handle. 
 
 The ``Grundlagen'' is a theory comprising 32 declarations and 6879
 definitions, for a total of 6911 items that in \lp{} syntax amount to around
 8MB of data.  This amount of data seems to overwhelm the capabilities of
 \tedius{}, which seem to have, by design, a limit in the size of the heap
 (circa 256MB).  Therefore we could only verify the first 2615 items in
-\tedius{}.  In the tables below, we compare preprocessing (Pre), and
+\tedius{}.  In the tables below, we compare pre-processing (Pre), and
 verification (Ver).  Depending on the system, verification refers to checking
-or (bytecode) execution, while preprocessing accounts for parsing,
+or (bytecode) execution, while pre-processing accounts for parsing,
 internalization, compilation, linking, or elaboration.  We measure the time
 for the systems Helena, \elpi, Teyjus, and Coq.  The Coq system implements a
-type checker for a $\lambda$ calculus strictly more powerful then the one in
+type checker for a $\lambda$-calculus strictly more powerful then the one in
 which the proof terms are written, hence can check the proof terms directly
 but surely incurs in some overhead.  We use it timings mainly as a reference
 for the order of magnitude.
@@ -743,7 +743,7 @@ Ver, interpreted       & 05.54 to 05.58 & 13.75 & 51.63 to 53.76 \\
 \end{tabular}
 \end{center}
 
-The preprocessing phase for \tedius{} required us to split the data in 28
+The pre-processing phase for \tedius{} required us to split the data in 28
 modules, since we observed a non linear time grout when compiling a single
 module.  Splitting the compilation in even smaller modules may lower the
 pre-processing time, but, to our understanding, should not affect the

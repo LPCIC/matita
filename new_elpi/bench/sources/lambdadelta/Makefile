@@ -41,9 +41,12 @@ profile.txt: grundlagen3.lp Makefile
 	$(H)sort $(TMP) | uniq > $@
 	$(H)$(RM) $(TMP)
 
+add.opt: add.ml
+	ocamlopt -o add.opt add.ml
+
 pippo: LINE = $(TIME) $(TJCC) helena; $(TIME) $(TJCC) grundlagen3; $(TIME) $(TJLINK) grundlagen3
 
-pippo:
+pippo: add.opt
 	$(H)$(RM) $(TMP)
 	$(H)$(H)for RUN in `seq 31`; do $(LINE); done;
 	$(H)$(ADD) < $(TMP) | sort | uniq > profile.txt
