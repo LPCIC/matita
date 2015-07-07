@@ -61,6 +61,7 @@ University of Bologna,~%\\ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
 \newcommand{\frag}{Reduction-Free Fragment}
 \newcommand{\lp}{$\lambda$Prolog}
 \newcommand{\Ll}{\ensuremath{\mathcal{L}_\lambda}}
+\newcommand{\rff}{\ensuremath{\mathcal{L}_\lambda^\beta}}
 \newcommand{\elpi}{ELPI}
 \newcommand{\tedius}{Teyjus}
 \newcommand{\CSC}[1]{\textcolor{red}{#1}}
@@ -115,12 +116,12 @@ the efficiency of the \lp{} interpreter.
 In this paper we introduce ELPI, a fast \lp{} interpreter that being written
 entirely in OCaml can be easily embedded in OCaml softwares, like Coq.
 In particular we focus on the insight that makes ELPI fast when dealing with
-binders by identifying a reduction free fragment (RFF) of \lp{} that, if
+binders by identifying a reduction free fragment (\rff{}) of \lp{} that, if
 implemented correctly, admits constant-time unification and reduction
 operations.
 We analyze the role  of $\beta$-reduction in Section~\ref{sec:beta} and
 higher order unification in Section~\ref{sec:ho}; we discuss bound names
-representations in Section~\ref{sec:dbl}; we define the RFF 
+representations in Section~\ref{sec:dbl}; we define \rff{} 
 in Section~\ref{sec:fragment} and we asses the results in
 Section~\ref{sec:benchmarks}.
 
@@ -205,7 +206,7 @@ substitution --- and thus object-level $\beta$-reduction --- we use the
 meta-level $\beta$-reduction. E.g. if \verb+F+ is \verb+(w\ app w w)+
 then \verb+(F N)+ reduces to \verb+(app N N)+.  Note that in this case
 $\beta$-reduction is fully general, because it replaces a name with a term.
-This distinction is crucial in the definition of the RFF in
+This distinction is crucial in the definition of \rff{} in
 Section~\ref{sec:fragment}.
 
 \section{Higher Order unification}% and captures}
@@ -273,7 +274,7 @@ write levels in superscript.  If we run the program
 Replacing \verb+f+ and \verb+w+ by fresh constant annotated with a level is the
 implementation technique adopted by \tedius{} to make unification able to
 check levels correctly.  As an optimization \tedius{} performs the beta
-reduction in a lazy way using an explicit substitution calculus.  In the RFF we
+reduction in a lazy way using an explicit substitution calculus.  In \rff{} we
 will be able to completely avoid such substitution.
 
 
@@ -321,7 +322,7 @@ will be able to completely avoid such substitution.
 \section{Bound variables}
 \label{sec:dbl}
 
-The last missing ingredient to define the RFF and explain why it can be
+The last missing ingredient to define \rff{} and explain why it can be
 implemented efficiently is to see how systems manipulating $\lambda$-terms
 accommodate
 $\alpha$-equivalence.  Bound variables are not represented by using
@@ -404,24 +405,24 @@ visibility of $\{x^0,x^1,x^2\}$.  Technically a binder needs no
 name when bound variables are named following a De Bruijn convention.
 Still we write it to ease reading.
 
-\begin{mydef}[RFF]
+\begin{mydef}[\rff{}]
 A term is in the Reduction Free Fragment iff
 every occurrence of a unification variable $X^j$ is applied to
 $x_j \ldots x_{j+k-1}$ for $k >= 0$.
 \end{mydef}
 
 Note that when $k$ is $0$ the variable is not applied.  Another way to
-put it is that a term is in the RFF iff all unification variables see
+put it is that a term is in \rff{} iff all unification variables see
 a (complete, no hole) prefix of the \lp{} context seen as a ordered list.
 Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and
 $X^2~x_3~x_2$ are not.
 
 Observe that the programs in Example~\ref{example1} (when \verb+cbn+ is
 rewritten to be in the pattern fragment as in Section~\ref{sec:ho}) are in
-the RFF.  Also, every Prolog program is in the RFF. As we will see
+\rff{}.  Also, every Prolog program is in \rff{}. As we will see
 in~Section~\ref{sec:benchmarks}, a
 type-checker for a dependently typed language
-and evaluator based on a reduction machine are also naturally in RFF,
+and evaluator based on a reduction machine are also naturally in \rff{},
 showing that, in practice, the fragment is quite expressive.
 
 
@@ -446,13 +447,13 @@ showing that, in practice, the fragment is quite expressive.
 % Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and $X^2~x_3~x_2$ are not.
 
 \begin{myprop}[Decidability of HO unification]
-Being the RFF included in the pattern-fragment, higher order unification is
-decidable for the RFF.
+Being \rff{} included in the pattern-fragment, higher order unification is
+decidable for \rff{}.
 \end{myprop}
 %In other words, each problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
 %admits a MGU.
 
-The most interesting property of the RFF, which also justify its name, is the
+The most interesting property of \rff{}, which also justify its name, is the
 following one. 
 
 \begin{myprop}[Constant time head $\beta$-reduction]
@@ -491,7 +492,7 @@ Caching in the terms the maximum free level is economical in terms of space
 term in linear time.  With such maximum level $l$ at hand the problem $Y^{j+k}
 \equiv t$ can be decided by simply comparing $j+k$ with $l$.
 These properties enable us to implement the operational semantics of \verb+pi+
-in constant time for terms in the RFF.
+in constant time for terms in \rff{}.
 
 We detail an example.
 The first column gathers the fresh constants and extra clauses. The
@@ -517,7 +518,7 @@ After the first step we obtain
 \verb+F+$^0$\verb+:= x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$;
 \verb+T+$^0$\verb+:= arr A+$^0$\verb+ B+$^0$; the extra clause
 about \verb+x+$_0$ in the context and a new subgoal.
-Note that the redex \verb+(F+$^0$\verb+ x+$_0$\verb+)+ is in the RFF and
+Note that the redex \verb+(F+$^0$\verb+ x+$_0$\verb+)+ is in \rff{} and
 thanks to Equation~\ref{deffrag} head normalizes in constant time
 to \verb+(lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+)+.
 The same phenomenon arises in the second step,
@@ -550,14 +551,14 @@ pointer is simply incremented.  One can represent the locally bound variable as
 an extra unification variable, and initialize, when \verb+pi+ is crossed, the
 corresponding stack cell to the first \verb+x+$_i$ free in the context.
 
-\paragraph{Stability of the RFF.}
-Unlike \Ll{}, the RFF is not stable under \lp{} resolution:
-a clause that contains only terms in the RFF
+\paragraph{Stability of \rff{}.}
+Unlike \Ll{}, \rff{} is not stable under \lp{} resolution:
+a clause that contains only terms in \rff{}
 may generate terms
 outside the fragment
 because
 of the lifting phenomenon explained the previous paragraph.\marginpar{resurrect Claudio's example?}
-Therefore an implementation must handle both terms in the RFF, with their
+Therefore an implementation must handle both terms in \rff{}, with their
 efficient computation rules, and terms outside the fragment. Our limited
 experience so far, however, is that several programs initially written in the
 fragment remains in the fragment during computation, or they can be slightly
@@ -575,7 +576,7 @@ modified to achieve that property.
 % fired at compile time, or if explicitly written $\beta$-redexes are forbidden,
 % then every $\beta$-redex in the computation is triggered by the substitution
 % of an existentially quantified variable. Therefore, if the program is and
-% remains in the RFF, then all $\beta$-reductions can be implemented in
+% remains in \rff{}, then all $\beta$-reductions can be implemented in
 % constant time.
 % 
 % Finally, another benefit of working with De Bruijn levels is that the
@@ -622,11 +623,11 @@ a real application.  Synthetic benchmarks are divided into three groups:
 first order programs from the Aquarius test suite (the
 crypto-multiplication, $\mu$-puzzle,
 generalized eight queens problem and the Einstein's zebra puzzle);
-higher order programs falling in the RFF fragment; and an higher
-order program falling outside RFF taken from the test suite of
+higher order programs falling in \rff{} fragment; and an higher
+order program falling outside \rff{} taken from the test suite of
 \tedius{} normalizing expressions in the SKI calculus.
 
-The programs in the RFF are respectively type checking lambda terms using
+The programs in \rff{} are respectively type checking lambda terms using
 the \verb+of+ program of Example~\ref{example1} and reducing expressions like
 $5^5$ using Church numerals using a call by value strategy. \verb+lambda3+ was
 specifically conceived to measure the cost of moving under binders.
@@ -670,9 +671,9 @@ specifically conceived to measure the cost of moving under binders.
   \end{tabular}
 \end{center}
 
-The table shows that \elpi{} shines on programs in the RFF, and compares well
+The table shows that \elpi{} shines on programs in \rff{}, and compares well
 outside it.  It is hard to understand why \elpi{} is faster than \tedius{}
-outside RFF, since all the optimizations we used are inspired by the
+outside \rff{}, since all the optimizations we used are inspired by the
 literature about the WAM, on which \tedius{} is also based.  Our guess is that
 the OCaml garbage collector, well known for its efficiency, is responsible for
 the difference. Especially because we heavily optimized our code to lower the
@@ -680,12 +681,12 @@ pressure on it to let it perform at the best of its
 capabilities.
 
 The real application we present is a checker for the formal system
-$\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ2a,lambdadeltaJ3a} Such
+$\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a} Such
 checker is able to validate the proof terms of the formalization of Landau's
 ``Grundlagen''~\cite{Jut79} done in Automath.  The reference checker for
 $\lambda\delta$, named Helena, has been implemented in OCaml and counts around
 2500 lines of code.  Our \lp{} implementation follows it closely, and
-naturally falls in the RFF.
+naturally falls in \rff{}.
 Nevertheless, the \lp{} code is much simpler that the corresponding OCaml code
 (450 lines), and consists of just 52 clauses.  In particular, the automatic
 context management provided by the \lp{} runtime is used in place of the
@@ -741,7 +742,7 @@ module.  Splitting the compilation in even smaller modules may lower the
 pre-processing time, but, to our understanding, should not affect the
 execution time.
 
-Our conclusion is that the RFF admits a very efficient implementation.
+Our conclusion is that \rff{} admits a very efficient implementation.
 \elpi{} is WIP available at \url{http://lpcic.gforge.inria.fr} together
 with all the benchmarks presented in the paper.
 
