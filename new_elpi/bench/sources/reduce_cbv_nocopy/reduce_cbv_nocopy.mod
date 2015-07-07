@@ -1,17 +1,12 @@
-module reduce_cbv.
+module reduce_cbv_nocopy.
 
-copy (app M N) (app M2 N2) :- copy M M2, copy N N2.
-copy (lam F) (lam F2) :- pi x\ copy x x => copy (F x) (F2 x).
-
-cbv (lam F) (lam F2) :- pi x\ cbv x x => copy x x => cbv (F x) (F2 x).
+cbv (lam F) (lam F2) :- pi x\ cbv x x => cbv (F x) (F2 x).
 cbv (app M N) R2 :-
  cbv N N2,
  cbv M M2,
  beta M2 N2 R2.
 
-beta (lam F) T R2 :- !,
- (pi x\ copy x T => copy (F x) R),
- cbv R R2.
+beta (lam F) T R2 :- !, cbv (F T) R2.
 beta H A (app H A).
 
 main :-
