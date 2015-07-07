@@ -400,14 +400,14 @@ and full_deref argsdepth last_call trail ~from ~to_ args e t =
        let args = mkinterval from args' 0 in
        AppArg (i,args2@List.map constant_of_dbl args)
     | Arg(i,argsno) ->
-       let args = mkinterval argsdepth (argsno+args) 0 in
-       let args = List.map constant_of_dbl args in
-(* 4CSC: the resulting AppArg is in the fragment! *)
+       let args1 = mkinterval argsdepth argsno 0 in
+       let args2 = mkinterval from args' 0 in
+       let args = List.map constant_of_dbl (args1@args2) in
        AppArg (i,args)
     | UVar (r,vardepth,argsno) ->
-       let args = mkinterval vardepth (argsno+args) 0 in
-       let args = List.map constant_of_dbl args in
-(* 4CSC: the resulting AppUvar is in the fragment! *)
+       let args1 = mkinterval vardepth argsno 0 in
+       let args2 = mkinterval from args' 0 in
+       let args = List.map constant_of_dbl (args1@args2) in
        AppUVar (r,vardepth,args)
     | String _ -> t
     | Int _ -> t
