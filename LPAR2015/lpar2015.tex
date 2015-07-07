@@ -353,9 +353,7 @@ invariant by lifting.
 
 In \elpi{} we chose DBL because of the following two properties:
 \begin{description}
-\item[DBL1] the name of a variable is context independent, i.e. $x$ is
-always named $x_0$, while with indexes its name depends on the depth at
-which it occur;
+\item[DBL1] the name of an occurrence of a variable does not depend on the (extra) context under which it occurs, i.e. $x$ is always named $x_0$;
 \item[DBL2]
 when $\beta$-reduction occurs under a context the variables bound
 in such context do not change name. In our example, since the reduction occurs
@@ -405,7 +403,7 @@ name when bound variables are named following a De Bruijn convention.
 Still we write it to ease reading.
 
 \begin{mydef}[RFF]
-A term is in the Reduction Free Fragment if and only if
+A term is in the Reduction Free Fragment iff
 every occurrence of a unification variable $X^j$ is applied to
 $x_j \ldots x_{j+k-1}$ for $k >= 0$.
 \end{mydef}
@@ -471,7 +469,7 @@ t~x_{j+n+1} \ldots x_{j+k-1} & \mbox{if $n+1 < k$} \\
       \end{array} \right.\end{equation}
 Thanks to property \textbf{DBL2}, Equation~\ref{deffrag} is
 \emph{syntactical}: no lifting of $t$ is required.
-Therefore the $\beta$-reductions triggered by the substitution of $X^j$ takes
+Hence the $\beta$-reductions triggered by the substitution of $X^j$ take
 constant time.
 
 \begin{myprop}[Constant time unification]
@@ -615,7 +613,7 @@ modified to achieve that property.
 % $X$ is instantiated to, or to a dummy term if $X$ is still unbound. Finally, we carefully cherry picked some design decisions from the WAM, implementing our own variations in several places. The variations have been made necessary to decrease the pressure on the garbage collector of OCaml, that is responsible for a significant percentage of the running time. For example, the heap and the stack are not organized as large arrays of mostly unused cells because otherwise the garbage collector needs to traverse the arrays at every minor and major collection. Similarly, we employ a mix of mutable and persistent data structures, avoiding mutable structures for data that is likely to survive, in order to avoid the penalty of the write barrier on data in the old generation~\cite{???}.
 % Further details will be reported in a future work due to lack of space.
 
-\section{Benchmarks.}\label{sec:benchmarks}
+\section{Assessment and conclusions}\label{sec:benchmarks}
 
 In the following table we compare the performance of ELPI and Teyjus over
 several benchmarks divided into 3 groups.  The first group contains 4
@@ -677,4 +675,3 @@ suite.  It is outside the fragment.
 \bibliography{reference}
 
 \end{document} 
-% vim: make
