@@ -1,12 +1,7 @@
-module reduce_cbn.
+module reduce_cbn_nocopy.
 
-copy (app M N) (app M2 N2) :- copy M M2, copy N N2.
-copy (lam F) (lam F2) :- pi x\ copy x x => copy (F x) (F2 x).
-
-subst F N B :- pi x\ copy x N => copy (F x) B.
-
-cbn (lam F) (lam F2) :- !, pi x\cbn x x => copy x x => cbn (F x) (F2 x).
-cbn (app (lam F) N) M :- !, subst F N B, cbn B M.
+cbn (lam F) (lam F2) :- !, pi x\cbn x x => cbn (F x) (F2 x).
+cbn (app (lam F) N) M :- !, cbn (F N) M.
 cbn (app M N) R :- cbn M (lam F), !, cbn (app (lam F) N) R.
 cbn (app X Y) (app X2 Y2) :- cbn X X2, cbn Y Y2.
 

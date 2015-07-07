@@ -8,7 +8,7 @@ export TOP=$(abspath ..)
 
 JOBS=$(sort $(notdir $(wildcard jobs/*)))
 RUNNERS=$(sort $(notdir $(wildcard runners/*)))
-TIME=timeout 10 /usr/bin/time --quiet --format='%x %E %U %Mk' -o
+TIME=timeout 30 /usr/bin/time --quiet --format='%x %E %U %Mk' -o
 
 define ulimit
 ulimit -s `cat runners/$(1).ulimit`
