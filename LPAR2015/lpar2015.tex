@@ -105,7 +105,7 @@ language to implement the so called \emph{elaborator} component of an ITP.
 The elaborator is used to type check the terms input by
 the user.  Such data, for conciseness reasons, is typically incomplete and
 the ITP is expected to infer what is missing.  The possibility to
-extend the built in elaborator with user provided ``logic programs'' (in the
+extend Coq's built-in elaborator with user provided ``logic programs'' (in the
 form of type classes or unification hints) to infer the missing pieces of
 information turned out to be a key ingredient in successful formalizations
 like~\cite{gonthier:hal-00816699}.  Embedding a \lp{} interpreter in an ITP 
@@ -156,11 +156,11 @@ cbn (app M N) R :-
 \caption{\label{example1} Type checker and Weak CBN for simply typed $\lambda$-calculus.}
 \end{example}
 
-We introduce \lp{} and discuss the role of $\beta$-reduction on the
+We introduce \lp{} and discuss the role of $\beta$-reduction on
 Example~\ref{example1}. The $\lambda$-term %$\Delta$ defined as 
 $(\lambda x.xx)$ is encoded %in $\lambda$-tree syntax 
 as \verb+(lam (x\ app x x))+ where \verb+x\ F+ is
-the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+, and
+the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+.
 \verb+lam+ is the constructor for object-level abstraction, that builds
 a term of type $\mathcal{T}$ from a function of type
 $\mathcal{T} \to \mathcal{T}$, with $\mathcal{T}$ the type of representations
@@ -170,7 +170,7 @@ their object-level application of type $\mathcal{T}$.  Following the tradition o
 The second clause for the \verb+of+ predicate shows a recurrent pattern in
 \lp: in order to analyze an higher order term, one needs to recurse
 under a binder. This is achieved
-exploiting the forall quantifier \verb+pi x\G+ together with logical
+exploiting the forall quantifier, written \verb+pi x\G+, together with logical
 implication \verb+F => G+. Operationally: the forall quantifier declares a
 new local constant \verb+x+, meant to be fresh in the entire program;
 logical implication temporarily
@@ -275,8 +275,9 @@ Replacing \verb+f+ and \verb+w+ by fresh constant annotated with a level is the
 implementation technique adopted by \tedius{} to make unification able to
 check levels correctly.  As an optimization \tedius{} performs the beta
 reduction in a lazy way using an explicit substitution calculus.  In \rff{} we
-will be able to completely avoid such substitution.
-
+will be able to completely avoid such substitution. \verb+T+, being at
+level zero, cannot be instantiated with a term containing \verb+c+ nor
+\verb+d+.
 
 % 
 % \begin{table}
@@ -326,7 +327,7 @@ The last missing ingredient to define \rff{} and explain why it can be
 implemented efficiently is to see how systems manipulating $\lambda$-terms
 accommodate
 $\alpha$-equivalence.  Bound variables are not represented by using
-real names, but canonical ``names'' (or better numbers).  De Bruijn introduced
+real names, but canonical ``names'' (hence $\alpha$-equivalence becomes syntactic equality).  De Bruijn introduced
 two, dual, naming schemas for lambda terms in~\cite{debruijnlevel}:
 indexes (DBI) and levels
 (DBL).  In the former a variable is named $n$ if its binder is found by
@@ -349,14 +350,16 @@ $\lambda x.\lambda z.f~x_0~x_0~z_1$ \\
 In both notations when a binder is removed and the corresponding variable
 substituted some ``renaming'' (called lifting) has to be performed.  
 The DBI convention is way more popular than the DBL one and \tedius{}
-indeed adopts that schema.  We believe the popularity of DBI comes from the
+indeed adopts that schema.  
+\marginpar{this next paragraph can be dropped IMO}
+We believe the popularity of DBI comes from the
 fact that weak head normalization is easier to code: the argument of the
 redex, being at the top level of the term, is always closed and hence
 invariant by lifting.
 
 In \elpi{} we chose DBL because of the following two properties:
 \begin{description}
-\item[DBL1] the name of an occurrence of a variable does not depend on the (extra) context under which it occurs, i.e. $x$ is always named $x_0$;
+\item[DBL1] the name of an occurrence of a variable does not depend on the (extra) context under which it occurs, i.e. $x$ is named $x_0$ everywhere;
 \item[DBL2]
 when $\beta$-reduction occurs under a context the variables bound
 in such context do not change name. In our example, since the reduction occurs
@@ -424,6 +427,7 @@ in~Section~\ref{sec:benchmarks}, a
 type-checker for a dependently typed language
 and evaluator based on a reduction machine are also naturally in \rff{},
 showing that, in practice, the fragment is quite expressive.
+\marginpar{FALSE, or better, subst makes copy exit the fragment.  Maybe we could say here that exp1 revised is in RFF, and use the same example later on to explain that one can exit the frament...}
 
 
 % where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
