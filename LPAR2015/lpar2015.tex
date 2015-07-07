@@ -16,7 +16,9 @@
 \usepackage{multirow}
 \setlength{\extrarowheight}{1pt}
 \usepackage{fancyvrb}
-
+\usepackage{hyperref}
+\hypersetup{plainpages=false,pdfborderstyle={/S/U/W 0}}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue}
 \floatstyle{plain} \newfloat{example}{thp}{lop} \floatname{example}{\textbf{Example}}
 \newtheorem{mydef}{Definition}
 \newtheorem{myprop}{Property}
@@ -671,8 +673,72 @@ the difference. Especially because we heavily optimized our code to lower the
 pressure on it to let it perform at the best of its
 capabilities.
 
-\input{helena}
- 
+The real application we present is a checker for the formal system
+$\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ2a,lambdadeltaJ3a} Such
+checker is able to validate the proof terms of the formalization of Landau's
+``Grundlagen''~\cite{Jut79} done in Automath.  The reference checker for
+$\lambda\delta$, named Helena, has been implemented in OCaml and counts around
+2500 lines of code.  Our \lp{} implementation follows it closely, and
+naturally falls in the RFF.
+Nevertheless, the \lp{} code is much simpler that the corresponding OCaml code
+(450 lines), and consists of just 52 clauses.  In particular, the automatic
+context management provided by the \lp{} runtime is used in place of the
+environment the OCaml code has to explicitly handle. 
+
+The ``Grundlagen'' is a theory comprising 32 declarations and 6879
+definitions, for a total of 6911 items that in \lp{} syntax amount to around
+8MB of data.  This amount of data seems to overwhelm the capabilities of
+\tedius{}, which seem to have, by design, a limit in the size of the heap
+(circa 256MB).  Therefore we could only verify the first 2615 items in
+\tedius{}.  In the tables below, we compare preprocessing (Pre), and
+verification (Ver).  Depending on the system, verification refers to checking
+or (bytecode) execution, while preprocessing accounts for parsing,
+internalization, compilation, linking, or elaboration.  We measure the time
+for the systems Helena, \elpi, Teyjus, and Coq.  The Coq system implements a
+type checker for a $\lambda$ calculus strictly more powerful then the one in
+which the proof terms are written, hence can check the proof terms directly
+but surely incurs in some overhead.  We use it timings mainly as a reference
+for the order of magnitude.
+
+\begin{center}
+  \scriptsize 
+\begin{tabular}{|l|c|c|}
+\hline
+\multicolumn{3}{|c|}{Time (s) for 2615 items only}\\
+\hline
+Task & \elpi          & Teyjus         \\
+\hline
+Pre  & 8.69 & 273.91 \\
+\hline
+Ver & 2.91 & 204.02 \\
+\hline
+\end{tabular}
+~~
+\begin{tabular}{|l|c|c|c|}
+\hline
+\multicolumn{4}{|c|}{Time (s) for all 6911 items}\\
+\hline
+Task                   & Helena         & \elpi          & Coq            \\
+\hline
+Pre + Ver, compiled    & 01.14 to 01.18 & --- & 24.26 to 24.43 \\
+\hline
+Pre, interpreted & 08.73 to 08.77 & 8.89 & 94.18 to 95.78 \\
+\hline
+Ver, interpreted       & 05.54 to 05.58 & 13.75 & 51.63 to 53.76 \\
+\hline
+\end{tabular}
+\end{center}
+
+The preprocessing phase for \tedius{} required us to split the data in 28
+modules, since we observed a non linear time grout when compiling a single
+module.  Splitting the compilation in even smaller modules may lower the
+pre-processing time, but, to our understanding, should not affect the
+execution time.
+
+Our conclusion is that the RFF admits a very efficient implementation.
+\elpi{} is WIP available at \url{http://lpcic.gforge.inria.fr} together
+with all the benchmarks presented in the paper.
+
 \bibliographystyle{plain}
 \bibliography{reference}
 
