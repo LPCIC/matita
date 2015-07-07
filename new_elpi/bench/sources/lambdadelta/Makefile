@@ -14,7 +14,7 @@ all: grundlagen.lp
 
 depend: .depend
 
-test: grundlagen3.lp Makefile
+test: grundlagen.lp Makefile
 	@echo SYM -s main. $(<:%.lp=%)
 	$(H)$(TIME) $(TJSIM) -s main. $(<:%.lp=%)
 
