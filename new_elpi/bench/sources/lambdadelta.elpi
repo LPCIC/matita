@@ -419,6 +419,6 @@ test_gv_31 :- gv+ (
    gtop))))))))
 ).
 
-main :- test_sta, test_conv, test_tv_11, test_tv_12, test_tv_13, test_tv_2, test_gv_31.
+% main :- test_sta, test_conv, test_tv_11, test_tv_12, test_tv_13, test_tv_2, test_gv_31.
 
 % before.

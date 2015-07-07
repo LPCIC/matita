@@ -3,7 +3,7 @@ TMP = tmp.txt
 
 TJCC     = ../../../../teyjus/tjcc
 TJLINK   = ../../../../teyjus/tjlink
-TJSIM    = ../../../../teyjus/tjsim -b
+TJSIM    = ../../../../teyjus/tjsim -b -k 271200
 TJDEPEND = ../../../../teyjus/tjdepend
 TIME     = `which time` -p -a -f "%U" -o $(TMP)
 ADD      = ./add.opt -a 3
