@@ -266,7 +266,7 @@ exception RestrictionFailure
      [from,+infty) -> [to,+infty)     bound variables *)
 (* when from=to, to_heap is to be called only for terms that are not in the heap*)
 let rec to_heap argsdepth last_call trail ~from ~to_ e t =
-  (*Format.eprintf "to_heap: argsdepth=%d, from=%d, to=%d %a\n%!" argsdepth from to_ ppterm t;*)
+  (*Format.eprintf "to_heap: argsdepth=%d, from=%d, to=%d %a\n%!" argsdepth from to_ (ppterm from [] argsdepth e) t;*)
   let delta = from - to_ in
   let rec aux depth x =
    (*Format.eprintf "to_heap(%d,%d): %a\n%!" depth delta (ppterm depth [] 0 e) x;*)
@@ -756,9 +756,15 @@ let unif trail last_call adepth a e bdepth b =
       (* TODO: unif goes into the UVar when !r != dummy case below.
          Rewrite the code to do the job directly? *)
       unif depth a bdepth b heap
-   | AppUVar _,_ -> assert false (* Out of fragment *)
-   | _, AppUVar _ -> assert false (* Out of fragment *)
-   | AppArg (_,_),_ -> assert false (* Out of fragment *)
+   | AppUVar _,_ ->
+      Format.eprintf "Unification out of fragment not delayed yet: %a == %a\n%!" (ppterm adepth [] 0 e) a (ppterm bdepth [] 0 e) b;
+      assert false (* Out of fragment *)
+   | _, AppUVar _ ->
+      Format.eprintf "Unification out of fragment not delayed yet: %a == %a\n%!" (ppterm adepth [] 0 e) a (ppterm bdepth [] 0 e) b;
+      assert false (* Out of fragment *)
+   | AppArg (_,_),_ ->
+      Format.eprintf "Unification out of fragment not delayed yet: %a == %a\n%!" (ppterm adepth [] 0 e) a (ppterm bdepth [] 0 e) b;
+      assert false (* Out of fragment *)
    | App (c1,x2,xs), App (c2,y2,ys) ->
       (* Compressed cut&past from Const vs Const case below +
          delta=0 optimization for <c1,c2> and <x2,y2> *)
