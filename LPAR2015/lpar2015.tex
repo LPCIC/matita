@@ -92,7 +92,7 @@ implementation of the language.
 %Previous slower implementations are described
 %in~\cite{}. \CSC{OTHER IMPLEMENTATIONS IN ISABELLE ETC. MISSING}
 The main difference with respect to Prolog is that \lp{} manipulates
-$\lambda$-tree expressions, i.e. syntax containing binders. Therefore the
+$\lambda$-tree expressions, i.e. syntax containing binders. Therefore, the
 natural application of \lp{} is meta-programming (see~\cite{LPAZ} for
 an interesting discussion), including: automatic generation of programs from
 specifications; animation of operational semantics;
@@ -122,7 +122,7 @@ operations.
 We analyze the role  of $\beta$-reduction in Section~\ref{sec:beta} and
 higher order unification in Section~\ref{sec:ho}; we discuss bound names
 representations in Section~\ref{sec:dbl}; we define \rff{} 
-in Section~\ref{sec:fragment} and we asses the results in
+in Section~\ref{sec:fragment} and we assess the results in
 Section~\ref{sec:benchmarks}.
 
 % We don't mention constraints here, too much vapor ware IMO.
@@ -171,7 +171,7 @@ their object-level application of type $\mathcal{T}$.  Following the tradition o
 The second clause for the \verb+of+ predicate shows a recurrent pattern in
 \lp: in order to analyze an higher order term, one needs to recurse
 under a binder. This is achieved
-combining the forall quantifier, written \verb+pi x\G+, with logical
+combining the forall quantifier, written \verb+pi x\ G+, with logical
 implication \verb+H => I+. The operational semantics implements the
 standard introduction rules of implication and the universal quantifier:
 the forall quantifier declares a
@@ -328,11 +328,11 @@ The last missing ingredient to define \rff{} and explain why it can be
 implemented efficiently is to see how systems that manipulate $\lambda$-terms
 accommodate
 $\alpha$-equivalence.  Bound variables are not represented by using
-real names, but canonical ``names'' (hence $\alpha$-equivalence becomes syntactic equality).  De Bruijn introduced
-two, dual, naming schemas for lambda terms in~\cite{debruijnlevel}:
-indexes (DBI) and levels
+real names, but canonical ``names'' (hence $\alpha$-equivalence becomes syntactic equality).
+De Bruijn introduced two, dual, naming schemas for $\lambda$-terms in~\cite{debruijnlevel}:
+depth indexes (DBI) and levels
 (DBL).  In the former, that is the most widely adopted one, a variable is named $n$ if its binder is found by
-crossing $n$ binders going in the direction of the root.  In the latter a
+crossing $n$ binders going in the direction of the root. In the latter a
 variable named $n$ is bound by the $n$-th binder one encounters in the path
 from the root to the variable.
 In the following table we write the term $\lambda x.(\lambda y.\lambda z.f~x~y~z)~x$ and its reduct in the two notations:
@@ -391,7 +391,8 @@ are treated \emph{exactly as constants}, and that the two notions of level
 \section{The reduction-free fragment \rff{}}\label{sec:fragment}
 \lp{} is a truly higher order language: even clauses can be
 passed around, unified, etc.  Nevertheless this plays no role here, so
-we exclude from the syntax of terms the one of formulas.
+we exclude formulas from the syntax of terms.
+Therefore, our terms are defined just by:
 \vspace{-0.5em}
 $$\begin{array}{l}
    t ::= x_i ~|~ X^j ~|~ \lambda x_i.t ~|~ t~t
@@ -495,7 +496,7 @@ The latter can be implemented in constant time iff no occur-check is needed
 for $X$ and if the level of the highest free variable in $t$ can be recovered
 in $O(1)$ and is smaller than $j+k$. The recovery can be economically
 implemented caching the maximum level in the term, that is something often
-pre-computes on the input term in linear time.
+pre-computed on the input term in linear time.
 Avoiding useless occur-check is a typical optimization of the Warren Abstract
 Machine (WAM), e.g. when $X$ occurs linearly in the head of a clause.
 %With such maximum level $l$ at hand the problem $Y^{j+k}
@@ -629,7 +630,7 @@ modified to achieve that property.
 
 \section{Assessment and conclusions}\label{sec:benchmarks}
 
-We asses the performances of \elpi{} on a set of synthetic benchmarks and
+We assess the performances of \elpi{} on a set of synthetic benchmarks and
 a real application.  Synthetic benchmarks are divided into three groups:
 first order programs from the Aquarius test suite (the
 crypto-multiplication, $\mu$-puzzle,
@@ -706,16 +707,16 @@ naturally falls in \rff{}.
 Nevertheless, the \lp{} code is much simpler that the corresponding OCaml code
 and consists of just 52 clauses.  In particular, the automatic
 context management provided by the \lp{} runtime is used in place of the
-environment that the OCaml code has to explicitly handle. 
+environment that the OCaml code has to handle explicitly.
 
 The ``Grundlagen'' is a theory comprising 32 declarations and 6879
-definitions, for a total of 6911 items that in \lp{} syntax amount to around
+definitions, for a total of 6911 items amounting, in \lp{} syntax, to about
 8MB of data.  This amount of data seems to overwhelm the capabilities of
-\tedius{}, which seem to have, by design, a limit in the size of the heap
+\tedius{}, which seems to have, by design, a limit in the size of the heap
 (circa 256MB).  Therefore we could only verify the first 2615 items in
 \tedius{}.  In the tables below, we compare pre-processing (Pre), and
 verification (Ver).  Depending on the system, verification refers to checking
-or (bytecode) execution, while pre-processing accounts for parsing,
+or (byte code) execution, while pre-processing accounts for parsing,
 internalization, compilation, linking, or elaboration.  We measure the time
 for the systems Helena, \elpi, Teyjus, and Coq.  The Coq system implements a
 type checker for a $\lambda$-calculus strictly more powerful then the one in
@@ -752,7 +753,7 @@ Ver & 4.40 & 0.33 & 13.90 & 7.21 & 1.19\\ % coqchk.opt: 3.90
 \end{center}
 
 The pre-processing phase for \tedius{} required us to split the data in 28
-modules, since we observed a non linear time growth when compiling a single
+modules, since we observed a non-linear time growth when compiling a single
 module.  Splitting the compilation in even smaller modules may lower the
 pre-processing time, but, to our understanding, should not affect the
 execution time.
