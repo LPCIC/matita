@@ -738,19 +738,15 @@ RAM & 91,628 & 1,072,092 & 0.09 \\
 \hline
 \end{tabular}
 ~~
-\begin{tabular}{|l|c|c|c|}
+\begin{tabular}{|l|c|c|c|c|c|}
 \hline
-\multicolumn{4}{|c|}{Time (s) for all 6911 items}\\
+\multicolumn{6}{|c|}{Time (s) for all 6911 items}\\
 \hline
-Task                   & Helena         & \elpi          & Coq            \\
+Task                   &\multicolumn{2}{|c|}{Helena}         & \elpi          & \multicolumn{2}{|c|}{Coq}            \\
+                 &interp. & comp.& &interp. & comp.\\ \hline
+Pre & 2.42 & 0.41 & 9.04 & 49.28 & 8.83 \\
 \hline
-Pre, compiled    & 0.41 & --- & 8.83 \\
-\hline
-Ver, compiled    & 0.33 & --- & 1.19\\ % coqchk.opt: 3.90
-\hline
-Pre, interpreted & 2.42 & 9.04 & 49.28 \\
-\hline
-Ver, interpreted & 4.40 & 13.90 & 7.21 \\
+Ver & 4.40 & 0.33 & 13.90 & 7.21 & 1.19\\ % coqchk.opt: 3.90
 \hline
 \end{tabular}
 \end{center}
