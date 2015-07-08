@@ -198,9 +198,9 @@ a new goal \verb+(of (app c c) B)+ (where \verb+c+ is the fresh constant
 substituted for \verb+w+) to be solved with the extra clause \verb+(of c A)+
 at disposal.
 
-In this first example, the meta-level $\beta$-reduction is only employed
+In this first part of the example, the meta-level $\beta$-reduction is only employed
 to inspect a term under a binder by replacing the bound name with a fresh
-constant.  The second example
+constant.  The second part (reduction)
 shows a radically different pattern: in order to implement object-level
 substitution --- and thus object-level $\beta$-reduction --- we use the
 meta-level $\beta$-reduction. E.g. if \verb+F+ is \verb+(w\ app w w)+
@@ -256,7 +256,7 @@ implicitly existentially bound in front of the clause, so \verb+F+ does not
 see \verb+x+).  The same holds for \verb+copy+.
 
 To correctly implement HO unification, even in the restricted \Ll{} fragment,
-one typically tracks the \emph{level} of unification variables an fresh constants.  The proof theoretic interpretation of a \lp{} execution as an intuitionistic proof gives the following reading: unification is taking place under
+one typically tracks the \emph{level} of unification variables and fresh constants.  The proof theoretic interpretation of a \lp{} execution as an intuitionistic proof gives the following reading: unification is taking place under
 a mixed prefix of $\forall$ and $\exists$ quantifiers; their order
 determines if a unification variable (an existential) can be assigned to
 (proved by) a term that contain a universally quantified variable.
@@ -264,7 +264,7 @@ E.g. $\forall x,\exists Y, Y = x$ is always provable while
 $\exists Y,\forall x, Y = x$ is not.
 \marginpar{rephrase with symbols}
 Whenever a clause is used, its unification variables are declared at
-a level that corresponding the length of the current ``context'', and whenever
+a level that corresponds to the length of the current ``context'', and whenever
 a fresh constant is created (for the \verb+pi+ quantifier) the context
 is extended and the constant is placed at such level.  From now on we will
 write levels in superscript.  If we run the program
@@ -336,7 +336,7 @@ variable named $n$ is bound by the $n$-th binder one encounters in the path
 from the root to the variable.
 In the following table we write the term $\lambda x.(\lambda y.\lambda z.f~x~y~z)~x$ and its reduct in the two notations:
 %\begin{table}
-\vspace{-0.8em}
+\vspace{-0.5em}
 \begin{center}
 \begin{tabular}{r@{~~}c@{~$\to_\beta$~}c}
 Indexes: & $\lambda x.(\lambda y.\lambda z.f~x_2~y_1~z_0)~x_0$ &
@@ -345,7 +345,7 @@ Levels: & $\lambda x.(\lambda y.\lambda z.f~x_0~y_1~z_2)~x_0$ &
 $\lambda x.\lambda z.f~x_0~x_0~z_1$ \\
 \end{tabular}
 \end{center}
-\vspace{-0.2em}
+\vspace{-0.5em}
 %\end{table}
 In both notations when a binder is removed and the corresponding variable
 substituted some ``renaming'' (called lifting) has to be performed.  
@@ -359,16 +359,15 @@ invariant by lifting.
 
 In \elpi{} we chose DBL because of the following two properties:
 \begin{description}
-\item[DBL1] the name of an occurrence of a variable does not depend on the (extra) context under which it occurs, i.e. $x$ is named $x_0$ everywhere;
+\item[DBL1] an occurrence keeps its level when moved under additional binders,
+i.e. $x_i$ in $\Gamma$ remains $x_i$ in $\Gamma, \Delta$;
 \item[DBL2]
 when $\beta$-reduction occurs under a context the variables bound
-in such context do not change name. In our example, since the reduction occurs
-under the binder for $x$, $x$ is named $x_0$ in the initial and in the reduct
-term.
+in such context are not renamed in the reduct.
 \end{description}
 Another way to put it is that variables already pushed in the context
 are treated \emph{exactly as constants}, and their name is the level at
-which the occur in the context.  From now on we subscript variables
+which they occur in the context.  From now on we subscript variables
 with their name in DBL convention.
 
 %One important property of the pattern fragment is that $\beta$-reduction can
@@ -395,9 +394,9 @@ $$\begin{array}{l}
    t ::= x_i ~|~ X^j ~|~ \lambda x_i.t ~|~ t~t
 \end{array}$$
 \vspace{-0.1em}
-Since variables follow the DBL representation, we don't have a case
-for constants: when $i < 0$ then $x_i$ represents a global constant,
-like \verb+app+ or \verb+lam+ in Example~\ref{example1}.  Since the
+Since variables follow the DBL representation, we do not have a case
+for constants like \verb+app+ or \verb+lam+, that are represented as $x_i$ for  some negative $i$.
+Since the
 level of a variable completely identifies it, when we write
 $x_i \ldots x_{i+k}$ we mean $k$ distinct bound (i.e. $i \geq 0$) variables.
 The superscript $j$ annotates unification variables with their
@@ -414,11 +413,14 @@ every occurrence of a unification variable $X^j$ is applied to
 $x_j \ldots x_{j+k-1}$ for $k >= 0$.
 \end{mydef}
 
-Note that when $k$ is $0$ the variable is not applied.  Another way to
-put it is that a term is in \rff{} iff all unification variables see
-a (complete, no hole) prefix of the \lp{} context seen as a ordered list.
+Note that when $k$ is $0$ the variable is not applied.  A consequence of
+the definition is that if a term is in \rff{} then all occurrences of
+applications of unification variables
+can be instantiated with a term closed
+in an initial segment of the \lp{} context seen as a ordered list.
 Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and
-$X^2~x_3~x_2$ are not.
+$X^2~x_3~x_2$ are not; $X^2~x_2~x_3$ can be instantiated with any term
+closed in $\{\ldots,x_0,x_1,x_2,x_3\}$.
 
 Observe that the programs in Example~\ref{example1} (when \verb+cbn+ is
 rewritten to be in the pattern fragment as in Section~\ref{sec:ho}) are in
@@ -457,18 +459,17 @@ decidable for \rff{}.
 %In other words, each problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
 %admits a MGU.
 
-The most interesting property of \rff{}, which also justify its name, is the
-following one. 
+The most interesting property of \rff{}, which also justify its name, is:
 
 \begin{myprop}[Constant time head $\beta$-reduction]
-Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables.  Then the head normal form of $(X^j~x_j \ldots x_{j+k-1}) \sigma$
-can be computed in constant time.
+Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables.  Then the first $k-1$ head reductions of $(X^j~x_j \ldots x_{j+k-1}) \sigma$ can be computed in constant time.
 \end{myprop}
 
 A valid substitution assigns to $X^j$ a term $t$ of the right type (as in simply
-typed $lambda$-calculus) and that has all free variables visible by $X^j$ (all
-$x_i$ are such that $i < j$).  
-Let $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$. Then
+typed $\lambda$-calculus) and such that the free variables of $t$ are
+all visible by $X^j$ (all $x_i$ are such that $i < j$).  
+Therefore $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$ for some $n$.
+Then
 \begin{equation}\label{deffrag}(X^j~x_j \ldots x_{j+k-1}) \sigma
  = \left\{ \begin{array}{ll}
 t~x_{j+n+1} \ldots x_{j+k-1} & \mbox{if $n+1 < k$} \\
@@ -481,20 +482,21 @@ constant time.
 
 \begin{myprop}[Constant time unification]
 A unification problem of the form  $X^j~x_j\ldots x_{j+k-1} \equiv t$
-can be solved in constant time.
+can be frequently solved in constant time.
 \end{myprop}
 
 The unification problem $X^j~x_j\ldots x_{j+k-1} \equiv t$ can always be
 rewritten as two simpler problems: $X^j \equiv \lambda x_j. \ldots \lambda x_{j+k-1}. Y^{j+k}$ and $Y^{j+k} \equiv t$ for a fresh $Y$.
 The former is a trivial assignment that requires no check.
-The latter can be implemented in constant time if: no occur-check is needed
-for $X$ and if one caches in the terms the level of the highest free variable.
+The latter can be implemented in constant time iff no occur-check is needed
+for $X$ and if the level of the highest free variable in $t$ can be recovered
+in $O(1)$ and is smaller than $j+k$. The recovery can be economically
+implemented caching the maximum level in the term, and is something one
+typically pre-computes on the input term in linear time.
 Avoiding useless occur-check is a typical optimization of the Warren Abstract
 Machine (WAM), e.g. when $X$ occurs linearly in the head of a clause.
-Caching in the terms the maximum free level is economical in terms of space
-(just one integer) and is something one typically pre-computes on the input
-term in linear time.  With such maximum level $l$ at hand the problem $Y^{j+k}
-\equiv t$ can be decided by simply comparing $j+k$ with $l$.
+%With such maximum level $l$ at hand the problem $Y^{j+k}
+%\equiv t$ can be decided by simply comparing $j+k$ with $l$.
 These properties enable us to implement the operational semantics of \verb+pi+
 in constant time for terms in \rff{}.
 
@@ -546,7 +548,7 @@ The drawback is that clauses with bound variables, like the one
 used in the first two back chains, need to be lifted: the first time the
 bound variable is named \verb+x+$_0$,
 while the second time \verb+x+$_1$.
-Luckily, this renaming, thanks property \textbf{DBL1}
+Luckily, this renaming, because of property \textbf{DBL1},
 can be performed in constant time using the very same machinery one uses to
 refresh the unification variables.
 E.g. when the WAM unifies the head of a clauses it assigns 
@@ -715,7 +717,7 @@ internalization, compilation, linking, or elaboration.  We measure the time
 for the systems Helena, \elpi, Teyjus, and Coq.  The Coq system implements a
 type checker for a $\lambda$-calculus strictly more powerful then the one in
 which the proof terms are written, hence can check the proof terms directly
-but surely incurs in some overhead.  We use it timings mainly as a reference
+but surely incurs in some overhead.  We use its timings mainly as a reference
 for the order of magnitude.
 
 \begin{center}
@@ -748,14 +750,13 @@ Ver, interpreted       & 05.54 to 05.58 & 13.75 & 51.63 to 53.76 \\
 \end{center}
 
 The pre-processing phase for \tedius{} required us to split the data in 28
-modules, since we observed a non linear time grout when compiling a single
+modules, since we observed a non linear time growth when compiling a single
 module.  Splitting the compilation in even smaller modules may lower the
 pre-processing time, but, to our understanding, should not affect the
 execution time.
 
 Our conclusion is that \rff{} admits a very efficient implementation.
-\elpi{} is WIP available at \url{http://lpcic.gforge.inria.fr} together
-with all the benchmarks presented in the paper.
+\elpi{} is work in progress, available at \url{http://lpcic.gforge.inria.fr} together with all the benchmarks presented in the paper.
 
 \marginpar{in the biblio we can get rid of odd order thm if needed}
 \bibliographystyle{plain}
