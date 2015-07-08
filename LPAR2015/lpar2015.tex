@@ -721,19 +721,20 @@ for the systems Helena, \elpi, Teyjus, and Coq.  The Coq system implements a
 type checker for a $\lambda$-calculus strictly more powerful then the one in
 which the proof terms are written, hence can check the proof terms directly
 but surely incurs in some overhead.  We use its timings mainly as a reference
-for the order of magnitude.
+for the order of magnitude of a state-of-the-art ITP.
 
 \begin{center}
   \scriptsize 
-\begin{tabular}{|l|c|c|}
+\begin{tabular}{|l|c|c|c|}
 \hline
-\multicolumn{3}{|c|}{Time (s) for 2615 items only}\\
+\multicolumn{4}{|c|}{Time (s) for 2615 items only}\\
 \hline
-Task & \elpi          & Teyjus         \\
+ & \elpi          & Teyjus  & \elpi/Teyjus        \\
 \hline
-Pre  & 2.55 & 49.57 \\
+Pre  & 2.55 & 49.57 & 0.05 \\
 \hline
-Ver & 3.06 & 203.36 \\
+Ver & 3.06 & 203.36 & 0.02 \\ \hline
+RAM & 91,628 & 1,072,092 & 0.09 \\
 \hline
 \end{tabular}
 ~~
