@@ -265,7 +265,9 @@ exception RestrictionFailure
      [to,from)     -> error           free restricted variables
      [from,+infty) -> [to,+infty)     bound variables *)
 (* when from=to, to_heap is to be called only for terms that are not in the heap*)
-let rec to_heap argsdepth last_call trail ~from ~to_ e t =
+let def_avoid = ref dummy
+let occurr_check r1 r2 = if r1 == r2 then raise RestrictionFailure
+let rec to_heap argsdepth last_call trail ~from ~to_ ?(avoid=def_avoid) e t =
   (*Format.eprintf "to_heap: argsdepth=%d, from=%d, to=%d %a\n%!" argsdepth from to_ (ppterm from [] argsdepth e) t;*)
   let delta = from - to_ in
   let rec aux depth x =
@@ -300,6 +302,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
         (* Second phase: from from to to *)
         aux depth t
     | UVar (r,vardepth,0) when delta > 0 ->
+       occurr_check avoid r;
        if vardepth <= to_ then x
        else begin
         let fresh = UVar(ref dummy,to_,0) in
@@ -311,6 +314,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
         fresh
        end
     | UVar (r,vardepth,argsno) when delta < 0 ->
+       occurr_check avoid r;
        if vardepth+argsno <= from then x
        else
         let r,vardepth,argsno =
@@ -328,6 +332,7 @@ let rec to_heap argsdepth last_call trail ~from ~to_ e t =
         (* Second phase: from from to to *)
         aux depth t
     | AppUVar (r,vardepth,args) when delta < 0 ->
+       occurr_check avoid r;
        let r,vardepth,argsno =
         decrease_depth r ~from:vardepth ~to_:from 0 in
        let args0= List.map constant_of_dbl (mkinterval vardepth argsno 0) in
@@ -552,9 +557,9 @@ do_app_deref := app_deref;;
 
 
 (* Restrict is to be called only on heap terms *)
-let restrict argsdepth last_call trail ~from ~to_ e t =
- if from=to_ then t
- else to_heap argsdepth last_call trail ~from ~to_ e t
+let restrict ?avoid argsdepth last_call trail ~from ~to_ e t =
+ if from=to_ && avoid == None then t
+ else to_heap ?avoid argsdepth last_call trail ~from ~to_ e t
 
 
 (****** Indexing ******)
@@ -713,11 +718,11 @@ let unif trail last_call adepth a e bdepth b =
        (try
          r :=
           if depth = 0 then
-           restrict adepth last_call trail ~from:adepth ~to_:origdepth e a
+           restrict ~avoid:r adepth last_call trail ~from:adepth ~to_:origdepth e a
           else (
            (* First step: we restrict the l.h.s. to the r.h.s. level *)
            let a =
-            to_heap adepth last_call trail ~from:adepth ~to_:bdepth e a in
+            to_heap ~avoid:r adepth last_call trail ~from:adepth ~to_:bdepth e a in
            (* Second step: we restrict the l.h.s. *)
            to_heap adepth last_call trail ~from:(bdepth+depth)
             ~to_:origdepth e a);
@@ -738,11 +743,11 @@ let unif trail last_call adepth a e bdepth b =
          r :=
           if depth=0 then
            if origdepth = bdepth && heap then b else
-            to_heap adepth last_call trail ~from:bdepth ~to_:origdepth e b
+            to_heap ~avoid:r adepth last_call trail ~from:bdepth ~to_:origdepth e b
           else (
            (* First step: we lift the r.h.s. to the l.h.s. level *)
            let b =
-            to_heap adepth last_call trail ~from:bdepth ~to_:adepth e b in
+            to_heap ~avoid:r adepth last_call trail ~from:bdepth ~to_:adepth e b in
            (* Second step: we restrict the r.h.s. *)
            to_heap adepth last_call trail ~from:(adepth+depth) ~to_:origdepth
             e b);
