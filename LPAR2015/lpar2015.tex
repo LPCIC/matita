@@ -325,13 +325,13 @@ In \rff{} such substitutions will be completely avoided.
 \label{sec:dbl}
 
 The last missing ingredient to define \rff{} and explain why it can be
-implemented efficiently is to see how systems manipulating $\lambda$-terms
+implemented efficiently is to see how systems that manipulate $\lambda$-terms
 accommodate
 $\alpha$-equivalence.  Bound variables are not represented by using
 real names, but canonical ``names'' (hence $\alpha$-equivalence becomes syntactic equality).  De Bruijn introduced
 two, dual, naming schemas for lambda terms in~\cite{debruijnlevel}:
 indexes (DBI) and levels
-(DBL).  In the former a variable is named $n$ if its binder is found by
+(DBL).  In the former, that is the most widely adopted one, a variable is named $n$ if its binder is found by
 crossing $n$ binders going in the direction of the root.  In the latter a
 variable named $n$ is bound by the $n$-th binder one encounters in the path
 from the root to the variable.
@@ -349,27 +349,29 @@ $\lambda x.\lambda z.f~x_0~x_0~z_1$ \\
 \vspace{-0.5em}
 %\end{table}
 In both notations when a binder is removed and the corresponding variable
-substituted some ``renaming'' (called lifting) has to be performed.  
-The DBI convention is way more popular than the DBL one and \tedius{}
-indeed adopts that schema.  
-\marginpar{this next paragraph can be dropped IMO}
-We believe the popularity of DBI comes from the
-fact that weak head normalization is easier to code: the argument of the
-redex, being at the top level of the term, is always closed and hence
-invariant by lifting.
+substituted some ``renaming'' (called lifting) is performed.  
+\tedius{} follows
+a third approach that mixes the two, using indexes for variables bound in
+the terms, and levels for variables bound in the context. The advantage
+is that no lifting is required when moving a term under additional binders.
+However, an expensive substitution of a level for an index is
+required to push a binder to the context.
+%\marginpar{this next paragraph can be dropped IMO}
+%We believe the popularity of DBI comes from the
+%fact that weak head normalization is easier to code: the argument of the
+%redex, being at the top level of the term, is always closed and hence
+%invariant by lifting.
 
-In \elpi{} we chose DBL because of the following two properties:
+In \elpi{} we crucially chose DBL because of the following three properties:
 \begin{description}
-\item[DBL1] an occurrence keeps its level when moved under additional binders,
-i.e. $x_i$ in $\Gamma$ remains $x_i$ in $\Gamma, \Delta$;
-\item[DBL2]
-when $\beta$-reduction occurs under a context the variables bound
-in such context are not renamed in the reduct.
+\item[DBL1] $x_i$ in $\Gamma$ keeps the name $x_i$ in $\Gamma, \Delta$
+\item[DBL2] the variables bound by $\Gamma$ in a $\beta$-redex keep their name in the reduct
+\item[DBL3] when a binder is pushed to the context, the bound occurrences keep
+ their name: $\Gamma \vdash $\verb+ pi \+$ x^n \ p(x^n) \leadsto \Gamma, x^n \vdash p(x^n)$
 \end{description}
 Another way to put it is that variables already pushed in the context
-are treated \emph{exactly as constants}, and their name is the level at
-which they occur in the context.  From now on we subscript variables
-with their name in DBL convention.
+are treated \emph{exactly as constants}, and that the two notions of level
+--- De Bruijn's and the position in the context introduced in the last section --- coincide.
 
 %One important property of the pattern fragment is that $\beta$-reduction can
 %only substitute names with other names. This property, however, is not
