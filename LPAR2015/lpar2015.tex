@@ -276,8 +276,10 @@ If we run the program
 \verb+(of (lam f\lam w\app f w) T+$^0$\verb+)+, after two steps the goal becomes
 \verb+(of (app c+$^1$\verb+ d+$^2$\verb+) T+$^0$\verb+)+.
 Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with the level-annotated constants $c^1$ and $d^2$ performing the $\beta$-reductions
-in a lazy way using an explicit substitution calculus. The lazy propagation
-of explicit substitutions has tipically poor memory performance.
+in a lazy way using an explicit substitution calculus
+\`a la $\lambda\sigma$-calculus.
+The lazy propagation
+of explicit substitutions has typically poor memory performance.
 In \rff{} such substitutions will be completely avoided.
 
 % 
@@ -371,7 +373,7 @@ In \elpi{} we crucially chose DBL because of the following three properties:
 \end{description}
 Another way to put it is that variables already pushed in the context
 are treated \emph{exactly as constants}, and that the two notions of level
---- De Bruijn's and the position in the context introduced in the last section --- coincide.
+--- De Bruijn's and the position in the context introduced in Section~\ref{sec:ho} --- coincide.
 
 %One important property of the pattern fragment is that $\beta$-reduction can
 %only substitute names with other names. This property, however, is not
@@ -457,7 +459,7 @@ showing that, in practice, the fragment is quite expressive.
 % Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and $X^2~x_3~x_2$ are not.
 
 \begin{myprop}[Decidability of HO unification]
-Being \rff{} included in the pattern-fragment, higher order unification is
+Being \rff{} included in the pattern-fragment \Ll{}, higher order unification is
 decidable for \rff{}.
 \end{myprop}
 %In other words, each problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
@@ -635,7 +637,7 @@ a real application. Synthetic benchmarks are divided into three groups:
 first order programs from the Aquarius test suite (the
 crypto-multiplication, $\mu$-puzzle,
 generalized eight queens problem and the Einstein's zebra puzzle);
-higher order programs falling in \rff{} fragment; and an higher
+higher order programs falling in \rff{}; and an higher
 order program falling outside \rff{} taken from the test suite of
 \tedius{} normalizing expressions in the SKI calculus.
 
@@ -684,18 +686,33 @@ binders.
 \end{center}
 
 The table shows that \elpi{} shines on programs in \rff{}, and compares well
-outside it. \tedius{} is quick on the reduce\_cbn test only because CBN does not require to traverse the arguments and thus the explicit substitutions are
-not propagated. Inserting in the test a seamlessy innocuous printing of the
-argument triggers propagation and makes the CBN case as slow as the CBV case.
+outside it. The alternating performance \tedius{} on the reduction tests have
+to be attributed to the $\lambda\sigma$ machinery
+(see Section~\ref{sec:dbl}) employed to cross binders:
+by their very nature, explicit
+substitutions fit well a lazy reduction strategy like cbn (even if their space
+overhead is visible).  On the contrary they are counterproductive in a strict
+reduction strategy like cbv that, traversing the redex arguments eagerly ends
+up systematically pushing the suspended substitution to the leaves of the
+term, i.e. completely defeating the purpose of the entire machinery.  
+If one makes \tedius{} artificially
+push explicit substitutions in the cbn case too, he halves memory consumption
+but degrades the performances of approximatively 10 seconds.  Our conclusion
+is that our approach, requiring no substitution for crossing binders, makes
+\elpi{} not only faster, but also more predictable performance wise: as one
+expects cbv is faster than cbn in computing the normal form of $5^5$, since
+it avoids duplicating non normal terms.
+% \tedius{} is quick on the reduce\_cbn test only because CBN does not require to traverse the arguments and thus the explicit substitutions are
+% not propagated. Inserting in the test a seamlessy innocuous printing of the
+% argument triggers propagation and makes the CBN case as slow as the CBV case.
 
 \marginpar{maybe shrink this speculation}
 It is hard to understand why \elpi{} is faster than \tedius{}
-outside \rff{}, since all the optimizations we used are inspired by the
-literature about the WAM, on which \tedius{} is also based. Our guess is that
-the OCaml garbage collector, well known for its efficiency, is responsible for
+outside \rff{}, since all the optimizations we implemented are inspired by the
+literature about the WAM, on which \tedius{} is also based.  Our guess is that
+the OCaml garbage collector is responsible for
 the difference. Especially because we heavily optimized our code to lower the
-pressure on it in order to let it perform at the best of its
-capabilities.
+pressure on it in order to let it perform at the best of its capabilities.
 
 The real application we present is a checker for the formal system
 $\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a} Such
