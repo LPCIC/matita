@@ -68,13 +68,13 @@ clean:
 test:	newelpi
 	./newelpi -impl 19 tests/queens.elpi
 
-profile-grundlagen: TIME = time -p -o grundlagen.time -a 
+profile-grundlagen: TIME = time -p -o ../../grundlagen.time -a
 
-profile-grundlagen: ELPI = ./newelpi -impl 22 tests/lambdadelta.elpi tests/grundlagen2.elpi
+profile-grundlagen: ELPI = ../../newelpi -impl 22 grundlagen.elpi
 
-profile-grundlagen: EXEC = >> grundlagen.txt 2>&1
+profile-grundlagen: EXEC = >> ../../grundlagen.txt 2>&1
 
 profile-grundlagen: newelpi
-	@for TMP in `seq 31`; do echo grundlagen. | $(TIME) $(ELPI) $(EXEC); done
+	cd bench/sources && for TMP in `seq 31`; do echo main. | $(TIME) $(ELPI) $(EXEC); done
 
 .PHONY: test clean profile-grundlagen

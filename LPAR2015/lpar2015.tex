@@ -103,14 +103,14 @@ component of an interactive theorem prover (ITP). Indeed the motivation of our
 interest in \lp{} is that we are looking for the best 
 language to implement the so called \emph{elaborator} component of an ITP.
 The elaborator is used to type check the terms input by
-the user.  Such data, for conciseness reasons, is typically incomplete and
-the ITP is expected to infer what is missing.  The possibility to
+the user. Such data, for conciseness reasons, is typically incomplete and
+the ITP is expected to infer what is missing. The possibility to
 extend Coq's built-in elaborator with user provided ``logic programs'' (in the
 form of type classes or unification hints) to infer the missing pieces of
 information turned out to be a key ingredient in successful formalizations
-like~\cite{gonthier:hal-00816699}.  Embedding a \lp{} interpreter in an ITP 
+like~\cite{gonthier:hal-00816699}. Embedding a \lp{} interpreter in an ITP
 would enable the elaborator and its extensions to be expressed in the same,
-high level, language.  A crucial requisite for this plan to be realistic is
+high level, language. A crucial requisite for this plan to be realistic is
 the efficiency of the \lp{} interpreter.
 
 In this paper we introduce ELPI, a fast \lp{} interpreter written in OCaml
@@ -119,7 +119,7 @@ In particular we focus on the insight that makes ELPI fast when dealing with
 binders by identifying a reduction-free fragment (\rff{}) of \lp{} that, if
 implemented correctly, admits constant-time unification and reduction
 operations.
-We analyze the role  of $\beta$-reduction in Section~\ref{sec:beta} and
+We analyze the role of $\beta$-reduction in Section~\ref{sec:beta} and
 higher order unification in Section~\ref{sec:ho}; we discuss bound names
 representations in Section~\ref{sec:dbl}; we define \rff{} 
 in Section~\ref{sec:fragment} and we assess the results in
@@ -158,7 +158,7 @@ cbn (app M N) R :-
 
 Example~\ref{example1} implements type-checking and
 reduction for $\lambda$-terms represented in $\lambda$-tree syntax.
-For instance,  
+For instance,
 $(\lambda x.xx)$ is encoded
 as \verb+(lam (x\ app x x))+ where \verb+x\ F+ is
 the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+;
@@ -166,7 +166,7 @@ the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+;
 a term of type $\mathcal{T}$ from a function of type
 $\mathcal{T} \to \mathcal{T}$, with $\mathcal{T}$ the type of representations
 of $\lambda$-terms; \verb+app+ takes two terms of type $\mathcal{T}$ and builds
-their object-level application of type $\mathcal{T}$.  Following the tradition of Prolog, capitals letters denote unification variables.
+their object-level application of type $\mathcal{T}$. Following the tradition of Prolog, capitals letters denote unification variables.
 
 The second clause for the \verb+of+ predicate shows a recurrent pattern in
 \lp: in order to analyze an higher order term, one needs to recurse
@@ -180,7 +180,7 @@ logical implication temporarily
 augments the program with the new axiom \verb+H+ about \verb+x+.
 
 In the example, the functional (sub-)term
-\verb+F+ is applied to the fresh constant \verb+x+.  Being \verb+F+ a
+\verb+F+ is applied to the fresh constant \verb+x+. Being \verb+F+ a
 function, the $\beta$-redex \verb+(F x)+, once reduced, denotes the body of
 our object-level function where the bound variable is replaced by the fresh
 constant \verb+x+.
@@ -201,11 +201,11 @@ at disposal.
 
 In the type-checking example, the meta-level $\beta$-reduction is only employed
 to inspect a term under a binder by replacing the bound name with a fresh
-constant.  The reduction example in line 6
+constant. The reduction example in line 6
 shows instead a radically different pattern: in order to implement object-level
 substitution --- and thus object-level $\beta$-reduction --- we use the
 meta-level $\beta$-reduction. E.g. if \verb+F+ is \verb+(w\ app w w)+
-then \verb+(F N)+ reduces to \verb+(app N N)+.  Note that in this case
+then \verb+(F N)+ reduces to \verb+(app N N)+. Note that in this case
 $\beta$-reduction is fully general, because it replaces a name with a
 general term, not constrained to be a fresh constant.
 This distinction is crucial in the definition of \rff{} in
@@ -229,7 +229,7 @@ Such fragment can effectively serve as a primitive for a
 programming language and indeed \tedius{} 2.0 is built around this fragment:
 no attempt to enumerate all possible unifiers is performed, and unification
 %\marginpar{cite huet? no space IMO}
-problems falling outside \Ll{} are just delayed.  Many interesting \lp{}
+problems falling outside \Ll{} are just delayed. Many interesting \lp{}
 programs can be rewritten to fall in the fragment. For example, we can
 make \verb+cbn+ of Example~\ref{example1} stay in \Ll{} by replacing
 line 6 (that contains the offending \verb+(F N)+ term) with the following code:
@@ -250,11 +250,11 @@ The idea of \verb+subst+ is that the term \verb+F+ is recursively copied in
 the following way: each bound variable is copied in itself but for the top one
 that is replaced by \verb+N+.
 The interested reader can find an longer discussion about \verb+copy+
-in~\cite[page 199]{Miller:2012:PHL:2331097}.  
+in~\cite[page 199]{Miller:2012:PHL:2331097}.
 The \verb+of+ program falls naturally in \Ll{}, since \verb+F+ is only applied
 the fresh variable \verb+x+ (all unification variables in a \lp{} program are
 implicitly existentially bound in front of the clause, so \verb+F+ does not
-see \verb+x+).  The same holds for \verb+copy+.
+see \verb+x+). The same holds for \verb+copy+.
 
 In \lp{} unification takes place under
 a mixed prefix of $\forall$ and $\exists$ quantifiers; their order
@@ -327,11 +327,11 @@ In \rff{} such substitutions will be completely avoided.
 The last missing ingredient to define \rff{} and explain why it can be
 implemented efficiently is to see how systems that manipulate $\lambda$-terms
 accommodate
-$\alpha$-equivalence.  Bound variables are not represented by using
+$\alpha$-equivalence. Bound variables are not represented by using
 real names, but canonical ``names'' (hence $\alpha$-equivalence becomes syntactic equality).
 De Bruijn introduced two, dual, naming schemas for $\lambda$-terms in~\cite{debruijnlevel}:
 depth indexes (DBI) and levels
-(DBL).  In the former, that is the most widely adopted one, a variable is named $n$ if its binder is found by
+(DBL). In the former, that is the most widely adopted one, a variable is named $n$ if its binder is found by
 crossing $n$ binders going in the direction of the root. In the latter a
 variable named $n$ is bound by the $n$-th binder one encounters in the path
 from the root to the variable.
@@ -341,7 +341,7 @@ In the following table we write the term $\lambda x.(\lambda y.\lambda z.f~x~y~z
 \begin{center}
 \begin{tabular}{r@{~~}c@{~$\to_\beta$~}c}
 Indexes: & $\lambda x.(\lambda y.\lambda z.f~x_2~y_1~z_0)~x_0$ &
-$\lambda x.\lambda z.f~x_1~x_1~z_0$  \\
+$\lambda x.\lambda z.f~x_1~x_1~z_0$ \\
 Levels: & $\lambda x.(\lambda y.\lambda z.f~x_0~y_1~z_2)~x_0$ &
 $\lambda x.\lambda z.f~x_0~x_0~z_1$ \\
 \end{tabular}
@@ -349,7 +349,7 @@ $\lambda x.\lambda z.f~x_0~x_0~z_1$ \\
 \vspace{-0.5em}
 %\end{table}
 In both notations when a binder is removed and the corresponding variable
-substituted some ``renaming'' (called lifting) is performed.  
+substituted some ``renaming'' (called lifting) is performed.
 \tedius{} follows
 a third approach that mixes the two, using indexes for variables bound in
 the terms, and levels for variables bound in the context. The advantage
@@ -390,7 +390,7 @@ are treated \emph{exactly as constants}, and that the two notions of level
 
 \section{The reduction-free fragment \rff{}}\label{sec:fragment}
 \lp{} is a truly higher order language: even clauses can be
-passed around, unified, etc.  Nevertheless this plays no role here, so
+passed around, unified, etc. Nevertheless this plays no role here, so
 we exclude formulas from the syntax of terms.
 Therefore, our terms are defined just by:
 \vspace{-0.5em}
@@ -399,15 +399,15 @@ $$\begin{array}{l}
 \end{array}$$
 \vspace{-0.1em}
 Since variables follow the DBL representation, we do not have a case
-for constants like \verb+app+ or \verb+lam+, that are represented as $x_i$ for  some negative $i$.
+for constants like \verb+app+ or \verb+lam+, that are represented as $x_i$ for some negative $i$.
 Since the
 level of a variable completely identifies it, when we write
 $x_i \ldots x_{i+k}$ we mean $k$ distinct bound (i.e. $i \geq 0$) variables.
 The superscript $j$ annotates unification variables with their
-visibility range ($0 \leq j$, since all global constants are in range).  
+visibility range ($0 \leq j$, since all global constants are in range).
 A variable $X^j$ has visibility of all names strictly
-smaller than $j$. E.g.  $X^1$ has visibility only of $\{\ldots,x_{-1},x_0\}$, and $X^3$ has
-visibility of $\{\ldots,x_{-1},x_0,x_1,x_2\}$.  Technically, when following
+smaller than $j$. E.g. $X^1$ has visibility only of $\{\ldots,x_{-1},x_0\}$, and $X^3$ has
+visibility of $\{\ldots,x_{-1},x_0,x_1,x_2\}$. Technically, when following
 the De Bruijn convention, we could just write $\lambda x_i.t$ as $\lambda.t$.
 We keep writing the name $x_i$ to ease reading.
 
@@ -417,7 +417,7 @@ every occurrence of a unification variable $X^j$ is applied to
 $x_j \ldots x_{j+k-1}$ for $k >= 0$.
 \end{mydef}
 
-We allow $k=0$ to accept variables that are not applied.  A consequence of
+We allow $k=0$ to accept variables that are not applied. A consequence of
 the definition is that if a term is in \rff{} then all occurrences of
 applications of unification variables
 can be instantiated with a term closed
@@ -428,12 +428,12 @@ closed in $\{\ldots,x_0,x_1,x_2,x_3\}$.
 
 Observe that the programs in Example~\ref{example1} (when \verb+cbn+ is
 rewritten to be in the pattern fragment as in Section~\ref{sec:ho}) are in
-\rff{}.  Also, every Prolog program is in \rff{}. As we will see
+\rff{}. Also, every Prolog program is in \rff{}. As we will see
 in~Section~\ref{sec:benchmarks}, a
 type-checker for a dependently typed language
 and evaluator based on a reduction machine are also naturally in \rff{},
 showing that, in practice, the fragment is quite expressive.
-\marginpar{FALSE, or better, subst makes copy exit the fragment.  Maybe we could say here that exp1 revised is in RFF, and use the same example later on to explain that one can exit the frament...}
+\marginpar{FALSE, or better, subst makes copy exit the fragment. Maybe we could say here that exp1 revised is in RFF, and use the same example later on to explain that one can exit the frament...}
 
 
 % where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
@@ -466,12 +466,12 @@ decidable for \rff{}.
 The most interesting property of \rff{}, which also justify its name, is:
 
 \begin{myprop}[Constant time head $\beta$-reduction]
-Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables.  Then the first $k-1$ head reductions of $(X^j~x_j \ldots x_{j+k-1}) \sigma$ can be computed in constant time.
+Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables. Then the first $k-1$ head reductions of $(X^j~x_j \ldots x_{j+k-1}) \sigma$ can be computed in constant time.
 \end{myprop}
 
 A valid substitution assigns to $X^j$ a term $t$ of the right type (as in simply
 typed $\lambda$-calculus) and such that the free variables of $t$ are
-all visible by $X^j$ (all $x_i$ are such that $i < j$).  
+all visible by $X^j$ (all $x_i$ are such that $i < j$).
 Therefore $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$ for some $n$.
 Then
 \begin{equation}\label{deffrag}(X^j~x_j \ldots x_{j+k-1}) \sigma
@@ -485,7 +485,7 @@ Hence the $\beta$-reductions triggered by the substitution of $X^j$ take
 constant time.
 
 \begin{myprop}[Constant time unification]
-A unification problem of the form  $X^j~x_j\ldots x_{j+k-1} \equiv t$
+A unification problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
 can be frequently solved in constant time.
 \end{myprop}
 
@@ -513,13 +513,13 @@ used to back chain.
 \small
 \begin{tabular}{c|l}
 Context & Goals and refreshed program clause \\\hline
-& \verb+of (lam x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) T+$^0$  \\
+& \verb+of (lam x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) T+$^0$ \\
 & \verb+of (lam F+$^0$\verb+) (arr A+$^0$\verb+ B+$^0$\verb+) :- pi x+$_0$\verb+\ of x+$_0$\verb+ A+$^0$\verb+ => of (F+$^0$\verb+ x+$_0$\verb+) B+$^0$ \\\hline
-\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) B+$^0$  \\
-& \verb+of (lam G+$^1$\verb+) (arr C+$^1$\verb+ D+$^1$\verb+) :- pi x+$_1$\verb+\ of x+$_1$\verb+ C+$^1$\verb+ => of (G+$^1$\verb+ x+$_1$\verb+) D+$^1$\verb++  \\\hline
-\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (app x+$_0$\verb+ x+$_1$\verb+) D+$^0$  \\
-\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of (app M+$^2$\verb+ N+$^2$\verb+) S+$^2$\verb+ :- of M+$^2$\verb+ (arr R+$^2$\verb+ S+$^2$\verb+), of N+$^2$\verb+ R+$^2$  \\\hline
-\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of x+$_0$\verb+ (arr R+$^2$\verb+ S+$^0$\verb+), of x+$_1$\verb+ R+$^2$  \\
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) B+$^0$ \\
+& \verb+of (lam G+$^1$\verb+) (arr C+$^1$\verb+ D+$^1$\verb+) :- pi x+$_1$\verb+\ of x+$_1$\verb+ C+$^1$\verb+ => of (G+$^1$\verb+ x+$_1$\verb+) D+$^1$\verb++ \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (app x+$_0$\verb+ x+$_1$\verb+) D+$^0$ \\
+\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of (app M+$^2$\verb+ N+$^2$\verb+) S+$^2$\verb+ :- of M+$^2$\verb+ (arr R+$^2$\verb+ S+$^2$\verb+), of N+$^2$\verb+ R+$^2$ \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of x+$_0$\verb+ (arr R+$^2$\verb+ S+$^0$\verb+), of x+$_1$\verb+ R+$^2$ \\
 \verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of x+$_0$\verb+ A+$^0$\hspace{4pt}\verb+        , of x+$_1$\verb+ C+$^0$ \\\hline
 \end{tabular}
 \end{center}
@@ -540,7 +540,7 @@ Unification variables are refreshed in the context under with
 the clause is used, e.g. \verb+C+ is placed at level 1 initially,
 but in consequence to a unification step they may be \emph{pruned}
 when occurring in a term assigned to a lower level unification
-variable. Example:  unifying 
+variable. Example: unifying
 \verb+B+$^0$ with \verb+(arr C+$^1$\verb+ D+$^1$\verb+)+ prunes
 \verb+C+ and \verb+D+ to level 0.
 
@@ -559,7 +559,7 @@ can be performed in constant time using the very same machinery one uses to
 refresh the unification variables.
 E.g. when the WAM unifies the head of a clauses it assigns 
 fresh stack cells: the clause is not really refreshed and the stack
-pointer is simply incremented.  One can represent the locally bound variable as
+pointer is simply incremented. One can represent the locally bound variable as
 an extra unification variable, and initialize, when \verb+pi+ is crossed, the
 corresponding stack cell to the first \verb+x+$_i$ free in the context.
 
@@ -631,7 +631,7 @@ modified to achieve that property.
 \section{Assessment and conclusions}\label{sec:benchmarks}
 
 We assess the performances of \elpi{} on a set of synthetic benchmarks and
-a real application.  Synthetic benchmarks are divided into three groups:
+a real application. Synthetic benchmarks are divided into three groups:
 first order programs from the Aquarius test suite (the
 crypto-multiplication, $\mu$-puzzle,
 generalized eight queens problem and the Einstein's zebra puzzle);
@@ -691,7 +691,7 @@ argument triggers propagation and makes the CBN case as slow as the CBV case.
 \marginpar{maybe shrink this speculation}
 It is hard to understand why \elpi{} is faster than \tedius{}
 outside \rff{}, since all the optimizations we used are inspired by the
-literature about the WAM, on which \tedius{} is also based.  Our guess is that
+literature about the WAM, on which \tedius{} is also based. Our guess is that
 the OCaml garbage collector, well known for its efficiency, is responsible for
 the difference. Especially because we heavily optimized our code to lower the
 pressure on it in order to let it perform at the best of its
@@ -700,28 +700,28 @@ capabilities.
 The real application we present is a checker for the formal system
 $\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a} Such
 checker is able to validate the proof terms of the formalization of Landau's
-``Grundlagen''~\cite{Jut79} done in Automath.  The reference checker for
+``Grundlagen''~\cite{Jut79} done in Automath. The reference checker for
 $\lambda\delta$, named Helena, has been implemented in OCaml.
 Our \lp{} implementation follows it closely, and
 naturally falls in \rff{}.
 Nevertheless, the \lp{} code is much simpler that the corresponding OCaml code
-and consists of just 52 clauses.  In particular, the automatic
+and consists of just 52 clauses. In particular, the automatic
 context management provided by the \lp{} runtime is used in place of the
 environment that the OCaml code has to handle explicitly.
 
 The ``Grundlagen'' is a theory comprising 32 declarations and 6879
 definitions, for a total of 6911 items amounting, in \lp{} syntax, to about
-8MB of data.  This amount of data seems to overwhelm the capabilities of
+8MB of data. This amount of data seems to overwhelm the capabilities of
 \tedius{}, which seems to have, by design, a limit in the size of the heap
-(circa 256MB).  Therefore we could only verify the first 2615 items in
-\tedius{}.  In the tables below, we compare pre-processing (Pre), and
-verification (Ver).  Depending on the system, verification refers to checking
+(circa 256MB). Therefore we could only verify the first 2615 items in
+\tedius{}. In the tables below, we compare pre-processing (Pre), and
+verification (Ver). Depending on the system, verification refers to checking
 or (byte code) execution, while pre-processing accounts for parsing,
-internalization, compilation, linking, or elaboration.  We measure the time
-for the systems Helena, \elpi, Teyjus, and Coq.  The Coq system implements a
+internalization, compilation, linking, or elaboration. We measure the time
+for the systems Helena, \elpi, Teyjus, and Coq. The Coq system implements a
 type checker for a $\lambda$-calculus strictly more powerful then the one in
 which the proof terms are written, hence can check the proof terms directly
-but surely incurs in some overhead.  We use its timings mainly as a reference
+but surely incurs in some overhead. We use its timings mainly as a reference
 for the order of magnitude of a state-of-the-art ITP.
 
 \begin{center}
@@ -754,7 +754,7 @@ Ver & 4.40 & 0.33 & 13.90 & 7.21 & 1.19\\ % coqchk.opt: 3.90
 
 The pre-processing phase for \tedius{} required us to split the data in 28
 modules, since we observed a non-linear time growth when compiling a single
-module.  Splitting the compilation in even smaller modules may lower the
+module. Splitting the compilation in even smaller modules may lower the
 pre-processing time, but, to our understanding, should not affect the
 execution time.
 
