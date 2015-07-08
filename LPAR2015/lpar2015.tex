@@ -113,8 +113,8 @@ would enable the elaborator and its extensions to be expressed in the same,
 high level, language.  A crucial requisite for this plan to be realistic is
 the efficiency of the \lp{} interpreter.
 
-In this paper we introduce ELPI, a fast \lp{} interpreter that being written
-entirely in OCaml can be easily embedded in OCaml softwares, like Coq.
+In this paper we introduce ELPI, a fast \lp{} interpreter written in OCaml
+that can be easily embedded in OCaml softwares, like Coq.
 In particular we focus on the insight that makes ELPI fast when dealing with
 binders by identifying a reduction-free fragment (\rff{}) of \lp{} that, if
 implemented correctly, admits constant-time unification and reduction
@@ -156,29 +156,30 @@ cbn (app M N) R :-
 \caption{\label{example1} Type checker and Weak CBN for simply typed $\lambda$-calculus.}
 \end{example}
 
-We introduce \lp{} and discuss the role of $\beta$-reduction on
-Example~\ref{example1}. The $\lambda$-term %$\Delta$ defined as 
-$(\lambda x.xx)$ is encoded %in $\lambda$-tree syntax 
+Example~\ref{example1} implements type-checking and
+reduction for $\lambda$-terms represented in $\lambda$-tree syntax.
+For instance,  
+$(\lambda x.xx)$ is encoded
 as \verb+(lam (x\ app x x))+ where \verb+x\ F+ is
-the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+.
+the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+;
 \verb+lam+ is the constructor for object-level abstraction, that builds
 a term of type $\mathcal{T}$ from a function of type
 $\mathcal{T} \to \mathcal{T}$, with $\mathcal{T}$ the type of representations
-of $\lambda$-terms. \verb+app+ takes two terms of type $\mathcal{T}$ and builds
+of $\lambda$-terms; \verb+app+ takes two terms of type $\mathcal{T}$ and builds
 their object-level application of type $\mathcal{T}$.  Following the tradition of Prolog, capitals letters denote unification variables.
 
 The second clause for the \verb+of+ predicate shows a recurrent pattern in
 \lp: in order to analyze an higher order term, one needs to recurse
 under a binder. This is achieved
-exploiting the forall quantifier, written \verb+pi x\G+, together with logical
-implication \verb+F => G+. Operationally: the forall quantifier declares a
+combining the forall quantifier, written \verb+pi x\G+, with logical
+implication \verb+H => I+. The operational semantics implements the
+standard introduction rules of implication and the universal quantifier:
+the forall quantifier declares a
 new local constant \verb+x+, meant to be fresh in the entire program;
 logical implication temporarily
-augments the program with the new formula \verb+F+ about \verb+x+.
-Denotationally, these are just the standard rules for introduction of
-implication and the universal quantifier.
+augments the program with the new axiom \verb+H+ about \verb+x+.
 
-Note that the functional (sub-)term
+In the example, the functional (sub-)term
 \verb+F+ is applied to the fresh constant \verb+x+.  Being \verb+F+ a
 function, the $\beta$-redex \verb+(F x)+, once reduced, denotes the body of
 our object-level function where the bound variable is replaced by the fresh
@@ -198,29 +199,29 @@ a new goal \verb+(of (app c c) B)+ (where \verb+c+ is the fresh constant
 substituted for \verb+w+) to be solved with the extra clause \verb+(of c A)+
 at disposal.
 
-In this first part of the example, the meta-level $\beta$-reduction is only employed
+In the type-checking example, the meta-level $\beta$-reduction is only employed
 to inspect a term under a binder by replacing the bound name with a fresh
-constant.  The second part (reduction)
-shows a radically different pattern: in order to implement object-level
+constant.  The reduction example in line 6
+shows instead a radically different pattern: in order to implement object-level
 substitution --- and thus object-level $\beta$-reduction --- we use the
 meta-level $\beta$-reduction. E.g. if \verb+F+ is \verb+(w\ app w w)+
 then \verb+(F N)+ reduces to \verb+(app N N)+.  Note that in this case
-$\beta$-reduction is fully general, because it replaces a name with a term.
+$\beta$-reduction is fully general, because it replaces a name with a
+general term, not constrained to be a fresh constant.
 This distinction is crucial in the definition of \rff{} in
 Section~\ref{sec:fragment}.
 
 \section{Higher Order unification}% and captures}
 \label{sec:ho}
-
-Unification in the presence of binders raises two %theoretical and practical
-problems. First, the absence of most general unifiers (MGUs) makes
-one of the primitive operations of \lp{} very delicate.  Second, one has
-to find a way to avoid captures, i.e. check that unification variables
+Higher order (HO) unification admits no most general unifiers (MGUs), forcing
+implementations to enumerate all solutions or delay the flexible-rigid
+and the flexible-flexible problems. Moreover, the presence of binders
+requires a way to avoid captures, i.e. to check that unification variables
 are instantiated with terms containing only bound variable in their scope.
 
 To cope with the absence of MGUs, Dale Miller identified
-in~\cite{Miller91alogic} a well-behaved fragment (\Ll{}) of higher-order (HO)
-unification that admits MGUs and is stable under \lp{} resolution. 
+in~\cite{Miller91alogic} a well-behaved fragment (\Ll{}) of higher-order
+unification that admits MGUs and that is stable under \lp{} resolution. 
 The restriction defining \Ll{} is that unification variables can
 only be applied to (distinct) variables (i.e. not arbitrary terms) that are
 not already in the scope of the variable.
@@ -255,29 +256,29 @@ the fresh variable \verb+x+ (all unification variables in a \lp{} program are
 implicitly existentially bound in front of the clause, so \verb+F+ does not
 see \verb+x+).  The same holds for \verb+copy+.
 
-To correctly implement HO unification, even in the restricted \Ll{} fragment,
-one typically tracks the \emph{level} of unification variables and fresh constants.  The proof theoretic interpretation of a \lp{} execution as an intuitionistic proof gives the following reading: unification is taking place under
+In \lp{} unification takes place under
 a mixed prefix of $\forall$ and $\exists$ quantifiers; their order
 determines if a unification variable (an existential) can be assigned to
 (proved by) a term that contain a universally quantified variable.
-E.g. $\forall x,\exists Y, Y = x$ is always provable while
-$\exists Y,\forall x, Y = x$ is not.
-\marginpar{rephrase with symbols}
-Whenever a clause is used, its unification variables are declared at
-a level that corresponds to the length of the current ``context'', and whenever
-a fresh constant is created (for the \verb+pi+ quantifier) the context
-is extended and the constant is placed at such level.  From now on we will
-write levels in superscript.  If we run the program
-\marginpar{sketched}
-\verb+(of (lam f\lam w\app f w) T)+ after two steps the goal is
+E.g. $\forall x,\exists Y, Y = x$ is provable while
+$\exists Y,\forall x, Y = x$ is not. An implementation can
+keep track of the scoping constraints using \emph{levels}.
+When a clause is used to match a goal in a context of length
+$n$, the universally quantified variables of the clause are instantiated to
+unification variables $X^n$ where the level $n$ records that $X$ has only
+visibility of the initial prefix of length $n$ of the context.
+If later a fresh constant is added by the \verb+pi+ rule, the constant
+occupies position $n+1$ (its level is $n+1$) and it will not be allowed to
+occur in instances of variables $X^n$.
+From now on we will write levels of constants and variables in superscript.
+
+If we run the program
+\verb+(of (lam f\lam w\app f w) T+$^0$\verb+)+, after two steps the goal becomes
 \verb+(of (app c+$^1$\verb+ d+$^2$\verb+) T+$^0$\verb+)+.
-Replacing \verb+f+ and \verb+w+ by fresh constant annotated with a level is the
-implementation technique adopted by \tedius{} to make unification able to
-check levels correctly.  As an optimization \tedius{} performs the beta
-reduction in a lazy way using an explicit substitution calculus.  In \rff{} we
-will be able to completely avoid such substitution. \verb+T+, being at
-level zero, cannot be instantiated with a term containing \verb+c+ nor
-\verb+d+.
+Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with the level-annotated constants $c^1$ and $d^2$ performing the $\beta$-reductions
+in a lazy way using an explicit substitution calculus. The lazy propagation
+of explicit substitutions has tipically poor memory performance.
+In \rff{} such substitutions will be completely avoided.
 
 % 
 % \begin{table}
