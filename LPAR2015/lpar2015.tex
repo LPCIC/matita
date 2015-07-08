@@ -405,10 +405,10 @@ $x_i \ldots x_{i+k}$ we mean $k$ distinct bound (i.e. $i \geq 0$) variables.
 The superscript $j$ annotates unification variables with their
 visibility range ($0 \leq j$, since all global constants are in range).  
 A variable $X^j$ has visibility of all names strictly
-smaller than $j$. E.g.  $X^1$ has visibility only of $x^0$, and $X^3$ has
-visibility of $\{x^0,x^1,x^2\}$.  Technically a binder needs no
-name when bound variables are named following a De Bruijn convention.
-Still we write it to ease reading.
+smaller than $j$. E.g.  $X^1$ has visibility only of $\{\ldots,x_{-1},x_0\}$, and $X^3$ has
+visibility of $\{\ldots,x_{-1},x_0,x_1,x_2\}$.  Technically, when following
+the De Bruijn convention, we could just write $\lambda x_i.t$ as $\lambda.t$.
+We keep writing the name $x_i$ to ease reading.
 
 \begin{mydef}[\rff{}]
 A term is in the reduction-free fragment \rff{} iff
@@ -416,7 +416,7 @@ every occurrence of a unification variable $X^j$ is applied to
 $x_j \ldots x_{j+k-1}$ for $k >= 0$.
 \end{mydef}
 
-Note that when $k$ is $0$ the variable is not applied.  A consequence of
+We allow $k=0$ to accept variables that are not applied.  A consequence of
 the definition is that if a term is in \rff{} then all occurrences of
 applications of unification variables
 can be instantiated with a term closed
@@ -494,8 +494,8 @@ The former is a trivial assignment that requires no check.
 The latter can be implemented in constant time iff no occur-check is needed
 for $X$ and if the level of the highest free variable in $t$ can be recovered
 in $O(1)$ and is smaller than $j+k$. The recovery can be economically
-implemented caching the maximum level in the term, and is something one
-typically pre-computes on the input term in linear time.
+implemented caching the maximum level in the term, that is something often
+pre-computes on the input term in linear time.
 Avoiding useless occur-check is a typical optimization of the Warren Abstract
 Machine (WAM), e.g. when $X$ occurs linearly in the head of a clause.
 %With such maximum level $l$ at hand the problem $Y^{j+k}
@@ -527,6 +527,8 @@ After the first step we obtain
 \verb+F+$^0$\verb+:= x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$;
 \verb+T+$^0$\verb+:= arr A+$^0$\verb+ B+$^0$; the extra clause
 about \verb+x+$_0$ in the context and a new subgoal.
+Thanks to property \textbf{DBL3}, \verb+x+$_0$ has been pushed to the context
+in constant time.
 Note that the redex \verb+(F+$^0$\verb+ x+$_0$\verb+)+ is in \rff{} and
 thanks to Equation~\ref{deffrag} head normalizes in constant time
 to \verb+(lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+)+.
@@ -681,11 +683,10 @@ binders.
   \end{tabular}
 \end{center}
 
-\marginpar{what do we do with cbn? not sure my reading is ok?}
 The table shows that \elpi{} shines on programs in \rff{}, and compares well
-outside it.  The reduce\_cbn test uses, in \tedius{}, the explicit substitution
-calculus to perform the substitution in a lazy way, that is exactly what it is
-designed for.
+outside it. \tedius{} is quick on the reduce\_cbn test only because CBN does not require to traverse the arguments and thus the explicit substitutions are
+not propagated. Inserting in the test a seamlessy innocuous printing of the
+argument triggers propagation and makes the CBN case as slow as the CBV case.
 
 \marginpar{maybe shrink this speculation}
 It is hard to understand why \elpi{} is faster than \tedius{}
