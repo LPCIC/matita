@@ -277,9 +277,9 @@ If we run the program
 \verb+(of (app c+$^1$\verb+ d+$^2$\verb+) T+$^0$\verb+)+.
 Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with the level-annotated constants $c^1$ and $d^2$ performing the $\beta$-reductions
 in a lazy way using an explicit substitution calculus
-\`a la $\lambda\sigma$-calculus.
-The lazy propagation
-of explicit substitutions has typically poor memory performance.
+\`a la $\lambda\sigma$~\cite{DBLP:journals/jar/LiangNQ04}.
+%The lazy propagation
+%of explicit substitutions has typically poor memory performance.
 In \rff{} such substitutions will be completely avoided.
 
 % 
@@ -435,8 +435,6 @@ in~Section~\ref{sec:benchmarks}, a
 type-checker for a dependently typed language
 and evaluator based on a reduction machine are also naturally in \rff{},
 showing that, in practice, the fragment is quite expressive.
-\marginpar{FALSE, or better, subst makes copy exit the fragment. Maybe we could say here that exp1 revised is in RFF, and use the same example later on to explain that one can exit the frament...}
-
 
 % where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
 % higher order, there is no distinction between formulas and terms, and both queries and clauses can be passed as arguments to predicates. Note also that $\forall$ binds local constants in positive position, and existentially quantified variables in negative position, according to the logical equivalence
@@ -566,12 +564,8 @@ an extra unification variable, and initialize, when \verb+pi+ is crossed, the
 corresponding stack cell to the first \verb+x+$_i$ free in the context.
 
 \paragraph{Stability of \rff{}.}
-Unlike \Ll{}, \rff{} is not stable under \lp{} resolution:
-a clause that contains only terms in \rff{}
-may generate terms
-outside the fragment
-because
-of the lifting phenomenon explained the previous paragraph.\marginpar{resurrect Claudio's example?}
+Unlike \Ll{}, \rff{} is not stable under \lp{} resolution: a clause that
+contains only terms in \rff{} may generate terms outside the fragment.
 Therefore an implementation must handle both terms in \rff{}, with their
 efficient computation rules, and terms outside the fragment. Our limited
 experience so far, however, is that several programs initially written in the
@@ -632,9 +626,10 @@ modified to achieve that property.
 
 \section{Assessment and conclusions}\label{sec:benchmarks}
 
-We assess the performances of \elpi{} on a set of synthetic benchmarks and
+We assess %the performances of 
+\elpi{} on a set of synthetic benchmarks and
 a real application. Synthetic benchmarks are divided into three groups:
-first order programs from the Aquarius test suite (the
+first order programs from the Aquarius test suite (%the
 crypto-multiplication, $\mu$-puzzle,
 generalized eight queens problem and the Einstein's zebra puzzle);
 higher order programs falling in \rff{}; and an higher
@@ -643,9 +638,9 @@ order program falling outside \rff{} taken from the test suite of
 
 The programs in \rff{} are respectively type checking lambda terms using
 the \verb+of+ program of Example~\ref{example1} and reducing expressions like
-$5^5$ in the syntax of Church numerals using a call by value/name strategy.
-The typeof test was specifically conceived to measure the cost of moving under
-binders.
+$5^5$ in the syntax of Church numerals using a call by value/name (CBV/CBN)
+strategy.  The typeof test was specifically conceived to measure the cost of
+moving under binders.
 
 \begin{center}
   \scriptsize 
@@ -686,33 +681,33 @@ binders.
 \end{center}
 
 The table shows that \elpi{} shines on programs in \rff{}, and compares well
-outside it. The alternating performance \tedius{} on the reduction tests have
-to be attributed to the $\lambda\sigma$ machinery
-(see Section~\ref{sec:dbl}) employed to cross binders:
-by their very nature, explicit
-substitutions fit well a lazy reduction strategy like cbn (even if their space
-overhead is visible).  On the contrary they are counterproductive in a strict
-reduction strategy like cbv that, traversing the redex arguments eagerly ends
-up systematically pushing the suspended substitution to the leaves of the
-term, i.e. completely defeating the purpose of the entire machinery.  
+outside it. The alternating performance \tedius{} on the reduction tests has
+to be attributed to the explicit substitutions machinery~\cite{DBLP:journals/jar/LiangNQ04} \`a la $\lambda\sigma$ when employed to cross binders:
+by its very nature $\lambda\sigma$ fits well a lazy reduction strategy like
+CBN (even if some space
+overhead is visible).  On the contrary $\lambda\sigma$ is counterproductive
+in the CBV case since the program, by fully traversing the redex argument,
+systematically pushes the suspended substitution to the leaves of the
+term, completely defeating the purpose of the entire machinery (i.e. if the
+substitution has to be performed, there is not gain is delaying it).
 If one makes \tedius{} artificially
-push explicit substitutions in the cbn case too, he halves memory consumption
-but degrades the performances of approximatively 10 seconds.  Our conclusion
-is that our approach, requiring no substitution for crossing binders, makes
-\elpi{} not only faster, but also more predictable performance wise: as one
-expects cbv is faster than cbn in computing the normal form of $5^5$, since
+push explicit substitutions in the CBN case too, he halves memory consumption
+but degrades the performances by 10 seconds, confirming the
+time we see in the CBV case is dominated by the overhead of explicit substitutions. By avoiding substitution when crossing binders
+\elpi{} is not only faster, but also more predictable performance wise: as one
+expects CBV is faster than CBN in computing the normal form of $5^5$ since
 it avoids duplicating non normal terms.
 % \tedius{} is quick on the reduce\_cbn test only because CBN does not require to traverse the arguments and thus the explicit substitutions are
 % not propagated. Inserting in the test a seamlessy innocuous printing of the
 % argument triggers propagation and makes the CBN case as slow as the CBV case.
 
-\marginpar{maybe shrink this speculation}
-It is hard to understand why \elpi{} is faster than \tedius{}
-outside \rff{}, since all the optimizations we implemented are inspired by the
-literature about the WAM, on which \tedius{} is also based.  Our guess is that
-the OCaml garbage collector is responsible for
-the difference. Especially because we heavily optimized our code to lower the
-pressure on it in order to let it perform at the best of its capabilities.
+% \marginpar{maybe shrink this speculation}
+% It is hard to understand why \elpi{} is faster than \tedius{}
+% outside \rff{}, since all the optimizations we implemented are inspired by the
+% literature about the WAM, on which \tedius{} is also based.  Our guess is that
+% the OCaml garbage collector is responsible for
+% the difference. Especially because we heavily optimized our code to lower the
+% pressure on it in order to let it perform at the best of its capabilities.
 
 The real application we present is a checker for the formal system
 $\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a} Such
@@ -726,20 +721,22 @@ and consists of just 52 clauses. In particular, the automatic
 context management provided by the \lp{} runtime is used in place of the
 environment that the OCaml code has to handle explicitly.
 
-The ``Grundlagen'' is a theory comprising 32 declarations and 6879
-definitions, for a total of 6911 items amounting, in \lp{} syntax, to about
-8MB of data. This amount of data seems to overwhelm the capabilities of
-\tedius{}, which seems to have, by design, a limit in the size of the heap
-(circa 256MB). Therefore we could only verify the first 2615 items in
-\tedius{}. In the tables below, we compare pre-processing (Pre), and
-verification (Ver). Depending on the system, verification refers to checking
-or (byte code) execution, while pre-processing accounts for parsing,
-internalization, compilation, linking, or elaboration. We measure the time
-for the systems Helena, \elpi, Teyjus, and Coq. The Coq system implements a
-type checker for a $\lambda$-calculus strictly more powerful then the one in
-which the proof terms are written, hence can check the proof terms directly
-but surely incurs in some overhead. We use its timings mainly as a reference
-for the order of magnitude of a state-of-the-art ITP.
+The ``Grundlagen'' is a theory comprising definitions and proofs
+ %32 declarations and 6879
+%definitions, for a total of 
+for a total of 6911 items (circa 8MB of data).
+%This amount of data seems to overwhelm the capabilities of
+\tedius{} seems to have, by design, a limit in the size of the heap
+(circa 256MB) that limits it to the verification of the first 2615 items.
+\marginpar{The DATA says 1GB!!!}
+In the table we compare pre-processing (Pre) time like parsing, compilation
+or elaboration, and verification (Ver).
+We compare \elpi{} with Helena, \tedius{}, and Coq.
+The Coq system implements a
+type checker for a $\lambda$-calculus strictly more expressive then the one
+required in order to check the ``Grundlagen'', hence can check the proof terms
+directly but surely incurs in some overhead. We use its timings mainly as a
+reference for the order of magnitude of a state-of-the-art ITP.
 
 \begin{center}
   \scriptsize 
@@ -771,9 +768,10 @@ Ver & 4.40 & 0.33 & 13.90 & 7.21 & 1.19\\ % coqchk.opt: 3.90
 
 The pre-processing phase for \tedius{} required us to split the data in 28
 modules, since we observed a non-linear time growth when compiling a single
-module. Splitting the compilation in even smaller modules may lower the
-pre-processing time, but, to our understanding, should not affect the
-execution time.
+module. 
+% Splitting the compilation in even smaller modules may lower the
+% pre-processing time, but, 
+To our understanding this should not have affected the execution time.
 
 Our conclusion is that \rff{} admits a very efficient implementation.
 \elpi{} is work in progress, available at \url{http://lpcic.gforge.inria.fr} together with all the benchmarks presented in the paper.
