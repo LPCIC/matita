@@ -282,14 +282,16 @@ From now on we will write levels of constants and variables in superscript.
 
 If we run the program
 \verb+(of (lam f\lam w\app f w) T+$^0$\verb+)+, after two steps the goal becomes
-\verb+(of (app c+$^1$\verb+ d+$^2$\verb+) T+$^0$\verb+)+.
+\verb+(of (app c+$^1$\verb+ d+$^2$\verb+) B+$^0$\verb+)+.
 Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with the level-annotated constants $c^1$ and $d^2$ performing the $\beta$-reductions.
 As a crucial optimization~\cite{DBLP:journals/jar/LiangNQ04} \tedius{}
 implements such reductions in a lazy way using an explicit substitution
 calculus similar.
 %The lazy propagation
 %of explicit substitutions has typically poor memory performance.
-In \rff{} such substitutions will be completely avoided.
+The reader can find this example in full details at page~\pageref{detailed},
+where we demonstrate how substitutions of bound names by fresh
+level-annotated constants is completely avoided in \rff{}.
 
 % 
 % \begin{table}
@@ -513,7 +515,7 @@ Machine (WAM), e.g. when $X$ occurs linearly in the head of a clause.
 These properties enable us to implement the operational semantics of \verb+pi+
 in constant time for terms in \rff{}.
 
-We detail an example.
+We detail an example.\label{detailed}
 The first column gathers the fresh constants and extra clauses. The
 second one shows the current goal(s) and the program clause that is
 used to back chain.
