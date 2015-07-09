@@ -72,7 +72,7 @@ University of Bologna,~%\\ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
 \begin{abstract}
 We present a new interpreter for \lp{} that runs consistently faster than
 the byte code compiled by \tedius{}, that is believed to be the best
-available implementation for \lp. 
+available implementation of \lp. 
 The key insight is the identification of a fragment of
 the language, which we call reduction-free fragment (\rff{}),
 that occurs quite naturally in \lp{}
@@ -225,7 +225,7 @@ Higher order (HO) unification admits no most general unifiers (MGUs), forcing
 implementations to enumerate all solutions or delay the flexible-rigid
 and the flexible-flexible problems. Moreover, the presence of binders
 requires a way to avoid captures, i.e. to check that unification variables
-are instantiated with terms containing only bound variable in their scope.
+are instantiated with terms containing only bound variables in their scope.
 
 To cope with the absence of MGUs, Dale Miller identified
 in~\cite{Miller91alogic} a well-behaved fragment (\Ll{}) of higher-order
@@ -267,7 +267,7 @@ see \verb+x+). The same holds for \verb+copy+.
 In \lp{} unification takes place under
 a mixed prefix of $\forall$ and $\exists$ quantifiers; their order
 determines if a unification variable (an existential) can be assigned to
-(proved by) a term that contain a universally quantified variable.
+a term that contain a universally quantified variable.
 E.g. $\forall x,\exists Y, Y = x$ is provable while
 $\exists Y,\forall x, Y = x$ is not. An implementation can
 keep track of the scoping constraints using \emph{levels}.
@@ -277,21 +277,24 @@ unification variables $X^n$ where the level $n$ records that $X$ has only
 visibility of the initial prefix of length $n$ of the context.
 If later a fresh constant is added by the \verb+pi+ rule, the constant
 occupies position $n+1$ (its level is $n+1$) and it will not be allowed to
-occur in instances of variables $X^n$.
-From now on we will write levels of constants and variables in superscript.
+occur in instances of the variable $X^n$.
+From now on we will write levels in superscript.
 
 If we run the program
 \verb+(of (lam f\lam w\app f w) T+$^0$\verb+)+, after two steps the goal becomes
 \verb+(of (app c+$^1$\verb+ d+$^2$\verb+) B+$^0$\verb+)+.
-Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with the level-annotated constants $c^1$ and $d^2$ performing the $\beta$-reductions.
+Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with 
+the level-annotated fresh constants $c^1$ and $d^2$ performing 
+the $\beta$-reductions.
 As a crucial optimization~\cite{DBLP:journals/jar/LiangNQ04} \tedius{}
-implements such reductions in a lazy way using an explicit substitution
-calculus similar.
+implements reductions in a lazy way using an explicit substitution
+calculus.
 %The lazy propagation
 %of explicit substitutions has typically poor memory performance.
-The reader can find this example in full details at page~\pageref{detailed},
+The reader can find this example developed
+in full details at page~\pageref{detailed},
 where we demonstrate how substitutions of bound names by fresh
-level-annotated constants is completely avoided in \rff{}.
+level-annotated constants can be avoided in \rff{}.
 
 % 
 % \begin{table}
