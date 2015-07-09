@@ -86,7 +86,7 @@ programs and that admits constant time reduction and unification rules.
 \lp{} is a logic programming language based on an intuitionistic fragment of
 Church's Simple Theory of Types. An extensive introduction to the language
 with examples can be found in~\cite{Miller:2012:PHL:2331097}. \tedius{}
-\cite{DBLP:conf/cade/NadathurM99,DBLP:journals/corr/abs-0911-5203} is a
+\cite{DBLP:conf/cade/NadathurM99,DBLP:journals/jar/LiangNQ04} is a
 compiler for \lp{} %implemented by Gopalan Nadathur and others
 that is considered to be the fastest
 implementation of the language. 
@@ -99,7 +99,7 @@ an interesting discussion), including: automatic generation of programs from
 specifications; animation of operational semantics;
 program transformations and implementation of type checking algorithms.
 
-Via the Curry-Howard isomorphism, a type-checker is a proof-checker, the main
+Via the Curry-Howard isomorphism a type-checker is a proof-checker, the main
 component of an interactive theorem prover (ITP). Indeed the motivation of our
 interest in \lp{} is that we are looking for the best 
 language to implement the so called \emph{elaborator} component of an ITP.
@@ -107,8 +107,12 @@ The elaborator is used to type check the terms input by
 the user. Such data, for conciseness reasons, is typically incomplete and
 the ITP is expected to infer what is missing. The possibility to
 extend Coq's built-in elaborator with user provided ``logic programs'' (in the
-form of type classes or unification hints) to infer the missing pieces of
-information turned out to be a key ingredient in successful formalizations
+form of
+Canonical Structures~\cite{hints2,hints}
+or
+Type Classes~\cite{TCcoq}) to help it infer 
+the missing data %pieces of information 
+turned out to be a key ingredient in successful formalizations
 like~\cite{gonthier:hal-00816699}. Embedding a \lp{} interpreter in an ITP
 would enable the elaborator and its extensions to be expressed in the same,
 high level, language. A crucial requisite for this plan to be realistic is
@@ -159,15 +163,18 @@ cbn (app M N) R :-
 
 Example~\ref{example1} implements type-checking and
 reduction for $\lambda$-terms represented in $\lambda$-tree syntax.
-For instance,
-$(\lambda x.xx)$ is encoded
-as \verb+(lam (x\ app x x))+ where \verb+x\ F+ is
+For instance, the object-level encoding of
+$(\lambda x.xx)$ is the term
+\verb+(lam (x\ app x x))+ of type $\mathcal{T}$.
+The syntax \verb+(x\ F)+ denotes
 the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+;
 \verb+lam+ is the constructor for object-level abstraction, that builds
 a term of type $\mathcal{T}$ from a function of type
-$\mathcal{T} \to \mathcal{T}$, with $\mathcal{T}$ the type of representations
-of $\lambda$-terms; \verb+app+ takes two terms of type $\mathcal{T}$ and builds
-their object-level application of type $\mathcal{T}$. Following the tradition of Prolog, capitals letters denote unification variables.
+$\mathcal{T} \to \mathcal{T}$; \verb+app+ takes two terms of
+type $\mathcal{T}$ and builds
+their object-level application of type $\mathcal{T}$.
+Following the tradition of Prolog, capitals letters denote unification
+variables.
 
 The second clause for the \verb+of+ predicate shows a recurrent pattern in
 \lp: in order to analyze an higher order term, one needs to recurse
@@ -180,7 +187,7 @@ new local constant \verb+x+, meant to be fresh in the entire program;
 logical implication temporarily
 augments the program with the new axiom \verb+H+ about \verb+x+.
 
-In the example, the functional (sub-)term
+In Example~\ref{example1}, line 4, the functional (sub-)term
 \verb+F+ is applied to the fresh constant \verb+x+. Being \verb+F+ a
 function, the $\beta$-redex \verb+(F x)+, once reduced, denotes the body of
 our object-level function where the bound variable is replaced by the fresh
@@ -191,7 +198,7 @@ the abstraction has type \verb+B+ and therefore the whole abstraction has type
 \verb+(arr A B)+ (i.e. $A \to B$). Note that, unlike in
 the standard presentation of the typing rules, we do not need to manipulate an
 explicit context $\Gamma$ to type the free variables. Instead the assumptions
-of the form \verb+(of x A)+ are just added to the program's clauses, and \lp{}
+of the form \verb+(of x A)+ are just added to the program's set of clauses, and \lp{}
 takes care of dropping them when \verb+x+ goes out of scope.
 Example: if the initial goal is
 \verb+(of (lam (w\ app w w)) T)+ by applying the second clause we assign
@@ -250,7 +257,7 @@ copy (app M1 N1) (app M2 N2) :- copy M1 M2, copy N1 N2.
 The idea of \verb+subst+ is that the term \verb+F+ is recursively copied in
 the following way: each bound variable is copied in itself but for the top one
 that is replaced by \verb+N+.
-The interested reader can find an longer discussion about \verb+copy+
+The interested reader can find a longer discussion about \verb+copy+
 in~\cite[page 199]{Miller:2012:PHL:2331097}.
 The \verb+of+ program falls naturally in \Ll{}, since \verb+F+ is only applied
 the fresh variable \verb+x+ (all unification variables in a \lp{} program are
@@ -264,7 +271,7 @@ determines if a unification variable (an existential) can be assigned to
 E.g. $\forall x,\exists Y, Y = x$ is provable while
 $\exists Y,\forall x, Y = x$ is not. An implementation can
 keep track of the scoping constraints using \emph{levels}.
-When a clause is used to match a goal in a context of length
+When a clause's head is unified with the goal in a context of length
 $n$, the universally quantified variables of the clause are instantiated to
 unification variables $X^n$ where the level $n$ records that $X$ has only
 visibility of the initial prefix of length $n$ of the context.
@@ -276,9 +283,10 @@ From now on we will write levels of constants and variables in superscript.
 If we run the program
 \verb+(of (lam f\lam w\app f w) T+$^0$\verb+)+, after two steps the goal becomes
 \verb+(of (app c+$^1$\verb+ d+$^2$\verb+) T+$^0$\verb+)+.
-Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with the level-annotated constants $c^1$ and $d^2$ performing the $\beta$-reductions
-in a lazy way using an explicit substitution calculus
-\`a la $\lambda\sigma$~\cite{DBLP:journals/jar/LiangNQ04}.
+Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with the level-annotated constants $c^1$ and $d^2$ performing the $\beta$-reductions.
+As a crucial optimization~\cite{DBLP:journals/jar/LiangNQ04} \tedius{}
+implements such reductions in a lazy way using an explicit substitution
+calculus similar.
 %The lazy propagation
 %of explicit substitutions has typically poor memory performance.
 In \rff{} such substitutions will be completely avoided.
@@ -338,7 +346,7 @@ depth indexes (DBI) and levels
 crossing $n$ binders going in the direction of the root. In the latter a
 variable named $n$ is bound by the $n$-th binder one encounters in the path
 from the root to the variable.
-In the following table we write the term $\lambda x.(\lambda y.\lambda z.f~x~y~z)~x$ and its reduct in the two notations:
+Below we write the term $\lambda x.(\lambda y.\lambda z.f~x~y~z)~x$ and its reduct in the two notations:
 %\begin{table}
 \vspace{-0.5em}
 \begin{center}
@@ -367,10 +375,10 @@ required to push a binder to the context.
 
 In \elpi{} we crucially chose DBL because of the following three properties:
 \begin{description}
-\item[DBL1] $x_i$ in $\Gamma$ keeps the name $x_i$ in $\Gamma, \Delta$
+\item[DBL1] $x_i$ in $\Gamma$ keeps the same name $x_i$ in any extended context $\Gamma, \Delta$
 \item[DBL2] the variables bound by $\Gamma$ in a $\beta$-redex keep their name in the reduct
 \item[DBL3] when a binder is pushed to the context, the bound occurrences keep
- their name: $\Gamma \vdash $\verb+ pi \+$ x^n \ p(x^n) \leadsto \Gamma, x^n \vdash p(x^n)$
+ their name: no lifting is required to move from $\Gamma \vdash \forall x_i, p(x_i)$ to $\Gamma, x_i \vdash p(x_i)$
 \end{description}
 Another way to put it is that variables already pushed in the context
 are treated \emph{exactly as constants}, and that the two notions of level
@@ -684,10 +692,10 @@ binders.
 
 The table shows that \elpi{} shines on programs in \rff{}, and compares well
 outside it. The alternating performance \tedius{} on the reduction tests has
-to be attributed to the explicit substitutions machinery~\cite{DBLP:journals/jar/LiangNQ04} \`a la $\lambda\sigma$ when employed to cross binders:
-by its very nature $\lambda\sigma$ fits well a lazy reduction strategy like
+to be attributed to the explicit substitutions (ES) machinery~\cite{DBLP:journals/jar/LiangNQ04} when employed to cross binders:
+by its very nature ES fit well a lazy reduction strategy like
 CBN (even if some space
-overhead is visible).  On the contrary $\lambda\sigma$ is counterproductive
+overhead is visible).  On the contrary ES are counterproductive
 in the CBV case since the program, by fully traversing the redex argument,
 systematically pushes the suspended substitution to the leaves of the
 term, completely defeating the purpose of the entire machinery (i.e. if the
@@ -699,17 +707,6 @@ time we see in the CBV case is dominated by the overhead of explicit substitutio
 \elpi{} is not only faster, but also more predictable performance wise: as one
 expects CBV is faster than CBN in computing the normal form of $5^5$ since
 it avoids duplicating non normal terms.
-% \tedius{} is quick on the reduce\_cbn test only because CBN does not require to traverse the arguments and thus the explicit substitutions are
-% not propagated. Inserting in the test a seamlessy innocuous printing of the
-% argument triggers propagation and makes the CBN case as slow as the CBV case.
-
-% \marginpar{maybe shrink this speculation}
-% It is hard to understand why \elpi{} is faster than \tedius{}
-% outside \rff{}, since all the optimizations we implemented are inspired by the
-% literature about the WAM, on which \tedius{} is also based.  Our guess is that
-% the OCaml garbage collector is responsible for
-% the difference. Especially because we heavily optimized our code to lower the
-% pressure on it in order to let it perform at the best of its capabilities.
 
 The real application we present is a checker for the formal system
 $\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a} Such
@@ -724,21 +721,19 @@ context management provided by the \lp{} runtime is used in place of the
 environment that the OCaml code has to handle explicitly.
 
 The ``Grundlagen'' is a theory comprising definitions and proofs
- %32 declarations and 6879
-%definitions, for a total of 
 for a total of 6911 items (circa 8MB of data).
-%This amount of data seems to overwhelm the capabilities of
-\tedius{} seems to have, by design, a limit in the size of the heap
-(circa 256MB) that limits it to the verification of the first 2615 items.
-\marginpar{The DATA says 1GB!!!}
+\tedius{} seems to have a fixed maximum heap size of 256MB that in turn
+limits it to the verification of the first 2615 items.
 In the table we compare pre-processing (Pre) time like parsing, compilation
 or elaboration, and verification (Ver).
 We compare \elpi{} with Helena, \tedius{}, and Coq.
 The Coq system implements a
-type checker for a $\lambda$-calculus strictly more expressive then the one
-required in order to check the ``Grundlagen'', hence can check the proof terms
-directly but surely incurs in some overhead. We use its timings mainly as a
-reference for the order of magnitude of a state-of-the-art ITP.
+type checker for a $\lambda$-calculus strictly more expressive than
+$\lambda\delta$, hence can check the proof terms
+directly but surely incurs in some overhead. 
+We use its timings as a
+reference for the order of magnitude between the performance of \elpi{} and
+the ones of a state-of-the-art ITP.
 
 \begin{center}
   \scriptsize 
@@ -768,17 +763,17 @@ Ver & 4.40 & 0.33 & 13.90 & 7.21 & 1.19\\ % coqchk.opt: 3.90
 \end{tabular}
 \end{center}
 
-The pre-processing phase for \tedius{} required us to split the data in 28
-modules, since we observed a non-linear time growth when compiling a single
-module. 
-% Splitting the compilation in even smaller modules may lower the
-% pre-processing time, but, 
-To our understanding this should not have affected the execution time.
+% The pre-processing phase for \tedius{} required us to split the data in 28
+% modules, since we observed a non-linear time growth when compiling a single
+% module. 
+% To our understanding this should not affect the execution time.
 
-Our conclusion is that \rff{} admits a very efficient implementation.
-\elpi{} is work in progress, available at \url{http://lpcic.gforge.inria.fr} together with all the benchmarks presented in the paper.
-
-\marginpar{in the biblio we can get rid of odd order thm if needed}
+Our conclusion is that \rff{} admits a very efficient implementation and
+is large enough to express realistic programs like a type checker for
+a dependently typed $\lambda$-calculus.
+\elpi{} is under active development at
+\small{\url{http://lpcic.gforge.inria.fr}}.
+\vspace{-1em}
 \bibliographystyle{plain}
 \bibliography{reference}
 

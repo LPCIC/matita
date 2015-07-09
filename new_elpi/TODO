@@ -1,7 +1,5 @@
 Other:
 
--1. avoid pretty-printing at the top-level UVars with depth >0
-    E.g. x\ y\ X^1 y should be converted to x\ y\ X x y.
 0. pretty-printing to LaTeX + transformation to standard presentation
    (with fresh variables, etc.)
 1. implement delay and experiment with it for:
@@ -24,13 +22,11 @@ Benchmarks:
 
 Bugs:
 
--3. implement restriction (TODOs in the code)
 -2. revise all the assert false/raise Failure
--1. Introduce ES for the general case?
-    Or delay the goals?
 0. turn =, or, sigma, etc. into Custom predicates?
    In particular, it should not be allowed to add more clauses to them
    via implication.
+0.1. turn = into a builtin (more efficient?)
 1. a & b :- c  is parsed incorrectly (wrong precedence)
    and not at all in the toplevel
 
@@ -39,7 +35,7 @@ Possible optimizations:
 -3 parser: test if it gets quicker defining lp directly, without using
    LIST1 clauses + List.concat
 -2 optimize the case of app_deref where we can stay in the fragment
-   after the beta
+   after the beta (maybe already done?)
 -1. if full_deref only works on heap terms, why do we pass all that stuff?
     why not calling deref instead?
 0. Try alternative implementation for ?n == ?n
@@ -59,7 +55,6 @@ Possible optimizations:
 
 Missing:
 0. accumulate + fixity
-1. occur-check
 
 =============================================
 
