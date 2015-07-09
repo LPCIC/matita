@@ -1,3 +1,5 @@
+H=@
+
 PP=camlp5o -I . -I +camlp5
 PPPARSE=$(PP) pa_extend.cmo pa_lexer.cmo
 FLAGS=-I +camlp5
@@ -75,6 +77,7 @@ profile-grundlagen: ELPI = ../../newelpi -impl 22 grundlagen.elpi
 profile-grundlagen: EXEC = >> ../../grundlagen.txt 2>&1
 
 profile-grundlagen: newelpi
-	cd bench/sources && for TMP in `seq 31`; do echo main. | $(TIME) $(ELPI) $(EXEC); done
+	$(H)$(RM) grundlagen.time grundlagen.txt
+	$(H)cd bench/sources && for TMP in `seq 31`; do echo main. | $(TIME) $(ELPI) $(EXEC); done
 
 .PHONY: test clean profile-grundlagen
