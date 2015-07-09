@@ -31,7 +31,6 @@
 
 % Predicates: m+pred M M         = predeccessor for RTM modes
 %             r+exp  T M E M T   = reference expansion
-%             s+iso  S S         = stack comarison by length
 %             rtm+0  T S M M S T = extended reduction  (aux)
 %             conv+  T S M M S T = extended conversion (main)
 %             conv+l T S M M S T = extended conversion (aux)
@@ -60,10 +59,6 @@
 m+pred m+1 m+0.
 
 m+pred m+y m+y.
-
-s+iso satom satom.
-
-s+iso (scons S1 V1) (scons S2 V2) :- s+iso S1 S2.
 
 % EXTENDED REDUCTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -161,8 +156,8 @@ conv+r T1 S1 M1 M2 S2 T2 :- conv+0 T2 S2 M2 M1 S1 T1.
 
 conv+s satom satom.
 
-conv+s (scons S1 V1) (scons S2 V2) :- conv+ V1 satom m+0 m+0 satom V2,
-                                      conv+s S1 S2.
+conv+s (scons S1 V1) (scons S2 V2) :- conv+s S1 S2,
+                                      conv+ V1 satom m+0 m+0 satom V2.
 
 % conv+0 T1 S1 M1 M2 S2 T2 :- before, $print begin-conv-0 T1 S1 M1 T2 S2 M2, fail.
 
@@ -177,7 +172,7 @@ conv+0 (prod L W1 T1) satom M1 M2 satom (prod L W2 T2) :- !,
                                                                 (r+exp x m+1 e+dx m+0 W2)      => % m+pred not used
                                                                 conv+ (T1 x) satom M1 M2 satom (T2 x).
 
-conv+0 T S1 M M S2 T :- s+iso S1 S2, conv+s S1 S2, !.
+conv+0 T S1 M M S2 T :- conv+s S1 S2, !.
 
 % left expansion
 conv+0 T1 S1 M1 M2 S2 T2 :- r+exp T1 M1 e+sn M T, ok+l T1 M1 M M2 T2, !, conv+l T S1 M M2 S2 T2.
