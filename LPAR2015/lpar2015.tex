@@ -74,7 +74,8 @@ We present a new interpreter for \lp{} that runs consistently faster than
 the byte code compiled by \tedius{}, that is believed to be the best
 available implementation for \lp. 
 The key insight is the identification of a fragment of
-the language, which we call \frag{}, that occurs quite naturally in \lp{}
+the language, which we call reduction-free fragment (\rff{}),
+that occurs quite naturally in \lp{}
 programs and that admits constant time reduction and unification rules.
 % The implementation exploits De Bruijn levels and no explicit substitutions,
 % whereas \tedius{} is based on De Bruijn indexes and explicit substitutions
