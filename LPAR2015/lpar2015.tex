@@ -260,12 +260,13 @@ that is replaced by \verb+N+.
 The interested reader can find a longer discussion about \verb+copy+
 in~\cite[page 199]{Miller:2012:PHL:2331097}.
 The \verb+of+ program falls naturally in \Ll{}, since \verb+F+ is only applied
+to 
 the fresh variable \verb+x+ (all unification variables in a \lp{} program are
 implicitly existentially bound in front of the clause, so \verb+F+ does not
 see \verb+x+). The same holds for \verb+copy+.
 
 In \lp{} unification takes place under
-a mixed prefix of $\forall$ and $\exists$ quantifiers; their order
+a mixed prefix of $\forall$ and $\exists$ quantifiers. Their order
 determines if a unification variable (an existential) can be assigned to
 a term that contain a universally quantified variable.
 E.g. $\forall x,\exists Y, Y = x$ is provable while
@@ -655,7 +656,7 @@ the \verb+of+ program of Example~\ref{example1} and reducing expressions like
 $5^5$ in the syntax of Church numerals using a call by value/name (CBV/CBN)
 strategy.  The typeof test was specifically conceived to measure the cost of
 moving under binders: the type checked terms, projections, are mainly made of
-binders.
+\verb+lam+ nodes.
 
 \begin{center}
   \scriptsize 
@@ -695,7 +696,8 @@ binders.
   \end{tabular}
 \end{center}
 
-The table shows that \elpi{} shines on programs in \rff{}, and compares well
+The data in the 
+table shows that \elpi{} shines on programs in \rff{}, and compares well
 outside it. The alternating performance \tedius{} on the reduction tests has
 to be attributed to the explicit substitutions (ES) machinery~\cite{DBLP:journals/jar/LiangNQ04} when employed to cross binders:
 by its very nature ES fit well a lazy reduction strategy like
@@ -721,10 +723,11 @@ checker is able to validate the proof terms of the formalization of Landau's
 $\lambda\delta$, named Helena, has been implemented in OCaml.
 Our \lp{} implementation follows it closely, and
 naturally falls in \rff{}.
-Nevertheless, the \lp{} code is much simpler that the corresponding OCaml code
-and consists of just 52 clauses. In particular, the automatic
-context management provided by the \lp{} runtime is used in place of the
-environment that the OCaml code has to handle explicitly.
+Nevertheless, the \lp{} code is much simpler than the corresponding OCaml code
+and consists of just 52 clauses.
+%In particular, the automatic
+%context management provided by the \lp{} runtime is used in place of the
+%environment that the OCaml code has to handle explicitly.
 
 The ``Grundlagen'' is a theory comprising definitions and proofs
 for a total of 6911 items (circa 8MB of data).
@@ -740,6 +743,7 @@ directly but surely incurs in some overhead.
 We use its timings as a
 reference for the order of magnitude between the performance of \elpi{} and
 the ones of a state-of-the-art ITP.
+When applicable we compare softwares compiled to native code or interpreted.
 
 \begin{center}
   \scriptsize 
@@ -761,7 +765,7 @@ RAM (Mb) & 91,628 & 1,072,092 & 0.09 \\
 \multicolumn{6}{|c|}{Time (s) for all 6911 items}\\
 \hline
 Task                   &\multicolumn{2}{|c|}{Helena}         & \elpi          & \multicolumn{2}{|c|}{Coq}            \\
-                 &interp. & comp.& &interp. & comp.\\ \hline
+                 &interp. & comp.& interp. &interp. & comp.\\ \hline
 Pre & 2.42 & 0.41 & 9.04 & 49.28 & 8.83 \\
 \hline
 Ver & 4.40 & 0.33 & 13.90 & 7.21 & 1.19\\ % coqchk.opt: 3.90
