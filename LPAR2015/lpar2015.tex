@@ -704,14 +704,15 @@ overhead is visible).  On the contrary ES are counterproductive
 in the CBV case since the program, by fully traversing the redex argument,
 systematically pushes the suspended substitution to the leaves of the
 term, completely defeating the purpose of the entire machinery (i.e. if the
-substitution has to be performed, there is not gain is delaying it).
+substitution has to be performed, there is no gain in delaying it).
 If one makes \tedius{} artificially
 push explicit substitutions in the CBN case too, he halves memory consumption
 but degrades the performances by 10 seconds, confirming the
-time we see in the CBV case is dominated by the overhead of explicit substitutions. By avoiding substitution when crossing binders
+time we see in the CBV case is dominated by the overhead of ES.
+By avoiding substitution when crossing binders
 \elpi{} is not only faster, but also more predictable performance wise: as one
 expects CBV is faster than CBN in computing the normal form of $5^5$ since
-it avoids duplicating non normal terms.
+it avoids duplicating non-normal terms.
 
 The real application we present is a checker for the formal system
 $\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a} Such
