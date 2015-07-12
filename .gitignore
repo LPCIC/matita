@@ -7,7 +7,7 @@
 *.lp
 *.lpo
 *~
-new_elpi/memprof/
+*/memprof/
 *.aux
 *.bbl
 *.blg
@@ -20,3 +20,4 @@ perf*data*
 gmon.out
 *.thc
 *.out
+elpi/elpi
