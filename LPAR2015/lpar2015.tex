@@ -1,0 +1,790 @@
+% LLNCStmpl.tex
+% Template file to use for LLNCS papers prepared in LaTeX
+%websites for more information: http://www.springer.com
+%http://www.springer.com/lncs
+
+\documentclass{llncs}
+%Use this line instead if you want to use running heads (i.e. headers on each page):
+%\documentclass[runningheads]{llncs}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{color}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{multirow}
+\setlength{\extrarowheight}{1pt}
+\usepackage{fancyvrb}
+\usepackage{hyperref}
+\hypersetup{plainpages=false,pdfborderstyle={/S/U/W 0}}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue}
+\floatstyle{plain} \newfloat{example}{thp}{lop} \floatname{example}{\textbf{Example}}
+\newtheorem{mydef}{Definition}
+\newtheorem{myprop}{Property}
+\begin{document}
+\title{ELPI: fast, Embeddable, \lp{} Interpreter}
+
+%If you're using runningheads you can add an abreviated title for the running head on odd pages using the following
+%\titlerunning{abreviated title goes here}
+%and an alternative title for the table of contents:
+%\toctitle{table of contents title}
+
+%\subtitle{Subtitle Goes Here}
+
+%For a single author
+%\author{Author Name}
+
+%For multiple authors:
+
+\author{Cvetan~Dunchev,$^1$~Ferruccio~Guidi,$^1$~Claudio~Sacerdoti~Coen,$^1$~Enrico~Tassi$^2$}
+
+
+%If using runnningheads you can abbreviate the author name on even pages:
+%\authorrunning{abbreviated author name}
+%and you can change the author name in the table of contents
+%\tocauthor{enhanced author name}
+
+%For a single institute
+\institute{Department of Computer Science,
+University of Bologna,~%\\ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
+\email{name.surname@unibo.it}
+\and Inria Sophia-Antipolis,~%\\ 2004 route des Lucioles - BP 93, 06902 Sophia Antipolis Cedex, France
+\email{name.surname@inria.fr}}
+
+% If authors are from different institutes
+%\institute{First Institute Name \email{email address} \and Second Institute Name\thanks{Thank you to...} \email{email address}}
+
+%to remove your email just remove '\email{email address}'
+% you can also remove the thanks footnote by removing '\thanks{Thank you to...}'
+
+\newcommand{\frag}{Reduction-Free Fragment}
+\newcommand{\lp}{$\lambda$Prolog}
+\newcommand{\Ll}{\ensuremath{\mathcal{L}_\lambda}}
+\newcommand{\rff}{\ensuremath{\mathcal{L}_\lambda^\beta}}
+\newcommand{\elpi}{ELPI}
+\newcommand{\tedius}{Teyjus}
+\newcommand{\CSC}[1]{\textcolor{red}{#1}}
+\newcommand{\FG}[1]{\textcolor{magenta}{#1}}
+
+\maketitle
+
+\begin{abstract}
+We present a new interpreter for \lp{} that runs consistently faster than
+the byte code compiled by \tedius{}, that is believed to be the best
+available implementation of \lp. 
+The key insight is the identification of a fragment of
+the language, which we call reduction-free fragment (\rff{}),
+that occurs quite naturally in \lp{}
+programs and that admits constant time reduction and unification rules.
+% The implementation exploits De Bruijn levels and no explicit substitutions,
+% whereas \tedius{} is based on De Bruijn indexes and explicit substitutions
+% (the suspension calculus).
+\end{abstract}
+
+\section{Introduction}% and State of the Art}
+\lp{} is a logic programming language based on an intuitionistic fragment of
+Church's Simple Theory of Types. An extensive introduction to the language
+with examples can be found in~\cite{Miller:2012:PHL:2331097}. \tedius{}
+\cite{DBLP:conf/cade/NadathurM99,DBLP:journals/jar/LiangNQ04} is a
+compiler for \lp{} %implemented by Gopalan Nadathur and others
+that is considered to be the fastest
+implementation of the language. 
+%Previous slower implementations are described
+%in~\cite{}. \CSC{OTHER IMPLEMENTATIONS IN ISABELLE ETC. MISSING}
+The main difference with respect to Prolog is that \lp{} manipulates
+$\lambda$-tree expressions, i.e. syntax containing binders. Therefore, the
+natural application of \lp{} is meta-programming (see~\cite{LPAZ} for
+an interesting discussion), including: automatic generation of programs from
+specifications; animation of operational semantics;
+program transformations and implementation of type checking algorithms.
+
+Via the Curry-Howard isomorphism a type-checker is a proof-checker, the main
+component of an interactive theorem prover (ITP). Indeed the motivation of our
+interest in \lp{} is that we are looking for the best 
+language to implement the so called \emph{elaborator} component of an ITP.
+The elaborator is used to type check the terms input by
+the user. Such data, for conciseness reasons, is typically incomplete and
+the ITP is expected to infer what is missing. The possibility to
+extend Coq's built-in elaborator with user provided ``logic programs'' (in the
+form of
+Canonical Structures~\cite{hints2,hints}
+or
+Type Classes~\cite{TCcoq}) to help it infer 
+the missing data %pieces of information 
+turned out to be a key ingredient in successful formalizations
+like~\cite{gonthier:hal-00816699}. Embedding a \lp{} interpreter in an ITP
+would enable the elaborator and its extensions to be expressed in the same,
+high level, language. A crucial requisite for this plan to be realistic is
+the efficiency of the \lp{} interpreter.
+
+In this paper we introduce ELPI, a fast \lp{} interpreter written in OCaml
+that can be easily embedded in OCaml softwares, like Coq.
+In particular we focus on the insight that makes ELPI fast when dealing with
+binders by identifying a reduction-free fragment (\rff{}) of \lp{} that, if
+implemented correctly, admits constant-time unification and reduction
+operations.
+We analyze the role of $\beta$-reduction in Section~\ref{sec:beta} and
+higher order unification in Section~\ref{sec:ho}; we discuss bound names
+representations in Section~\ref{sec:dbl}; we define \rff{} 
+in Section~\ref{sec:fragment} and we assess the results in
+Section~\ref{sec:benchmarks}.
+
+% We don't mention constraints here, too much vapor ware IMO.
+%\lp{} with Constraints (\`a la CLP) is the best choice.
+
+\section{The two roles of $\beta$-reduction in \lp{}}
+\label{sec:beta}
+
+\begin{example}[b]
+\begin{center}
+\begin{tabular}{cc}
+\begin{minipage}{4.8cm}
+\begin{Verbatim}[numbers=left,numbersep=1pt,frame=leftline]
+of (app M N) B :-
+  of M (arr A B), of N A.
+of (lam F) (arr A B) :-
+  pi x\ of x A => of (F x) B.
+\end{Verbatim}
+\end{minipage}~~
+&
+~~~\begin{minipage}{6.5cm}
+\begin{Verbatim}[numbers=left,firstnumber=5,numbersep=1pt,frame=leftline]
+cbn (lam F) (lam F).
+cbn (app (lam F) N) M :- cbn (F N) M.
+cbn (app M N) R :-
+  cbn M (lam F), cbn (app (lam F) N) R.
+\end{Verbatim}
+\end{minipage}
+\end{tabular}
+\end{center}
+\caption{\label{example1} Type checker and Weak CBN for simply typed $\lambda$-calculus.}
+\end{example}
+
+Example~\ref{example1} implements type-checking and
+reduction for $\lambda$-terms represented in $\lambda$-tree syntax.
+For instance, the object-level encoding of
+$(\lambda x.xx)$ is the term
+\verb+(lam (x\ app x x))+ of type $\mathcal{T}$.
+The syntax \verb+(x\ F)+ denotes
+the $\lambda$-abstraction of \lp{}, that binds \verb+x+ in \verb+F+;
+\verb+lam+ is the constructor for object-level abstraction, that builds
+a term of type $\mathcal{T}$ from a function of type
+$\mathcal{T} \to \mathcal{T}$; \verb+app+ takes two terms of
+type $\mathcal{T}$ and builds
+their object-level application of type $\mathcal{T}$.
+Following the tradition of Prolog, capitals letters denote unification
+variables.
+
+The second clause for the \verb+of+ predicate shows a recurrent pattern in
+\lp: in order to analyze an higher order term, one needs to recurse
+under a binder. This is achieved
+combining the forall quantifier, written \verb+pi x\ G+, with logical
+implication \verb+H => I+. The operational semantics implements the
+standard introduction rules of implication and the universal quantifier:
+the forall quantifier declares a
+new local constant \verb+x+, meant to be fresh in the entire program;
+logical implication temporarily
+augments the program with the new axiom \verb+H+ about \verb+x+.
+
+In Example~\ref{example1}, line 4, the functional (sub-)term
+\verb+F+ is applied to the fresh constant \verb+x+. Being \verb+F+ a
+function, the $\beta$-redex \verb+(F x)+, once reduced, denotes the body of
+our object-level function where the bound variable is replaced by the fresh
+constant \verb+x+.
+The implication is used to
+assume \verb+A+ to be the type of \verb+x+, in order to prove that the body of
+the abstraction has type \verb+B+ and therefore the whole abstraction has type
+\verb+(arr A B)+ (i.e. $A \to B$). Note that, unlike in
+the standard presentation of the typing rules, we do not need to manipulate an
+explicit context $\Gamma$ to type the free variables. Instead the assumptions
+of the form \verb+(of x A)+ are just added to the program's set of clauses, and \lp{}
+takes care of dropping them when \verb+x+ goes out of scope.
+Example: if the initial goal is
+\verb+(of (lam (w\ app w w)) T)+ by applying the second clause we assign
+\verb+(arr A B)+ to \verb+T+ and generate
+a new goal \verb+(of (app c c) B)+ (where \verb+c+ is the fresh constant
+substituted for \verb+w+) to be solved with the extra clause \verb+(of c A)+
+at disposal.
+
+In the type-checking example, the meta-level $\beta$-reduction is only employed
+to inspect a term under a binder by replacing the bound name with a fresh
+constant. The reduction example in line 6
+shows instead a radically different pattern: in order to implement object-level
+substitution --- and thus object-level $\beta$-reduction --- we use the
+meta-level $\beta$-reduction. E.g. if \verb+F+ is \verb+(w\ app w w)+
+then \verb+(F N)+ reduces to \verb+(app N N)+. Note that in this case
+$\beta$-reduction is fully general, because it replaces a name with a
+general term, not constrained to be a fresh constant.
+This distinction is crucial in the definition of \rff{} in
+Section~\ref{sec:fragment}.
+
+\section{Higher Order unification}% and captures}
+\label{sec:ho}
+Higher order (HO) unification admits no most general unifiers (MGUs), forcing
+implementations to enumerate all solutions or delay the flexible-rigid
+and the flexible-flexible problems. Moreover, the presence of binders
+requires a way to avoid captures, i.e. to check that unification variables
+are instantiated with terms containing only bound variables in their scope.
+
+To cope with the absence of MGUs, Dale Miller identified
+in~\cite{Miller91alogic} a well-behaved fragment (\Ll{}) of higher-order
+unification that admits MGUs and that is stable under \lp{} resolution. 
+The restriction defining \Ll{} is that unification variables can
+only be applied to (distinct) variables (i.e. not arbitrary terms) that are
+not already in the scope of the variable.
+Such fragment can effectively serve as a primitive for a
+programming language and indeed \tedius{} 2.0 is built around this fragment:
+no attempt to enumerate all possible unifiers is performed, and unification
+%\marginpar{cite huet? no space IMO}
+problems falling outside \Ll{} are just delayed. Many interesting \lp{}
+programs can be rewritten to fall in the fragment. For example, we can
+make \verb+cbn+ of Example~\ref{example1} stay in \Ll{} by replacing
+line 6 (that contains the offending \verb+(F N)+ term) with the following code:
+\vspace{-0.4em}
+\begin{center}
+\small
+\begin{minipage}{10cm}
+\begin{Verbatim}[numbers=left,numbersep=1pt,frame=leftline]
+cbn (app (lam F) N) M :- subst F N B, cbn B M.
+subst F N B :- pi x\ copy x N => copy (F x) B.
+copy (lam F1) (lam F2) :- pi x\ copy x x => copy (F1 x) (F2 x).
+copy (app M1 N1) (app M2 N2) :- copy M1 M2, copy N1 N2.
+\end{Verbatim}
+\end{minipage}
+\end{center}
+\vspace{-0.3em}
+The idea of \verb+subst+ is that the term \verb+F+ is recursively copied in
+the following way: each bound variable is copied in itself but for the top one
+that is replaced by \verb+N+.
+The interested reader can find a longer discussion about \verb+copy+
+in~\cite[page 199]{Miller:2012:PHL:2331097}.
+The \verb+of+ program falls naturally in \Ll{}, since \verb+F+ is only applied
+to 
+the fresh variable \verb+x+ (all unification variables in a \lp{} program are
+implicitly existentially bound in front of the clause, so \verb+F+ does not
+see \verb+x+). The same holds for \verb+copy+.
+
+In \lp{} unification takes place under
+a mixed prefix of $\forall$ and $\exists$ quantifiers. Their order
+determines if a unification variable (an existential) can be assigned to
+a term that contain a universally quantified variable.
+E.g. $\forall x,\exists Y, Y = x$ is provable while
+$\exists Y,\forall x, Y = x$ is not. An implementation can
+keep track of the scoping constraints using \emph{levels}.
+When a clause's head is unified with the goal in a context of length
+$n$, the universally quantified variables of the clause are instantiated to
+unification variables $X^n$ where the level $n$ records that $X$ has only
+visibility of the initial prefix of length $n$ of the context.
+If later a fresh constant is added by the \verb+pi+ rule, the constant
+occupies position $n+1$ (its level is $n+1$) and it will not be allowed to
+occur in instances of the variable $X^n$.
+From now on we will write levels in superscript.
+
+If we run the program
+\verb+(of (lam f\lam w\app f w) T+$^0$\verb+)+, after two steps the goal becomes
+\verb+(of (app c+$^1$\verb+ d+$^2$\verb+) B+$^0$\verb+)+.
+Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with 
+the level-annotated fresh constants $c^1$ and $d^2$ performing 
+the $\beta$-reductions.
+As a crucial optimization~\cite{DBLP:journals/jar/LiangNQ04} \tedius{}
+implements reductions in a lazy way using an explicit substitution
+calculus.
+%The lazy propagation
+%of explicit substitutions has typically poor memory performance.
+The reader can find this example developed
+in full details at page~\pageref{detailed},
+where we demonstrate how substitutions of bound names by fresh
+level-annotated constants can be avoided in \rff{}.
+
+% 
+% \begin{table}
+% \begin{center}
+% \begin{tabular}{c@{~~}|@{~~}c}
+% \begin{minipage}{5.0cm}
+% \begin{verbatim}
+% forall P [].
+% forall P [X|XS] :-
+%    P X, forall P XS.
+% \end{verbatim}
+% \end{minipage}
+% &
+% \begin{minipage}{5.0cm}
+% \begin{verbatim}
+% (pi Y\  Y :- pi x0\ r Y) =>
+%    (pi x0\ q (x1\ X^0 x0 x1))
+% \end{verbatim}
+% \end{minipage}
+% \end{tabular}
+% \end{center}
+% \caption{\label{example4} Example 4 (on the left): an higher order predicate whose definition is not in the pattern fragment. Example 5 (on the right): all clauses are in the \frag, but after two inferences the obtain term is not.}
+% \end{table}
+% 
+% The pattern fragment, discovered by Dale Miller in~\cite{???}, is a
+% well-behaved fragment of higher-order unification that is stable under \lp{}
+% resolution. I.e. if the syntax of the program is in the fragment, all
+% unification problems will only involve terms that are still in the fragment.
+% Moreover, all unification problems in the pattern fragment admit a most
+% general unifier, even in the flexible-flexible and flexible-rigid case. The
+% fragment is easily defined as follows: a variable \verb+X+ can only be
+% applied to a list of distinct names, and only if those names are not in the
+% scope of \verb+X+.
+% Example 1 is written in the pattern fragment: \verb+F+ is applied to \verb+x+,
+% and \verb+F+ is universally quantified before \verb+x+, that therefore is not
+% in the scope of \verb+F+. Example 2, instead, is not in the fragment because
+% of \verb+F N+ where \verb+N+ is not a name. However, at the expense of some
+% verbosity, it is possible to rewrite Example 2 to force it in the pattern
+% fragment (see Table~\ref{example3}). The definition of higher order predicates
+% like in Table~\ref{example4}, is, however, typically outside the pattern
+% fragment.
+
+\section{Bound variables}
+\label{sec:dbl}
+
+The last missing ingredient to define \rff{} and explain why it can be
+implemented efficiently is to see how systems that manipulate $\lambda$-terms
+accommodate
+$\alpha$-equivalence. Bound variables are not represented by using
+real names, but canonical ``names'' (hence $\alpha$-equivalence becomes syntactic equality).
+De Bruijn introduced two, dual, naming schemas for $\lambda$-terms in~\cite{debruijnlevel}:
+depth indexes (DBI) and levels
+(DBL). In the former, that is the most widely adopted one, a variable is named $n$ if its binder is found by
+crossing $n$ binders going in the direction of the root. In the latter a
+variable named $n$ is bound by the $n$-th binder one encounters in the path
+from the root to the variable.
+Below we write the term $\lambda x.(\lambda y.\lambda z.f~x~y~z)~x$ and its reduct in the two notations:
+%\begin{table}
+\vspace{-0.5em}
+\begin{center}
+\begin{tabular}{r@{~~}c@{~$\to_\beta$~}c}
+Indexes: & $\lambda x.(\lambda y.\lambda z.f~x_2~y_1~z_0)~x_0$ &
+$\lambda x.\lambda z.f~x_1~x_1~z_0$ \\
+Levels: & $\lambda x.(\lambda y.\lambda z.f~x_0~y_1~z_2)~x_0$ &
+$\lambda x.\lambda z.f~x_0~x_0~z_1$ \\
+\end{tabular}
+\end{center}
+\vspace{-0.5em}
+%\end{table}
+In both notations when a binder is removed and the corresponding variable
+substituted some ``renaming'' (called lifting) is performed.
+\tedius{} follows
+a third approach that mixes the two, using indexes for variables bound in
+the terms, and levels for variables bound in the context. The advantage
+is that no lifting is required when moving a term under additional binders.
+However, an expensive substitution of a level for an index is
+required to push a binder to the context.
+%\marginpar{this next paragraph can be dropped IMO}
+%We believe the popularity of DBI comes from the
+%fact that weak head normalization is easier to code: the argument of the
+%redex, being at the top level of the term, is always closed and hence
+%invariant by lifting.
+
+In \elpi{} we crucially chose DBL because of the following three properties:
+\begin{description}
+\item[DBL1] $x_i$ in $\Gamma$ keeps the same name $x_i$ in any extended context $\Gamma, \Delta$
+\item[DBL2] the variables bound by $\Gamma$ in a $\beta$-redex keep their name in the reduct
+\item[DBL3] when a binder is pushed to the context, the bound occurrences keep
+ their name: no lifting is required to move from $\Gamma \vdash \forall x_i, p(x_i)$ to $\Gamma, x_i \vdash p(x_i)$
+\end{description}
+Another way to put it is that variables already pushed in the context
+are treated \emph{exactly as constants}, and that the two notions of level
+--- De Bruijn's and the position in the context introduced in Section~\ref{sec:ho} --- coincide.
+
+%One important property of the pattern fragment is that $\beta$-reduction can
+%only substitute names with other names. This property, however, is not
+%easily exploitable and an implementation still needs to traverse the body
+%of the abstraction to do the replacing. If we look at Example 1, we see that
+%in order to type-check a $\lambda$-abstraction the operational semantics
+%requires to first traverse all the body just to replace a bound name with a
+%fresh one. This is a major source of inefficiency that is hardly justified.
+%To cope with it, \tedius{} 2.0 invented the \emph{suspension calculus}~\cite{susp1,susp2}, a form of explicit substitution calculus that propagates the substitution lazily (and that works also outside the pattern fragment). Some benchmarks~\cite{susp3} concluded that adopting the suspension calculus provides a significant speedup over a naive implementation of susbtitution. Nevertheless, programs compiled with \tedius{} are quite slow and, at least in cases like Example~1, the whole idea of substituting bound names with fresh names, in the spirit of the locally nameless approach~\cite{???}, seems a waste of time.
+%
+%In~\ref{sec:fragment} we will identify a sub-fragment of the pattern fragment
+%that we call~\frag. A clever implementation can completely avoid the traversal of the body of the abstraction during $\beta$-reduction, if the term to be reduced is in the~\frag.
+%In the remaining sections we will present an interpreter
+%for \lp, written in OCaml and called \elpi{} (Embedded \lp{} Interpreter), that exploits the \frag, and we will compare it to \tedius{} on a few benchmarks.
+%We anticipate that \elpi{} is consistently faster than \tedius{} on every test, sometimes up to \CSC{XXXX} times.
+
+\section{The reduction-free fragment \rff{}}\label{sec:fragment}
+\lp{} is a truly higher order language: even clauses can be
+passed around, unified, etc. Nevertheless this plays no role here, so
+we exclude formulas from the syntax of terms.
+Therefore, our terms are defined just by:
+\vspace{-0.5em}
+$$\begin{array}{l}
+   t ::= x_i ~|~ X^j ~|~ \lambda x_i.t ~|~ t~t
+\end{array}$$
+\vspace{-0.1em}
+Since variables follow the DBL representation, we do not have a case
+for constants like \verb+app+ or \verb+lam+, that are represented as $x_i$ for some negative $i$.
+Since the
+level of a variable completely identifies it, when we write
+$x_i \ldots x_{i+k}$ we mean $k$ distinct bound (i.e. $i \geq 0$) variables.
+The superscript $j$ annotates unification variables with their
+visibility range ($0 \leq j$, since all global constants are in range).
+A variable $X^j$ has visibility of all names strictly
+smaller than $j$. E.g. $X^1$ has visibility only of $\{\ldots,x_{-1},x_0\}$, and $X^3$ has
+visibility of $\{\ldots,x_{-1},x_0,x_1,x_2\}$. Technically, when following
+the De Bruijn convention, we could just write $\lambda x_i.t$ as $\lambda.t$.
+We keep writing the name $x_i$ to ease reading.
+
+\begin{mydef}[\rff{}]
+A term is in the reduction-free fragment \rff{} iff
+every occurrence of a unification variable $X^j$ is applied to
+$x_j \ldots x_{j+k-1}$ for $k >= 0$.
+\end{mydef}
+
+We allow $k=0$ to accept variables that are not applied. A consequence of
+the definition is that if a term is in \rff{} then all occurrences of
+applications of unification variables
+can be instantiated with a term closed
+in an initial segment of the \lp{} context seen as a ordered list.
+Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and
+$X^2~x_3~x_2$ are not; $X^2~x_2~x_3$ can be instantiated with any term
+closed in $\{\ldots,x_0,x_1,x_2,x_3\}$.
+
+Observe that the programs in Example~\ref{example1} (when \verb+cbn+ is
+rewritten to be in the pattern fragment as in Section~\ref{sec:ho}) are in
+\rff{}. Also, every Prolog program is in \rff{}. As we will see
+in~Section~\ref{sec:benchmarks}, a
+type-checker for a dependently typed language
+and evaluator based on a reduction machine are also naturally in \rff{},
+showing that, in practice, the fragment is quite expressive.
+
+% where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
+% higher order, there is no distinction between formulas and terms, and both queries and clauses can be passed as arguments to predicates. Note also that $\forall$ binds local constants in positive position, and existentially quantified variables in negative position, according to the logical equivalence
+% $(\forall x.P) \Rightarrow Q \equiv \exists x.(P \Rightarrow Q)$. Disjunction
+% is definable, but the derivational semantics is complete only if it is used in
+% positive formulas (like for the existential quantifiers). We let $\mathcal{E}$ range over all syntactic categories above, and we call $\mathcal{E}$ an expression.
+% 
+% The concrete syntax differs from the abstract syntax in a few ways: \verb+pi x\+ and \verb+sigma x\+ are used in place of $\forall x.$ and $\exists x.$; $P \Rightarrow Q$ can be written as \verb+P => Q+ or as \verb+Q :- P+; conjunction is written using commas; $\lambda x.$ is written \verb+x\+. A program is just a list of clauses terminated by dots. All free uppercase names in a clause are implicitly universally quantified around the clause. The user writes a query to be resolved against a program. All free uppercase names in the query are also implicitly existentially quantified. The semantics of the pair program/clause is a new query obtained as the implication between the $n$-ary conjunction of all the clauses and the user provided query.
+% 
+% $\lambda x.A$ and $\forall x.Q$ bind $x$ respectively in $A$ and $Q$;
+% $\forall X.P$ and $\exists X.Q$ bind $X$ respectively in $P$ and $Q$.
+% Formulas are identified up to $\alpha$-equality as usual.
+% 
+% \paragraph{Definition and expressivity of the \frag}
+% The De Bruijn level of a name $x$ in an expression is the number of binders to be crossed when traversing the expression from the root towards the leaves before finding the binder for $x$~\cite{debruijnlevel}. For example, in the following expression every variable $x_i$ has level $i$: $\forall x_0.\exists X^1.\lambda x_1.\lambda x_2. \exists X^3. p~(X^1~x^1) X^3$. Every expression can be
+% $\alpha$-converted so that every name is renamed to $x_i$ where $i$ is its level. In the rest of the discussion we assume every term to be renamed in this way. Similarly, we can rename every variable $X$ to $X^j$ where $j$ is the smallest number such that $X^j$ has visibility of all names smaller than $j$. In the example above, $X^1$ has visibility only of $x^0$, and $X^3$ has visibility of $\{x^0,x^1,x^2\}$.
+% 
+% An expression is in the \frag{} iff every occurrence of an existentially quantified $X^j$ occurs applied to $x_j \ldots x_{j+k-1}$ for $k >= 0$.
+% 
+% Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and $X^2~x_3~x_2$ are not.
+
+\begin{myprop}[Decidability of HO unification]
+Being \rff{} included in the pattern-fragment \Ll{}, higher order unification is
+decidable for \rff{}.
+\end{myprop}
+%In other words, each problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
+%admits a MGU.
+
+The most interesting property of \rff{}, which also justify its name, is:
+
+\begin{myprop}[Constant time head $\beta$-reduction]
+Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables. Then the first $k-1$ head reductions of $(X^j~x_j \ldots x_{j+k-1}) \sigma$ can be computed in constant time.
+\end{myprop}
+
+A valid substitution assigns to $X^j$ a term $t$ of the right type (as in simply
+typed $\lambda$-calculus) and such that the free variables of $t$ are
+all visible by $X^j$ (all $x_i$ are such that $i < j$).
+Therefore $X^j \sigma = \lambda x_j. \ldots \lambda x_{j+n}.t$ for some $n$.
+Then
+\begin{equation}\label{deffrag}(X^j~x_j \ldots x_{j+k-1}) \sigma
+ = \left\{ \begin{array}{ll}
+t~x_{j+n+1} \ldots x_{j+k-1} & \mbox{if $n+1 < k$} \\
+\lambda x_{j+k}. \ldots \lambda x_{j+n}.t & \mbox{otherwise}
+      \end{array} \right.\end{equation}
+Thanks to property \textbf{DBL2}, Equation~\ref{deffrag} is
+\emph{syntactical}: no lifting of $t$ is required.
+Hence the $\beta$-reductions triggered by the substitution of $X^j$ take
+constant time.
+
+\begin{myprop}[Constant time unification]
+A unification problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
+can be frequently solved in constant time.
+\end{myprop}
+
+The unification problem $X^j~x_j\ldots x_{j+k-1} \equiv t$ can always be
+rewritten as two simpler problems: $X^j \equiv \lambda x_j. \ldots \lambda x_{j+k-1}. Y^{j+k}$ and $Y^{j+k} \equiv t$ for a fresh $Y$.
+The former is a trivial assignment that requires no check.
+The latter can be implemented in constant time iff no occur-check is needed
+for $X$ and if the level of the highest free variable in $t$ can be recovered
+in $O(1)$ and is smaller than $j+k$. The recovery can be economically
+implemented caching the maximum level in the term, that is something often
+pre-computed on the input term in linear time.
+Avoiding useless occur-check is a typical optimization of the Warren Abstract
+Machine (WAM), e.g. when $X$ occurs linearly in the head of a clause.
+%With such maximum level $l$ at hand the problem $Y^{j+k}
+%\equiv t$ can be decided by simply comparing $j+k$ with $l$.
+These properties enable us to implement the operational semantics of \verb+pi+
+in constant time for terms in \rff{}.
+
+We detail an example.\label{detailed}
+The first column gathers the fresh constants and extra clauses. The
+second one shows the current goal(s) and the program clause that is
+used to back chain.
+
+\begin{center}
+\small
+\begin{tabular}{c|l}
+Context & Goals and refreshed program clause \\\hline
+& \verb+of (lam x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) T+$^0$ \\
+& \verb+of (lam F+$^0$\verb+) (arr A+$^0$\verb+ B+$^0$\verb+) :- pi x+$_0$\verb+\ of x+$_0$\verb+ A+$^0$\verb+ => of (F+$^0$\verb+ x+$_0$\verb+) B+$^0$ \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+) B+$^0$ \\
+& \verb+of (lam G+$^1$\verb+) (arr C+$^1$\verb+ D+$^1$\verb+) :- pi x+$_1$\verb+\ of x+$_1$\verb+ C+$^1$\verb+ => of (G+$^1$\verb+ x+$_1$\verb+) D+$^1$\verb++ \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of (app x+$_0$\verb+ x+$_1$\verb+) D+$^0$ \\
+\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of (app M+$^2$\verb+ N+$^2$\verb+) S+$^2$\verb+ :- of M+$^2$\verb+ (arr R+$^2$\verb+ S+$^2$\verb+), of N+$^2$\verb+ R+$^2$ \\\hline
+\verb+ x+$_0$;\verb+(of x+$_0$\verb+ A+$^0$\verb+)+ & \verb+of x+$_0$\verb+ (arr R+$^2$\verb+ S+$^0$\verb+), of x+$_1$\verb+ R+$^2$ \\
+\verb+ x+$_1$;\verb+(of x+$_1$\verb+ C+$^0$\verb+)+ & \verb+of x+$_0$\verb+ A+$^0$\hspace{4pt}\verb+        , of x+$_1$\verb+ C+$^0$ \\\hline
+\end{tabular}
+\end{center}
+
+After the first step we obtain
+\verb+F+$^0$\verb+:= x+$_0$\verb+\lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$;
+\verb+T+$^0$\verb+:= arr A+$^0$\verb+ B+$^0$; the extra clause
+about \verb+x+$_0$ in the context and a new subgoal.
+Thanks to property \textbf{DBL3}, \verb+x+$_0$ has been pushed to the context
+in constant time.
+Note that the redex \verb+(F+$^0$\verb+ x+$_0$\verb+)+ is in \rff{} and
+thanks to Equation~\ref{deffrag} head normalizes in constant time
+to \verb+(lam x+$_1$\verb+\app x+$_0$\verb+ x+$_1$\verb+)+.
+The same phenomenon arises in the second step,
+where we obtain \verb+G+$^1$\verb+:= x+$_1$\verb+\app x+$_0$\verb+ x+$_1$
+and we generate the redex \verb+(G+$^1$\verb+ x+$_1$\verb+)+.
+Unification variables are refreshed in the context under with
+the clause is used, e.g. \verb+C+ is placed at level 1 initially,
+but in consequence to a unification step they may be \emph{pruned}
+when occurring in a term assigned to a lower level unification
+variable. Example: unifying
+\verb+B+$^0$ with \verb+(arr C+$^1$\verb+ D+$^1$\verb+)+ prunes
+\verb+C+ and \verb+D+ to level 0.
+
+The choice of using DBL for bound variables is both an advantage and a
+complication here.
+Clauses containing no bound variables, like
+\verb+(of x+$_0$\verb+ A+$^0$\verb+)+, require no processing thanks to
+\textbf{DBL1}: they can be indexed as they are, since the name \verb+x+$_0$
+is stable.
+The drawback is that clauses with bound variables, like the one 
+used in the first two back chains, need to be lifted: the first time the
+bound variable is named \verb+x+$_0$,
+while the second time \verb+x+$_1$.
+Luckily, this renaming, because of property \textbf{DBL1},
+can be performed in constant time using the very same machinery one uses to
+refresh the unification variables.
+E.g. when the WAM unifies the head of a clauses it assigns 
+fresh stack cells: the clause is not really refreshed and the stack
+pointer is simply incremented. One can represent the locally bound variable as
+an extra unification variable, and initialize, when \verb+pi+ is crossed, the
+corresponding stack cell to the first \verb+x+$_i$ free in the context.
+
+\paragraph{Stability of \rff{}.}
+Unlike \Ll{}, \rff{} is not stable under \lp{} resolution: a clause that
+contains only terms in \rff{} may generate terms outside the fragment.
+Therefore an implementation must handle both terms in \rff{}, with their
+efficient computation rules, and terms outside the fragment. Our limited
+experience so far, however, is that several programs initially written in the
+fragment remains in the fragment during computation, or they can be slightly
+modified to achieve that property.
+
+
+% The term $X^j~x_j\ldots x_{j+k-1}$ can always be rewritten as
+% $Y^{j+k}$ instantiating $X^j$ with $\lambda x_j. \ldots \lambda x_{j+k-1}. X^{j+k}$ for a fresh existentially quantified variable $X^{j+k}$. Therefore every
+% unification problem in the \frag{} can be reduced in linear time in $k$ to a
+% problem of the kind $X^{j+k} \equiv \mathcal{E}$, that is immediately solved
+% by instantiating $X^{j+k}$ with $\mathcal{E}$ if the free names of $E$ are
+% known to be a subset of $\{x_0,\ldots,x_{j+k-1}\}$.
+% 
+% Note that, once all $\beta$-redex that occur syntactically in the term are
+% fired at compile time, or if explicitly written $\beta$-redexes are forbidden,
+% then every $\beta$-redex in the computation is triggered by the substitution
+% of an existentially quantified variable. Therefore, if the program is and
+% remains in \rff{}, then all $\beta$-reductions can be implemented in
+% constant time.
+% 
+% Finally, another benefit of working with De Bruijn levels is that the
+% $\forall$-introduction rule can also be implemented in constant time as well
+% because there is no need to replace the bound variable with a fresh name.
+% The price to pay is an additional complexity in the backchain rule: when
+% a clause is selected, the clause needs to be $\alpha$-converted --- lifted
+% in De Bruijn indexes/levels terminology --- to move it in the current scope.
+% For example, if the query is \verb+ pi x_0\ r x_0+ and \verb+r X :- pi x_0\ pi x_1\ p x_0 x_1 X+ is a clause, after two inferences the new query becomes
+% \verb+pi x_1\ pi x_2\ p x_1 x_2 x_0+ because the introduction rule for
+% \verb+pi+ has already fixed the name \verb+x_0+.
+% 
+% \paragraph{Instability of the \frag}
+% Unlike the pattern fragment, the \frag{} is unstable for computation.
+% I.e. there are simple examples where the program and the initial query are
+% written in the fragment, but during execution we generate terms outside the
+% fragment (but still in the pattern fragment). This is a consequence of the
+% need for lifting clauses during backchaining.
+% Consider example~5 in Table~\ref{example4}.
+% After two inference steps the term \verb+(x1\ X^0 x0 x1)+, that is in
+% the fragment and assigned to \verb+Y+, is moved under \verb+pi x0+ becoming
+% \verb+r (x2\ X^0 x0 x2)+. The latter is no longer in the fragment.
+% 
+% Therefore, and contrarily to what happens with the pattern fragment, an
+% implementation must handle both terms in the fragment, with their efficient
+% computation rules, and terms outside the fragment. Our limited experience so
+% far, however, is that several programs initially written in the fragment
+% remains in the fragment during computation, or they can be slightly modified
+% to achieve that property.
+% 
+% \section{\elpi: an Embedded \lp{} Interpreter.}\label{sec:elpi}
+% The current version of \elpi, together with the benchmarks presented in
+% the next section, can be downloaded at \CSC{\url{http://xxxxx}}. The intepreter
+% is entirely written in OCaml and it is \CSC{XXX} lines long. It augments the language presented in the paper with Prolog-style cuts and a few custom predicates for printing. The name is due to the fact that we eventually plan to augment the language with constraints and then embed it in the implementation of interactive theorem provers like Coq, that are often written in OCaml.
+% 
+% We carefully wrote the code so that unrechable terms in \lp{} are encoded by unreachable terms in OCaml. Therefore we inherit garbage collection from the OCaml runtime. The algebraic datatype used to encode terms has different constructors for occurrences of terms in the \frag, and for occurrences outside the fragment. In particular an occurrence $X^j x_j \ldots x_{j+k-1}$ is simply represented as a triple $\langle r,j,k\rangle$ where $r$ is a reference to the term
+% $X$ is instantiated to, or to a dummy term if $X$ is still unbound. Finally, we carefully cherry picked some design decisions from the WAM, implementing our own variations in several places. The variations have been made necessary to decrease the pressure on the garbage collector of OCaml, that is responsible for a significant percentage of the running time. For example, the heap and the stack are not organized as large arrays of mostly unused cells because otherwise the garbage collector needs to traverse the arrays at every minor and major collection. Similarly, we employ a mix of mutable and persistent data structures, avoiding mutable structures for data that is likely to survive, in order to avoid the penalty of the write barrier on data in the old generation~\cite{???}.
+% Further details will be reported in a future work due to lack of space.
+
+\section{Assessment and conclusions}\label{sec:benchmarks}
+
+We assess %the performances of 
+\elpi{} on a set of synthetic benchmarks and
+a real application. Synthetic benchmarks are divided into three groups:
+first order programs from the Aquarius test suite (%the
+crypto-multiplication, $\mu$-puzzle,
+generalized eight queens problem and the Einstein's zebra puzzle);
+higher order programs falling in \rff{}; and an higher
+order program falling outside \rff{} taken from the test suite of
+\tedius{} normalizing expressions in the SKI calculus.
+
+The programs in \rff{} are respectively type checking lambda terms using
+the \verb+of+ program of Example~\ref{example1} and reducing expressions like
+$5^5$ in the syntax of Church numerals using a call by value/name (CBV/CBN)
+strategy.  The typeof test was specifically conceived to measure the cost of
+moving under binders: the type checked terms, projections, are mainly made of
+\verb+lam+ nodes.
+
+\begin{center}
+  \scriptsize 
+  \begin{tabular}{|p{1.5cm}||c|r||c|r||c|c|}
+    \hline
+      \multicolumn{1}{|c||}{Test} &
+      \multicolumn{2}{|c||}{ELPI} &
+      \multicolumn{2}{|c||}{\tedius{}} &
+      \multicolumn{2}{|c|}{ELPI/\tedius{}} \\
+    \hline
+    &  time (s)     & space (Kb)  & time (s) & space (Kb) &  time & space \\
+    \hline
+    \hline
+    crypto-mult &  3.48 & 27,632  & 6.59 & 18,048 &  0.52 & 1.53 \\
+    \hline    
+    $\mu$-puzzle &  1.82 & 5,684 &  3.62 & 50,076 &  0.50 & 0.11 \\
+    \hline
+    queens &  1.41  & 108,324 &  2.02 & 69,968 &  0.69 & 1.54 \\
+    \hline    
+    zebra &  0.85 & 7,008 &  1.89 & 8,412 &  0.44 & 0.83 \\
+    \hline     
+    \hline
+    typeof &  0.27 & 8,872 &  5.64 & 239,892 &  0.04 & 0.03 \\
+    \hline
+    reduce\_cbv &  0.15 & 7,248 &  11.11 & 57,404  & 0.01 & 0.12 \\
+    \hline
+    reduce\_cbn &  0.33 & 8,968 &  0.81 & 102,896  & 0.40 & 0.08 \\
+    \hline
+    %reduce\_cbv\_nocopy & ... & ... &  11.25 & 50,892  & ... & ... \\
+    %\hline
+    %reduce\_cbn\_nocopy & ... & ... &  0.52 & 70,760  & ... & ... \\
+    %\hline
+    \hline
+    SKI &  1.32 & 15,472 &  2.68 & 8,896  & 0.49 & 2.73 \\
+    \hline
+    
+  \end{tabular}
+\end{center}
+
+The data in the 
+table shows that \elpi{} shines on programs in \rff{}, and compares well
+outside it. The alternating performance \tedius{} on the reduction tests has
+to be attributed to the explicit substitutions (ES) machinery~\cite{DBLP:journals/jar/LiangNQ04} when employed to cross binders:
+by its very nature ES fit well a lazy reduction strategy like
+CBN (even if some space
+overhead is visible).  On the contrary ES are counterproductive
+in the CBV case since the program, by fully traversing the redex argument,
+systematically pushes the suspended substitution to the leaves of the
+term, completely defeating the purpose of the entire machinery (i.e. if the
+substitution has to be performed, there is no gain in delaying it).
+If one makes \tedius{} artificially
+push explicit substitutions in the CBN case too, he halves memory consumption
+but degrades the performances by 10 seconds, confirming the
+time we see in the CBV case is dominated by the overhead of ES.
+By avoiding substitution when crossing binders
+\elpi{} is not only faster, but also more predictable performance wise: as one
+expects CBV is faster than CBN in computing the normal form of $5^5$ since
+it avoids duplicating non-normal terms.
+
+The real application we present is a checker for the formal system
+$\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a} Such
+checker is able to validate the proof terms of the formalization of Landau's
+``Grundlagen''~\cite{Jut79} done in Automath. The reference checker for
+$\lambda\delta$, named Helena, has been implemented in OCaml.
+Our \lp{} implementation follows it closely, and
+naturally falls in \rff{}.
+Nevertheless, the \lp{} code is much simpler than the corresponding OCaml code
+and consists of just 50 clauses.
+%In particular, the automatic
+%context management provided by the \lp{} runtime is used in place of the
+%environment that the OCaml code has to handle explicitly.
+
+The ``Grundlagen'' is a theory comprising definitions and proofs
+for a total of 6911 items (circa 8MB of data).
+\tedius{} seems to have a fixed maximum heap size of 256MB that in turn
+limits it to the verification of the first 2615 items.
+In the table we compare pre-processing (Pre) time like parsing, compilation
+or elaboration, and verification (Ver).
+We compare \elpi{} with Helena, \tedius{}, and Coq.
+The Coq system implements a
+type checker for a $\lambda$-calculus strictly more expressive than
+$\lambda\delta$, hence can check the proof terms
+directly but surely incurs in some overhead. 
+We use its timings as a
+reference for the order of magnitude between the performance of \elpi{} and
+the ones of a state-of-the-art ITP.
+When applicable we compare softwares compiled to native code or interpreted.
+
+\begin{center}
+  \scriptsize 
+\begin{tabular}{|l|c|c|c|}
+\hline
+\multicolumn{4}{|c|}{Time (s) for 2615 items only}\\
+\hline
+ & \elpi          & Teyjus  & \elpi/Teyjus        \\
+\hline
+Pre      & 2.55 & 49.57 & 0.05 \\
+\hline
+Ver      & 3.06 & 203.36 & 0.02 \\ \hline
+RAM (Mb) & 91,628 & 1,072,092 & 0.09 \\
+\hline
+\end{tabular}
+~~
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\multicolumn{6}{|c|}{Time (s) for all 6911 items}\\
+\hline
+Task                   &\multicolumn{2}{|c|}{Helena}         & \elpi          & \multicolumn{2}{|c|}{Coq}            \\
+                 &interp. & comp.& interp. &interp. & comp.\\ \hline
+Pre & 2.42 & 0.41 & 9.04 & 49.28 & 8.83 \\
+\hline
+Ver & 4.40 & 0.33 & 13.90 & 7.21 & 1.19\\ % coqchk.opt: 3.90
+\hline
+\end{tabular}
+\end{center}
+
+% The pre-processing phase for \tedius{} required us to split the data in 28
+% modules, since we observed a non-linear time growth when compiling a single
+% module. 
+% To our understanding this should not affect the execution time.
+
+Our conclusion is that \rff{} admits a very efficient implementation and
+is large enough to express realistic programs like a type checker for
+a dependently typed $\lambda$-calculus.
+\elpi{} is under active development at
+\small{\url{http://lpcic.gforge.inria.fr}}.
+\vspace{-1em}
+\bibliographystyle{plain}
+\bibliography{reference}
+
+\end{document} 

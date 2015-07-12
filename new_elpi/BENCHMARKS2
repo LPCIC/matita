@@ -1,0 +1,34 @@
+Cvetan's laptop up to git c384af1:
+----------------------------------           refr   lazy  lazy  eager
+#1 no index list:                            7.10   7.12
+
+#2 one level index hashtbl:                  6.29   6.08  4.33  4.37
+#                                                         6.07  4.32
+
+#3 two level inefficient index:                     4.33
+
+#4 one level index hashtbl and automatic GC:        8.18
+
+#5 one level index hashtbl + 
+   flattening and automatic GC:                     7.35
+
+#6 one level index hashtbl + flattening:            6.53
+
+#7 one level index hashtbl + 
+   flattening + manual GC:                          6.78
+
+#8 with one level index map:                        6.07
+
+#9 imperative one level index hashtbl:              1.80
+
+#10 imperative two level efficient index:           1.07
+
+#11 eager imperative two level efficient index:     1.12
+ 
+#12 our desperate:                                  0.78
+ 
+#13 Enrico's desperate:                             0.29
+
+==================== X = 15
+ 
+#16 Enrico's desperate HO:   0.59 vs 0.57

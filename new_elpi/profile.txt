@@ -1,0 +1,7 @@
+elpi grundlagen dev
+
+user: 31.08 old implementation
+exec: 19.49
+
+user: 30.03 new implementation
+exec: 18.77
