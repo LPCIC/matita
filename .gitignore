@@ -21,3 +21,5 @@ gmon.out
 *.thc
 *.out
 elpi/elpi
+elpi/elpi.trace
+elpi/elpi.git.*
