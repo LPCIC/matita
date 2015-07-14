@@ -118,9 +118,6 @@ let mkApp =
   | (Custom _ | Const _) as c::l2 -> App(c,l2)
   | _ -> raise NotInProlog
 
-(*let uvmap = ref [];;
-let reset () = uvmap := []*)
-
 let fresh_uv_names = ref (-1);;
 
 let mkFreshUVar () = incr fresh_uv_names; Const (ASTFuncS.from_string ("_" ^ string_of_int !fresh_uv_names))
@@ -177,52 +174,66 @@ let parse_string e s =
     raise (Stream.Error(Printf.sprintf "%s\nnear: %s" msg ctx))
   | Ploc.Exc(_,e) -> raise e
 
-let rec number = lexer [ '0'-'9' number | '0'-'9' ]
-let rec ident =
-  lexer [ [ 'a'-'z' | 'A'-'Z' | '\'' | '_' | '-' | '+' | '*' | '0'-'9' ] ident | ]
+let digit = lexer [ '0'-'9' ]
+let octal = lexer [ '0'-'7' ]
+let hex = lexer [ '0'-'9' | 'A'-'F' | 'a'-'f' ]
+let schar =
+ lexer [ '+' | '-' | '*' | '/' | '^' | '<' | '>' | '=' | '`'
+       | '\'' | '?' | '@' | '#' | '$' | '&' | '!' | '_' | '~' ]
+let schar1 =
+ lexer [ '+' | '-' | '/' | '^' | '<' | '>' | '=' | '`'
+       | '\'' | '?' | '@' | '#' | '$' | '&' | '!' | '_' | '~' ]
+let schar2 =
+ lexer [ '+' | '-' | '*' | '^' | '<' | '>' | '=' | '`'
+       | '\'' | '?' | '@' | '#' | '$' | '&' | '!' | '~' ]
+let lcase = lexer [ 'a'-'z' ]
+let ucase = lexer [ 'A'-'Z' ]
+let idchar = lexer [ lcase | ucase | digit | schar ]
+let rec idcharstar = lexer [ idchar idcharstar | ]
+let idchar1 = lexer [ lcase | ucase | digit | schar1 ]
+let rec num = lexer [ digit | digit num ]
 
 let rec string = lexer [ '"' | _ string ]
 
-(*
-let lvl_name_of s =
-  match Str.split (Str.regexp_string "^") s with
-  | [ x ] -> Name.make x, 0
-  | [ x;l ] -> Name.make x, int_of_string l
-  | _ -> raise (Token.Error ("<name> ^ <number> expected.  Got: " ^ s))
-*)
-
 let tok = lexer
-  [ 'A'-'Z' ident -> "CONSTANT", $buf 
-  | 'a'-'z' ident -> "CONSTANT", $buf
-  | number -> "INTEGER", $buf
+  [ ucase idcharstar -> "CONSTANT", $buf 
+  | lcase idcharstar -> "CONSTANT", $buf
+  | '/' -> "CONSTANT",$buf
+  | '/' idchar1 idcharstar -> "CONSTANT", $buf
+(*| schar2 idcharstar -> "CONSTANT", $buf CSC: TO BE TESTED,
+    (would break the next line for sure)
+    commenting out the next lines if they are subsumed. *)
+  | '$' 'a'-'z' idcharstar -> "BUILTIN",$buf
+  | "*" -> "CONSTANT", $buf (*CSC: to be fixed *)
+  | "+" -> "CONSTANT", $buf (*CSC: to be fixed *)
+  | ">" -> "CONSTANT", $buf (*CSC: to be fixed *)
+  | ">=" -> "CONSTANT", $buf (*CSC: to be fixed *)
+  | '<' -> "CONSTANT",$buf (*CSC: to be fixed *)
+  | num -> "INTEGER", $buf
+  | num '.' num -> "REAL", $buf
   | "->" -> "ARROW", $buf
-  | '-' number -> "INTEGER", $buf
+  | "-" -> "CONSTANT", $buf (*CSC: to be fixed *)
+  | "~" -> "CONSTANT", $buf (*CSC: to be fixed *)
   | '_' -> "FRESHUV", "_"
+  | '_' idchar idcharstar -> "CONSTANT", $buf
   |  ":-"  -> "ENTAILS",$buf
   |  ":"  -> "COLON",$buf
   |  "::"  -> "CONS",$buf
-  | ',' -> "COMMA",","
+  | ',' -> "COMMA",$buf
   | '&' -> "AMPERSEND",","
-  | ';' -> "SEMICOLON",";"
-  | '.' -> "FULLSTOP","."
+  | ';' -> "SEMICOLON",$buf
+  | '.' -> "FULLSTOP",$buf
+  | '.' num -> "REAL",$buf
   | '\\' -> "BIND","\\"
-  | '/' -> "BIND","/"
-  | '(' -> "LPAREN","("
-  | ')' -> "RPAREN",")"
-  | '[' -> "LBRACKET","["
-  | ']' -> "RBRACKET","]"
-  | '|' -> "PIPE","|"
-  | "=>" -> "IMPL", $buf
-  | '=' -> "EQUAL","="
-  | '<' -> "LT","<"
-  | '>' -> "GT",">"
-  | '$' 'a'-'z' ident -> "BUILTIN",$buf
+  | '(' -> "LPAREN",$buf
+  | ')' -> "RPAREN",$buf
+  | '[' -> "LBRACKET",$buf
+  | ']' -> "RBRACKET",$buf
+  | '|' -> "PIPE",$buf
+  | "=>" -> "IMPL",$buf
+  | '=' -> "EQUAL",$buf
+  | "=<" -> "CONSTANT",$buf (*CSC: to be fixed *)
   | '!' -> "BANG", $buf
-  | "!-!" -> "AH5",$buf
-  | "!+!" -> "AH6",$buf
-  | '@' -> "AT", $buf
-  | '#' -> "SHARP", $buf
-  | '?' -> "QMARK", $buf
   | '"' string -> "LITERAL", let b = $buf in String.sub b 1 (String.length b-2)
 ]
 
@@ -232,16 +243,17 @@ module StringSet = Set.Make(String);;
 let symbols = ref StringSet.empty;;
 
 let rec lex c = parser bp
-  | [< '( ' ' | '\n' | '\t' ); s >] -> lex c s
+  | [< '( ' ' | '\n' | '\t' | '\r' ); s >] -> lex c s
   | [< '( '%' ); s >] -> comment c s
   | [< '( '/' ); s >] ep ->
        if option_eq (Stream.peek s) (Some '*') then comment2 c s
-       else ("BIND", "/"), (bp,ep)
+       else ("CONSTANT", "/"), (bp,ep)
   | [< s >] ep ->
        if option_eq (Stream.peek s) None then ("EOF",""), (bp, ep)
        else
        (match tok c s with
        | "CONSTANT","module" -> "MODULE", "module"
+       | "CONSTANT","sig" -> "SIG", "SIG"
        | "CONSTANT","import" -> "IMPORT", "accumulate"
        | "CONSTANT","accum_sig" -> "ACCUM_SIG", "accum_sig"
        | "CONSTANT","use_sig" -> "USE_SIG", "use_sig"
@@ -252,6 +264,7 @@ let rec lex c = parser bp
        | "CONSTANT","kind" -> "KIND", "kind"
        | "CONSTANT","typeabbrev" -> "TYPEABBREV", "typeabbrev"
        | "CONSTANT","type" -> "TYPE", "type"
+       | "CONSTANT","closed" -> "CLOSED", "closed" (* CSC: ??? *)
 
        | "CONSTANT","end" -> "EOF", "end"
        | "CONSTANT","accumulate" -> "ACCUMULATE", "accumulate"
@@ -266,12 +279,7 @@ let rec lex c = parser bp
        | "CONSTANT","pi" -> "PI", "pi"
        | "CONSTANT","sigma" -> "SIGMA", "sigma"
        | "CONSTANT","nil" -> "NIL", "nil"
-       | "CONSTANT","delay" -> "DELAY","delay"
-       | "CONSTANT","in" -> "IN","in"
        | "CONSTANT","is" -> "IS","is"
-       | "CONSTANT","with" -> "WITH","with"
-       | "CONSTANT","resume" -> "RESUME","resume"
-       | "CONSTANT","context" -> "CONTEXT","context"
 
        | "CONSTANT", x when StringSet.mem x !symbols -> "SYMBOL",x
 
@@ -331,49 +339,6 @@ let premise = Grammar.Entry.create g "premise"
 let atom = Grammar.Entry.create g "atom"
 let goal = Grammar.Entry.create g "goal"
 
-(*
-let uvmap = ref []
-let conmap = ref []
-let reset () = uvmap := []; conmap := []
-let uvlist () = List.map snd !uvmap
-*)
-
-(*
-let get_uv u =
-  if List.mem_assoc u !uvmap then List.assoc u !uvmap
-  else
-    let n = List.length !uvmap in
-    uvmap := (u,n) :: !uvmap;
-    n
-*)
-(*
-let fresh_lvl_name () = lvl_name_of (Printf.sprintf "_%d" (List.length !uvmap))
-
-let check_con n l =
-  try
-    let l' = List.assoc n !conmap in
-    if l <> l' then
-      raise
-        (Token.Error("Constant "^Name.to_string n^" used at different levels"))
-  with Not_found -> conmap := (n,l) :: !conmap
-let mkFreshCon name lvl =
-  let name = Name.make name in
-  let t = mkConN name lvl in
-  assert(not(List.mem_assoc name !conmap));
-  conmap := (name,lvl) :: !conmap;
-  t
-*)
-
-(*
-let sigma_abstract t =
-  let uvl = collect_Uv t in
-  List.fold_left (fun p uv -> mkSigma1 (grab uv 1 p)) t uvl
-*)
-
-(* TODO : test that it is of the form of a clause
-let check_clause x = ()
-let check_goal x = ()*)
-
 let min_precedence = 0
 let max_precedence = 100
 
@@ -422,14 +387,9 @@ EXTEND
              | Some (`After n) -> CN.make s, `After(CN.make ~existing:true n) in
 *)
          let hyp = match hyp with None -> mkConj [](*L.empty*) | Some h -> h in
-(*
-         let clause = sigma_abstract (mkImpl hyp (mkAtom hd)) in
-         check_clause clause;
-         reset (); 
-         ([], key_of clause, clause, name), insertion*)
-         (*reset ();*)
          [mkClause hd hyp]
      | MODULE; CONSTANT; FULLSTOP -> []
+     | SIG; CONSTANT; FULLSTOP -> []
      | ACCUMULATE; filenames=LIST1 CONSTANT SEP COMMA; FULLSTOP ->
         parse lp (List.map (fun fn -> fn ^ ".mod") filenames)
      | IMPORT; LIST1 CONSTANT SEP COMMA; FULLSTOP -> []
@@ -517,13 +477,7 @@ EXTEND
      | LPAREN; abbrform; RPAREN -> ()
     ]];
   goal:
-    [[ p = premise -> (*
-         let g = sigma_abstract p in
-         check_goal g;
-         reset ();
-         g*)
-         (*reset (); *)
-         p ]];
+    [[ p = premise -> p ]];
   premise : [[ a = atom -> a ]];
   concl : [[ a = atom LEVEL "0" -> a ]];
   atom : LEVEL "pi"
@@ -566,42 +520,19 @@ EXTEND
           else mkSeq l
      ]];
   atom : LEVEL "app"
-      [[ hd = atom; args = LIST1 atom LEVEL "simple" ->
-          (*match args with
-          | [tl;x] when equal x sentinel -> mkVApp `Rev tl hd None
-          | _ ->*) mkApp (hd::args) (*(L.of_list (hd :: args))*)
+      [[ hd = atom; args = LIST1 atom LEVEL "simple" -> mkApp (hd::args)
       ]];
   atom : LEVEL "simple" 
      [[ c = CONSTANT; b = OPT [ BIND; a = atom LEVEL "0" -> a ] ->
-          (*let c, lvl = lvl_name_of c in 
-          let x = mkConN c lvl in
-          (match b with
-          | None -> check_con c lvl; x
-          | Some b ->  mkBin 1 (grab x 1 b))*)
           (match b with
               None -> mkCon c
             | Some b -> mkLam c b)
       | u = FRESHUV -> mkFreshUVar ()
-      (*| i = REL -> mkDB (int_of_string (String.sub i 1 (String.length i - 1)))*)
       | NIL -> mkNil
       | s = LITERAL -> mkString s
       | s = INTEGER -> mkInt (int_of_string s) 
-      (*| AT; hd = atom LEVEL "simple"; args = atom LEVEL "simple" ->
-          mkVApp `Regular hd args None
-      | AT -> sentinel
-      | CONTEXT; hd = atom LEVEL "simple" -> mkAtomBiContext hd
-      | QMARK; hd = atom LEVEL "simple"; args = atom LEVEL "simple" ->
-          mkVApp `Flex hd args None
-      | SHARP; hd = atom LEVEL "simple"; args = atom LEVEL "simple";
-        info = OPT atom LEVEL "simple" ->
-          mkVApp `Frozen hd args info*)
       | bt = BUILTIN -> mkCustom bt
       | BANG -> mkCut
-      (*| DELAY; t = atom LEVEL "simple"; p = atom LEVEL "simple";
-        vars = OPT [ IN; x = atom LEVEL "simple" -> x ];
-        info = OPT [ WITH; x = atom LEVEL "simple" -> x ] ->
-          mkDelay t p vars info
-      | RESUME; t = atom LEVEL "simple"; p = atom LEVEL "simple" -> mkResume t p*)
       | LPAREN; a = atom; RPAREN -> a ]];
   atom : LEVEL "list" 
      [[ LBRACKET; xs = LIST0 atom LEVEL "implication" SEP COMMA;
@@ -611,11 +542,6 @@ EXTEND
             raise (Token.Error ("List with no elements cannot have a tail"));
           if List.length xs = 0 then mkNil
           else mkSeq (xs@[tl]) ]];
-  (*bound : 
-    NOTE: IT WAS RETURNING A BOOLEAN TOO TO DISCRIMINATE THE TWO CASES
-    [[ c = CONSTANT -> c
-     | u = UVAR -> u ]
-    ];*)
 END
 
 let parse_program (*?(ontop=[])*) ~filenames : program =
@@ -641,4 +567,3 @@ let parse_program (*?(ontop=[])*) ~filenames : program =
   true_clause::eq_clause::or_clauses@parse lp filenames
 
 let parse_goal s : goal = parse_string goal s
-(*let parse_data s : data = parse atom s*)

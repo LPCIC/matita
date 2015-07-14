@@ -1,3 +1,22 @@
+Weird syntax of Teyjus:
+- add reals too
+- no syntax for negative numbers: ~ 2 is the unary minus applied to 2,
+  not the number -2.
+- what is the "closed" token for?
+- nested /* */ comments not implemented
+- strings should not contain newlines; instead
+  \n, \b, \t, \n, \r, \\, \", "" should be recognized (the last two synonyms)
+  \^['@'-'z'] ???
+  \OCTAL \OCTALOCTALOCTAL \xHEX \xHEXHEX
+  \\\n
+  \xxxxxxx\  where xxx are [ ' ' | '\t' | '\x0b' | '\x0d' ]
+  \\cxxxxxx  where xxx are [ ' ' | '\t' | '\x0b' | '\x0d' ]
+  eof should be an error
+  \x followed by other combinations should be an error
+  \ followed by other combinations should be an error
+- if the file ends (without eol) inside a comment, the parser ignores the
+  comment (in place of returning an error). How???
+
 Other:
 
 0. pretty-printing to LaTeX + transformation to standard presentation
