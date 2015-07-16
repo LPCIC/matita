@@ -1,0 +1,3 @@
+Proof assistant alla HOL:
+
+claim (prod (prod (atom nat) x\ prod (atom nat) x \atom nat) f\ atom nat) P
