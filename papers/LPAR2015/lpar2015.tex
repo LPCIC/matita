@@ -431,7 +431,7 @@ We keep writing the name $x_i$ to ease reading.
 \begin{mydef}[\rff{}]
 A term is in the reduction-free fragment \rff{} iff
 every occurrence of a unification variable $X^j$ is applied to
-$x_j \ldots x_{j+k-1}$ for $k >= 0$.
+$x_j \ldots x_{j+k-1}$ for $k \ge 0$.
 \end{mydef}
 
 We allow $k=0$ to accept variables that are not applied. A consequence of
@@ -467,7 +467,8 @@ showing that, in practice, the fragment is quite expressive.
 % The De Bruijn level of a name $x$ in an expression is the number of binders to be crossed when traversing the expression from the root towards the leaves before finding the binder for $x$~\cite{debruijnlevel}. For example, in the following expression every variable $x_i$ has level $i$: $\forall x_0.\exists X^1.\lambda x_1.\lambda x_2. \exists X^3. p~(X^1~x^1) X^3$. Every expression can be
 % $\alpha$-converted so that every name is renamed to $x_i$ where $i$ is its level. In the rest of the discussion we assume every term to be renamed in this way. Similarly, we can rename every variable $X$ to $X^j$ where $j$ is the smallest number such that $X^j$ has visibility of all names smaller than $j$. In the example above, $X^1$ has visibility only of $x^0$, and $X^3$ has visibility of $\{x^0,x^1,x^2\}$.
 % 
-% An expression is in the \frag{} iff every occurrence of an existentially quantified $X^j$ occurs applied to $x_j \ldots x_{j+k-1}$ for $k >= 0$.
+% An expression is in the \frag{} iff every occurrence of an
+% existentially quantified $X^j$ occurs applied to $x_j \ldots x_{j+k-1}$ for $k \ge 0$.
 % 
 % Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and $X^2~x_3~x_2$ are not.
 
@@ -717,7 +718,7 @@ expects CBV is faster than CBN in computing the normal form of $5^5$ since
 it avoids duplicating non-normal terms.
 
 The real application we present is a checker for the formal system
-$\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a} Such
+$\lambda\delta$~\cite{lambdadeltaJ1,lambdadeltaJ3a}. Such
 checker is able to validate the proof terms of the formalization of Landau's
 ``Grundlagen''~\cite{Jut79} done in Automath. The reference checker for
 $\lambda\delta$, named Helena, has been implemented in OCaml.
