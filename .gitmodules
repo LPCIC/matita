@@ -1,3 +1,6 @@
 [submodule "elpi/matita"]
 	path = elpi/matita
 	url = git@github.com:gares/matita.git
+[submodule "elpi/bench/sources/checkers"]
+	path = elpi/bench/sources/checkers
+	url = https://github.com/proofcert/checkers.git
