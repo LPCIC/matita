@@ -4,6 +4,7 @@
 *.cmxa
 *.cmo
 *.cmi
+*.cma
 *.lp
 *.lpo
 *~
