@@ -1,5 +1,5 @@
-[submodule "elpi/matita"]
-	path = elpi/matita
+[submodule "poc_elpi/matita"]
+	path = poc_elpi/matita
 	url = git@github.com:gares/matita.git
 [submodule "elpi/bench/sources/checkers"]
 	path = elpi/bench/sources/checkers
