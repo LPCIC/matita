@@ -4,3 +4,6 @@
 [submodule "elpi/bench/sources/checkers"]
 	path = elpi/bench/sources/checkers
 	url = https://github.com/proofcert/checkers.git
+[submodule "teyjus"]
+	path = teyjus
+	url = https://github.com/teyjus/teyjus.git
