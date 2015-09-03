@@ -61,45 +61,6 @@
  *                                                                      *
  ************************************************************************/
 
-static int flex_susp (DF_TermPtr lhs);
-
-static int flex_app(DF_TermPtr skel){
-	if (DF_isApp(skel)) {
-		DF_TermPtr hd = DF_appFunc(skel);
-		if (DF_isFV(hd)) {
-			//printf("flex app head\n");
-			return 1;
-		} else if (DF_isRef(hd) && DF_isFV(DF_termDeref(hd))) {
-			//printf("flex app deref head\n");
-			return 1;
-		} else if (flex_susp(hd)) {
-			return 1;
-		} else {
-			//printf("rigid app head %d\n", hd->tag.categoryTag);
-			return 0;
-		}
-	} else {
-		return 0;	
-	}
-}
-
-static int flex_susp (DF_TermPtr lhs){
-	if (DF_isSusp(lhs)) {
-		DF_TermPtr skel = DF_suspTermSkel(lhs);
-    		if (DF_isFV(skel)) {
-			//printf("flex susp\n");
-			return 1;
-		} else if (flex_app(skel)) {
-			return 1;
-		} else {
-			//printf("rigid susp %d\n",lhs->tag.categoryTag);
-    			return 0;
-		}
-	} else {
-		return 0;
-	}
-}
-
 void BIEVAL_eval()
 {
     DF_TermPtr tmPtr = (DF_TermPtr)AM_reg(2);
@@ -112,23 +73,7 @@ void BIEVAL_eval()
     case PERV_STRING_INDEX:
     {  DF_mkStr((MemPtr)AM_reg(2), BIEVAL_evalStr(tmPtr));     break; }
     default:
-    {  
-	DF_TermPtr lhs = DF_termDeref((DF_TermPtr)AM_reg(1));
-    	if (DF_isFV(lhs)) {
-		//printf("flex\n");
-    		AM_preg = AM_proceedCode;
-	} else if (flex_app(lhs)) {
-		AM_preg = AM_proceedCode;	
-	} else if (flex_susp(lhs)) {
-		AM_preg = AM_proceedCode;	
-	} else {
-		//printf("rigid %d\n",lhs->tag.categoryTag);
-    		AM_preg = AM_failCode;
-	}
-    	return;
-    }
-//  default:
-//    {  EM_error(BI_ERROR_EVAL_TYPE);                           break; }
+    {  EM_error(BI_ERROR_EVAL_TYPE);                           break; }
     }
     //binding X to V
     AM_preg = AM_eqCode;

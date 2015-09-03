@@ -888,10 +888,11 @@ static char* OC_mkConstVarText(char* constName, char* fixity, char* prec,
 			       char* printName)
 {
   char* constVar;
-  char* ctr      =  OC_mkDotStr(ABSYN, VCTR_CONSTANT);
-  char* symbol   =  OC_mkSymbolAlias(constName, printName);
-  char* refFalse =  OC_mkRef("false");
-  char* index    =  OC_mkRef(offset);
+  char* ctr      = OC_mkDotStr(ABSYN, VCTR_CONSTANT);
+  char* symbol   = OC_mkSymbolAlias(constName, printName);
+  char* refFalse = OC_mkRef("false");
+  char* refTrue  = OC_mkRef("true");
+  char* index    = OC_mkRef(offset);
   char* pos      = OC_mkDotStr(ERRORMSG, VCTR_NULLPOS);
 
   size_t length   = strlen(ctr) + strlen(symbol) + strlen(fixity) +
@@ -912,7 +913,7 @@ static char* OC_mkConstVarText(char* constName, char* fixity, char* prec,
   strcat(def, ", ");
   strcat(def, refFalse);
   strcat(def, ", ");
-  strcat(def, refFalse);
+  strcat(def, refTrue);        free(refTrue); /*  no defs */
   strcat(def, ", ");
   strcat(def, refFalse);
   strcat(def, ", ");
@@ -1399,7 +1400,7 @@ char* OC_mkFixedMLI()
 /* functions for making the fixed part of pervasive.ml                       */
 /*****************************************************************************/
 #define TERM_DEFS \
-"let andTerm = Absyn.ConstantTerm(andConstant, [], false, Errormsg.none)       \nlet implicationTerm = Absyn.ConstantTerm(implConstant, [], false, Errormsg.none)\n"
+"let andTerm = Absyn.ConstantTerm(andConstant, [], Errormsg.none)       \nlet implicationTerm = Absyn.ConstantTerm(implConstant, [], Errormsg.none)\n"
 
 #define PERV_ISPERV_DEF \
 "let isPerv const =                                                            \n  let constCat = Absyn.getConstantType(const) in                                \n  match constCat with                                                          \n   Absyn.PervasiveConstant(_) -> true                                        \n  | _ -> false                                                                 \n"

@@ -772,11 +772,6 @@ PERV_ConstData   PERV_constDataTab[PERV_CONST_NUM] = {
     {"::",    0,    2,    0,    0,    140,    OP_INFIXR}
 };
 
-PERV_ConstData PERV_getConstData(int index)                                   
-{                                                                              
-        return PERV_constDataTab[index];                                       
-}                                                                          
-
 void PERV_copyConstDataTab(PERV_ConstData* dst)                               
 {                                                                              
     //this way of copy relies on the assumption that the pervasive kind data   

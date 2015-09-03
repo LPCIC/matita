@@ -1,7 +1,6 @@
 # 21 "lplex.mll"
  
 open Lexing
-open Errormsg
 open Lpyacc
 
 let setFileName lexbuf name =
@@ -16,11 +15,6 @@ let incrline lexbuf =
 let maxStringLength = Int32.to_int (Int32.div Int32.max_int (Int32.of_int 2))
 
 let commentLev = ref 0
-
-let strPos = ref 0
-let escapePos = ref 0
-let strErr = ref false
-let quotedid = ref false
 
 let stringBuffer = Buffer.create 16
 let string_of_char = String.make 1
@@ -84,7 +78,7 @@ let addOctal s =
 let addControl s =
   addChar (Char.chr ((Char.code (String.get s 0)) - (Char.code '@')))
 
-# 88 "lplex.ml"
+# 82 "lplex.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\191\255\192\255\194\255\195\255\092\000\197\000\033\001\
@@ -3239,371 +3233,374 @@ let rec initial lexbuf =
 and __ocaml_lex_initial_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 125 "lplex.mll"
+# 119 "lplex.mll"
                 (initial lexbuf)
-# 3245 "lplex.ml"
+# 3239 "lplex.ml"
 
   | 1 ->
-# 126 "lplex.mll"
+# 120 "lplex.mll"
                 (incrline lexbuf; initial lexbuf)
-# 3250 "lplex.ml"
+# 3244 "lplex.ml"
 
   | 2 ->
-# 128 "lplex.mll"
+# 122 "lplex.mll"
                 (MODULE)
-# 3255 "lplex.ml"
+# 3249 "lplex.ml"
 
   | 3 ->
-# 129 "lplex.mll"
+# 123 "lplex.mll"
                 (END)
-# 3260 "lplex.ml"
+# 3254 "lplex.ml"
 
   | 4 ->
-# 130 "lplex.mll"
+# 124 "lplex.mll"
                 (IMPORT)
-# 3265 "lplex.ml"
+# 3259 "lplex.ml"
 
   | 5 ->
-# 131 "lplex.mll"
+# 125 "lplex.mll"
                 (ACCUMULATE)
-# 3270 "lplex.ml"
+# 3264 "lplex.ml"
 
   | 6 ->
-# 132 "lplex.mll"
+# 126 "lplex.mll"
                 (ACCUMSIG)
-# 3275 "lplex.ml"
+# 3269 "lplex.ml"
 
   | 7 ->
-# 133 "lplex.mll"
+# 127 "lplex.mll"
                 (USESIG)
-# 3280 "lplex.ml"
+# 3274 "lplex.ml"
 
   | 8 ->
-# 134 "lplex.mll"
+# 128 "lplex.mll"
                 (LOCAL)
-# 3285 "lplex.ml"
+# 3279 "lplex.ml"
 
   | 9 ->
-# 135 "lplex.mll"
+# 129 "lplex.mll"
                 (LOCALKIND)
-# 3290 "lplex.ml"
+# 3284 "lplex.ml"
 
   | 10 ->
-# 136 "lplex.mll"
+# 130 "lplex.mll"
                 (CLOSED)
-# 3295 "lplex.ml"
+# 3289 "lplex.ml"
 
   | 11 ->
-# 137 "lplex.mll"
+# 131 "lplex.mll"
                 (SIG)
-# 3300 "lplex.ml"
+# 3294 "lplex.ml"
 
   | 12 ->
-# 138 "lplex.mll"
+# 132 "lplex.mll"
                 (KIND)
-# 3305 "lplex.ml"
+# 3299 "lplex.ml"
 
   | 13 ->
-# 139 "lplex.mll"
+# 133 "lplex.mll"
                 (TYPE)
-# 3310 "lplex.ml"
+# 3304 "lplex.ml"
 
   | 14 ->
-# 140 "lplex.mll"
+# 134 "lplex.mll"
                 (TYPEABBREV)
-# 3315 "lplex.ml"
+# 3309 "lplex.ml"
 
   | 15 ->
-# 141 "lplex.mll"
+# 135 "lplex.mll"
                 (EXPORTDEF)
-# 3320 "lplex.ml"
+# 3314 "lplex.ml"
 
   | 16 ->
-# 142 "lplex.mll"
+# 136 "lplex.mll"
                 (USEONLY)
-# 3325 "lplex.ml"
+# 3319 "lplex.ml"
 
   | 17 ->
-# 143 "lplex.mll"
+# 137 "lplex.mll"
                 (INFIXL)
-# 3330 "lplex.ml"
+# 3324 "lplex.ml"
 
   | 18 ->
-# 144 "lplex.mll"
+# 138 "lplex.mll"
                 (INFIX)
-# 3335 "lplex.ml"
+# 3329 "lplex.ml"
 
   | 19 ->
-# 145 "lplex.mll"
+# 139 "lplex.mll"
                 (INFIXR)
-# 3340 "lplex.ml"
+# 3334 "lplex.ml"
 
   | 20 ->
-# 146 "lplex.mll"
+# 140 "lplex.mll"
                 (PREFIX)
-# 3345 "lplex.ml"
+# 3339 "lplex.ml"
 
   | 21 ->
-# 147 "lplex.mll"
+# 141 "lplex.mll"
                 (PREFIXR)
-# 3350 "lplex.ml"
+# 3344 "lplex.ml"
 
   | 22 ->
-# 148 "lplex.mll"
+# 142 "lplex.mll"
                 (POSTFIX)
-# 3355 "lplex.ml"
+# 3349 "lplex.ml"
 
   | 23 ->
-# 149 "lplex.mll"
+# 143 "lplex.mll"
                 (POSTFIXL)
-# 3360 "lplex.ml"
+# 3354 "lplex.ml"
 
   | 24 ->
-# 150 "lplex.mll"
+# 144 "lplex.mll"
                 (COLONDASH)
-# 3365 "lplex.ml"
+# 3359 "lplex.ml"
 
   | 25 ->
-# 151 "lplex.mll"
+# 145 "lplex.mll"
                 (IMPLIES)
-# 3370 "lplex.ml"
+# 3364 "lplex.ml"
 
   | 26 ->
-# 152 "lplex.mll"
+# 146 "lplex.mll"
                 (INFIXLAMBDA)
-# 3375 "lplex.ml"
+# 3369 "lplex.ml"
 
   | 27 ->
-# 153 "lplex.mll"
+# 147 "lplex.mll"
                 (TYARROW)
-# 3380 "lplex.ml"
+# 3374 "lplex.ml"
 
   | 28 ->
-# 154 "lplex.mll"
+# 148 "lplex.mll"
                 (CUT)
-# 3385 "lplex.ml"
+# 3379 "lplex.ml"
 
   | 29 ->
-# 156 "lplex.mll"
+# 150 "lplex.mll"
                 (PI)
-# 3390 "lplex.ml"
+# 3384 "lplex.ml"
 
   | 30 ->
-# 157 "lplex.mll"
+# 151 "lplex.mll"
                 (SIGMA)
-# 3395 "lplex.ml"
+# 3389 "lplex.ml"
 
   | 31 ->
-# 158 "lplex.mll"
+# 152 "lplex.mll"
                 (COMMA)
-# 3400 "lplex.ml"
+# 3394 "lplex.ml"
 
   | 32 ->
-# 159 "lplex.mll"
+# 153 "lplex.mll"
                 (SEMICOLON)
-# 3405 "lplex.ml"
+# 3399 "lplex.ml"
 
   | 33 ->
-# 160 "lplex.mll"
+# 154 "lplex.mll"
                 (AMPAND)
-# 3410 "lplex.ml"
+# 3404 "lplex.ml"
 
   | 34 ->
-# 161 "lplex.mll"
+# 155 "lplex.mll"
                 (RDIVIDE)
-# 3415 "lplex.ml"
+# 3409 "lplex.ml"
 
   | 35 ->
-# 162 "lplex.mll"
+# 156 "lplex.mll"
                 (NILLIST)
-# 3420 "lplex.ml"
+# 3414 "lplex.ml"
 
   | 36 ->
-# 163 "lplex.mll"
+# 157 "lplex.mll"
                 (LISTCONS)
-# 3425 "lplex.ml"
+# 3419 "lplex.ml"
 
   | 37 ->
-# 164 "lplex.mll"
+# 158 "lplex.mll"
                 (EQUAL)
-# 3430 "lplex.ml"
+# 3424 "lplex.ml"
 
   | 38 ->
-# 166 "lplex.mll"
+# 160 "lplex.mll"
                 (PLUS)
-# 3435 "lplex.ml"
+# 3429 "lplex.ml"
 
   | 39 ->
-# 167 "lplex.mll"
+# 161 "lplex.mll"
                 (MINUS)
-# 3440 "lplex.ml"
+# 3434 "lplex.ml"
 
   | 40 ->
-# 168 "lplex.mll"
+# 162 "lplex.mll"
                 (TIMES)
-# 3445 "lplex.ml"
+# 3439 "lplex.ml"
 
   | 41 ->
-# 169 "lplex.mll"
+# 163 "lplex.mll"
                 (LESS)
-# 3450 "lplex.ml"
+# 3444 "lplex.ml"
 
   | 42 ->
-# 170 "lplex.mll"
+# 164 "lplex.mll"
                 (LEQ)
-# 3455 "lplex.ml"
+# 3449 "lplex.ml"
 
   | 43 ->
-# 171 "lplex.mll"
+# 165 "lplex.mll"
                 (GTR)
-# 3460 "lplex.ml"
+# 3454 "lplex.ml"
 
   | 44 ->
-# 172 "lplex.mll"
+# 166 "lplex.mll"
                 (GEQ)
-# 3465 "lplex.ml"
+# 3459 "lplex.ml"
 
   | 45 ->
-# 173 "lplex.mll"
+# 167 "lplex.mll"
                 (UMINUS)
-# 3470 "lplex.ml"
+# 3464 "lplex.ml"
 
   | 46 ->
-# 175 "lplex.mll"
+# 169 "lplex.mll"
                 (PERIOD)
-# 3475 "lplex.ml"
+# 3469 "lplex.ml"
 
   | 47 ->
-# 176 "lplex.mll"
+# 170 "lplex.mll"
                 (LPAREN)
-# 3480 "lplex.ml"
+# 3474 "lplex.ml"
 
   | 48 ->
-# 177 "lplex.mll"
+# 171 "lplex.mll"
                 (RPAREN)
-# 3485 "lplex.ml"
+# 3479 "lplex.ml"
 
   | 49 ->
-# 178 "lplex.mll"
+# 172 "lplex.mll"
                 (LBRACK)
-# 3490 "lplex.ml"
+# 3484 "lplex.ml"
 
   | 50 ->
-# 179 "lplex.mll"
+# 173 "lplex.mll"
                 (RBRACK)
-# 3495 "lplex.ml"
+# 3489 "lplex.ml"
 
   | 51 ->
-# 180 "lplex.mll"
+# 174 "lplex.mll"
                 (COLON)
-# 3500 "lplex.ml"
+# 3494 "lplex.ml"
 
   | 52 ->
-# 181 "lplex.mll"
+# 175 "lplex.mll"
                 (VBAR)
-# 3505 "lplex.ml"
+# 3499 "lplex.ml"
 
   | 53 ->
 let
-# 183 "lplex.mll"
+# 177 "lplex.mll"
                     num
-# 3511 "lplex.ml"
+# 3505 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 183 "lplex.mll"
+# 177 "lplex.mll"
                           (REALLIT(float_of_string(num)))
-# 3515 "lplex.ml"
+# 3509 "lplex.ml"
 
   | 54 ->
 let
-# 184 "lplex.mll"
+# 178 "lplex.mll"
          num
-# 3521 "lplex.ml"
+# 3515 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 184 "lplex.mll"
+# 178 "lplex.mll"
                           (INTLIT(int_of_string(num)))
-# 3525 "lplex.ml"
+# 3519 "lplex.ml"
 
   | 55 ->
 let
-# 186 "lplex.mll"
+# 180 "lplex.mll"
                    name
-# 3531 "lplex.ml"
+# 3525 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 186 "lplex.mll"
+# 180 "lplex.mll"
                               (UPCID(name, Preabsyn.CVID))
-# 3535 "lplex.ml"
+# 3529 "lplex.ml"
 
   | 56 ->
 let
-# 187 "lplex.mll"
+# 181 "lplex.mll"
                    name
-# 3541 "lplex.ml"
+# 3535 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 187 "lplex.mll"
+# 181 "lplex.mll"
                               (ID(name, Preabsyn.ConstID))
-# 3545 "lplex.ml"
+# 3539 "lplex.ml"
 
   | 57 ->
 let
-# 188 "lplex.mll"
-                                               name
-# 3551 "lplex.ml"
+# 183 "lplex.mll"
+                                        name
+# 3545 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 188 "lplex.mll"
-                                                    (SYID(name, Preabsyn.ConstID))
-# 3555 "lplex.ml"
+# 183 "lplex.mll"
+                                             (SYID(name, Preabsyn.ConstID))
+# 3549 "lplex.ml"
 
   | 58 ->
 let
-# 190 "lplex.mll"
+# 185 "lplex.mll"
          word
-# 3561 "lplex.ml"
+# 3555 "lplex.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 190 "lplex.mll"
+# 185 "lplex.mll"
                       (VID((string_of_char word), Preabsyn.AVID))
-# 3565 "lplex.ml"
+# 3559 "lplex.ml"
 
   | 59 ->
 let
-# 191 "lplex.mll"
+# 186 "lplex.mll"
                  word
-# 3571 "lplex.ml"
+# 3565 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 191 "lplex.mll"
+# 186 "lplex.mll"
                       (VID(word, Preabsyn.VarID))
-# 3575 "lplex.ml"
+# 3569 "lplex.ml"
 
   | 60 ->
-# 193 "lplex.mll"
+# 188 "lplex.mll"
                   (stringstate lexbuf; )
-# 3580 "lplex.ml"
+# 3574 "lplex.ml"
 
   | 61 ->
-# 195 "lplex.mll"
+# 190 "lplex.mll"
                   (comment1 lexbuf)
-# 3585 "lplex.ml"
+# 3579 "lplex.ml"
 
   | 62 ->
-# 197 "lplex.mll"
+# 192 "lplex.mll"
                   (commentLev := 1; comment2 lexbuf)
-# 3590 "lplex.ml"
+# 3584 "lplex.ml"
 
   | 63 ->
 let
-# 198 "lplex.mll"
+# 193 "lplex.mll"
        c
-# 3596 "lplex.ml"
+# 3590 "lplex.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 198 "lplex.mll"
-                  (raise (Failure("Invalid token: " ^ string_of_char c));)
-# 3600 "lplex.ml"
+# 193 "lplex.mll"
+                  (Errormsg.error lexbuf.lex_curr_p 
+                     ("Invalid token: " ^ (string_of_char c)); 
+                     STRLIT(extractCurrentString lexbuf.lex_curr_p))
+# 3596 "lplex.ml"
 
   | 64 ->
-# 199 "lplex.mll"
+# 196 "lplex.mll"
                   (EOF)
-# 3605 "lplex.ml"
+# 3601 "lplex.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_initial_rec lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
+      __ocaml_lex_initial_rec lexbuf __ocaml_lex_state
 
 and stringstate lexbuf =
     __ocaml_lex_stringstate_rec lexbuf 149
@@ -3611,113 +3608,116 @@ and __ocaml_lex_stringstate_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
 let
-# 206 "lplex.mll"
+# 203 "lplex.mll"
                         text
-# 3617 "lplex.ml"
+# 3614 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 206 "lplex.mll"
+# 203 "lplex.mll"
                               (addString text; stringstate lexbuf)
-# 3621 "lplex.ml"
+# 3618 "lplex.ml"
 
   | 1 ->
-# 207 "lplex.mll"
+# 204 "lplex.mll"
                               (STRLIT(extractCurrentString lexbuf.lex_curr_p))
-# 3626 "lplex.ml"
+# 3623 "lplex.ml"
 
   | 2 ->
-# 209 "lplex.mll"
-                (Errormsg.error lexbuf.lex_curr_p "String literal ended with newline";
-                 incrline lexbuf; STRLIT(extractCurrentString lexbuf.lex_curr_p))
-# 3632 "lplex.ml"
+# 206 "lplex.mll"
+                (Errormsg.error lexbuf.lex_curr_p 
+                    "String literal ended with newline";
+                    incrline lexbuf; 
+                    STRLIT(extractCurrentString lexbuf.lex_curr_p))
+# 3631 "lplex.ml"
 
   | 3 ->
-# 211 "lplex.mll"
+# 210 "lplex.mll"
                 (addChar '\b'; stringstate lexbuf)
-# 3637 "lplex.ml"
+# 3636 "lplex.ml"
 
   | 4 ->
-# 212 "lplex.mll"
+# 211 "lplex.mll"
                 (addChar '\t'; stringstate lexbuf)
-# 3642 "lplex.ml"
+# 3641 "lplex.ml"
 
   | 5 ->
-# 213 "lplex.mll"
+# 212 "lplex.mll"
                 (addChar '\n'; stringstate lexbuf)
-# 3647 "lplex.ml"
+# 3646 "lplex.ml"
 
   | 6 ->
-# 214 "lplex.mll"
+# 213 "lplex.mll"
                 (addChar '\r'; stringstate lexbuf)
-# 3652 "lplex.ml"
+# 3651 "lplex.ml"
 
   | 7 ->
-# 215 "lplex.mll"
+# 214 "lplex.mll"
                 (addChar '\\'; stringstate lexbuf)
-# 3657 "lplex.ml"
+# 3656 "lplex.ml"
 
   | 8 ->
-# 216 "lplex.mll"
+# 215 "lplex.mll"
                 (addChar '"'; stringstate lexbuf)
-# 3662 "lplex.ml"
+# 3661 "lplex.ml"
 
   | 9 ->
-# 217 "lplex.mll"
+# 216 "lplex.mll"
                 (addChar '"'; stringstate lexbuf)
-# 3667 "lplex.ml"
+# 3666 "lplex.ml"
 
   | 10 ->
 let
-# 219 "lplex.mll"
+# 218 "lplex.mll"
                     text
-# 3673 "lplex.ml"
+# 3672 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos (lexbuf.Lexing.lex_start_pos + 3) in
-# 219 "lplex.mll"
+# 218 "lplex.mll"
                                     (addControl text; stringstate lexbuf)
-# 3677 "lplex.ml"
+# 3676 "lplex.ml"
 
   | 11 ->
 let
-# 220 "lplex.mll"
+# 219 "lplex.mll"
                 text
-# 3683 "lplex.ml"
+# 3682 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos (lexbuf.Lexing.lex_start_pos + 2) in
-# 220 "lplex.mll"
+# 219 "lplex.mll"
                                     (addOctal text; stringstate lexbuf)
-# 3687 "lplex.ml"
+# 3686 "lplex.ml"
 
   | 12 ->
 let
-# 221 "lplex.mll"
+# 220 "lplex.mll"
                               text
-# 3693 "lplex.ml"
+# 3692 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos (lexbuf.Lexing.lex_start_pos + 4) in
-# 221 "lplex.mll"
+# 220 "lplex.mll"
                                     (addOctal text; stringstate lexbuf)
-# 3697 "lplex.ml"
+# 3696 "lplex.ml"
 
   | 13 ->
 let
-# 222 "lplex.mll"
+# 221 "lplex.mll"
                text
-# 3703 "lplex.ml"
+# 3702 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos (lexbuf.Lexing.lex_start_pos + 3) in
-# 222 "lplex.mll"
+# 221 "lplex.mll"
                                     (addHex text; stringstate lexbuf)
-# 3707 "lplex.ml"
+# 3706 "lplex.ml"
 
   | 14 ->
 let
-# 223 "lplex.mll"
+# 222 "lplex.mll"
                      text
-# 3713 "lplex.ml"
+# 3712 "lplex.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos (lexbuf.Lexing.lex_start_pos + 4) in
-# 223 "lplex.mll"
+# 222 "lplex.mll"
                                     (addHex text; stringstate lexbuf)
-# 3717 "lplex.ml"
+# 3716 "lplex.ml"
 
   | 15 ->
-# 225 "lplex.mll"
-                  (Errormsg.error lexbuf.lex_curr_p "Illegal hex character specification";
+# 224 "lplex.mll"
+                  (Errormsg.error lexbuf.lex_curr_p 
+                    "Illegal hex character specification";
                    stringstate lexbuf)
 # 3723 "lplex.ml"
 
@@ -3738,175 +3738,182 @@ let
 
   | 19 ->
 # 230 "lplex.mll"
-                  (Errormsg.error lexbuf.lex_curr_p "Illegal escape character in string";
+                  (Errormsg.error lexbuf.lex_curr_p 
+                    "Illegal escape character in string";
                    stringstate lexbuf)
-# 3744 "lplex.ml"
+# 3745 "lplex.ml"
 
   | 20 ->
-# 232 "lplex.mll"
+# 233 "lplex.mll"
                   (Errormsg.error lexbuf.lex_curr_p
                      "String not closed at end-of-file";
                    initial lexbuf)
-# 3751 "lplex.ml"
+# 3752 "lplex.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_stringstate_rec lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
+      __ocaml_lex_stringstate_rec lexbuf __ocaml_lex_state
 
 and strflush1 lexbuf =
     __ocaml_lex_strflush1_rec lexbuf 175
 and __ocaml_lex_strflush1_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 238 "lplex.mll"
-            (strflush1 lexbuf)
-# 3762 "lplex.ml"
-
-  | 1 ->
 # 239 "lplex.mll"
             (strflush1 lexbuf)
-# 3767 "lplex.ml"
+# 3764 "lplex.ml"
+
+  | 1 ->
+# 240 "lplex.mll"
+            (strflush1 lexbuf)
+# 3769 "lplex.ml"
 
   | 2 ->
 let
-# 240 "lplex.mll"
+# 241 "lplex.mll"
        text
-# 3773 "lplex.ml"
+# 3775 "lplex.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 240 "lplex.mll"
-            (Errormsg.error lexbuf.lex_curr_p "Unterminated string escape sequence";
-             addChar text;
-             stringstate lexbuf)
-# 3779 "lplex.ml"
+# 241 "lplex.mll"
+            (Errormsg.error lexbuf.lex_curr_p 
+                "Unterminated string escape sequence";
+                addChar text;
+                stringstate lexbuf)
+# 3782 "lplex.ml"
 
   | 3 ->
-# 243 "lplex.mll"
+# 245 "lplex.mll"
                   (Errormsg.error lexbuf.lex_curr_p
                      "String not closed at end-of-file";
                    initial lexbuf)
-# 3786 "lplex.ml"
+# 3789 "lplex.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_strflush1_rec lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
+      __ocaml_lex_strflush1_rec lexbuf __ocaml_lex_state
 
 and strflush2 lexbuf =
     __ocaml_lex_strflush2_rec lexbuf 180
 and __ocaml_lex_strflush2_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 248 "lplex.mll"
+# 250 "lplex.mll"
             (strflush2 lexbuf)
-# 3797 "lplex.ml"
+# 3801 "lplex.ml"
 
   | 1 ->
 let
-# 249 "lplex.mll"
+# 251 "lplex.mll"
        text
-# 3803 "lplex.ml"
-= Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 249 "lplex.mll"
-            (addChar text; stringstate lexbuf)
 # 3807 "lplex.ml"
+= Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
+# 251 "lplex.mll"
+            (addChar text; stringstate lexbuf)
+# 3811 "lplex.ml"
 
   | 2 ->
-# 250 "lplex.mll"
+# 252 "lplex.mll"
                   (Errormsg.error lexbuf.lex_curr_p
                      "String not closed at end-of-file";
                    initial lexbuf)
-# 3814 "lplex.ml"
+# 3818 "lplex.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_strflush2_rec lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
+      __ocaml_lex_strflush2_rec lexbuf __ocaml_lex_state
 
 and comment1 lexbuf =
     __ocaml_lex_comment1_rec lexbuf 184
 and __ocaml_lex_comment1_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 255 "lplex.mll"
+# 257 "lplex.mll"
                   (comment1 lexbuf)
-# 3825 "lplex.ml"
-
-  | 1 ->
-# 256 "lplex.mll"
-                  (incrline lexbuf; initial lexbuf)
 # 3830 "lplex.ml"
 
-  | 2 ->
-# 257 "lplex.mll"
-                  (initial lexbuf)
+  | 1 ->
+# 258 "lplex.mll"
+                  (incrline lexbuf; initial lexbuf)
 # 3835 "lplex.ml"
+
+  | 2 ->
+# 259 "lplex.mll"
+                  (initial lexbuf)
+# 3840 "lplex.ml"
 
   | 3 ->
 let
-# 258 "lplex.mll"
+# 260 "lplex.mll"
        text
-# 3841 "lplex.ml"
+# 3846 "lplex.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 258 "lplex.mll"
+# 260 "lplex.mll"
                   (Errormsg.error lexbuf.lex_curr_p
                      ("Illegal character " ^ (string_of_char text) ^
                         " in input");
                    comment1 lexbuf)
-# 3848 "lplex.ml"
+# 3853 "lplex.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_comment1_rec lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
+      __ocaml_lex_comment1_rec lexbuf __ocaml_lex_state
 
 and comment2 lexbuf =
     __ocaml_lex_comment2_rec lexbuf 188
 and __ocaml_lex_comment2_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 264 "lplex.mll"
+# 266 "lplex.mll"
                       (comment2 lexbuf)
-# 3859 "lplex.ml"
+# 3865 "lplex.ml"
 
   | 1 ->
-# 265 "lplex.mll"
+# 267 "lplex.mll"
                       (incr commentLev ; comment2 lexbuf)
-# 3864 "lplex.ml"
+# 3870 "lplex.ml"
 
   | 2 ->
-# 266 "lplex.mll"
+# 268 "lplex.mll"
                       (decr commentLev ;
                        if !commentLev = 0 then
                          initial lexbuf
                        else
                          comment2 lexbuf)
-# 3873 "lplex.ml"
+# 3879 "lplex.ml"
 
   | 3 ->
-# 271 "lplex.mll"
+# 273 "lplex.mll"
                       (comment2 lexbuf)
-# 3878 "lplex.ml"
+# 3884 "lplex.ml"
 
   | 4 ->
-# 272 "lplex.mll"
+# 274 "lplex.mll"
                       (comment2 lexbuf)
-# 3883 "lplex.ml"
+# 3889 "lplex.ml"
 
   | 5 ->
-# 273 "lplex.mll"
+# 275 "lplex.mll"
                       (incrline lexbuf; comment2 lexbuf)
-# 3888 "lplex.ml"
+# 3894 "lplex.ml"
 
   | 6 ->
-# 274 "lplex.mll"
+# 276 "lplex.mll"
                       (Errormsg.warning lexbuf.lex_curr_p
                          "Comment not closed at end-of-file";
                        initial lexbuf)
-# 3895 "lplex.ml"
+# 3901 "lplex.ml"
 
   | 7 ->
 let
-# 277 "lplex.mll"
+# 279 "lplex.mll"
        text
-# 3901 "lplex.ml"
+# 3907 "lplex.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 277 "lplex.mll"
+# 279 "lplex.mll"
                       (Errormsg.error lexbuf.lex_curr_p
                          ("Illegal character " ^
                             (string_of_char text) ^ " in input");
                        comment2 lexbuf)
-# 3908 "lplex.ml"
+# 3914 "lplex.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_comment2_rec lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
+      __ocaml_lex_comment2_rec lexbuf __ocaml_lex_state
 
 ;;
 

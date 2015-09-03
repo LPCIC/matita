@@ -61,21 +61,6 @@ extern int yydebug;
     STRING2 = 271
   };
 #endif
-/* Tokens.  */
-#define OPTYPES 258
-#define INSTRCAT 259
-#define INSTRUCTIONS 260
-#define OPCODE 261
-#define MAXOPERAND 262
-#define CALL_I1_LEN 263
-#define SEMICOLON 264
-#define ERROR 265
-#define LBRACKET 266
-#define RBRACKET 267
-#define ID 268
-#define NUM 269
-#define STRING 270
-#define STRING2 271
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -92,7 +77,7 @@ union YYSTYPE
         char*  sval;
     }        isval;
 
-#line 96 "y.tab.h" /* yacc.c:1909  */
+#line 81 "y.tab.h" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

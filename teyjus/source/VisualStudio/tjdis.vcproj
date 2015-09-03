@@ -209,8 +209,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="echo Force Microsoft Visual Studio to perform build events. &gt; tjdis_force.txt&#x0D;&#x0A;"
-						Outputs="tjdis_force.txt"
+						CommandLine=""
+						Outputs=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -421,6 +421,16 @@
 			<File
 				RelativePath="..\front\disassemblerfront.ml"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="echo Force Microsoft Visual Studio to perform build events. &gt; tjdis_force.txt"
+						Outputs="tjdis_force.txt"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\front\parseargs.ml"

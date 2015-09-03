@@ -284,9 +284,6 @@ typedef struct
 //pervasive const data table (array)                                          
 extern PERV_ConstData    PERV_constDataTab[PERV_CONST_NUM]; 
 
-//pervasive const data access function                                        
-PERV_ConstData PERV_getConstData(int index);  
-
 //pervasive const table copy function (used in module space initialization)   
 //this functiion relies on the assumption that the pervasive kind data         
 //has the same structure as that of the run-time kind symbol table entries.    

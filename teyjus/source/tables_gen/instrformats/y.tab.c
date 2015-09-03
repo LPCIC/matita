@@ -150,21 +150,6 @@ extern int yydebug;
     STRING2 = 271
   };
 #endif
-/* Tokens.  */
-#define OPTYPES 258
-#define INSTRCAT 259
-#define INSTRUCTIONS 260
-#define OPCODE 261
-#define MAXOPERAND 262
-#define CALL_I1_LEN 263
-#define SEMICOLON 264
-#define ERROR 265
-#define LBRACKET 266
-#define RBRACKET 267
-#define ID 268
-#define NUM 269
-#define STRING 270
-#define STRING2 271
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -181,7 +166,7 @@ union YYSTYPE
         char*  sval;
     }        isval;
 
-#line 185 "y.tab.c" /* yacc.c:355  */
+#line 170 "y.tab.c" /* yacc.c:355  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -196,7 +181,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 200 "y.tab.c" /* yacc.c:358  */
+#line 185 "y.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -1326,13 +1311,13 @@ yyreduce:
         case 3:
 #line 63 "instrformats.y" /* yacc.c:1646  */
     { ocgenInclude((yyvsp[0].text));}
-#line 1330 "y.tab.c" /* yacc.c:1646  */
+#line 1315 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 4:
 #line 67 "instrformats.y" /* yacc.c:1646  */
     { cgenOpsH(); ocgenOps();}
-#line 1336 "y.tab.c" /* yacc.c:1646  */
+#line 1321 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 7:
@@ -1340,13 +1325,13 @@ yyreduce:
     { cgenOpTypes((yyvsp[-5].name), (yyvsp[-4].name), (yyvsp[-3].name), (yyvsp[0].text), 0); 
                    ocgenOpType((yyvsp[-5].name), (yyvsp[-2].isval).ival, (yyvsp[-1].name));
                  }
-#line 1344 "y.tab.c" /* yacc.c:1646  */
+#line 1329 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 8:
 #line 79 "instrformats.y" /* yacc.c:1646  */
     { cgenOpTypes((yyvsp[-1].name), NULL, NULL, (yyvsp[0].text), 0); }
-#line 1350 "y.tab.c" /* yacc.c:1646  */
+#line 1335 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 9:
@@ -1354,56 +1339,56 @@ yyreduce:
     { cgenOpTypes((yyvsp[-5].name), (yyvsp[-4].name), (yyvsp[-3].name), (yyvsp[0].text), 1); 
                       ocgenOpType((yyvsp[-5].name), (yyvsp[-2].isval).ival, (yyvsp[-1].name));
                     }
-#line 1358 "y.tab.c" /* yacc.c:1646  */
+#line 1343 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 10:
 #line 87 "instrformats.y" /* yacc.c:1646  */
     { cgenOpTypes((yyvsp[-1].name), NULL, NULL, (yyvsp[0].text), 1); }
-#line 1364 "y.tab.c" /* yacc.c:1646  */
+#line 1349 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 11:
 #line 91 "instrformats.y" /* yacc.c:1646  */
     { (yyval.name) = (yyvsp[0].name); }
-#line 1370 "y.tab.c" /* yacc.c:1646  */
+#line 1355 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 12:
 #line 94 "instrformats.y" /* yacc.c:1646  */
     { (yyval.name) = (yyvsp[0].name); }
-#line 1376 "y.tab.c" /* yacc.c:1646  */
+#line 1361 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 13:
 #line 97 "instrformats.y" /* yacc.c:1646  */
     { (yyval.name) = (yyvsp[0].name); }
-#line 1382 "y.tab.c" /* yacc.c:1646  */
+#line 1367 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 14:
 #line 100 "instrformats.y" /* yacc.c:1646  */
     { (yyval.name) = (yyvsp[0].name); }
-#line 1388 "y.tab.c" /* yacc.c:1646  */
+#line 1373 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 15:
 #line 103 "instrformats.y" /* yacc.c:1646  */
     {(yyval.text) = (yyvsp[0].text); }
-#line 1394 "y.tab.c" /* yacc.c:1646  */
+#line 1379 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 16:
 #line 106 "instrformats.y" /* yacc.c:1646  */
     { (yyval.isval) = (yyvsp[0].isval); }
-#line 1400 "y.tab.c" /* yacc.c:1646  */
+#line 1385 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 17:
 #line 110 "instrformats.y" /* yacc.c:1646  */
     { cgenOpCodeType((yyvsp[-1].name)); 
                    ocgenOpCodeType((yyvsp[0].isval).ival);}
-#line 1407 "y.tab.c" /* yacc.c:1646  */
+#line 1392 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 18:
@@ -1411,13 +1396,13 @@ yyreduce:
     { cgenInstrCatH((yyvsp[0].isval).sval); cgenInstrCatC((yyvsp[-3].isval).sval);
                    ocgenInstrCat();
                  }
-#line 1415 "y.tab.c" /* yacc.c:1646  */
+#line 1400 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 19:
 #line 120 "instrformats.y" /* yacc.c:1646  */
     { (yyval.isval) = (yyvsp[0].isval); }
-#line 1421 "y.tab.c" /* yacc.c:1646  */
+#line 1406 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 22:
@@ -1425,7 +1410,7 @@ yyreduce:
     { cgenOneInstrCatH((yyvsp[-4].name), 0); cgenOneInstrCatC((yyvsp[-4].name), 0);
                    ocgenOneInstrCat((yyvsp[-4].name));
                  }
-#line 1429 "y.tab.c" /* yacc.c:1646  */
+#line 1414 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 23:
@@ -1433,32 +1418,32 @@ yyreduce:
     { cgenOneInstrCatH((yyvsp[-4].name), 1); cgenOneInstrCatC((yyvsp[-4].name), 1);
 		      ocgenOneInstrCat((yyvsp[-4].name));
 		    }
-#line 1437 "y.tab.c" /* yacc.c:1646  */
+#line 1422 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 26:
 #line 143 "instrformats.y" /* yacc.c:1646  */
     { cgenInstrFormat((yyvsp[0].name), 0); ocgenInstrFormat((yyvsp[0].name)); }
-#line 1443 "y.tab.c" /* yacc.c:1646  */
+#line 1428 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 27:
 #line 146 "instrformats.y" /* yacc.c:1646  */
     { cgenInstrFormat((yyvsp[0].name), 1); ocgenInstrFormat((yyvsp[0].name)); }
-#line 1449 "y.tab.c" /* yacc.c:1646  */
+#line 1434 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 32:
 #line 159 "instrformats.y" /* yacc.c:1646  */
     {cgenInstrLength((yyvsp[-1].name), (yyvsp[0].isval).sval); 
                    ocgenInstrLength((yyvsp[-1].name), (yyvsp[0].isval).sval);}
-#line 1456 "y.tab.c" /* yacc.c:1646  */
+#line 1441 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 33:
 #line 163 "instrformats.y" /* yacc.c:1646  */
     { cgenInstrLength((yyvsp[-1].name), (yyvsp[0].isval).sval);}
-#line 1462 "y.tab.c" /* yacc.c:1646  */
+#line 1447 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 34:
@@ -1466,7 +1451,7 @@ yyreduce:
     { cgenInstrH((yyvsp[-1].name)); cgenInstrC(); cgenSimDispatch();
                   ocgenInstr();
                 }
-#line 1470 "y.tab.c" /* yacc.c:1646  */
+#line 1455 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 35:
@@ -1475,7 +1460,7 @@ yyreduce:
                   cinitSimDispatch((yyvsp[0].isval).ival); 
                   (yyval.name) = (yyvsp[0].isval).sval; 
                 }
-#line 1479 "y.tab.c" /* yacc.c:1646  */
+#line 1464 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 38:
@@ -1485,7 +1470,7 @@ yyreduce:
                   cgenOneSimDispatch((yyvsp[-3].isval).ival, (yyvsp[-2].name), 0);
                   ocgenOneInstr((yyvsp[-3].isval).sval, (yyvsp[-2].name), (yyvsp[-1].name), (yyvsp[0].name), 0);
                 }
-#line 1489 "y.tab.c" /* yacc.c:1646  */
+#line 1474 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 39:
@@ -1495,7 +1480,7 @@ yyreduce:
                   cgenOneSimDispatch((yyvsp[-3].isval).ival, (yyvsp[-2].name), 0);
                   ocgenOneInstr((yyvsp[-3].isval).sval, (yyvsp[-2].name), (yyvsp[-1].name), (yyvsp[0].name), 0);
                 }
-#line 1499 "y.tab.c" /* yacc.c:1646  */
+#line 1484 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 40:
@@ -1505,7 +1490,7 @@ yyreduce:
                   cgenOneSimDispatch((yyvsp[-3].isval).ival, (yyvsp[-2].name), 1); 
                   ocgenOneInstr((yyvsp[-3].isval).sval, (yyvsp[-2].name), (yyvsp[-1].name), (yyvsp[0].name), 1);
                 }
-#line 1509 "y.tab.c" /* yacc.c:1646  */
+#line 1494 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 41:
@@ -1515,35 +1500,35 @@ yyreduce:
                   cgenOneSimDispatch((yyvsp[-3].isval).ival, (yyvsp[-2].name), 1);
                   ocgenOneInstr((yyvsp[-3].isval).sval, (yyvsp[-2].name), (yyvsp[-1].name), (yyvsp[0].name), 1);
                 }
-#line 1519 "y.tab.c" /* yacc.c:1646  */
+#line 1504 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 42:
 #line 213 "instrformats.y" /* yacc.c:1646  */
     { (yyval.isval) = (yyvsp[0].isval); }
-#line 1525 "y.tab.c" /* yacc.c:1646  */
+#line 1510 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 43:
 #line 216 "instrformats.y" /* yacc.c:1646  */
     { (yyval.name) = (yyvsp[0].name); }
-#line 1531 "y.tab.c" /* yacc.c:1646  */
+#line 1516 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 44:
 #line 219 "instrformats.y" /* yacc.c:1646  */
     { (yyval.name) = (yyvsp[0].name); }
-#line 1537 "y.tab.c" /* yacc.c:1646  */
+#line 1522 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 45:
 #line 222 "instrformats.y" /* yacc.c:1646  */
     { (yyval.name) = (yyvsp[0].name); }
-#line 1543 "y.tab.c" /* yacc.c:1646  */
+#line 1528 "y.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 1547 "y.tab.c" /* yacc.c:1646  */
+#line 1532 "y.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires

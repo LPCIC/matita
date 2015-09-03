@@ -180,48 +180,6 @@ extern int yydebug;
     STRING = 298
   };
 #endif
-/* Tokens.  */
-#define LBRACKET 258
-#define RBRACKET 259
-#define LPAREN 260
-#define RPAREN 261
-#define COMMA 262
-#define POUND 263
-#define SEMICOLON 264
-#define TRUE 265
-#define FALSE 266
-#define TYARROW 267
-#define TYAPP 268
-#define INFIX 269
-#define INFIXL 270
-#define INFIXR 271
-#define PREFIX 272
-#define PREFIXR 273
-#define POSTFIX 274
-#define POSTFIXL 275
-#define NOFIXITY 276
-#define MIN1 277
-#define MIN2 278
-#define MAX 279
-#define NOCODE 280
-#define LSSYMB 281
-#define LSSTART 282
-#define LSEND 283
-#define PREDSYMB 284
-#define PREDSTART 285
-#define PREDEND 286
-#define REGCL 287
-#define BACKTRACK 288
-#define KIND 289
-#define CONST 290
-#define EMPTY 291
-#define TYSKEL 292
-#define TYPE 293
-#define EMPTYTYPE 294
-#define ERROR 295
-#define ID 296
-#define NUM 297
-#define STRING 298
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -244,7 +202,7 @@ union YYSTYPE
     Type             tyval;
     TypeList         tylistval;
 
-#line 248 "y.tab.c" /* yacc.c:355  */
+#line 206 "y.tab.c" /* yacc.c:355  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -259,7 +217,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 263 "y.tab.c" /* yacc.c:358  */
+#line 221 "y.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -1437,7 +1395,7 @@ yyreduce:
         case 3:
 #line 89 "pervasives.y" /* yacc.c:1646  */
     { cgenKindH(); cgenKindC(); ocamlGenKinds(); }
-#line 1441 "y.tab.c" /* yacc.c:1646  */
+#line 1399 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 4:
@@ -1445,7 +1403,7 @@ yyreduce:
     { cgenKindInit((yyvsp[0].isval).ival); cgenNumKinds((yyvsp[0].isval).sval); 
                 ocamlGenNumKinds((yyvsp[0].isval).sval);
               }
-#line 1449 "y.tab.c" /* yacc.c:1646  */
+#line 1407 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 7:
@@ -1453,7 +1411,7 @@ yyreduce:
     { cgenKindIndex((yyvsp[-3].isval).ival, (yyvsp[-1].name), (yyvsp[-3].isval).sval, NULL);
                 cgenKindData((yyvsp[-3].isval).ival, (yyvsp[-2].name), (yyvsp[0].isval).sval, NULL);
                 ocamlGenKind((yyvsp[-2].name), (yyvsp[-1].name), (yyvsp[0].isval).sval, (yyvsp[-3].isval).sval); }
-#line 1457 "y.tab.c" /* yacc.c:1646  */
+#line 1415 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 8:
@@ -1461,13 +1419,13 @@ yyreduce:
     { cgenKindIndex((yyvsp[-3].isval).ival, (yyvsp[-1].name), (yyvsp[-3].isval).sval, (yyvsp[-4].text));
                 cgenKindData((yyvsp[-3].isval).ival, (yyvsp[-2].name), (yyvsp[0].isval).sval, (yyvsp[-4].text));
                 ocamlGenKind((yyvsp[-2].name), (yyvsp[-1].name), (yyvsp[0].isval).sval, (yyvsp[-3].isval).sval); }
-#line 1465 "y.tab.c" /* yacc.c:1646  */
+#line 1423 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 9:
 #line 112 "pervasives.y" /* yacc.c:1646  */
     { (yyval.text) = (yyvsp[0].text);}
-#line 1471 "y.tab.c" /* yacc.c:1646  */
+#line 1429 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 10:
@@ -1476,7 +1434,7 @@ yyreduce:
                   cgenConstH();   cgenConstC();
                   ocamlGenConsts(); 
                }
-#line 1480 "y.tab.c" /* yacc.c:1646  */
+#line 1438 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 11:
@@ -1485,7 +1443,7 @@ yyreduce:
                         cgenNumConsts((yyvsp[-2].isval).sval);  cgenConstInit((yyvsp[-2].isval).ival);
                         ocamlGenNumConsts((yyvsp[-2].isval).sval);
                       }
-#line 1489 "y.tab.c" /* yacc.c:1646  */
+#line 1447 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 15:
@@ -1494,7 +1452,7 @@ yyreduce:
                        ocamlGenTySkel((yyvsp[-1].isval).sval, (yyvsp[0].tyval));
                        cgenTySkelTab((yyvsp[-1].isval).ival, (yyvsp[0].tyval), NULL);
                       }
-#line 1498 "y.tab.c" /* yacc.c:1646  */
+#line 1456 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 16:
@@ -1503,67 +1461,67 @@ yyreduce:
                        ocamlGenTySkel((yyvsp[-1].isval).sval, (yyvsp[0].tyval));
                        cgenTySkelTab((yyvsp[-1].isval).ival, (yyvsp[0].tyval), (yyvsp[-3].text));
                       }
-#line 1507 "y.tab.c" /* yacc.c:1646  */
+#line 1465 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 17:
 #line 151 "pervasives.y" /* yacc.c:1646  */
     { (yyval.tyval) = mkArrowType((yyvsp[-2].tyval), (yyvsp[0].tyval)); }
-#line 1513 "y.tab.c" /* yacc.c:1646  */
+#line 1471 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 18:
 #line 153 "pervasives.y" /* yacc.c:1646  */
     { (yyval.tyval) = (yyvsp[0].tyval); }
-#line 1519 "y.tab.c" /* yacc.c:1646  */
+#line 1477 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 19:
 #line 158 "pervasives.y" /* yacc.c:1646  */
     {(yyval.tyval) = mkStrType(mkStrFuncType((yyvsp[-5].name),(yyvsp[-4].isval).sval), (yyvsp[-4].isval).ival, (yyvsp[-2].tylistval));}
-#line 1525 "y.tab.c" /* yacc.c:1646  */
+#line 1483 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 20:
 #line 160 "pervasives.y" /* yacc.c:1646  */
     {(yyval.tyval) = (yyvsp[0].tyval); }
-#line 1531 "y.tab.c" /* yacc.c:1646  */
+#line 1489 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 21:
 #line 164 "pervasives.y" /* yacc.c:1646  */
     { (yyval.tyval) = mkSortType((yyvsp[0].name)); }
-#line 1537 "y.tab.c" /* yacc.c:1646  */
+#line 1495 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 22:
 #line 166 "pervasives.y" /* yacc.c:1646  */
     { (yyval.tyval) = mkSkVarType((yyvsp[0].isval).sval); }
-#line 1543 "y.tab.c" /* yacc.c:1646  */
+#line 1501 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 23:
 #line 168 "pervasives.y" /* yacc.c:1646  */
     { (yyval.tyval) = (yyvsp[-1].tyval); }
-#line 1549 "y.tab.c" /* yacc.c:1646  */
+#line 1507 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 24:
 #line 172 "pervasives.y" /* yacc.c:1646  */
     { (yyval.tylistval) = addItem((yyvsp[-2].tyval), (yyvsp[0].tylistval)); }
-#line 1555 "y.tab.c" /* yacc.c:1646  */
+#line 1513 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 25:
 #line 174 "pervasives.y" /* yacc.c:1646  */
     { (yyval.tylistval) = addItem((yyvsp[0].tyval), NULL); }
-#line 1561 "y.tab.c" /* yacc.c:1646  */
+#line 1519 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 26:
 #line 176 "pervasives.y" /* yacc.c:1646  */
     {(yyval.isval) = (yyvsp[0].isval);}
-#line 1567 "y.tab.c" /* yacc.c:1646  */
+#line 1525 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 29:
@@ -1575,7 +1533,7 @@ yyreduce:
                                       (yyvsp[-7].isval).ival, tySkelInd, (yyvsp[-5].isval).ival, (yyvsp[0].codeType),
                                       (yyvsp[-10].isval).sval, (yyvsp[-9].name));
                       }
-#line 1579 "y.tab.c" /* yacc.c:1646  */
+#line 1537 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 30:
@@ -1587,7 +1545,7 @@ yyreduce:
                                       (yyvsp[-8].isval).ival, tySkelInd, (yyvsp[-6].isval).ival, (yyvsp[-1].codeType),
                                       (yyvsp[-11].isval).sval, (yyvsp[0].name));
                       }
-#line 1591 "y.tab.c" /* yacc.c:1646  */
+#line 1549 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 31:
@@ -1599,7 +1557,7 @@ yyreduce:
                                       (yyvsp[-7].isval).ival, tySkelInd, (yyvsp[-5].isval).ival, (yyvsp[0].codeType), 
                                       (yyvsp[-10].isval).sval, (yyvsp[-9].name));
                       }
-#line 1603 "y.tab.c" /* yacc.c:1646  */
+#line 1561 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 32:
@@ -1611,157 +1569,157 @@ yyreduce:
                                       (yyvsp[-8].isval).ival, tySkelInd, (yyvsp[-6].isval).ival, (yyvsp[-1].codeType), 
                                       (yyvsp[-11].isval).sval, (yyvsp[0].name));
                       }
-#line 1615 "y.tab.c" /* yacc.c:1646  */
+#line 1573 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 33:
 #line 221 "pervasives.y" /* yacc.c:1646  */
     {(yyval.name) = (yyvsp[0].name);}
-#line 1621 "y.tab.c" /* yacc.c:1646  */
+#line 1579 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 34:
 #line 223 "pervasives.y" /* yacc.c:1646  */
     {(yyval.name) = (yyvsp[0].name);}
-#line 1627 "y.tab.c" /* yacc.c:1646  */
+#line 1585 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 35:
 #line 226 "pervasives.y" /* yacc.c:1646  */
     {(yyval.isval) = (yyvsp[0].isval);}
-#line 1633 "y.tab.c" /* yacc.c:1646  */
+#line 1591 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 36:
 #line 228 "pervasives.y" /* yacc.c:1646  */
     {(yyval.isval) = (yyvsp[0].isval);}
-#line 1639 "y.tab.c" /* yacc.c:1646  */
+#line 1597 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 37:
 #line 231 "pervasives.y" /* yacc.c:1646  */
     {(yyval.boolType) = UTIL_TRUE;}
-#line 1645 "y.tab.c" /* yacc.c:1646  */
+#line 1603 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 38:
 #line 232 "pervasives.y" /* yacc.c:1646  */
     {(yyval.boolType) = UTIL_FALSE;}
-#line 1651 "y.tab.c" /* yacc.c:1646  */
+#line 1609 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 39:
 #line 235 "pervasives.y" /* yacc.c:1646  */
     {(yyval.boolType) = UTIL_TRUE;}
-#line 1657 "y.tab.c" /* yacc.c:1646  */
+#line 1615 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 40:
 #line 236 "pervasives.y" /* yacc.c:1646  */
     {(yyval.boolType) = UTIL_FALSE;}
-#line 1663 "y.tab.c" /* yacc.c:1646  */
+#line 1621 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 41:
 #line 239 "pervasives.y" /* yacc.c:1646  */
     {(yyval.fixityType) = OP_INFIX;}
-#line 1669 "y.tab.c" /* yacc.c:1646  */
+#line 1627 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 42:
 #line 240 "pervasives.y" /* yacc.c:1646  */
     {(yyval.fixityType) = OP_INFIXL;}
-#line 1675 "y.tab.c" /* yacc.c:1646  */
+#line 1633 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 43:
 #line 241 "pervasives.y" /* yacc.c:1646  */
     {(yyval.fixityType) = OP_INFIXR;}
-#line 1681 "y.tab.c" /* yacc.c:1646  */
+#line 1639 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 44:
 #line 242 "pervasives.y" /* yacc.c:1646  */
     {(yyval.fixityType) = OP_PREFIX;}
-#line 1687 "y.tab.c" /* yacc.c:1646  */
+#line 1645 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 45:
 #line 243 "pervasives.y" /* yacc.c:1646  */
     {(yyval.fixityType) = OP_PREFIXR;}
-#line 1693 "y.tab.c" /* yacc.c:1646  */
+#line 1651 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 46:
 #line 244 "pervasives.y" /* yacc.c:1646  */
     {(yyval.fixityType) = OP_POSTFIX;}
-#line 1699 "y.tab.c" /* yacc.c:1646  */
+#line 1657 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 47:
 #line 245 "pervasives.y" /* yacc.c:1646  */
     {(yyval.fixityType) = OP_POSTFIXL;}
-#line 1705 "y.tab.c" /* yacc.c:1646  */
+#line 1663 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 48:
 #line 246 "pervasives.y" /* yacc.c:1646  */
     {(yyval.fixityType) = OP_NONE;}
-#line 1711 "y.tab.c" /* yacc.c:1646  */
+#line 1669 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 49:
 #line 249 "pervasives.y" /* yacc.c:1646  */
     {(yyval.precType) = OP_mkPrecMin1();}
-#line 1717 "y.tab.c" /* yacc.c:1646  */
+#line 1675 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 50:
 #line 250 "pervasives.y" /* yacc.c:1646  */
     {(yyval.precType) = OP_mkPrecMin2();}
-#line 1723 "y.tab.c" /* yacc.c:1646  */
+#line 1681 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 51:
 #line 251 "pervasives.y" /* yacc.c:1646  */
     {(yyval.precType) = OP_mkPrec((yyvsp[0].isval).ival);}
-#line 1729 "y.tab.c" /* yacc.c:1646  */
+#line 1687 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 52:
 #line 252 "pervasives.y" /* yacc.c:1646  */
     {(yyval.precType) = OP_mkPrecMax();}
-#line 1735 "y.tab.c" /* yacc.c:1646  */
+#line 1693 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 53:
 #line 255 "pervasives.y" /* yacc.c:1646  */
     {(yyval.codeType) = OP_mkCodeInfoNone();}
-#line 1741 "y.tab.c" /* yacc.c:1646  */
+#line 1699 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 54:
 #line 256 "pervasives.y" /* yacc.c:1646  */
     {(yyval.codeType) = OP_mkCodeInfo((yyvsp[0].isval).ival);}
-#line 1747 "y.tab.c" /* yacc.c:1646  */
+#line 1705 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 57:
 #line 265 "pervasives.y" /* yacc.c:1646  */
     { cgenLogicSymbolInit((yyvsp[0].isval).ival); }
-#line 1753 "y.tab.c" /* yacc.c:1646  */
+#line 1711 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 58:
 #line 269 "pervasives.y" /* yacc.c:1646  */
     { cgenLSRange((yyvsp[-2].name), (yyvsp[0].name));}
-#line 1759 "y.tab.c" /* yacc.c:1646  */
+#line 1717 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 61:
 #line 276 "pervasives.y" /* yacc.c:1646  */
     {cgenLogicSymbType((yyvsp[-1].isval).ival, (yyvsp[0].name), (yyvsp[-1].isval).sval);}
-#line 1765 "y.tab.c" /* yacc.c:1646  */
+#line 1723 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 63:
@@ -1772,41 +1730,41 @@ yyreduce:
                        exit(1);
                        } 
                       }
-#line 1776 "y.tab.c" /* yacc.c:1646  */
+#line 1734 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 64:
 #line 292 "pervasives.y" /* yacc.c:1646  */
     { cgenPREDRange((yyvsp[-2].name), (yyvsp[0].name)); }
-#line 1782 "y.tab.c" /* yacc.c:1646  */
+#line 1740 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 65:
 #line 295 "pervasives.y" /* yacc.c:1646  */
     { ocamlGenRC(); }
-#line 1788 "y.tab.c" /* yacc.c:1646  */
+#line 1746 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 66:
 #line 298 "pervasives.y" /* yacc.c:1646  */
     { ocamlGenBC(); }
-#line 1794 "y.tab.c" /* yacc.c:1646  */
+#line 1752 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 67:
 #line 301 "pervasives.y" /* yacc.c:1646  */
     { ocamlCollectConsts((yyvsp[-1].name), 0); }
-#line 1800 "y.tab.c" /* yacc.c:1646  */
+#line 1758 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 68:
 #line 302 "pervasives.y" /* yacc.c:1646  */
     { ocamlCollectConsts((yyvsp[0].name), 1); }
-#line 1806 "y.tab.c" /* yacc.c:1646  */
+#line 1764 "y.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 1810 "y.tab.c" /* yacc.c:1646  */
+#line 1768 "y.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires

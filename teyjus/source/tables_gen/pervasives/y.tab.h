@@ -88,48 +88,6 @@ extern int yydebug;
     STRING = 298
   };
 #endif
-/* Tokens.  */
-#define LBRACKET 258
-#define RBRACKET 259
-#define LPAREN 260
-#define RPAREN 261
-#define COMMA 262
-#define POUND 263
-#define SEMICOLON 264
-#define TRUE 265
-#define FALSE 266
-#define TYARROW 267
-#define TYAPP 268
-#define INFIX 269
-#define INFIXL 270
-#define INFIXR 271
-#define PREFIX 272
-#define PREFIXR 273
-#define POSTFIX 274
-#define POSTFIXL 275
-#define NOFIXITY 276
-#define MIN1 277
-#define MIN2 278
-#define MAX 279
-#define NOCODE 280
-#define LSSYMB 281
-#define LSSTART 282
-#define LSEND 283
-#define PREDSYMB 284
-#define PREDSTART 285
-#define PREDEND 286
-#define REGCL 287
-#define BACKTRACK 288
-#define KIND 289
-#define CONST 290
-#define EMPTY 291
-#define TYSKEL 292
-#define TYPE 293
-#define EMPTYTYPE 294
-#define ERROR 295
-#define ID 296
-#define NUM 297
-#define STRING 298
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -152,7 +110,7 @@ union YYSTYPE
     Type             tyval;
     TypeList         tylistval;
 
-#line 156 "y.tab.h" /* yacc.c:1909  */
+#line 114 "y.tab.h" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

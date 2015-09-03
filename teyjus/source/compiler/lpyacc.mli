@@ -21,9 +21,6 @@ type token =
   | PREFIXR
   | POSTFIX
   | POSTFIXL
-  | LAMBDA
-  | FORALL
-  | FORSOME
   | COLONDASH
   | IMPLIES
   | INFIXLAMBDA
@@ -53,9 +50,6 @@ type token =
   | RBRACK
   | COLON
   | VBAR
-  | SIGSTART
-  | MODSTART
-  | TERMSTART
   | EOF
   | ID of ((string * Preabsyn.pidkind))
   | SYID of ((string * Preabsyn.pidkind))

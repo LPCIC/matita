@@ -20,7 +20,6 @@
 ****************************************************************************)
 {
 open Lexing
-open Errormsg
 open Lpyacc
 
 let setFileName lexbuf name =
@@ -35,11 +34,6 @@ let incrline lexbuf =
 let maxStringLength = Int32.to_int (Int32.div Int32.max_int (Int32.of_int 2))
 
 let commentLev = ref 0
-
-let strPos = ref 0
-let escapePos = ref 0
-let strErr = ref false
-let quotedid = ref false
 
 let stringBuffer = Buffer.create 16
 let string_of_char = String.make 1
@@ -185,7 +179,8 @@ rule initial = parse
 
 | UCASE IDCHAR* as name       {UPCID(name, Preabsyn.CVID)}
 | LCASE IDCHAR* as name       {ID(name, Preabsyn.ConstID)}
-| (("/"(IDCHAR1 IDCHAR*))|(SCHAR2 IDCHAR*)) as name {SYID(name, Preabsyn.ConstID)}
+| (("/"(IDCHAR1 IDCHAR*))|(SCHAR2 IDCHAR*)) as 
+                                        name {SYID(name, Preabsyn.ConstID)}
 
 | "_" as word         {VID((string_of_char word), Preabsyn.AVID)}
 | "_" IDCHAR+ as word {VID(word, Preabsyn.VarID)}
@@ -195,7 +190,9 @@ rule initial = parse
 | "%"             {comment1 lexbuf}
 
 | "/*"            {commentLev := 1; comment2 lexbuf}
-| _ as c          {raise (Failure("Invalid token: " ^ string_of_char c));}
+| _ as c          {Errormsg.error lexbuf.lex_curr_p 
+                     ("Invalid token: " ^ (string_of_char c)); 
+                     STRLIT(extractCurrentString lexbuf.lex_curr_p)}
 | eof             {EOF}
 
 (**********************************************************************
@@ -206,8 +203,10 @@ and stringstate = parse
 | [^ '"' '\\' '\n']+ as text  {addString text; stringstate lexbuf}
 | '"'                         {STRLIT(extractCurrentString lexbuf.lex_curr_p)}
       
-| '\n'          {Errormsg.error lexbuf.lex_curr_p "String literal ended with newline";
-                 incrline lexbuf; STRLIT(extractCurrentString lexbuf.lex_curr_p)}
+| '\n'          {Errormsg.error lexbuf.lex_curr_p 
+                    "String literal ended with newline";
+                    incrline lexbuf; 
+                    STRLIT(extractCurrentString lexbuf.lex_curr_p)}
 | "\\b"         {addChar '\b'; stringstate lexbuf}
 | "\\t"         {addChar '\t'; stringstate lexbuf}
 | "\\n"         {addChar '\n'; stringstate lexbuf}
@@ -222,12 +221,14 @@ and stringstate = parse
 | "\\x" HEX as text                 {addHex text; stringstate lexbuf}
 | "\\x" (HEX HEX) as text           {addHex text; stringstate lexbuf}
 
-| "\\x" _         {Errormsg.error lexbuf.lex_curr_p "Illegal hex character specification";
+| "\\x" _         {Errormsg.error lexbuf.lex_curr_p 
+                    "Illegal hex character specification";
                    stringstate lexbuf}
 | "\\" FCHAR      {strflush1 lexbuf}
 | "\\\n"          {incrline lexbuf; strflush1 lexbuf}
 | "\\c"           {strflush2 lexbuf}
-| "\\" _          {Errormsg.error lexbuf.lex_curr_p "Illegal escape character in string";
+| "\\" _          {Errormsg.error lexbuf.lex_curr_p 
+                    "Illegal escape character in string";
                    stringstate lexbuf}
 | eof             {Errormsg.error lexbuf.lex_curr_p
                      "String not closed at end-of-file";
@@ -237,9 +238,10 @@ and stringstate = parse
 and strflush1 = parse
 | FCHAR+    {strflush1 lexbuf}
 | "\\"      {strflush1 lexbuf}
-| _ as text {Errormsg.error lexbuf.lex_curr_p "Unterminated string escape sequence";
-             addChar text;
-             stringstate lexbuf}
+| _ as text {Errormsg.error lexbuf.lex_curr_p 
+                "Unterminated string escape sequence";
+                addChar text;
+                stringstate lexbuf}
 | eof             {Errormsg.error lexbuf.lex_curr_p
                      "String not closed at end-of-file";
                    initial lexbuf}

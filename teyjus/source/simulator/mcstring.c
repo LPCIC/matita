@@ -81,11 +81,10 @@ void MCSTR_concat(MCSTR_Str loc, MCSTR_Str str1, MCSTR_Str str2)
 //substring (the new string is created at address started from loc)
 void MCSTR_subString(MCSTR_Str loc, MCSTR_Str str, int startPos, int length)
 {
-    int i;
     char* fromPtr = ((char*)(str + 1))+startPos;
     char* toPtr   = (char*)(loc + 1);
     
-    *((int *)loc) = (length + 1);
+    *((int *)loc) = (length);
     while (length > 0) {
       *toPtr++ = *fromPtr++;
       length--;

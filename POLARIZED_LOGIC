@@ -1,0 +1,91 @@
+q :- pi c\ (pi X\ sigma y\ ...) => pi x\ sigma Y\
+
+positive/negative positions
+
+N ::= N \par N | P => N | A^- | return P
+P ::= P \times P | P^+ | lazy N | Nat
+
+By-value languages: computations are never data  f (g x)
+By-name/need language: computations are always data   f (lazy (g x))
+
+---------------------------------------
+
+Synchronous/asynchronous:
+
+     P |- N 
+    =============  invertible/asynchronous
+     |- P => N
+
+  |- A       |- B
+ ================= invertible
+    |- A /\ B
+
+
+       |- A
+  ===================  non invertible/synchronous
+
+-----------------------------------------
+
+
+                               D|-C  E|-C    D|-D  E|-D
+                               ----------    ----------
+ D |- A\/ B    E|- A\/B         D\/E |- C     D\/E |- D
+-------------------------     -------------------
+    D\/E |- (A \/ B)            D\/ E|- (C /\ D)
+------------------------------------------
+    D\/E |- (A \/ B) /\ (C /\ D)
+--------------------------------------
+    |-  D\/E => (A \/ B) /\ (C /\ D))
+
+
+
+.....
+      D |- (A \/ B)    D |- C /\ D
+   ---------------------------------
+      D |- (A \/ B) /\ (C /\ D))
+   ------------------------------------
+      D |- lazy (A \/ B) /\ (C /\ D))
+    ============================================
+      D |- return (lazy (A \/ B) /\ (C /\ D)))
+   -------------------------------------------------
+      D\/E |- return (lazy (A \/ B) /\ (C /\ D)))
+    ---------------------------------------------
+    |-  D\/E => return (lazy (A \/ B) /\ (C /\ D)))
+
+
+Matita: records proofs
+Curry-Howard: proof = lambda-term
+Matita: records lambda-term
+lambda-term are huge
+proof checking requires a lot of time, a lot of disk, ...
+fully automatic
+
+-------------------------------
+
+proof is summarized into a PROOF CERTIFICATE
+verifier is an automatic theorem prover that,
+when it needs to make a choice, looks in the certificate
+
+certificate = list of choices that **THAT** theorem prover must take
+
+certificate size <<< lambda term
+
+Problems:
+1. how to create small certificates?
+   how to reduce the number of choices?
+2. how to make canonical/portable certificates?
+   how to make every theorem prover take "the same" choices?
+
+Partial answer:
+ polarized logic greatly reduces the number of choices (=> smaller certificates) and makes the choices less "ad-hoc" (=> more portability)
+
+****Certificate checker****
+i.e. an automatic prover for polarized logic that asks the certificate
+when it needs to make a choice
+
+-------------------------------
+
+automatic theorem provers
+proof = computation
+no disk space, time =????
+not decidable/not automatic

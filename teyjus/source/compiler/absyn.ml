@@ -18,17 +18,10 @@
 * You should have received a copy of the GNU General Public License
 * along with Teyjus.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************)
-(*****************************************************************************
-*Absyn:
-* The abstract syntax representation.
-*****************************************************************************)
+
 type pos = Errormsg.pos
 type symbol = Symbol.symbol
 
-(*****************************************************************************
-*Kinds:
-* (symbol, arity, index, position)
-*****************************************************************************)
 type akindtype =
     LocalKind
   | GlobalKind
@@ -36,30 +29,18 @@ type akindtype =
 
 and akind = Kind of (symbol * int option * int ref * akindtype * pos)
 
-(*****************************************************************************
-*Type Variable Data:
-* (firstuse, lastuse, perm, safety, heapvar, offset, firstgoal, lastgoal)
-*****************************************************************************)
 and atypevar = 
   TypeVar of (atype option ref * atype option ref * bool ref * bool ref * 
 				bool ref * int option ref * int ref * int ref)
 
-(****************************************************************************
-*Type Var Information:
-     Bindable seems to correspond to a type cell whose actual contents is given by a 
-     reference to something else; i.e. it is more like "bound" than "bindable".
-*****************************************************************************)
 and atypevarinfo =
 	BindableTypeVar of atype option ref
   |	FreeTypeVar of (atypevar option ref * bool option ref)
 
 
-(*****************************************************************************
-*Type:
-*****************************************************************************)
 and atype = 
     SkeletonVarType of (int ref)
-  | TypeVarType of (atypevarinfo ref)
+  | TypeVarType of (atypevarinfo)
   | ArrowType of (atype * atype)
   | ApplicationType of (akind * atype list)
   | TypeSetType of (atype * atype list ref * atype option ref)
@@ -181,14 +162,14 @@ and aapplicationinfo =
 *Terms:
 *****************************************************************************)
 and aterm =
-    IntTerm of (int * bool * pos)
-  | RealTerm of (float * bool * pos)
-  | StringTerm of (astringinfo * bool * pos)
-  | ConstantTerm of (aconstant * atype list * bool * pos)
-  | FreeVarTerm of (afreevarinfo * bool * pos)
-  | BoundVarTerm of (aboundvarinfo * bool * pos)
-  | AbstractionTerm of (aabstractioninfo * bool * pos)
-  | ApplicationTerm of (aapplicationinfo * bool * pos)
+    IntTerm of (int * pos)
+  | RealTerm of (float * pos)
+  | StringTerm of (astringinfo * pos)
+  | ConstantTerm of (aconstant * atype list * pos)
+  | FreeVarTerm of (afreevarinfo * pos)
+  | BoundVarTerm of (aboundvarinfo * pos)
+  | AbstractionTerm of (aabstractioninfo * pos)
+  | ApplicationTerm of (aapplicationinfo * pos)
   | ErrorTerm
 
 (*****************************************************************************
@@ -237,9 +218,9 @@ and aclausesblock = (aclause list ref * bool ref * int ref * int option ref)
 
 (*****************************************************************************
 *Modules:
-* (modname, imported, accumulated, kind table, constant table,
-* type abbre table, string list, local kind list, global kind list,
-* local constant list, global constant list, hidden constant list,
+* (modname, imported, accumulated, constant table, kind table, 
+* type abbre table, string list, global kind list, local kind list,
+* global constant list, local constant list, hidden constant list,
 * skeleton list, hskeleton list, clauses blocks list)
 *****************************************************************************)
 and amodule = 
@@ -341,13 +322,13 @@ let kinds_equal k1 k2 =
 
 (* last goal *)
 let getTypeVariableDataLastGoalRef = function
-  TypeVar(fu, lu, p, s, h, o, fg, lg) -> lg
+  TypeVar(_, _, _, _, _, _, _, lg) -> lg
 let getTypeVariableDataLastGoal v = !(getTypeVariableDataLastGoalRef v)
 let setTypeVariableDataLastGoal v o = (getTypeVariableDataLastGoalRef v) := o
 
 (* first goal *)
 let getTypeVariableDataFirstGoalRef = function
-  TypeVar(fu, lu, p, s, h, o, fg, lg) -> fg
+  TypeVar(_, _, _, _, _, _, fg, _) -> fg
 let getTypeVariableDataFirstGoal v = !(getTypeVariableDataFirstGoalRef v)
 let setTypeVariableDataFirstGoal v o = (getTypeVariableDataFirstGoalRef v) := o
 
@@ -359,7 +340,8 @@ let getTypeVariableDataOffset v =
   if (Option.isSome r) then
     Option.get r
   else
-    Errormsg.impossible Errormsg.none "Absyn.getTypeVariableDataOffset: invalid type variable"
+    Errormsg.impossible Errormsg.none 
+      "Absyn.getTypeVariableDataOffset: invalid type variable"
 
 let setTypeVariableDataOffset v o =
   (getTypeVariableDataOffsetRef v) := Some o
@@ -390,7 +372,8 @@ let getTypeVariableDataLastUse v =
   if Option.isSome r then
     Option.get r
   else
-    Errormsg.impossible Errormsg.none "Absyn.getTypeVariableDataLastUse: invalid type variable"
+    Errormsg.impossible Errormsg.none 
+      "Absyn.getTypeVariableDataLastUse: invalid type variable"
 
 
 (* first use *)
@@ -407,25 +390,26 @@ let makeNewTypeVariableData () =
 (* dereference a type *)
 let rec dereferenceType ty =
   match ty with
-    TypeVarType(r) ->
-      (match !r with
-        BindableTypeVar(tr) ->
-          (match !tr with
-            Some(t) -> dereferenceType t
-          | None -> ty)
-      | FreeTypeVar(_) ->
-          Errormsg.impossible Errormsg.none "dereferenceType: Invalid type variable")
-  | TypeSetType(_,_,r) ->
-      (match !r with
-        Some(ty') -> dereferenceType ty'
-      | None -> ty)
-  | _ -> ty
+    | TypeVarType(BindableTypeVar(tr)) ->
+        (match !tr with
+             Some(t) -> 
+               dereferenceType t
+           | None -> ty)
+    | TypeVarType(FreeTypeVar(_)) ->
+        Errormsg.impossible Errormsg.none 
+          "dereferenceType: Invalid type variable"
+    | TypeSetType(_, _, r) ->
+        (match !r with
+             Some(ty') -> dereferenceType ty'
+           | None -> ty)
+    | _ -> ty
 
 and types_equal t1 t2 =
   let t1 = dereferenceType t1 in
   let t2 = dereferenceType t2 in
   match (t1,t2) with
-      ArrowType(l1,r1), ArrowType(l2,r2) -> (types_equal l1 l2) && (types_equal r1 r2)
+      ArrowType(l1,r1), ArrowType(l2,r2) -> 
+        (types_equal l1 l2) && (types_equal r1 r2)
     | TypeVarType(_), TypeVarType(_) -> true
     | ApplicationType(k1,args1), ApplicationType(k2,args2) ->
         (kinds_equal k1 k2) && (List.for_all2 types_equal args1 args2)
@@ -437,20 +421,20 @@ and types_equal t1 t2 =
 
 (* string_of_type                    *)
 and string_of_type_ast ty =
-  let rec print' = function
-      t::[] -> (string_of_type_ast t)
-    | t::ts -> (string_of_type_ast t) ^ " " ^ (print' ts)
-    | [] -> ""
-  in
   let ty' = dereferenceType ty in
   match ty' with
-      ArrowType(t1, t2) -> "(" ^ (string_of_type_ast t1) ^ " -> " ^ (string_of_type_ast t2) ^ ")"
-    | TypeVarType(r) ->
+      ArrowType(t1, t2) -> "(" ^ (string_of_type_ast t1) ^ " -> " 
+      ^ (string_of_type_ast t2) ^ ")"
+    | TypeVarType(BindableTypeVar(r)) ->
+        let i : int = (Obj.magic r) in
+        "'" ^ (string_of_int i)
+    | TypeVarType(FreeTypeVar(r, _)) ->
         let i : int = (Obj.magic r) in
         "'" ^ (string_of_int i)
     | ApplicationType(kind, tlist) ->
         if (List.length tlist) > 0 then
-          "(" ^ (string_of_kind kind) ^ " " ^ (print' tlist) ^ ")"
+          let args = String.concat " " (List.map string_of_type_ast tlist) in
+          "(" ^ (string_of_kind kind) ^ " " ^ args ^ ")"
         else
           (string_of_kind kind)
     | SkeletonVarType(i) -> "SkeletonVarType(" ^ (string_of_int !i) ^ ")"
@@ -461,28 +445,43 @@ and string_of_type_ast ty =
     | ErrorType -> "ErrorType"
 
 and string_of_type ty =
-  let rec print' = function
-      t::[] -> (string_of_type t)
-    | t::ts -> (string_of_type t) ^ " " ^ (print' ts)
-    | [] -> ""
+  let rec str needsParens ty =
+    let parens s =
+      if needsParens then
+        "(" ^ s ^ ")"
+      else
+        s
+    in
+    let ty' = dereferenceType ty in
+    match ty' with
+        ArrowType(t1, t2) ->
+          let s = (str true t1) ^ " -> " ^ (str false t2) in
+          parens s
+      | TypeVarType(BindableTypeVar(r)) ->
+          let i : int = (Obj.magic r) in
+            "_" ^ (string_of_int i)
+      | TypeVarType(FreeTypeVar(r, _)) ->
+          let i : int = (Obj.magic r) in
+            "_" ^ (string_of_int i)
+      | ApplicationType(kind, tlist) ->
+          if (List.length tlist) > 0 then
+            let args = String.concat " " (List.map (str true) tlist) in
+            let s = (string_of_kind kind) ^ " " ^ args in
+            parens s
+          else
+            string_of_kind kind
+      | SkeletonVarType(i) ->
+          if !i > ((Char.code 'Z') - (Char.code 'A')) then
+            "_" ^ (string_of_int !i)
+          else
+            String.make 1 (Char.chr (!i + (Char.code 'A')))
+      | TypeSetType(d, tl, _) ->
+          (match !tl with
+            [t] -> str needsParens t
+          | _ -> str needsParens d)
+      | ErrorType -> "ErrorType"
   in
-  let ty' = dereferenceType ty in
-  match ty' with
-      ArrowType(t1, t2) -> "(" ^ (string_of_type t1) ^ " -> " ^ (string_of_type t2) ^ ")"
-    | TypeVarType(r) ->
-        let i : int = (Obj.magic r) in
-        "'" ^ (string_of_int i)
-    | ApplicationType(kind, tlist) ->
-        if (List.length tlist) > 0 then
-          "(" ^ (string_of_kind kind) ^ " " ^ (print' tlist) ^ ")"
-        else
-          (string_of_kind kind)
-    | SkeletonVarType(i) -> "'" ^ (string_of_int !i)
-    | TypeSetType(d, tl, _) ->
-        (match !tl with
-          [t] -> string_of_type t
-        | _ -> string_of_type d)
-    | ErrorType -> "ErrorType"
+  str false ty
 
 (* errorType *)
 let errorType = ErrorType
@@ -503,7 +502,7 @@ let rec getArrowTypeArguments ty =
   match ty with
     ArrowType(_) -> get' ty
   | t -> Errormsg.impossible Errormsg.none 
-                             ("getArrowTypeArguments: invalid type: " ^ (string_of_type t))
+           ("getArrowTypeArguments: invalid type: " ^ (string_of_type t))
 
 let rec getArrowTypeArity ty =
   match ty with
@@ -544,12 +543,12 @@ let makeTypeSetVariable def tl = TypeSetType(def, ref tl, ref None)
 let getTypeArguments = function
   ApplicationType(_, args) -> args
 | t -> (Errormsg.impossible Errormsg.none 
-                            ("getTypeArguments: invalid type: " ^ (string_of_type t)))
+          ("getTypeArguments: invalid type: " ^ (string_of_type t)))
 
 let getTypeKind = function
   ApplicationType(k,_) -> k
 | t -> (Errormsg.impossible Errormsg.none 
-                            ("getTypeKind: invalid type: " ^ (string_of_type t)))
+          ("getTypeKind: invalid type: " ^ (string_of_type t)))
 
 
 let isConstantType = function
@@ -559,48 +558,49 @@ let isConstantType = function
 
 (* type reference                   *)
 let getTypeVariableReference = function
-  TypeVarType(info) ->
-    (match !info with
-      BindableTypeVar(r) -> r
-    | _ -> (Errormsg.impossible Errormsg.none 
-                                "getTypeVariableReference: invalid type variable info"))
-| _ -> (Errormsg.impossible Errormsg.none "getTypeVariableReference: invalid type")
+  | TypeVarType(info) ->
+      (match info with
+         | BindableTypeVar(r) -> r
+         | _ -> Errormsg.impossible Errormsg.none 
+                   "getTypeVariableReference: invalid type variable info")
+  | _ -> Errormsg.impossible Errormsg.none 
+            "getTypeVariableReference: invalid type"
 
 let isVariableType = function
   TypeVarType(r) ->
-    (match !r with
+    (match r with
       BindableTypeVar(tr) ->
         (match !tr with
           Some(t) -> (Errormsg.impossible Errormsg.none 
-                                          "Asyn.isVariableType: bound variable")
+                        "Absyn.isVariableType: bound variable")
         | None -> true)
     | _ ->  (Errormsg.impossible Errormsg.none 
-                                "Absyn.isVariableType: type variable info"))
+               "Absyn.isVariableType: type variable info"))
 | _ -> false
 
 
 (* type variable                    *)
 let getTypeFreeVariableVariableData = function
-  TypeVarType(r) ->
-    (match !r with
+  | TypeVarType(r) ->
+    (match r with
       FreeTypeVar(varDataRef, _) -> 
         (match !varDataRef with
            Some(varData) -> varData
          | None -> (Errormsg.impossible Errormsg.none 
-                                        "getTypeFreeVariableVariableData: varData"))
+                      "getTypeFreeVariableVariableData: varData"))
      | _ -> (Errormsg.impossible Errormsg.none 
-                                 "getTypeFreeVariableVariableData: bound variable"))
- |_ -> (Errormsg.impossible Errormsg.none 
-                            "getTypeFreeVariableVariableData: not a type variable")
+               "getTypeFreeVariableVariableData: bound variable"))
+  |_ -> (Errormsg.impossible Errormsg.none 
+          "getTypeFreeVariableVariableData: not a type variable")
 
 let getTypeFreeVariableFirstRef = function
-  TypeVarType(r) ->
-	(match !r with
-	  FreeTypeVar(_, firstRef) -> firstRef
-	|  _ -> (Errormsg.impossible Errormsg.none 
-                                     "getTypeFreeVariableFirstRef: bound variable"))
+  | TypeVarType(r) ->
+      (match r with
+         | FreeTypeVar(_, firstRef) -> firstRef
+         |  _ -> (Errormsg.impossible Errormsg.none 
+                    "getTypeFreeVariableFirstRef: bound variable"))
   |_ -> (Errormsg.impossible Errormsg.none 
-                             "getTypeFreeVariableFirstRef: not a type variable")
+           "getTypeFreeVariableFirstRef: not a type variable")
 
 let getTypeFreeVariableFirst var = 
   let r = !(getTypeFreeVariableFirstRef var) in
@@ -608,54 +608,54 @@ let getTypeFreeVariableFirst var =
     Option.get r
   else
     Errormsg.impossible Errormsg.none 
-                        "Absyn.getTypeFreeVariableFirst: invalid variable"
+      "Absyn.getTypeFreeVariableFirst: invalid variable"
 
 let setTypeFreeVariableFirst var first = 
-                     (getTypeFreeVariableFirstRef var) := Some(first)
+  (getTypeFreeVariableFirstRef var) := Some(first)
 
 let isTypeFreeVariable = function
-  TypeVarType(r) ->
-    (match !r with
-      FreeTypeVar(_) -> true
-    | _ -> false)
+  | TypeVarType(FreeTypeVar(_)) -> true
   | _ -> false
 
-let makeTypeVariable () = TypeVarType(ref (BindableTypeVar(ref None)))
+let makeTypeVariable () = TypeVarType(BindableTypeVar(ref None))
 let makeNewTypeVariable varData =
-  TypeVarType (ref (FreeTypeVar(ref (Some varData), ref None)))
+  TypeVarType (FreeTypeVar(ref (Some varData), ref None))
 
 (* type skeleton variable            *)
 let getSkeletonVariableIndex = function
-  SkeletonVarType(i) -> !i
-| _ -> (Errormsg.impossible Errormsg.none "getSkeletonVariableIndex: invalid type")
+  | SkeletonVarType(i) -> !i
+  | _ -> (Errormsg.impossible Errormsg.none 
+            "getSkeletonVariableIndex: invalid type")
 
 let getSkeletonVariableIndexRef = function
-  SkeletonVarType(i) -> i
-| _ -> (Errormsg.impossible Errormsg.none "getSkeletonVariableIndex: invalid type")
+  | SkeletonVarType(i) -> i
+  | _ -> (Errormsg.impossible Errormsg.none 
+            "getSkeletonVariableIndex: invalid type")
 
 let isSkeletonVariableType = function
-  SkeletonVarType(_) -> true
-| _ -> false
+    SkeletonVarType(_) -> true
+  | _ -> false
 
 
-(* make type environment             *)
+(* make type environment  *)
 let rec makeTypeEnvironment i =
-  match i with
-      0 -> []
-    | i' ->
-        if i' < 0 then
-          Errormsg.impossible Errormsg.none 
-                              "Absyn.makeTypeEnvironment: invalid environment size"
-        else
-          (makeTypeVariable ()) :: (makeTypeEnvironment (i - 1))
+  if i < 0 then
+    Errormsg.impossible Errormsg.none 
+      "Absyn.makeTypeEnvironment: invalid environment size"
+  else 
+    let rec aux i = match i with
+      |  0 -> []
+      | i' -> (makeTypeVariable ()) :: (makeTypeEnvironment (i - 1))
+    in 
+      aux i
 
 let getApplicationTypeHead = function
-    ApplicationType(k,_) -> k
+    ApplicationType(k, _) -> k
   | _ -> Errormsg.impossible Errormsg.none 
                              "Absyn.getApplicationTypeHead: invalid type"
 
 let getApplicationTypeArgs = function
-    ApplicationType(_,args) -> args
+    ApplicationType(_, args) -> args
   | _ -> Errormsg.impossible Errormsg.none 
                              "Absyn.getApplicationTypeArgs: invalid type"
 
@@ -698,17 +698,22 @@ let string_of_skeleton_ast (Skeleton(ty,_,_)) =
   string_of_type_ast ty
 
 (*************************************************************************)
+(* atypeabbrev                                                           *)
+(*************************************************************************)
+let getTypeAbbrevPos (TypeAbbrev(_,_,_,p)) = p
+
+(*************************************************************************)
 (*  afixity:                                                             *)
 (*************************************************************************)
 (* * Convert an absyn fixity to a string.  Used only in print *)
 let string_of_fixity = function
-  Infix -> "Infix"
-| Infixl -> "Infixl"
-| Infixr -> "Infixr"
-| Prefix -> "Prefix"
-| Prefixr -> "Prefixr"
-| Postfix -> "Postfix"
-| Postfixl -> "Postfixl"
+  Infix -> "infix"
+| Infixl -> "infixl"
+| Infixr -> "infixr"
+| Prefix -> "prefix"
+| Prefixr -> "prefixr"
+| Postfix -> "postfix"
+| Postfixl -> "postfixl"
 | NoFixity -> "No Fixity"
 
 let isFixityPrefix = function
@@ -872,7 +877,7 @@ let getConstantTypeEnvSize search constant =
     let skel = (getConstantSkeleton constant) in
     if (Option.isSome skel) then
       let skel = Option.get skel in
-      let () = findMaxIndex (getSkeletonType skel) in
+      let _ = findMaxIndex (getSkeletonType skel) in
       (!max + 1)
     else
       (Errormsg.impossible Errormsg.none
@@ -969,9 +974,9 @@ let makeLocalConstant symbol fixity prec tyEnvSize tySkel index =
 		   ref None, ref None, ref None, ref LocalConstant, ref index, 
 		   Errormsg.none)
 
-let makeAnonymousConstant i =
+let makeAnonymousConstant i skel =
   Constant(Symbol.generate (), ref NoFixity, ref (-1), ref true, ref false,
-    ref false, ref true, ref false, ref false, ref None, ref i,
+    ref false, ref true, ref false, ref false, ref (Some(skel)), ref i,
     ref (Some(Array.make i true)), ref (Some(Array.make i true)),
     ref None, ref AnonymousConstant, ref 0, Errormsg.none)
 
@@ -984,7 +989,7 @@ let makeHiddenConstant skel envsize =
 let makeConstantTerm c env pos =
   (*let esize = getConstantTypeEnvSize false c in
   if esize = (List.length env) then *)
-    ConstantTerm(c, env, false, pos)
+    ConstantTerm(c, env, pos)
   (* else
     Errormsg.impossible (getConstantPos c)
       "makeConstantTerm: constant environment size and given environment don't match" *)
@@ -996,7 +1001,7 @@ let getTypeSymbolRawType s =
   let get' = function
       Some(t) -> t
     | _ -> Errormsg.impossible Errormsg.none 
-                               "getTypeSymbolRawType: type symbol has no type"
+             "getTypeSymbolRawType: type symbol has no type"
   in
   
   match s with
@@ -1009,7 +1014,8 @@ let getTypeSymbolSymbol = function
   | AnonymousImplicitVar(s,_,_,_) -> s
   | BoundVar(s,_,_,_) -> s
 
-let getTypeSymbolName s = (Symbol.name (getTypeSymbolSymbol s))
+let getTypeSymbolName s = 
+  Symbol.name (getTypeSymbolSymbol s)
 
 let getTypeSymbolHiddenConstantRef tsym =
   match tsym with
@@ -1020,9 +1026,8 @@ let getTypeSymbolHiddenConstantRef tsym =
 let getTypeSymbolHiddenConstant tsym =
   let get' = function
       Some(c) -> c
-    | None -> Errormsg.impossible 
-                   Errormsg.none 
-                   "Absyn.getTypeSymbolHiddenConstant: type symbol has no constant"
+    | None -> Errormsg.impossible Errormsg.none 
+                "Absyn.getTypeSymbolHiddenConstant: type symbol has no constant"
   in  
   get' !(getTypeSymbolHiddenConstantRef tsym)
 
@@ -1143,7 +1148,7 @@ type atermcontext =
 * Determins whether or not to output parentheses based on the current
 * operator precedence and fixity.
 **********************************************************************)
-let rec needsParens opfix opprec context fix prec =
+let needsParens opfix opprec context fix prec =
   let checkLE () = opprec <= prec in
   let checkL () = opprec < prec in
   let checkLeft () =
@@ -1185,22 +1190,72 @@ let rec needsParens opfix opprec context fix prec =
       | _ -> (Errormsg.impossible Errormsg.none "Absyn.needsParens: invalid fixity"))
   | WholeTermContext -> false
 
-(* abstraction term *)
+let getTermPos = function
+  IntTerm(_,p) -> p
+| StringTerm(_,p) -> p
+| RealTerm(_,p) -> p
+| AbstractionTerm(_,p) -> p
+| ConstantTerm(_,_,p) -> p
+| FreeVarTerm(_,p) -> p
+| BoundVarTerm(_,p) -> p
+| ApplicationTerm(_,p) -> p
+| ErrorTerm -> Errormsg.none
+
 let getTermAbstractionVar = function
-  AbstractionTerm(NestedAbstraction(v,_),_,_) -> v
+  AbstractionTerm(NestedAbstraction(v,_),_) -> v
 | _ -> Errormsg.impossible Errormsg.none "Absyn.getTermAbstractionVar: invalid term"
 
 let getTermAbstractionVars = function
-  AbstractionTerm(UNestedAbstraction(vars,_,_),_,_) -> vars
+  AbstractionTerm(UNestedAbstraction(vars,_,_),_) -> vars
 | _ -> Errormsg.impossible Errormsg.none "Absyn.getTermAbstractionVars: invalid term"
 
+(* We also perform here renaming to always output meaningful terms *)
+let getTermAllAbstractionVars bindings t =
+  let setTypeSymbolSymbol typsym new_sym = 
+    match typsym with
+      |  ImplicitVar(s,c,b,a) -> ImplicitVar(new_sym,c,b,a)
+      | AnonymousImplicitVar(s,c,b,a) -> AnonymousImplicitVar(new_sym,c,b,a)
+      | BoundVar(s,c,b,a) -> BoundVar(new_sym,c,b,a)
+  in
+  (* We count the number of similar bound variables 
+   * to perform alpha renaming. This is an inefficient way but we only
+   * do that to output terms in error messages during the compilation. 
+   *
+   * We count occurences above the abstraction (the ones in bindings) 
+   * and the ones occuring the current abstraction (remember that a binder
+   * binds several variables). To handle this case, we add treated variables
+   * in bdgs while recurring *)
+  let rec aux bdgs avars = 
+    match avars with 
+      | [] -> []
+      | s::q -> 
+        let sym = getTypeSymbolSymbol s in
+        let nb_occ = 
+          List.length 
+            (List.find_all 
+              (fun x -> (getTypeSymbolName x) = (getTypeSymbolName s)) 
+              bdgs) in
+          if nb_occ > 0 then 
+            let new_name = (Symbol.name sym) ^ (string_of_int nb_occ) in
+            let new_s = setTypeSymbolSymbol s (Symbol.symbol (new_name)) in
+              (* The order in bindings matter for bound variables but not
+               * for the local use we make of it here; so we can just cons s *)
+              new_s::(aux (s::bdgs) q) 
+          else
+            s:: (aux (s::bdgs) q)
+  in match t with 
+  | AbstractionTerm(NestedAbstraction(_,_),_) -> aux bindings [getTermAbstractionVar t]
+  | AbstractionTerm(UNestedAbstraction(vars,_,_),_) -> aux bindings (getTermAbstractionVars t)
+  | _ -> Errormsg.impossible (getTermPos t) 
+           "Absyn.getTermAbstractionVars': term not a (valid) abstraction"
+
 let getTermAbstractionBody = function
-  AbstractionTerm(NestedAbstraction(_,b),_,_) -> b
-| AbstractionTerm(UNestedAbstraction(_,_,b),_,_) -> b
+  AbstractionTerm(NestedAbstraction(_,b),_) -> b
+| AbstractionTerm(UNestedAbstraction(_,_,b),_) -> b
 | _ -> Errormsg.impossible Errormsg.none "Absyn.getTermAbstractionBody: invalid term"
 
 let getTermAbstractionNumberOfLambda = function
-  AbstractionTerm(UNestedAbstraction(_,n,_),_,_) -> n
+  AbstractionTerm(UNestedAbstraction(_,n,_),_) -> n
 | _ -> Errormsg.impossible Errormsg.none 
          "Absyn.getTermAbstractionNumberOfLambda: invalid term"
 
@@ -1212,87 +1267,100 @@ let getTermAbstractionNumberOfLambda = function
 ********************************************************************)
 let rec getTermApplicationHeadAndArguments term =  
   match term with
-    ApplicationTerm(FirstOrderApplication(t', args, _), _, pos) ->
+    ApplicationTerm(FirstOrderApplication(t', args, _), pos) ->
       let (head, args') = getTermApplicationHeadAndArguments t' in
       (head, args' @ args)
-  | ApplicationTerm(CurriedApplication(l,r),_,pos) ->
+  | ApplicationTerm(CurriedApplication(l,r), pos) ->
       let (head, args') = getTermApplicationHeadAndArguments l in
       (head, args' @ [r])
   | _ -> (term, [])
 
-let rec getTermApplicationHead t =
-  let (f,_) = getTermApplicationHeadAndArguments t in
-  f
+let getTermApplicationHead t =
+  let (f, _) = getTermApplicationHeadAndArguments t in
+    f
 
-let rec getTermApplicationArguments t =
-  let (_,args) = getTermApplicationHeadAndArguments t in
-  args
+let getTermApplicationArguments t =
+  let (_, args) = getTermApplicationHeadAndArguments t in
+    args
  
 let getTermApplicationArity t = 
   let (_,args) = getTermApplicationHeadAndArguments t in
-  List.length args
+    List.length args
 
 (* Converts an absyn term to a string representation. *)
 let rec string_of_term_ast term =
   match term with
-    IntTerm(i,_,_) -> string_of_int i
-  | RealTerm(r,_,_) -> string_of_float r
-  | StringTerm(StringLiteral(s),_,_) -> "\"" ^ (s) ^ "\""
-  | StringTerm(StringData(s,_,_),_,_) -> "\"" ^ (s) ^ "\""
-  | ConstantTerm(c,tl,_,_) -> 
-      let tlstr = "[" ^ (String.concat "," (List.map string_of_type_ast tl)) ^ "]" in
-      if (getConstantType c = HiddenConstant) then
-	"hc: " ^ (getConstantPrintName c) ^ tlstr
-      else (getConstantPrintName c) ^ tlstr
-  | FreeVarTerm(NamedFreeVar(s),_,_) -> 
-      "fv: " ^ 
-      (Symbol.name (getTypeSymbolSymbol s))
-  | BoundVarTerm(NamedBoundVar(s),_,_) ->
-      "bv: " ^
-      (Symbol.name (getTypeSymbolSymbol s))
-  | BoundVarTerm(DBIndex(i),_,_) -> "#" ^ string_of_int i
-  | AbstractionTerm(NestedAbstraction(_),_,_) ->
+    IntTerm(i,_) -> string_of_int i
+  | RealTerm(r,_) -> string_of_float r
+  | StringTerm(StringLiteral(s),_) -> "\"" ^ (String.escaped s) ^ "\""
+  | StringTerm(StringData(s,_,_),_) -> "\"" ^ (String.escaped s) ^ "\""
+  | ConstantTerm(c,tl,_) -> 
+      let tlstr = 
+        "[" ^ (String.concat "," (List.map string_of_type_ast tl)) ^ "]" in
+        if (getConstantType c = HiddenConstant) then
+          "hc: " ^ (getConstantPrintName c) ^ tlstr
+        else (getConstantPrintName c) ^ tlstr
+  | FreeVarTerm(NamedFreeVar(s),_) -> 
+      "fv: " ^ (Symbol.name (getTypeSymbolSymbol s))
+  | BoundVarTerm(NamedBoundVar(s),_) ->
+      "bv: " ^ (Symbol.name (getTypeSymbolSymbol s))
+  | BoundVarTerm(DBIndex(i),_) -> "#" ^ string_of_int i
+  | AbstractionTerm(NestedAbstraction(_),_) ->
       let aterm = getTermAbstractionBody term in
       let avar = getTermAbstractionVar term in
-      (getTypeSymbolName avar) ^ "\\" ^ (string_of_term_ast aterm)
-  | AbstractionTerm(UNestedAbstraction(_),_,_) ->
+        (getTypeSymbolName avar) ^ "\\" ^ (string_of_term_ast aterm)
+  | AbstractionTerm(UNestedAbstraction(_),_) ->
       let aterm = getTermAbstractionBody term in
       let avars = getTermAbstractionVars term in
-      (String.concat " " (List.map (getTypeSymbolName) avars)) 
-                                ^ "\\" ^ (string_of_term_ast aterm)
-  | ApplicationTerm(FirstOrderApplication(h,args,_),_,_) ->
-      let rec getargs = function
-          [] -> ""
-        | a::aa -> " " ^ (string_of_term_ast a) ^ (getargs aa)
+        "(" ^ (String.concat " " (List.map (getTypeSymbolName) avars)) 
+        ^ ")\\ " ^ (string_of_term_ast aterm)
+  | ApplicationTerm(FirstOrderApplication(h,args,_),_) ->
+      let s =
+        if args = [] then
+          ""
+        else
+          String.concat " " (List.map string_of_term_ast args)
       in
-      
-      "(" ^ (string_of_term_ast h) ^ (getargs args) ^ ")"
-  | ApplicationTerm(CurriedApplication(l,r),_,_) ->
+      "((" ^ (string_of_term_ast h) ^ s ^ "))"
+  | ApplicationTerm(CurriedApplication(l,r),_) ->
       "(" ^ (string_of_term_ast l) ^ " " ^ (string_of_term_ast r) ^ ")"
-  | _ -> "#ERROR#"
+  | _ -> "<error>"
   
 
 and string_of_term term =
-  let rec string_of_prefixterm op opfix args context fix prec bindings =
+  let tabs t =
+    if t = 0 then ""
+    else
+      "\n" ^ (String.make (2 * t) ' ')
+  in
+
+  let rec string_of_prefixterm op opfix args context fix prec bindings tab =
     let opprec = getConstantPrec op in
     let paren = needsParens opfix opprec context fix prec in
-    let result = (getConstantPrintName op) 
-      ^ " " 
-      ^ (string_of_term' (List.hd args) RightTermContext opfix opprec bindings) in
+    let result = (getConstantPrintName op) ^ " " ^
+      (string_of_term' 
+         (List.hd args) RightTermContext opfix opprec bindings tab)
+    in
 
     if paren then
       "(" ^ result ^ ")"
     else
       result
   
-  and string_of_infixterm op opfix args context fix prec bindings =
+  and string_of_infixterm op opfix args context fix prec bindings tab =
     let opprec = getConstantPrec op in
     let paren = needsParens opfix opprec context fix prec in
+    let name = getConstantPrintName op in
+    let (sep1, sep2, tab') =
+      if List.mem name [","; ";"] then ("", tabs tab, tab)
+      else if List.mem name ["=>"; ":-"] then (" ", tabs (tab + 1), tab + 1)
+      else (" ", " ", tab)
+    in
     let result =
-      (string_of_term' (List.hd args) LeftTermContext opfix opprec bindings) ^ 
-        " " ^ (getConstantPrintName op) ^ " " ^
+      (string_of_term' (List.hd args) LeftTermContext opfix opprec bindings tab) ^ 
+        sep1 ^ name ^ sep2 ^
         (string_of_term'
-          (List.hd (List.tl args)) RightTermContext opfix opprec bindings)
+          (List.hd (List.tl args)) RightTermContext opfix opprec bindings tab')
     in
     
     if paren then
@@ -1300,93 +1368,93 @@ and string_of_term term =
     else
       result
   
-  and string_of_postfixterm op opfix args context fix prec bindings =
+  and string_of_postfixterm op opfix args context fix prec bindings tab =
     let opprec = getConstantPrec op in
     let paren = needsParens opfix opprec context fix prec in
     let result =
-      (string_of_term' (List.hd args) LeftTermContext opfix opprec bindings) ^
+      (string_of_term' (List.hd args) LeftTermContext opfix opprec bindings tab) ^
         " " ^ (getConstantPrintName op) in
     if paren then
       "(" ^ result ^ ")"
     else
       result
   
-  and string_of_app term context fix prec bindings =
+  and string_of_app term context fix prec bindings tab =
     let rec string_of_args args =
       match args with
           [] -> ""
-        | a::[] -> (string_of_term' a RightTermContext appFixity appPrec bindings)
-        | a::aa -> (string_of_term' a RightTermContext appFixity appPrec bindings) 
+        | a::[] -> (string_of_term' a RightTermContext appFixity appPrec bindings tab)
+        | a::aa -> (string_of_term' a RightTermContext appFixity appPrec bindings tab) 
                              ^ " " ^ (string_of_args aa)
     in
     
     match term with
-      ApplicationTerm(FirstOrderApplication(f, args, numargs),_,_) ->
+      ApplicationTerm(FirstOrderApplication(f, args, numargs),_) ->
         let string_of_head h =
           (match h with
-            ConstantTerm(c,_,_,_) ->
+            ConstantTerm(c,_,_) ->
               (match (getConstantFixity c) with
                   Prefix -> 
                     if numargs = 1 then
-                      (string_of_prefixterm c Prefix args context fix prec bindings,
+                      (string_of_prefixterm c Prefix args context fix prec bindings tab,
                       [])
                     else
                       (string_of_prefixterm c Prefix args 
-                                            LeftTermContext appFixity appPrec bindings,
+                                            LeftTermContext appFixity appPrec bindings tab,
                       List.tl args)
                 | Prefixr ->
                     if numargs = 1 then
-                      (string_of_prefixterm c Prefix args context fix prec bindings,
+                      (string_of_prefixterm c Prefix args context fix prec bindings tab,
                       [])
                     else
                       (string_of_prefixterm c Prefix 
-                                            args LeftTermContext appFixity appPrec bindings,
+                                            args LeftTermContext appFixity appPrec bindings tab,
                       List.tl args)
                 | Infix ->
                     if numargs = 2 then
-                      (string_of_infixterm c Infix args context fix prec bindings,
+                      (string_of_infixterm c Infix args context fix prec bindings tab,
                       [])
                     else
                       (string_of_infixterm c Infix 
-                                           args LeftTermContext appFixity appPrec bindings,
+                                           args LeftTermContext appFixity appPrec bindings tab,
                       List.tl (List.tl args))
                 | Infixr ->
                     if numargs = 2 then
-                      (string_of_infixterm c Infixr args context fix prec bindings,
+                      (string_of_infixterm c Infixr args context fix prec bindings tab,
                       [])
                     else
                       (string_of_infixterm c Infixr 
-                                             args LeftTermContext appFixity appPrec bindings,
+                                             args LeftTermContext appFixity appPrec bindings tab,
                       List.tl (List.tl args))
                 | Infixl ->
                     if numargs = 2 then
-                      (string_of_infixterm c Infixl args context fix prec bindings,
+                      (string_of_infixterm c Infixl args context fix prec bindings tab,
                       [])
                     else
                       (string_of_infixterm c Infixl 
-                                           args LeftTermContext appFixity appPrec bindings,
+                                           args LeftTermContext appFixity appPrec bindings tab,
                       List.tl (List.tl args))
                 | Postfix ->
                     if numargs = 1 then
-                      (string_of_postfixterm c Postfix args context fix prec bindings,
+                      (string_of_postfixterm c Postfix args context fix prec bindings tab,
                       [])
                     else
                       (string_of_postfixterm c Postfix 
-                                             args LeftTermContext appFixity appPrec  bindings,
+                                             args LeftTermContext appFixity appPrec bindings tab,
                       List.tl args)
                 | Postfixl ->
                     if numargs = 1 then
-                      (string_of_postfixterm c Postfixl args context fix prec bindings,
+                      (string_of_postfixterm c Postfixl args context fix prec bindings tab,
                       [])
                     else
                       (string_of_postfixterm c Postfixl 
-                                             args LeftTermContext appFixity appPrec  bindings,
+                                             args LeftTermContext appFixity appPrec bindings tab,
                       List.tl args)
                 | NoFixity ->
-                    (string_of_term' f LeftTermContext appFixity appPrec bindings,
+                    (string_of_term' f LeftTermContext appFixity appPrec bindings tab,
                     args))
             | _ ->
-              (string_of_term' f LeftTermContext appFixity appPrec bindings,
+              (string_of_term' f LeftTermContext appFixity appPrec bindings tab,
               args))
           in
         
@@ -1399,68 +1467,53 @@ and string_of_term term =
           (head ^ " " ^ (string_of_args args'))
         else
           head
-    | ApplicationTerm(CurriedApplication(h, r),b,p) ->
+    | ApplicationTerm(CurriedApplication(h, r),p) ->
         let (head,args) = getTermApplicationHeadAndArguments term in
         let term' = 
-          ApplicationTerm(FirstOrderApplication(head, args, List.length args), b,p) in
-        string_of_app term' context fix prec bindings
+          ApplicationTerm(FirstOrderApplication(head, args, List.length args), p) in
+        string_of_app term' context fix prec bindings tab
     | _ -> Errormsg.impossible (getTermPos term) "string_of_app: term not an application"
 
-  and string_of_abstraction term context fix prec bindings =
-    let getVars t = match t with
-        AbstractionTerm(NestedAbstraction(_),_,_) -> [getTermAbstractionVar t]
-      | AbstractionTerm(UNestedAbstraction(_),_,_) -> getTermAbstractionVars t
-      | _ -> Errormsg.impossible (getTermPos t) "string_of_abstraction: term not an abstraction"
-    in
+  and string_of_abstraction term context fix prec bindings tab =
     let paren = needsParens lamFixity lamPrec context fix prec in
     let aterm = getTermAbstractionBody term in
-    let avars = getVars term in
+    let avars = getTermAllAbstractionVars bindings term in
     let lambdas = (String.concat "\\ " (List.map getTypeSymbolName avars)) ^ "\\ " in
     let bindings' = List.rev_append avars bindings in
-    let result = lambdas ^ (string_of_term' aterm RightTermContext lamFixity lamPrec bindings') in
+    let result = lambdas ^ (string_of_term' aterm RightTermContext lamFixity lamPrec bindings' tab) in
     if paren then
       "(" ^ result  ^ ")"
     else
       result
   
-  and string_of_term' term context fix prec bindings =
+  and string_of_term' term context fix prec bindings tab =
     match term with
-      IntTerm(i,_,_) -> (string_of_int i)
-    | RealTerm(r,_,_) -> (string_of_float r)
-    | StringTerm(StringLiteral(s),_,_) -> "\"" ^ s ^ "\""
-    | StringTerm(StringData(s,_,_),_,_) -> "\"" ^ s ^ "\""
-    | ConstantTerm(c,_,_,_) -> (getConstantPrintName c)
-    | FreeVarTerm(NamedFreeVar(s),_,_) -> Symbol.name (getTypeSymbolSymbol s)
-    | BoundVarTerm(NamedBoundVar(s),_,_) -> Symbol.name (getTypeSymbolSymbol s)
-    | BoundVarTerm(DBIndex(i),_,_) -> getTypeSymbolName (List.nth bindings (i - 1))
-    | ApplicationTerm(_) -> string_of_app term context fix prec bindings
-    | AbstractionTerm(_) -> string_of_abstraction term context fix prec bindings
+      IntTerm(i,_) -> (string_of_int i)
+    | RealTerm(r,_) -> (string_of_float r)
+    | StringTerm(StringLiteral(s),_) -> "\"" ^ (String.escaped s) ^ "\""
+    | StringTerm(StringData(s,_,_),_) -> "\"" ^ (String.escaped s) ^ "\""
+    | ConstantTerm(c,_,_) -> (getConstantPrintName c)
+    | FreeVarTerm(NamedFreeVar(s),_) -> Symbol.name (getTypeSymbolSymbol s)
+    | BoundVarTerm(NamedBoundVar(s),_) -> 
+        Symbol.name (getTypeSymbolSymbol s)
+    | BoundVarTerm(DBIndex(i),_) -> 
+        getTypeSymbolName (List.nth bindings (i - 1)) 
+    | ApplicationTerm(_) -> string_of_app term context fix prec bindings tab
+    | AbstractionTerm(_) -> string_of_abstraction term context fix prec bindings tab
     | ErrorTerm -> "#error#"
     | _ -> Errormsg.impossible (getTermPos term) 
                                "string_of_term': unimplemented for this term"
   in
-  
-  (string_of_term' term WholeTermContext NoFixity 0 [])
-
-and getTermPos = function
-  IntTerm(_,_,p) -> p
-| StringTerm(_,_,p) -> p
-| RealTerm(_,_,p) -> p
-| AbstractionTerm(_,_,p) -> p
-| ConstantTerm(_,_,_,p) -> p
-| FreeVarTerm(_,_,p) -> p
-| BoundVarTerm(_,_,p) -> p
-| ApplicationTerm(_,_,p) -> p
-| ErrorTerm -> Errormsg.none
+    string_of_term' term WholeTermContext NoFixity 0 [] 0
 
 (* free variable *)
 let getTermFreeVariableVariableData = function
-  FreeVarTerm(FreeVar(varData, _),_,_) -> varData
+  FreeVarTerm(FreeVar(varData, _),_) -> varData
 | _ -> Errormsg.impossible Errormsg.none 
         "getTermFreeVariableVariableData: invalid term"
 
 let getTermFreeVariableFirst = function
-  FreeVarTerm(FreeVar(_, first),_,_) ->
+  FreeVarTerm(FreeVar(_, first),_) ->
     if Option.isSome !first then
       Option.get (!first)
     else
@@ -1471,12 +1524,12 @@ let getTermFreeVariableFirst = function
 
 let setTermFreeVariableFirst var f = 
   match var with
-	FreeVarTerm(FreeVar(_, first),_,_) -> first := Some(f)
+	FreeVarTerm(FreeVar(_, first),_) -> first := Some(f)
   | _ -> Errormsg.impossible Errormsg.none 
         "getTermFreeVariableFirst: invalid term"	
 
 let getTermFreeVariableTypeSymbol = function
-  FreeVarTerm(NamedFreeVar(tySymbol),_, _) -> tySymbol
+  FreeVarTerm(NamedFreeVar(tySymbol), _) -> tySymbol
 | _ -> Errormsg.impossible Errormsg.none
 	    "getTernFreeVariableTypeSymbol: invalid term"
 
@@ -1487,32 +1540,32 @@ let isTermFreeVariable = function
 
 (* make a name based free variable *)
 let makeFreeVarTerm tsym pos =
-  FreeVarTerm(NamedFreeVar(tsym), false, pos)
+  FreeVarTerm(NamedFreeVar(tsym), pos)
 
 let getTermBoundVariableDBIndex = function
-  BoundVarTerm(DBIndex(ind),_,_) -> ind
+  BoundVarTerm(DBIndex(ind),_) -> ind
 | _ -> Errormsg.impossible Errormsg.none 
         "getTermBoundVariableDBIndex: invalid term"
 
 (* make a name based bound variable *)
 let makeBoundVarTerm tsym pos =
-  BoundVarTerm(NamedBoundVar(tsym), false, pos)
+  BoundVarTerm(NamedBoundVar(tsym), pos)
 
 (* constant *)
 let getTermConstant = function
-  ConstantTerm(c,_,_,_) -> c
+  ConstantTerm(c,_,_) -> c
 | t -> Errormsg.impossible Errormsg.none 
                            ("Absyn.getTermConstant: invalid term: " 
                                   ^ (string_of_term t))
 
 let getTermMoleculeEnv = function
-  ConstantTerm(_,te,_,_) -> te
+  ConstantTerm(_,te,_) -> te
 | t -> Errormsg.impossible Errormsg.none 
                            ("Absyn.getTermMoleculeEnv: invalid term" 
                                   ^ (string_of_term t))
 
 let getTermConstantTypeEnv = function
-  ConstantTerm(_,te,_,_) -> te
+  ConstantTerm(_,te,_) -> te
 | _ -> Errormsg.impossible Errormsg.none 
          "getTermConstantTypeEnv: invalid term"  
 
@@ -1552,9 +1605,9 @@ let getStringInfoString = function
 let rec sameTermStructure t1 t2 =
   let rec collectUnNestedAbst t tsyms =
 	match t with
-	  AbstractionTerm(NestedAbstraction(tsym, body),_,_) ->
+	  AbstractionTerm(NestedAbstraction(tsym, body),_) ->
 	    collectUnNestedAbst body (tsym :: tsyms)
-	| AbstractionTerm(UNestedAbstraction(tsyms', _, body),_,_) ->
+	| AbstractionTerm(UNestedAbstraction(tsyms', _, body),_) ->
 		(body, (List.rev tsyms) @ tsyms')
 	| _ -> (t, List.rev tsyms)
   in
@@ -1569,30 +1622,33 @@ let rec sameTermStructure t1 t2 =
   in
 
   match (t1, t2) with
-	(IntTerm(i, _, _), IntTerm(j, _, _)) -> if (i = j) then true else false
-  | (RealTerm(r, _, _), RealTerm(r', _, _)) -> if (r = r') then true else false
-  | (StringTerm(s,_,_), StringTerm(s',_,_)) ->
+	(IntTerm(i, _), IntTerm(j, _)) -> if (i = j) then true else false
+  | (RealTerm(r, _), RealTerm(r', _)) -> if (r = r') then true else false
+  | (StringTerm(s,_), StringTerm(s',_)) ->
 	  if (getStringInfoString s = getStringInfoString s') then true else false
-  | (ConstantTerm(c,_,_,_), ConstantTerm(c',_,_,_)) ->
+  | (ConstantTerm(c,_,_), ConstantTerm(c',_,_)) ->
 	  if (c == c') then true else false
-  | (FreeVarTerm(NamedFreeVar(tsym),_,_), FreeVarTerm(NamedFreeVar(tsym'),_,_)) ->
+  | (FreeVarTerm(NamedFreeVar(tsym),_), FreeVarTerm(NamedFreeVar(tsym'),_)) ->
 	  if (tsym == tsym') then true else false
-  | (BoundVarTerm(NamedBoundVar(tsym),_,_), BoundVarTerm(NamedBoundVar(tsym'),_,_)) ->
+  | (BoundVarTerm(NamedBoundVar(tsym),_), 
+     BoundVarTerm(NamedBoundVar(tsym'),_)) ->
 	  if (tsym == tsym') then true else false
-  | (AbstractionTerm(UNestedAbstraction(tsyms, nabs, body),_,_), 
-	 AbstractionTerm(UNestedAbstraction(tsyms', nabs', body'),_,_)) ->
-	   ((nabs = nabs') && (sameTSyms tsyms tsyms') && (sameTermStructure body body'))
-  | (AbstractionTerm(UNestedAbstraction(tsyms, nabs, body),_,_),
-	 AbstractionTerm(NestedAbstraction(tsym, body'),_,_)) ->
+  | (AbstractionTerm(UNestedAbstraction(tsyms, nabs, body),_), 
+	 AbstractionTerm(UNestedAbstraction(tsyms', nabs', body'),_)) ->
+      ((nabs = nabs') && 
+       (sameTSyms tsyms tsyms') && (sameTermStructure body body'))
+  | (AbstractionTerm(UNestedAbstraction(tsyms, nabs, body),_),
+	 AbstractionTerm(NestedAbstraction(tsym, body'),_)) ->
 	   let (body'', tsyms'') = collectUnNestedAbst t2 [] in
 	   ((sameTSyms tsyms tsyms'') && (sameTermStructure body body'))
-  | (AbstractionTerm(NestedAbstraction(tsym, body'),_,_),
-	 AbstractionTerm(UNestedAbstraction(tsyms, nabs, body),_,_)) ->
+  | (AbstractionTerm(NestedAbstraction(tsym, body'),_),
+	 AbstractionTerm(UNestedAbstraction(tsyms, nabs, body),_)) ->
 	   let (body'', tsyms'') = collectUnNestedAbst t1 [] in
 	   ((sameTSyms tsyms tsyms'') && (sameTermStructure body body'))
-  | (ApplicationTerm(FirstOrderApplication(h, args, arity),_,_), 
-	 ApplicationTerm(FirstOrderApplication(h', args', arity'),_,_)) ->
-	   (arity = arity') && (sameTermStructure h h') && (sameTermStructureList args args')
+  | (ApplicationTerm(FirstOrderApplication(h, args, arity),_), 
+	 ApplicationTerm(FirstOrderApplication(h', args', arity'),_)) ->
+      (arity = arity') && 
+      (sameTermStructure h h') && (sameTermStructureList args args')
   | _ -> 
 	  false
 
@@ -1803,44 +1859,63 @@ let getGoalEnvAssocNthEnvSize gespList n =
 (*  amodule:                                                             *)
 (*************************************************************************)
 let getModuleName = function
-  Module(name,_,_,_,_,_,_,_,_,_,_,_,_,_,_) -> name
-| Signature(_) -> Errormsg.impossible Errormsg.none "getModuleName: not a module"
-| ErrorModule -> Errormsg.impossible Errormsg.none "getModuleName: invalid module"
+    Module(name,_,_,_,_,_,_,_,_,_,_,_,_,_,_) -> name
+  | Signature(_) -> Errormsg.impossible Errormsg.none 
+                      "getModuleName: not a module"
+  | ErrorModule -> Errormsg.impossible Errormsg.none 
+                     "getModuleName: invalid module"
+
+let setModuleName md name = match md with
+    Module(_,a,b,c,d,e,f,g,h,i,j,k,l,m,n) -> 
+      Module(name,a,b,c,d,e,f,g,h,i,j,k,l,m,n)
+  | Signature(_) -> Errormsg.impossible Errormsg.none 
+                      "getModuleName: not a module"
+  | ErrorModule -> Errormsg.impossible Errormsg.none 
+                     "getModuleName: invalid module"
 
 let getModuleGlobalKindsList = function
-  Module(_,_,_,_,_,_,_,gkinds,_,_,_,_,_,_,_) -> gkinds
-| Signature(_) -> Errormsg.impossible Errormsg.none 
-                                      "getModuleGlobalKindList: not a module"
-| ErrorModule -> Errormsg.impossible Errormsg.none 
-                                     "getModuleGlobalKindList: invalid module"
+    Module(_,_,_,_,_,_,_,gkinds,_,_,_,_,_,_,_) -> gkinds
+      | Signature(_) -> Errormsg.impossible Errormsg.none 
+                          "getModuleGlobalKindList: not a module"
+  | ErrorModule -> Errormsg.impossible Errormsg.none 
+                     "getModuleGlobalKindList: invalid module"
 
 let getModuleGlobalConstantsList = function
-  Module(_,_,_,_,_,_,_,_,_,gconsts,_,_,_,_,_) -> gconsts
-| Signature(_) -> Errormsg.impossible Errormsg.none 
-                                      "getModuleGlobalConstList: not a module"
-| ErrorModule -> Errormsg.impossible Errormsg.none 
-                                     "getModuleGlobalConstList: invalid module"
+    Module(_,_,_,_,_,_,_,_,_,gconsts,_,_,_,_,_) -> gconsts
+  | Signature(_) -> Errormsg.impossible Errormsg.none 
+                      "getModuleGlobalConstList: not a module"
+  | ErrorModule -> Errormsg.impossible Errormsg.none 
+                     "getModuleGlobalConstList: invalid module"
+
+let getModuleLocalConstantsList = function
+    Module(_,_,_,_,_,_,_,_,_,_,lconsts,_,_,_,_) -> lconsts
+  | Signature(_) -> Errormsg.impossible 
+                      Errormsg.none 
+                      "getModuleLocalConstantsList: not a module"
+  | ErrorModule -> Errormsg.impossible 
+                     Errormsg.none 
+                     "getModuleLocalConstantsList: invalid module"
 
 let getModuleHiddenConstantsRef = function
-  Module(_,_,_,_,_,_,_,_,_,_,_,hcs,_,_,_) -> hcs
-| Signature(_) -> Errormsg.impossible Errormsg.none 
-                                      "getModuleHiddenConstantsRef: not a module"
-| ErrorModule -> Errormsg.impossible Errormsg.none 
-                                     "getModuleHiddenConstantsRef: invalid module"
+    Module(_,_,_,_,_,_,_,_,_,_,_,hcs,_,_,_) -> hcs
+  | Signature(_) -> Errormsg.impossible Errormsg.none 
+                      "getModuleHiddenConstantsRef: not a module"
+  | ErrorModule -> Errormsg.impossible Errormsg.none 
+                     "getModuleHiddenConstantsRef: invalid module"
 
 let getModuleHiddenConstantSkeletonsRef = function
-  Module(_,_,_,_,_,_,_,_,_,_,_,_,_,hs,_) -> hs
-| Signature(_) -> Errormsg.impossible Errormsg.none 
-                                      "getModuleHiddenConstantSkeletonsRef: not a module"
-| ErrorModule -> Errormsg.impossible Errormsg.none 
-                                     "getModuleHiddenConstantSkeletonsRef: invalid module"
+    Module(_,_,_,_,_,_,_,_,_,_,_,_,_,hs,_) -> hs
+  | Signature(_) -> Errormsg.impossible Errormsg.none 
+                      "getModuleHiddenConstantSkeletonsRef: not a module"
+  | ErrorModule -> Errormsg.impossible Errormsg.none 
+                     "getModuleHiddenConstantSkeletonsRef: invalid module"
 
 let getModuleHiddenConstantSkeletons = function
   Module(_,_,_,_,_,_,_,_,_,_,_,_,_,hs,_) -> !hs
 | Signature(_) -> Errormsg.impossible Errormsg.none 
-                                      "getModuleHiddenConstantSkeletons: not a module"
+                    "getModuleHiddenConstantSkeletons: not a module"
 | ErrorModule -> Errormsg.impossible Errormsg.none 
-                                     "getModuleHiddenConstantSkeletons: invalid module"
+                   "getModuleHiddenConstantSkeletons: invalid module"
 
 let getModuleConstantTable = function
   Module(_,_,_,ctable,_,_,_,_,_,_,_,_,_,_,_) -> !ctable
@@ -1866,35 +1941,34 @@ let getModuleTypeAbbrevTable = function
 let getModuleClausesRef = function
   Module(_,_,_,_,_,_,_,_,_,_,_,_,_,_,c) -> c
 | Signature(_) -> Errormsg.impossible Errormsg.none 
-                                      "getModuleClausesRef: argument is a signature"
+                    "getModuleClausesRef: argument is a signature"
 | ErrorModule -> Errormsg.impossible Errormsg.none 
-                                     "getModuleClausesRef: argument is invalid"
+                   "getModuleClausesRef: argument is invalid"
 
 let getModuleClauses amod = !(getModuleClausesRef amod)
 let setModuleClauses amod cls = (getModuleClausesRef amod) := cls
 
 let getSignatureGlobalKindsList = function
-  Signature(_,kl,_) -> kl
+  Signature(_, kl, _) -> kl
 | Module(_) -> Errormsg.impossible Errormsg.none 
-                                   "getSignatureGlobalKindsList: argument is a module"
+                 "getSignatureGlobalKindsList: argument is a module"
 | ErrorModule -> Errormsg.impossible Errormsg.none 
-                                     "getSignatureGlobalKindsList: argument invalid"
+                   "getSignatureGlobalKindsList: argument invalid"
   
   
 let getSignatureGlobalConstantsList = function
   Signature(_,_,cl) -> cl
-| Module(_) -> Errormsg.impossible 
-                          Errormsg.none 
-                          "getSignatureGlobalConstantsList: argument is a module"
-| ErrorModule -> Errormsg.impossible 
-                          Errormsg.none 
-                          "getSignatureGlobalConstantsList: argument invalid"
+| Module(_) -> Errormsg.impossible Errormsg.none 
+                 "getSignatureGlobalConstantsList: argument is a module"
+| ErrorModule -> Errormsg.impossible Errormsg.none 
+                   "getSignatureGlobalConstantsList: argument invalid"
 
 let getSignatureName = function
   Signature(n,_,_) -> n
 | Module(_) -> Errormsg.impossible Errormsg.none 
-                                   "getSignatureName: argument is a module"
-| ErrorModule -> Errormsg.impossible Errormsg.none "getSignatureName: argument invalid"  
+                 "getSignatureName: argument is a module"
+| ErrorModule -> Errormsg.impossible Errormsg.none 
+                   "getSignatureName: argument invalid"  
 
 (*************************************************************************)
 (*  aclauseinfo:                                                         *)
@@ -1944,232 +2018,3 @@ let makeNewClauseBlock cl closed =
 	  else (ref [cl], ref closed, ref 0, ref None)
   | _ ->  (ref [cl], ref closed, ref 0, ref None)
 
-(**********************************************************************
-*printAbsyn:
-* Prints the absyn representation of a module to the given out_channel.
-**********************************************************************)
-let printAbsyn = fun m out ->
-  (*  Text output functions *)
-  let output = function s -> (output_string out s) in
-  let output_line = function s -> (output_string out (s ^ "\n")) in
-  
-  let printPos = fun p ->
-    (output "Pos(";
-    output (Errormsg.string_of_pos p);
-    output ")")
-  in
-  
-  let rec printTypeVar = function
-    TypeVar(_) -> (output "TypeVar")
-    
-  and printTypeVarInfo = function
-    BindableTypeVar(t) ->
-      (match (!t) with
-        Some t -> printType t
-      | None -> output "None")
-  | FreeTypeVar(tv, b) ->
-      (match !tv with
-        Some tvar -> printTypeVar tvar
-      | None -> output "None")
-
-  (*  Print an absyn type *)
-  and printType = function
-    TypeVarType(v) ->
-      (output "TypeVar(";
-      printTypeVarInfo (!v);
-      output ")")
-  | TypeSetType(def, l, r) ->
-      let rec print' = function
-        t::[] -> (printType t)
-      | t::ts -> (printType t; output ", "; print' ts)
-      | [] -> (output "")
-      in
-      
-      let printRef = function
-        Some(t) -> printType t
-      | None -> output "None"
-      in
-      
-      (output "TypeSetType(";
-      printType def;
-      output "[";
-      print' !l;
-      output "], ";
-      printRef !r;
-      output ")")
-  | ArrowType(l, r) -> 
-      (output "Arrow(";
-      printType l;
-      output ", ";
-      printType r;
-      output ")")
-  | ApplicationType(f,t) ->
-      let rec print' = function
-        t::[] -> (printType t)
-      | t::ts -> (printType t; output ", "; print' ts)
-      | [] -> (output "None")
-      in
-      
-      (output "App(";
-      output (string_of_kind f);
-      output ", ";
-      print' t;
-      output ")")
-  | SkeletonVarType(i) ->
-      (output "SkeletonVar(";
-      output (string_of_int !i);
-      output ")")
-  | ErrorType ->
-      (output "Error")
-
-  and printConstant const =
-    printconstant' (Symbol.symbol "") const
-  
-  (*  Print a constant.  For use with printTable. *)
-  and printconstant' sym const =
-    let printConstantType = function
-      GlobalConstant -> output "Global"
-    | LocalConstant -> output "Local"
-    | AnonymousConstant -> output "Anonymous"
-    | HiddenConstant -> output "Hidden"
-    | PervasiveConstant(b) -> 
-        if b then
-          output "Mutable Pervasive"
-        else
-          output "Immutable Pervasive"
-    in
-    
-    let rec printSkeleton = function
-      None -> output "None"
-    | Some(Skeleton(t,i,b)) -> 
-        (output "Skeleton(";
-        printType t;
-        output (", " ^ (Option.string_of_option !i string_of_int));
-        output (", " ^ (string_of_bool !b));
-        output ")")
-    in
-    
-    match const with
-      Constant(sym,fix,prec,exportdef,useonly,nodefs,closed,typepreserv,
-        reducible,skel,envsize,_,_,codeinfo,ctype,index,pos) ->
-        (output "Constant(";
-        output (Symbol.name sym);
-        output ", ";
-        output (string_of_fixity !fix);
-        output ", ";
-        output (string_of_int !prec);
-        output ", ";
-        output (string_of_bool !exportdef);
-        output ", ";
-        output (string_of_bool !useonly);
-        output ", ";
-        output (string_of_bool !nodefs);
-        output ", ";
-        output (string_of_bool !closed);
-        output ", ";
-        output (string_of_bool !typepreserv);
-        output ", ";
-        output (string_of_bool !reducible);
-        output ", ";
-        printSkeleton !skel;
-        output ", ";
-        output (string_of_int !envsize);
-        output ", ";
-        printConstantType !ctype;
-        output ", ";
-        printPos pos;
-        output_line ")")
-  
-  (*  Print a kind.  For use with printTable. *)
-  and printKind = fun k ->
-    let print' = fun sym a kmap ->
-      match a with
-        Some a' ->
-          (output (Symbol.name sym);
-          output ", ";
-          output (string_of_int a'))
-      | None ->
-          (output (Symbol.name sym);
-          output ", ";
-          output "None")
-    in
-    
-    match k with
-      Kind(sym,arity,kmap,LocalKind,p) ->
-        (output "Kind(";
-        print' sym arity kmap;
-        output ", LocalKind, ";
-        output ")")
-    | Kind(sym,arity,kmap,GlobalKind,p) ->
-        (output "Kind(";
-        print' sym arity kmap;
-        output ", GlobalKind, ";
-        output ")")
-    | Kind(sym,arity,kmap,PervasiveKind,p) ->
-        (output "Kind(";
-        print' sym arity kmap;
-        output ", PervasiveKind, ";
-        output ")")
-  in
-  
-  (*  Print the contents of a table *)
-  let printTable = fun f table ->
-    Table.iter f table
-  in
-  
-  let printkind' = fun s k ->
-    (output (Symbol.name s);
-    output " : ";
-    printKind k;
-    output_line "")
-  in
-
-  (*
-  let printClauseBlock = function
-    (cl,_,_,_,_,_) ->
-      (List.iter printClause (!cl))
-  in
-  
-  let printClause = function
-      Fact(c,tl,tyl,) ->
-    | Rule() ->
-  in
-  
-  let printClauses = function
-      ClauseBlocks(cbs) -> List.iter printClauseBlock cbs
-    | PreClauseBlocks(defs) -> List.iter printDefinition defs
-  in
-  *)
-  match m with
-    Module(name, impmods, accummods, ctable, ktable, tabbrevtable, strings,
-      gkinds, lkinds, gconsts, lconsts, hconsts, gskels, lskels, clauses) ->
-      
-      (output "Module(";
-      output name;
-      output_line ", ";
-      
-      output_line "ConstantTable:";
-      printTable printconstant' !ctable;
-      output_line "";
-      
-      output_line "KindTable:";
-      printTable printkind' !ktable;
-      output_line "";
-      
-      (*
-      output_line "Clauses:";
-      printClauses !clauses;
-      *)
-      output_line ")")
-      
-  | Signature(name, kinds, consts) ->
-      (output "Signature(";
-      output_line name;
-      output_line "Kinds:";
-      List.iter printKind kinds;
-      output_line "";
-      output_line "Constants:";
-      List.iter printConstant consts;
-      output_line ")")
-  | ErrorModule ->
-      (output "ErrorModule")
