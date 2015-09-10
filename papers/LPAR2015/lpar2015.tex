@@ -71,7 +71,7 @@ University of Bologna,~%\\ Mura Anteo Zamboni 7, 40127 Bologna, Italy \\
 
 \begin{abstract}
 We present a new interpreter for \lp{} that runs consistently faster than
-the byte code compiled by \tedius{}, that is believed to be the best
+the byte code compiled by \tedius{}, that is considered the best
 available implementation of \lp. 
 The key insight is the identification of a fragment of
 the language, which we call reduction-free fragment (\rff{}),
@@ -111,7 +111,7 @@ form of
 Canonical Structures~\cite{hints2,hints}
 or
 Type Classes~\cite{TCcoq}) to help it infer 
-the missing data %pieces of information 
+the missing data, %pieces of information 
 turned out to be a key ingredient in successful formalizations
 like~\cite{gonthier:hal-00816699}. Embedding a \lp{} interpreter in an ITP
 would enable the elaborator and its extensions to be expressed in the same,
@@ -448,8 +448,9 @@ rewritten to be in the pattern fragment as in Section~\ref{sec:ho}) are in
 \rff{}. Also, every Prolog program is in \rff{}. As we will see
 in~Section~\ref{sec:benchmarks}, a
 type-checker for a dependently typed language
-and evaluator based on a reduction machine are also naturally in \rff{},
-showing that, in practice, the fragment is quite expressive.
+and evaluator based on a reduction machine are also naturally in \rff{}.
+Thus we show that, in practice, the fragment is quite expressive
+and is expressive enough to specify a realistic elaborator.
 
 % where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
 % higher order, there is no distinction between formulas and terms, and both queries and clauses can be passed as arguments to predicates. Note also that $\forall$ binds local constants in positive position, and existentially quantified variables in negative position, according to the logical equivalence
@@ -473,13 +474,13 @@ showing that, in practice, the fragment is quite expressive.
 % Examples: $X^2~x_2~x_3$ and $X^2$ are in the fragment; $X^2~x_3$ and $X^2~x_3~x_2$ are not.
 
 \begin{myprop}[Decidability of HO unification]
-Being \rff{} included in the pattern-fragment \Ll{}, higher order unification is
+Being \rff{} included in the\\pattern-fragment \Ll{}, higher order unification is
 decidable for \rff{}.
 \end{myprop}
 %In other words, each problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
 %admits a MGU.
 
-The most interesting property of \rff{}, which also justify its name, is:
+The most interesting property of \rff{}, which also justifies its name, is:
 
 \begin{myprop}[Constant time head $\beta$-reduction]
 Let $\sigma$ be a \emph{valid} substitution for existentially quantified variables. Then the first $k-1$ head reductions of $(X^j~x_j \ldots x_{j+k-1}) \sigma$ can be computed in constant time.
@@ -709,7 +710,7 @@ systematically pushes the suspended substitution to the leaves of the
 term, completely defeating the purpose of the entire machinery (i.e. if the
 substitution has to be performed, there is no gain in delaying it).
 If one makes \tedius{} artificially
-push explicit substitutions in the CBN case too, he halves memory consumption
+push explicit substitutions in the CBN case too, it halves memory consumption
 but degrades the performances by 10 seconds, confirming the
 time we see in the CBV case is dominated by the overhead of ES.
 By avoiding substitution when crossing binders
