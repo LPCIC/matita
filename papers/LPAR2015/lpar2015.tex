@@ -188,7 +188,7 @@ logical implication temporarily
 augments the program with the new axiom \verb+H+ about \verb+x+.
 
 In Example~\ref{example1}, line 4, the functional (sub-)term
-\verb+F+ is applied to the fresh constant \verb+x+. Being \verb+F+ a
+\verb+F+ is applied to the fresh constant \verb+x+. Since \verb+F+ is a
 function, the $\beta$-redex \verb+(F x)+, once reduced, denotes the body of
 our object-level function where the bound variable is replaced by the fresh
 constant \verb+x+.
@@ -285,7 +285,7 @@ If we run the program
 \verb+(of (lam f\lam w\app f w) T+$^0$\verb+)+, after two steps the goal becomes
 \verb+(of (app c+$^1$\verb+ d+$^2$\verb+) B+$^0$\verb+)+.
 Concretely, \tedius{} replaces the bound names \verb+f+ and \verb+w+ with 
-the level-annotated fresh constants $c^1$ and $d^2$ performing 
+the level-annotated fresh constants \verb+c+$^1$ and \verb+d+$^2$ performing 
 the $\beta$-reductions.
 As a crucial optimization~\cite{DBLP:journals/jar/LiangNQ04} \tedius{}
 implements reductions in a lazy way using an explicit substitution
@@ -502,7 +502,7 @@ constant time.
 
 \begin{myprop}[Constant time unification]
 A unification problem of the form $X^j~x_j\ldots x_{j+k-1} \equiv t$
-can be frequently solved in constant time.
+can be solved in constant time when no occur-check is needed for $X$.
 \end{myprop}
 
 The unification problem $X^j~x_j\ldots x_{j+k-1} \equiv t$ can always be
@@ -744,7 +744,8 @@ directly but surely incurs in some overhead.
 We use its timings as a
 reference for the order of magnitude between the performance of \elpi{} and
 the ones of a state-of-the-art ITP.
-When applicable we compare softwares compiled to native code or interpreted.
+We compare native code against interpreted code where applicable.
+%When applicable we compare softwares compiled to native code or interpreted.
 
 \begin{center}
   \scriptsize 
