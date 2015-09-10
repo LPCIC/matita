@@ -26,3 +26,4 @@ elpi/elpi.trace
 elpi/elpi.git.*
 elpi/bench/data.csv*
 papers/LPAR2015/*.pdf
+papers/LPAR2015/*.zip
