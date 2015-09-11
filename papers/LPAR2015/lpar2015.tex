@@ -6,6 +6,7 @@
 \documentclass{llncs}
 %Use this line instead if you want to use running heads (i.e. headers on each page):
 %\documentclass[runningheads]{llncs}
+\usepackage[american]{babel}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{graphicx}
@@ -100,12 +101,12 @@ specifications; animation of operational semantics;
 program transformations and implementation of type checking algorithms.
 
 Via the Curry-Howard isomorphism a type-checker is a proof-checker, the main
-component of an interactive theorem prover (ITP). Indeed the motivation of our
+component of an interactive theorem prover (ITP). The motivation of our
 interest in \lp{} is that we are looking for the best 
 language to implement the so called \emph{elaborator} component of an ITP.
 The elaborator is used to type check the terms input by
 the user. Such data, for conciseness reasons, is typically incomplete and
-the ITP is expected to infer what is missing. The possibility to
+the elaborator is expected to infer what is missing. The possibility to
 extend Coq's built-in elaborator with user provided ``logic programs'' (in the
 form of
 Canonical Structures~\cite{hints2,hints}
@@ -346,7 +347,7 @@ implemented efficiently is to see how systems that manipulate $\lambda$-terms
 accommodate
 $\alpha$-equivalence. Bound variables are not represented by using
 real names, but canonical ``names'' (hence $\alpha$-equivalence becomes syntactic equality).
-De Bruijn introduced two, dual, naming schemas for $\lambda$-terms in~\cite{debruijnlevel}:
+De Bruijn introduced two, dual, naming schemes for $\lambda$-terms in~\cite{debruijnlevel}:
 depth indexes (DBI) and levels
 (DBL). In the former, that is the most widely adopted one, a variable is named $n$ if its binder is found by
 crossing $n$ binders going in the direction of the root. In the latter a
@@ -449,8 +450,9 @@ rewritten to be in the pattern fragment as in Section~\ref{sec:ho}) are in
 in~Section~\ref{sec:benchmarks}, a
 type-checker for a dependently typed language
 and evaluator based on a reduction machine are also naturally in \rff{}.
-Thus we show that, in practice, the fragment is quite expressive
-and is expressive enough to specify a realistic elaborator.
+Thus, in practice, the fragment is quite expressive
+and is expressive enough to specify a realistic verifier,
+a first step towards the specification of a full-fledged elaborator.
 
 % where $c,x,X$ range respectively over the set of constants, the set of universally quantified names (also called local constants) and the set of existentially quantified variables. Formulas $Q$ that occur in positive positions are called \emph{queries}. Formulas $P$ that occur in negative position are called \emph{clauses}. The logical atoms are captured by $T$. Note that, the language being
 % higher order, there is no distinction between formulas and terms, and both queries and clauses can be passed as arguments to predicates. Note also that $\forall$ binds local constants in positive position, and existentially quantified variables in negative position, according to the logical equivalence
