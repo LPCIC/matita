@@ -22,6 +22,8 @@ module Utils : sig
   (* If we type check the program, then these are anomalies *)
   val type_error : string -> 'a
 
+  val option_get : 'a option -> 'a
+
 end = struct (* {{{ *)
 
 let pplist ?(max=max_int) ?(boxed=false) ppelem sep f l =
@@ -62,6 +64,8 @@ let anomaly s =
   Printf.eprintf "Anomaly: %s\n%!" s;
   exit 2
 let type_error = error
+
+let option_get = function Some x -> x | None -> assert false
 
 end (* }}} *)
 open Utils
@@ -674,6 +678,7 @@ and beta depth sub t args =
  | Lam t',hd::tl -> TCALL beta depth (hd::sub) t' tl
  | _ ->
     let t' = subst depth sub t in
+    SPY "subst-result" (ppterm depth [] 0 [||]) t';
     match args with
     | [] -> t'
     | ahd::atl ->
@@ -994,14 +999,184 @@ exception Delayed_unif of int * term array * int * term * term
    - e.(i) lives in bdepth
    + we deref to move everything to adepth + depth
 *)
+
+
+(* Tests is args are in the L_\lambda fragment and produces a map from
+ *  constants to int.  The idea being that an UVar of level lvl also sees
+ *  all the constants in the map, and the associated int is their position
+ *  in the list of arguments starting from 0 *)
+let is_llam lvl args adepth bdepth depth left e =
+  let to_ = if left then adepth+depth else bdepth+depth in
+  let get_con = function Const x -> x | _ -> raise RestrictionFailure in
+  let deref_to_const = function
+    | UVar ({ contents = t }, from, args) when t != dummy ->
+        get_con (deref ~from ~to_ args t)
+    | AppUVar ({ contents = t }, from, args) when t != dummy -> 
+        get_con (app_deref ~from ~to_ args t)
+    | Arg (i,args) when e.(i) != dummy ->
+        get_con (deref ~from:adepth ~to_ args e.(i))
+    | AppArg (i,args) when e.(i) != dummy -> 
+        get_con (app_deref ~from:adepth ~to_ args e.(i))
+    | Const x -> if not left && x >= bdepth then x + (adepth-bdepth) else x
+    | _ -> raise RestrictionFailure
+  in
+  let rec aux n = function
+    | [] -> []
+    | x :: xs ->
+       if x >= lvl && not (List.mem x xs) then (x,n) :: aux (n+1) xs
+       else raise RestrictionFailure in
+  try true, aux 0 (List.map deref_to_const args)
+  with RestrictionFailure -> false, []
+
+let mkAppUVar r lvl l =
+  try UVar(r,lvl,in_fragment lvl l)
+  with NotInTheFragment -> AppUVar(r,lvl,l)
+
+let rec mknLam n t = if n = 0 then t else mknLam (n-1) (Lam t)
+
+(* [bind r args ... t] generates a term \args.t' to be assigned to r.
+ * r is the variable being assigned
+ * gamma is the level of the variable we assigning
+ * l is its extended domain as a map (see is_llam)
+ * a is adepth
+ * b is bdepth
+ * d is depth (local lamdas traversed during unif
+ *   w is the same but during bind, hence current depth is (d+w)
+ * delta is (a-b)
+ * left is true when the variable being assigned is on the left (goal)
+ * t is the term we are assigning to r
+ * e is the env for args *)
+let bind r gamma l a d delta b left t e =
+  TRACE "bind" (fun fmt -> Format.fprintf fmt "%b %d + %a = %a %d" left gamma
+    (pplist (fun fmt (x,_) -> ppterm a [] b e fmt (constant_of_dbl x)) "") l
+    (ppterm a [] b [||]) t a)
+  let new_lams = List.length l in
+  let pos x = try List.assoc x l with Not_found -> raise RestrictionFailure in
+  let cst c = (* The complex thing (DBL) *)
+    if left then begin
+      if c < gamma && c < b then c
+      else
+        let c = c + delta in
+        if c < gamma then c
+        else if c >= a + d then c + new_lams - (a+d - gamma)
+        else pos c + gamma
+    end else begin
+      if c < gamma then c
+      else if c >= a + d then c + new_lams - (a+d - gamma)
+      else pos c + gamma
+    end in
+  let rec bind w = function
+    | UVar (r1,_,_) | AppUVar (r1,_,_) when r == r1 -> raise RestrictionFailure
+    | Const c -> constant_of_dbl (cst c)
+    | Lam t -> Lam (bind (w+1) t)
+    | App (c,t,ts) -> App (cst c, bind w t, List.map (bind w) ts)
+    | Custom (c, tl) -> Custom(c, List.map (bind w) tl)
+    | String _ | Int _ | Float _ -> t
+    (* deref *)
+    | Arg (i,args) when e.(i) != dummy ->
+        bind w (deref ~from:a ~to_:(a+d+w) args e.(i))
+    | AppArg (i,args) when e.(i) != dummy ->
+        bind w (app_deref ~from:a ~to_:(a+d+w) args e.(i))
+    | UVar ({ contents = t }, from, args) when t != dummy ->
+        bind w (deref ~from ~to_:((if left then b else a)+d+w) args t)
+    | AppUVar ({ contents = t }, from, args) when t != dummy ->
+        bind w (app_deref ~from ~to_:((if left then b else a)+d+w) args t)
+    (* pruning *)
+    | (UVar _ | AppUVar _ | Arg _ | AppArg _) as _orig_ ->
+        (* We deal with all flexible terms in a uniform way *)
+        let r, lvl, (is_llam, args), orig_args = match _orig_ with
+          | UVar(r,lvl,0) -> r, lvl, (true, []), []
+          | UVar(r,lvl,args) ->
+              let r' = oref dummy in
+              let v = UVar(r',lvl+args,0) in
+              r @:= mknLam args v;
+              if not !last_call then trail := r :: !trail;
+              r', (lvl+args),  (true,[]), []
+          | AppUVar (r,lvl, orig_args) ->
+              r, lvl, is_llam lvl orig_args a b (d+w) left e, orig_args
+          | Arg (i,0) ->
+              let r = oref dummy in
+              let v = UVar(r,a,0) in
+              e.(i) <- v;
+              r, a, (true,[]), []
+          | Arg (i,args) ->
+              let r = oref dummy in
+              let v = UVar(r,a,0) in
+              e.(i) <- v;
+              let r' = oref dummy in
+              let v' = UVar(r',a+args,0) in
+              r @:= mknLam args v';
+              r', a+args, (true, []), []
+          | AppArg (i,orig_args) ->
+              let is_llam, args = is_llam a orig_args a b (d+w) false e in
+              let r = oref dummy in
+              let v = UVar(r,a,0) in
+              e.(i) <- v;
+              r, a, (is_llam, args), orig_args
+          | _ -> assert false in
+        if is_llam then begin
+          let n_args = List.length args in
+          if lvl > gamma then
+            (* All orig args go away, but some between gamma and lvl can stay
+             * if they are in l *)
+            let args_gamma_lvl =
+              let rec keep_cst_for_lvl = function
+                | [] -> []
+                | (i,_) :: rest ->
+                    if i < lvl then constant_of_dbl i :: keep_cst_for_lvl rest
+                    else keep_cst_for_lvl rest in
+              keep_cst_for_lvl l in
+            let r' = oref dummy in
+            let v = mkAppUVar r' gamma args_gamma_lvl in
+            r @:= mknLam n_args v;
+            if not !last_call then trail := r :: !trail;
+            v
+          else
+            (* given that we need to make lambdas to prune some args,
+             * we also permute to make the restricted meta eventually
+             * fall inside the small fragment (sort the args) *)
+            let args = List.sort compare args in
+            let args_lvl, args_here =
+              List.fold_right (fun (c, c_p) (a_lvl, a_here as acc) ->
+                try
+                  let i =
+                    if c < gamma then c
+                    else if c >= a + d then c + new_lams - (a+d - gamma)
+                    else pos c + gamma in
+                  constant_of_dbl (c_p + lvl) :: a_lvl,
+                  constant_of_dbl i :: a_here
+                with RestrictionFailure -> acc) args ([],[]) in
+            if n_args = List.length args_here then
+              (* no pruning, just binding the args as a normal App *)
+              mkAppUVar r lvl (List.map (bind w) orig_args)
+            else
+              (* we need to project away some of the args *)
+              let r' = oref dummy in
+              let v = mkAppUVar r' lvl args_lvl in
+              r @:= mknLam n_args v;
+              if not !last_call then trail := r :: !trail;
+              (* This should be the beta reduct. One could also
+               * return the non reduced but bound as in the other if branch *)
+              mkAppUVar r' lvl args_here
+        end
+          else raise RestrictionFailure
+  in
+  try
+    r @:= mknLam new_lams (bind 0 t);
+    if not !last_call then trail := r :: !trail;
+    SPY "assign(HO)" (ppterm gamma [] a [||]) (!!r);
+    true
+  with RestrictionFailure -> false
+;;
+
 let unif adepth e bdepth a b =
 
  (* heap=true if b is known to be a heap term *)
  let rec unif depth a bdepth b heap =
    TRACE "unif" (fun fmt ->
-     Format.fprintf fmt "unif: @[<hov 2>^%d:%a@ =%d= ^%d:%a@]"
-       adepth (ppterm depth [] adepth [||]) a depth
-       bdepth (ppterm depth [] adepth e) b)
+     Format.fprintf fmt "@[<hov 2>^%d:%a@ =%d= ^%d:%a@]"
+       adepth (ppterm (adepth+depth) [] adepth [||]) a depth
+       bdepth (ppterm (bdepth+depth) [] adepth e) b)
    let delta = adepth - bdepth in
    (delta = 0 && a == b) || match a,b with
 (* TODO: test if it is better to deref first or not, i.e. the relative order
@@ -1090,22 +1265,37 @@ let unif adepth e bdepth a b =
       unif depth a bdepth b heap
 
    (* HO *)
-   | AppUVar (r, _,_), _
-   | _, AppUVar (r, _,_) ->
+   | AppUVar (r, lvl,args), other ->
+       let is_llam, args = is_llam lvl args adepth bdepth depth true e in
+       if is_llam then
+         bind r lvl args adepth depth delta bdepth true other e
+       else begin
      Format.fprintf Format.std_formatter "HO unification (maybe delay): %a = %a\n" (ppterm depth [] adepth [||]) a (ppterm depth [] bdepth [||]) b ;
      error (Format.flush_str_formatter ())
+       end
+   | other, AppUVar (r, lvl,args) ->
+       let is_llam, args = is_llam lvl args adepth bdepth depth false e in
+       if is_llam then
+         bind r lvl args adepth depth delta bdepth false other e
+       else begin
+     Format.fprintf Format.std_formatter "HO unification (maybe delay): %a = %a\n" (ppterm depth [] adepth [||]) a (ppterm depth [] bdepth [||]) b ;
+     error (Format.flush_str_formatter ())
+       end
+
 (*
        r.rest <- Delayed_unif (adepth+depth,e,bdepth,a,b) :: r.rest;
        true
 *)
-   | _, AppArg _ ->
+   | other, AppArg(i,args) ->
+       let is_llam, args = is_llam adepth args adepth bdepth depth false e in
+       if is_llam then
+         let r = oref dummy in
+         e.(i) <- UVar(r,adepth,0);
+         bind r adepth args adepth depth delta bdepth false other e
+       else begin
      Format.fprintf Format.std_formatter "HO unification (maybe delay): %a = %a\n" (ppterm depth [] adepth [||]) a (ppterm depth [] bdepth [||]) b ;
      error (Format.flush_str_formatter ())
-(*
-       unif depth a bdepth
-         (to_heap bdepth ~from:bdepth ~to_:(adepth+depth) e b)
-         true
-*)
+       end
 
    (* recursion *)
    | App (c1,x2,xs), App (c2,y2,ys) ->
@@ -1129,7 +1319,9 @@ let unif adepth e bdepth a b =
    | Float s1, Float s2 -> s1==s2
    | String s1, String s2 -> s1==s2
    | _ -> false in
- unif 0 a bdepth b false
+ let res = unif 0 a bdepth b false in
+ SPY "unif result" (fun fmt x -> Format.fprintf fmt "%b" x) res;
+ res
 ;;
 
 (* Look in Git for Enrico's partially tail recursive but slow unification.
