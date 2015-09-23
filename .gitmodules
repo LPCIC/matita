@@ -10,3 +10,7 @@
 	path = teyjus
 	url = https://github.com/teyjus/teyjus.git
 	ignore = untracked
+[submodule "abella"]
+	path = abella
+	url = https://github.com/abella-prover/abella.git
+	ignore = untracked
