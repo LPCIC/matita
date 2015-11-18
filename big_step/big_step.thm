@@ -1,121 +1,197 @@
+Specification "big_step".
+
 Kind constant type.
 
-Kind formula type.
 Kind flist type.
 
-Type ttrue formula.
-Type aand formula -> formula -> formula.
-Type oor formula -> formula -> formula.
-Type iimp formula -> formula -> formula.
-Type ppi (formula -> formula) -> formula.
-Type ssigma (formula -> formula) -> formula.
-Type pred constant -> flist -> formula.
-
-Type fnil flist.
-Type fcons formula -> flist -> flist.
-
-Kind clause type.
-Type mk_clause formula -> clause.
-
-/* clause list */
-Kind clist type.
-Type cnil clist.
-Type ccons clause -> clist -> clist.
-
 Kind sequent type.
-Type pair clist -> formula -> sequent.
+Type pair olist -> o -> sequent.
 
 Kind slist type.
 Type snil slist.
 Type scons sequent -> slist -> slist.
 
+/*
+Define is_in_our_syntax : o -> prop :=
+   is_in_our_syntax ttrue
+ ; is_in_our_syntax (aand t1 t2) :=
+     is_in_our_syntax t1, is_in_our_syntax t2
+ ; is_in_our_syntax (pi x : o \ F x).  := ... . 
 
-Define match : clause -> formula -> formula -> prop by
-  match (mk_clause (ppi F)) Pred Body :=
-    exists X, match (mk_clause (F X)) Pred Body
-; match (mk_clause (aand F1 F2)) Pred Body :=
-    match (mk_clause F1) Pred Body
-; match (mk_clause (aand F1 F2)) Pred Body :=
-    match (mk_clause F2) Pred Body
-; match (mk_clause (iimp Body Pred)) Pred Body.
+Theorem test:
+ forall Ctx G F,
+   is_in_our_syntax G ->
+   { Ctx , [G] |- F } -> steps snil (pair Ctx F) snil.
 
-Define look_in_prog: clist -> formula -> formula -> prop by
-  look_in_prog (ccons ClauseHead Tl) Pred ClauseTail := 
+Theorem test:
+ forall Ctx F,
+   is_in_our_syntax F ->
+   { Ctx |- F } -> steps snil (pair Ctx F) snil.
+ induction on 1. intros. case H1.
+*/
+
+Define sappend : slist -> slist -> slist -> prop by
+  sappend snil X X
+; sappend (scons X L1) L2 (scons X L3) := sappend L1 L2 L3.
+
+Define match : o -> o -> o -> prop by
+  match (pi x : o \ F x) Pred Body :=
+    exists X, match (F X) Pred Body
+; match (aand F1 F2) Pred Body :=
+    match F1 Pred Body
+; match (aand F1 F2) Pred Body :=
+    match F2 Pred Body
+; match (Body => Pred) Pred Body.
+
+Define look_in_prog: olist -> o -> o -> prop by
+  look_in_prog (ClauseHead :: Tl) Pred ClauseTail := 
     match ClauseHead Pred ClauseTail
-; look_in_prog (ccons ClauseHead Tl) Pred G := look_in_prog Tl Pred G.
+; look_in_prog (ClauseHead :: Tl) Pred G := look_in_prog Tl Pred G.
 
+
+/*
+These theorems I need to prove for the last case !
+
+Theorem stepl_append:
+ forall AndL1 AndL2 AndL3,
+   append AndL1 AndL2 AndL3 ->
+   stepl Prog AndL3 snil ->
+   steps Prog AndL2 snil.
+
+Theorem steps_append:
+ forall AndL1 AndL2 AndL3,
+   append AndL1 AndL2 AndL3 ->
+   steps Prog AndL3 snil ->
+   steps Prog AndL2 snil.
+*/
+
+
+Define step : olist -> sequent -> slist -> prop by
+  step Prog (pair Ctx ttrue) snil
+; step Prog (pair Ctx (aand F1 F2)) (scons (pair Ctx F1) (scons (pair Ctx F2) snil))
+; step Prog (pair Ctx (oor F1 F2)) (scons (pair Ctx F1) snil)
+; step Prog (pair Ctx (oor F1 F2)) (scons (pair Ctx F2) snil)
+; step Prog (pair Ctx (F1 => F2)) (scons (pair (F1 :: Ctx) F2) snil)
+; nabla x, step Prog (pair Ctx (pi x : o \ F x)) (scons (pair Ctx (F x)) snil)
+; step Prog (pair Ctx (ssigma F)) (scons (pair Ctx (F X)) snil)
+; step Prog (pair Ctx Pred) (scons (pair Ctx ClauseBody) snil) :=
+    look_in_prog Ctx Pred ClauseBody \/
+    look_in_prog Prog Pred ClauseBody.
+
+Define stepl : olist -> slist -> slist -> prop by
+  stepl Prog (scons Seq AndL) AndLO :=
+    exists NewAndL,
+      step Prog Seq NewAndL /\ sappend NewAndL AndL AndLO. 
+
+Define steps : olist -> slist -> slist -> prop by
+  steps Prog AndL AndL
+; steps Prog AndLI AndLO :=
+   exists AndL, stepl Prog AndLI AndL /\ steps Prog AndL AndLO.
+
+
+Define smem: sequent -> slist -> prop by
+  smem S (scons S Tl)
+; smem S (scons A Tl) := smem S Tl.
+
+Theorem foo_true: forall Prog, step Prog (pair nil ttrue) snil.
+intros. unfold 1. search.
+
+
+Theorem foo_pi: forall Prog, nabla y, step Prog (pair nil (pi x\ x => x)) (scons (pair nil (y => y)) snil).
+intros. unfold 6. search.
+
+
+Theorem foo_and: forall Prog, step Prog (pair nil (aand ttrue ttrue)) (scons (pair nil ttrue) (scons (pair nil ttrue) snil)).
+intros. unfold 2. search. 
+
+
+Theorem foo_or: forall Prog, step Prog (pair nil (oor ttrue ttrue)) (scons (pair nil ttrue) snil).
+intros. unfold 3. search.
+
+
+Theorem foo_imp: forall Prog, step Prog (pair nil (ttrue => ttrue)) (scons (pair (ttrue :: nil) ttrue) snil).
+intros. unfold 5. search.
+
+%-------------------------------------------------------
+/*Theorem small_big_ok:
+ forall Ctx F AndL,
+  steps nil AndL snil ->
+  smem (pair Ctx F) AndL ->
+  { Ctx |- F }. 
+*/
+
+
+Theorem small_big_ok:
+ forall Ctx F AndL1 AndL2 AndL3,
+  steps nil AndL3 snil ->
+  smem (pair Ctx F) AndL2 ->
+  sappend AndL1 AndL2 AndL3 ->
+  { Ctx |- F }.
+
+
+induction on 1. 
+intros. 
+case H1. 
+ % snil   
+ case H2.
+
+ case H3.
+ case H3.
+
+
+
+
+
+/* 
+ % scons
+ case H3.
+ case H2.
+   % in hd
+   case H5.
+     % ttrue
+     search.
+     
+     % aand
+     assert (smem (pair Ctx F1) AndL1).
+       %%%%%%%%%%
+       skip.
+     assert (smem (pair Ctx F2) AndL1).
+       %%%%%%%%%%%
+       skip.
+     apply IH to H4 H7. apply IH to H4 H8. search.
+
+     % oor1
+     skip.
+
+     % oor2
+     skip.
+
+     % impl
+     apply IH to H4 _. search.
+     skip. 
+     % pi
+     apply IH to H4 _. search.
+     skip.    
+     % sigma
+     apply IH to H4 _. search.
+     skip. 
+     % backchain
+     skip.
+   % in tail
+*/
+
+
+
+/*
 Define step : clist -> slist -> slist -> prop by
   step Prog (scons (pair Ctx ttrue) AndL) AndL
 ; step Prog (scons (pair Ctx (aand F1 F2)) AndL) (scons (pair Ctx F1) (scons (pair Ctx F2) AndL))
 ; step Prog (scons (pair Ctx (oor F1 F2)) AndL) (scons (pair Ctx F1) AndL)
 ; step Prog (scons (pair Ctx (oor F1 F2)) AndL) (scons (pair Ctx F2) AndL)
-; step Prog (scons (pair Ctx (iimp F1 F2)) AndL) (scons (pair (ccons (mk_clause F1) Ctx) F2) AndL)
-; nabla x, step Prog (scons (pair Ctx (ppi F)) AndL) (scons (pair Ctx (F x)) AndL)
+; step Prog (scons (pair Ctx (F1 => F2)) AndL) (scons (pair (ccons (mk_clause F1) Ctx) F2) AndL)
+; nabla x, step Prog (scons (pair Ctx (pi x : o \ F x)) AndL) (scons (pair Ctx (F x)) AndL)
 ; step Prog (scons (pair Ctx (ssigma F)) AndL) (scons (pair Ctx (F X)) AndL)
-; step Prog (scons (pair Ctx (pred K L)) AndL) (scons (pair Ctx ClauseBody) AndL) :=
-    look_in_prog Ctx (pred K L) ClauseBody \/
-    look_in_prog Prog (pred K L) ClauseBody.
-
-Define steps : clist -> slist -> slist -> prop by
-  steps Prog AndL AndL
-; steps Prog AndLI AndLO :=
-   exists AndL, step Prog AndLI AndL /\ steps Prog AndL AndLO.
-
-Theorem foo_true: forall Prog, step Prog (scons (pair cnil ttrue) snil) snil.
-intros. unfold 1. search.
-
-
-Theorem foo_pi: forall Prog, nabla y, step Prog (scons (pair cnil (ppi x\ iimp x x)) snil) (scons (pair cnil (iimp y y)) snil).
-intros. unfold 6. search.
-
-
-Theorem foo_and: forall Prog, step Prog (scons (pair cnil (aand ttrue ttrue)) snil) (scons (pair cnil ttrue) (scons (pair cnil ttrue) snil)).
-intros. unfold 2. search. 
-
-
-Theorem foo_or: forall Prog, step Prog (scons (pair cnil (oor ttrue ttrue)) snil) (scons (pair cnil ttrue) snil).
-intros. unfold 3. search.
-
-
-Theorem foo_imp: forall Prog, step Prog (scons (pair cnil (iimp ttrue ttrue)) snil) (scons (pair (ccons (mk_clause ttrue) cnil) ttrue) snil).
-intros. unfold 5. search.
-
-Type p constant.
-Type q constant.
-
-Theorem test_look_in_prog : 
-  look_in_prog 
-    (ccons (cpair (pred p fnil) (fcons (pred q fnil) fnil)) cnil)
-    (pred p fnil)
-    (fcons (pred q fnil) fnil).
-unfold 1. unfold 2. search.
-
-Theorem small_big_ok:
- forall Prog F,
-  steps Prog (ccons (cpair cnil F) cnil) cnil ->
-  { F }.
-
-
-/*
-Theorem test_back_chain: 
-  step (ccons (cpair (pred p fnil) 
-                (fcons (pred q fnil) fnil)) cnil) 
-       (scons (pair fnil (pred p fnil)) snil) 
-       (scons (pair fnil (pred q fnil)) snil).
-unfold 8.
-
-
-
-
-Prog:= (ccons (cpair (pred p fnil) 
-                     (fcons (pred q fnil) fnil)) cnil) 
-Ctx := fnil
-
- 
-step Prog 
-     (scons (pair Ctx (pred K L)) AndL) 
-     (scons (pair Ctx (head ClauseBody)) (sappend Rez AndL)) :=
-    look_in_prog Prog (pred K L) ClauseBody /\
-    create_seq_list Ctx (tail ClauseBody) Rez.
-
+; step Prog (scons (pair Ctx Pred) AndL) (scons (pair Ctx ClauseBody) AndL) :=
+    look_in_prog Ctx Pred ClauseBody \/
+    look_in_prog Prog Pred ClauseBody.
 */
