@@ -37,34 +37,16 @@ Define sappend : slist -> slist -> slist -> prop by
 Define match : o -> o -> o -> prop by
   match (pi x : o \ F x) Pred Body :=
     exists X, match (F X) Pred Body
-; match (aand F1 F2) Pred Body :=
+/*; match (aand F1 F2) Pred Body :=
     match F1 Pred Body
 ; match (aand F1 F2) Pred Body :=
-    match F2 Pred Body
+    match F2 Pred Body */
 ; match (Body => Pred) Pred Body.
 
 Define look_in_prog: olist -> o -> o -> prop by
   look_in_prog (ClauseHead :: Tl) Pred ClauseTail := 
     match ClauseHead Pred ClauseTail
 ; look_in_prog (ClauseHead :: Tl) Pred G := look_in_prog Tl Pred G.
-
-
-/*
-These theorems I need to prove for the last case !
-
-Theorem stepl_append:
- forall AndL1 AndL2 AndL3,
-   append AndL1 AndL2 AndL3 ->
-   stepl Prog AndL3 snil ->
-   steps Prog AndL2 snil.
-
-Theorem steps_append:
- forall AndL1 AndL2 AndL3,
-   append AndL1 AndL2 AndL3 ->
-   steps Prog AndL3 snil ->
-   steps Prog AndL2 snil.
-*/
-
 
 Define step : olist -> sequent -> slist -> prop by
   step Prog (pair Ctx ttrue) snil
@@ -78,6 +60,90 @@ Define step : olist -> sequent -> slist -> prop by
     look_in_prog Ctx Pred ClauseBody \/
     look_in_prog Prog Pred ClauseBody.
 
+Define smem: sequent -> slist -> prop by
+  smem S (scons S Tl)
+; smem S (scons A Tl) := smem S Tl.
+
+Define provable : olist -> sequent -> prop by
+  provable Prog Seq :=
+   exists AndL,
+    step Prog Seq AndL /\
+    (forall Seq2, smem Seq2 AndL -> provable Prog Seq2).
+
+Theorem match_ok:
+ forall Ctx Clause Head Body,
+   match Clause Head Body ->
+   { Ctx |- Body } ->
+   { Ctx, Clause |- Head }.
+ induction on 1. intros. case H1.
+  % pi
+  apply IH to H3 H2. assert { Ctx, pi x \ F x |- F X }.
+  cut H4 with H5. search.
+/*  % and1
+  apply IH to H3 H2. skip. % only true for &, not aand :-(
+  % and2
+  apply IH to H3 H2. skip. % only true for &, not aand :-(
+*/  % found
+  search.
+
+Theorem look_in_prog_ok:
+ forall Ctx1 Ctx2 Head Body,
+   look_in_prog Ctx1 Head Body ->
+   (forall X, member X Ctx1 -> member X Ctx2) ->
+   exists Clause Ctx3,
+    Ctx3 = Clause :: Ctx2 /\
+    member Clause Ctx1 /\
+    ({ Ctx2 |- Body } -> { Ctx3 |- Head }).
+ induction on 1. intros. case H1.
+   % head matches
+   exists ClauseHead. exists (ClauseHead :: Ctx2). split. search.
+   search. intros. apply match_ok to H3 H4. search.
+   % tail matches
+   apply IH to H3 _ with Ctx2 = Ctx2.
+     intros. backchain H2.
+     exists Clause. exists (Clause :: Ctx2). split. search. search.
+     intros. apply H5 to H6. search.
+
+Theorem provable_big_ok:
+ forall Ctx F, provable nil (pair Ctx F) -> { Ctx |- F }.
+ induction on 1. intros. case H1. case H2.
+   % true
+   search.
+
+   % aand.
+   unfold aand.
+    backchain IH. backchain H3.
+    backchain IH. backchain H3.
+
+  % oor
+  unfold oor1.
+    backchain IH. backchain H3.
+  
+  % oor
+  unfold oor2.
+    backchain IH. backchain H3.
+
+  % =>
+  backchain IH. backchain H3.
+
+  % pi
+  backchain IH. backchain H3.
+
+  % ssigma
+  unfold ssigma.
+    exists X. backchain IH. backchain H3.
+  % backchain
+  case H4.
+    % in Ctx
+    apply look_in_prog_ok to H5 _.
+    apply H7 to _. backchain IH. backchain H3.
+    assert { Ctx |- Clause }. cut H8 with H9.
+    search.
+
+    % in empty Prog
+    apply look_in_prog_ok to H5 _. case H6.
+
+
 Define stepl : olist -> slist -> slist -> prop by
   stepl Prog (scons Seq AndL) AndLO :=
     exists NewAndL,
@@ -88,10 +154,6 @@ Define steps : olist -> slist -> slist -> prop by
 ; steps Prog AndLI AndLO :=
    exists AndL, stepl Prog AndLI AndL /\ steps Prog AndL AndLO.
 
-
-Define smem: sequent -> slist -> prop by
-  smem S (scons S Tl)
-; smem S (scons A Tl) := smem S Tl.
 
 Theorem foo_true: forall Prog, step Prog (pair nil ttrue) snil.
 intros. unfold 1. search.
@@ -113,85 +175,43 @@ Theorem foo_imp: forall Prog, step Prog (pair nil (ttrue => ttrue)) (scons (pair
 intros. unfold 5. search.
 
 %-------------------------------------------------------
-/*Theorem small_big_ok:
- forall Ctx F AndL,
-  steps nil AndL snil ->
-  smem (pair Ctx F) AndL ->
-  { Ctx |- F }. 
-*/
 
+Theorem smem_sappend_l:
+ forall X L1 L2 L3,
+   sappend L1 L2 L3 -> smem X L1 -> smem X L3.
+ induction on 1. intros. case H1.
+   % snil
+   case H2.
+   % scons
+   case H2. search. apply IH to H3 H4. search.
+
+Theorem smem_sappend_r:
+ forall X L1 L2 L3,
+   sappend L1 L2 L3 -> smem X L2 -> smem X L3.
+ induction on 1. intros. case H1.
+   % snil
+   search.
+   % scons
+   apply IH to H3 H2. search.
+
+Theorem small_provable:
+ forall Seq AndL,
+  steps nil AndL snil ->
+  smem Seq AndL ->
+  provable nil Seq.
+ induction on 1. intros. case H1.
+  % snil
+  case H2.
+  % scons
+  case H3. case H2.
+   % Seq = Seq1
+   unfold. exists NewAndL. split. search. intros.
+   backchain IH. backchain smem_sappend_l.
+   % Seq in tail
+   backchain IH. backchain smem_sappend_r.
 
 Theorem small_big_ok:
- forall Ctx F AndL1 AndL2 AndL3,
-  steps nil AndL3 snil ->
-  smem (pair Ctx F) AndL2 ->
-  sappend AndL1 AndL2 AndL3 ->
+ forall Ctx F,
+  steps nil (scons (pair Ctx F) snil) snil ->
   { Ctx |- F }.
-
-
-induction on 1. 
-intros. 
-case H1. 
- % snil   
- case H2.
-
- case H3.
- case H3.
-
-
-
-
-
-/* 
- % scons
- case H3.
- case H2.
-   % in hd
-   case H5.
-     % ttrue
-     search.
-     
-     % aand
-     assert (smem (pair Ctx F1) AndL1).
-       %%%%%%%%%%
-       skip.
-     assert (smem (pair Ctx F2) AndL1).
-       %%%%%%%%%%%
-       skip.
-     apply IH to H4 H7. apply IH to H4 H8. search.
-
-     % oor1
-     skip.
-
-     % oor2
-     skip.
-
-     % impl
-     apply IH to H4 _. search.
-     skip. 
-     % pi
-     apply IH to H4 _. search.
-     skip.    
-     % sigma
-     apply IH to H4 _. search.
-     skip. 
-     % backchain
-     skip.
-   % in tail
-*/
-
-
-
-/*
-Define step : clist -> slist -> slist -> prop by
-  step Prog (scons (pair Ctx ttrue) AndL) AndL
-; step Prog (scons (pair Ctx (aand F1 F2)) AndL) (scons (pair Ctx F1) (scons (pair Ctx F2) AndL))
-; step Prog (scons (pair Ctx (oor F1 F2)) AndL) (scons (pair Ctx F1) AndL)
-; step Prog (scons (pair Ctx (oor F1 F2)) AndL) (scons (pair Ctx F2) AndL)
-; step Prog (scons (pair Ctx (F1 => F2)) AndL) (scons (pair (ccons (mk_clause F1) Ctx) F2) AndL)
-; nabla x, step Prog (scons (pair Ctx (pi x : o \ F x)) AndL) (scons (pair Ctx (F x)) AndL)
-; step Prog (scons (pair Ctx (ssigma F)) AndL) (scons (pair Ctx (F X)) AndL)
-; step Prog (scons (pair Ctx Pred) AndL) (scons (pair Ctx ClauseBody) AndL) :=
-    look_in_prog Ctx Pred ClauseBody \/
-    look_in_prog Prog Pred ClauseBody.
-*/
+intros. apply small_provable to H1 _. backchain provable_big_ok.
