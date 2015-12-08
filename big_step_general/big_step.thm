@@ -101,15 +101,15 @@ Define to_olist : flist -> olist -> prop by
 Theorem in_flist:
  forall X Y L, flist_mem Y L -> flist_mem Y (fcons X L). 
   induction on 1. intros.
-  case H1. backchain IH. 
-  skip.
+  case H1. search.
+  
+  apply IH to H2 with X = A.  
+  case H3.
+  apply IH to H2 with X = A.  
+  search.
 
-  apply IH to H2 with X = X.
-  case H3. search.
-  apply IH to H2 with X = A.
-  backchain IH. 
-  skip.
-
+  apply IH to H2 with X = A.  
+  search.
 
 Theorem look_in_prog_ok:
  forall Ctx1 Ctx2 Ctx222 Head Body,
