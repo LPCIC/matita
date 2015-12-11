@@ -1,17 +1,17 @@
 module big_step.
 
 %:aand:
-to_fla (aand F1 F2) :- to_fla F1, to_fla F2.
+fla_to_o (aand F1 F2) :- fla_to_o F1, fla_to_o F2.
 %:oor1:
-to_fla (oor F1 F2) :- to_fla F1.
+fla_to_o (oor F1 F2) :- fla_to_o F1.
 %:oor2:
-to_fla (oor F1 F2) :- to_fla F2.
-to_fla ttrue.
+fla_to_o (oor F1 F2) :- fla_to_o F2.
+fla_to_o ttrue.
 %:ssigma:
-to_fla (ssigma F) :- to_fla (F X).
+fla_to_o (ssigma F) :- fla_to_o (F X).
 %:iimp:
-to_fla (iimp F1 F2) :- (to_fla F1) => (to_fla F2).
+fla_to_o (iimp F1 F2) :- (fla_to_o F1) => (fla_to_o F2).
 %:ppi:
-to_fla (ppi F) :- pi x\ (to_fla (F x)).
+fla_to_o (ppi F) :- pi x\ (fla_to_o (F x)).
 
 

@@ -82,8 +82,8 @@ Define provable : flist -> sequent -> prop by
 Theorem match_ok:
  forall Ctx Clause Head Body,
    match Clause Head Body ->
-   { Ctx |- (to_fla Body) } ->
-   { Ctx, (to_fla Clause) |- (to_fla Head) }. 
+   { Ctx |- (fla_to_o Body) } ->
+   { Ctx, (fla_to_o Clause) |- (fla_to_o Head) }. 
  induction on 1. intros. case H1.  
   % pi
   apply IH to H3 H2. skip. % not possible
@@ -95,8 +95,9 @@ Theorem match_ok:
 
 Define to_olist : flist -> olist -> prop by
   to_olist fnil nil
-; to_olist (fcons X Lf) ((to_fla X)::Lo) := to_olist Lf Lo.
-
+; to_olist (fcons X Lf) ((fla_to_o X)::Lo) := to_olist Lf Lo.
+%                        extend it
+                         
 
 Theorem in_flist:
  forall X Y L, flist_mem Y L -> flist_mem Y (fcons X L). 
@@ -118,36 +119,35 @@ Theorem look_in_prog_ok:
    (forall X, (flist_mem X Ctx1) -> (flist_mem X Ctx2)) ->
    exists Clause Ctx3 Ctx333,
     Ctx3 = (fcons Clause Ctx2) /\
-    Ctx333 = (to_fla Clause)::Ctx222 /\
+    Ctx333 = (fla_to_o Clause)::Ctx222 /\
     (flist_mem Clause Ctx1) /\
-%   ({Ctx2 |- (to_fla Body) } -> { Ctx3 |- (to_fla Head) }).    
-   ({Ctx222 |- (to_fla Body) } -> { Ctx333 |- (to_fla Head) }).
-/* induction on 1. intros. case H1.
-   % head matches
-   exists ClauseHead. exists (fcons ClauseHead Ctx2). split. search.
-   search. intros. apply match_ok to H3 H4. search.   
-   % tail matches
-   apply IH to H3 _ with Ctx2 = Ctx2.
-     intros. backchain H2.
-     exists Clause. exists (Clause :: Ctx2). split. search. search.
-     intros. apply H5 to H6. search. 
-*/
+   ({Ctx222 |- (fla_to_o Body) } -> { Ctx333 |- (fla_to_o Head) }).
+
    induction on 1. intros. case H1. 
 
    exists ClauseHead. exists (fcons ClauseHead Ctx2). 
-   exists (to_fla ClauseHead)::Ctx222.
+   exists (fla_to_o ClauseHead)::Ctx222.
    split.  search. search. search. intros. 
    apply match_ok to H4 H5. search.
 
    apply IH to H4 H2 _. intros.
    backchain H3.
    exists Clause. exists (fcons Clause Ctx2). 
-   exists (to_fla Clause)::Ctx222. split. search. search.
+   exists (fla_to_o Clause)::Ctx222. split. search. search.
    backchain in_flist. search.
 
+Theorem add_list:
+ forall X Lf Lo, to_olist Lf Lo -> to_olist (fcons X Lf) ((fla_to_o X) :: Lo).
+  induction on 1. intros. case H1. search.
+  apply IH to H2 with X = X1. search.
+
+Theorem clause_in_list:
+ forall Clause Ctx Ctx2, to_olist Ctx Ctx2 -> flist_mem Clause Ctx   -> (member (fla_to_o Clause) Ctx2).  
+  induction on 1. intros.  
+  case H1. case H2. backchain IH. backchain add_list.
 
 Theorem provable_big_ok:
- forall Ctx Ctx2 F, provable fnil (pair Ctx F) -> to_olist Ctx Ctx2 -> { Ctx2 |- (to_fla F) }.
+ forall Ctx Ctx2 F, provable fnil (pair Ctx F) -> to_olist Ctx Ctx2 -> { Ctx2 |- (fla_to_o F) }.
  induction on 1. intros. case H1. case H3.  
   % true
   search. 
@@ -159,10 +159,9 @@ Theorem provable_big_ok:
   % oor
   unfold oor2. backchain IH. backchain H4.
   % =>
-  unfold iimp. backchain IH. backchain H4.
+  unfold iimp. backchain IH. backchain H4. 
   % ppi
-  unfold ppi. backchain IH. backchain H4. 
-  skip. %to be fixed
+  unfold ppi. backchain IH. permute (n1 n2) H4. backchain H4. 
   % ssigma
   unfold ssigma. 
     exists X. backchain IH. backchain H4. 
@@ -170,11 +169,11 @@ Theorem provable_big_ok:
   case H5.            
     apply look_in_prog_ok to H6 H2 _. 
     apply H8 to _. backchain IH. backchain H4. 
-    assert { Ctx2 |- to_fla Clause }. % from H2 and H7
-    skip.       
-    cut H9 with H10. search. 
+    assert { Ctx2 |- fla_to_o Clause }. % from H2 and H7
+    apply clause_in_list to H2 H7.
+    search.
+    cut H9 with H10. search.
     apply look_in_prog_ok to H6 H2 _. intros. case H7. case H7.
-
 
 Define stepl : flist -> slist -> slist -> prop by
   stepl Prog (scons Seq AndL) AndLO :=
@@ -185,7 +184,6 @@ Define steps : flist -> slist -> slist -> prop by
   steps Prog AndL AndL
 ; steps Prog AndLI AndLO :=
    exists AndL, stepl Prog AndLI AndL /\ steps Prog AndL AndLO.
-
 
 Theorem smem_sappend_l:
  forall X L1 L2 L3,
@@ -220,7 +218,7 @@ Theorem small_provable:
 Theorem small_big_ok:
  forall Ctx F Ctxo,
   steps fnil (scons (pair Ctx F) snil) snil ->
-  to_olist Ctx Ctxo -> { Ctxo |- to_fla F }.
+  to_olist Ctx Ctxo -> { Ctxo |- fla_to_o F }.
 intros. apply small_provable to H1 _. backchain provable_big_ok.
 
 

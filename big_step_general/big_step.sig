@@ -9,7 +9,6 @@ type ssigma (formula -> formula) -> formula.
 type iimp formula -> formula -> formula.
 type ppi (formula -> formula) -> formula.
 
-type to_fla formula -> o.
 
-
+type fla_to_o formula -> o.
 
