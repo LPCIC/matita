@@ -30,6 +30,7 @@
 % numbers       To obtain numeric citation style instead of author/year.
 
 \usepackage{amsmath}
+\usepackage{fancyvrb}
 
 \newcommand{\cL}{{\cal L}}
 
@@ -122,6 +123,44 @@ As a final remark, the interest of the work, that is still on-going, is not to o
 Section~\ref{????} \ldots
 
 \section{LambdaProlog in a nutshell}
+LambdaProlog extends the core of Prolog in two directions.
+\begin{enumerate}
+\item it allows in the syntax $lambda$-abstractions (written \texttt{x \ p} for $\lambda x.p$), applications (written \texttt{p q} like in $\lambda$-calculus and unlike in Prolog) and metavariables both in argument and in head position (e.g. \texttt{iter [X|XS] F [Y|YS] :- F X Y, iter XS F YS.} where the metavariable $F$ is to be istantiated with a binary predicate like \texttt{(x \ y \ y = x+x)})
+\item it generalizes Horne clauses to Hereditarily XXXX clauses, whose grammar is
+$$PUT HERE THE GRAMMAR$$
+\end{enumerate}
+
+The semantics of the connectives that occurs in Hereditarily XXX clauses is given by the introduction and elimination rules of the connectives in higher order logic. In particular:
+\begin{itemize}
+\item \texttt{p => q} assumes \texttt{p}, that is turned into a new program clause, to prove \texttt{q}
+\item \texttt{pi x \ q} (universal quantification) introduces a new fresh variable \texttt{y} and proves \texttt{q} after replacing \texttt{y} with \texttt{c}
+\item \texttt{sigma x \ q} (existential quantification) introduces a new metavariable \texttt{X}and proves \texttt{q} after replacing \texttt{x} with \texttt{X}. Later \texttt{X} can be istantiated with any term whose free variables were all in scope at the time \texttt{sigma} was processed
+\item assuming \texttt{p,q} means assuming both \texttt{p} and \texttt{q} independently
+\item assuming \texttt{pi x \ q} means assuming all possible instances of \texttt{q}, i.e. all use of the clause will substitute \texttt{x} in \texttt{q} with a fresh metavariable \texttt{X}
+\item assuming \texttt{sigma x \ q} means generating a new fresh constant \texttt{y} and assuming \texttt{q} after replacing \texttt{x} with \texttt{y}
+\end{itemize}
+
+\texttt{sigma} in clause positions are not in ``standard'' LambdaProlog and they are accepted by our ELPI interpreter, but not from Teyjus. However, Teyjus implements a module system~\cite{???} that allows to declare variables local to the list $k_1,\ldots, k_n$ of clauses of the module. The same behaviour can be obtained in ELPI with (\texttt{sigma x \ k}$_1$, \ldots, \texttt{k}$_n$). Declaring local constants is the only and fundamental mechanism in LambdaProlog to restrict the trusted code base.
+
+The other major difference between the ELPI version of LambdaProlog and the ``official'' one of Teyjus is that we do not enforce any type discipline, nor we try to statically enforce the restriction to Hereditarily XXX. Errors at run-time (e.g. invoking a list as predicate) result in abortion of the program execution. On the other hand, it is for example possible to read from the terminal a query and execute it, which is prohibited by Teyjus because the correctness of the query cannot be statically enforced.
+
+To illustrate a typical LambdaProlog example, in Table~\ref{type-checker1} we show the code of a type-checker for closed terms of the simply typed lambda-calculus. We use the binary predicate \texttt{app} to encode application, and the unary predicate \texttt{lam} for lambda-abstraction. The latter is to be applied to a meta-level lamdba-abstraction in the spirit of higher-order abstract syntax. For example, the term $\lambda x.xx$ is encoded as \texttt{lam x \ app x x}. Note that, in the concrete syntax, parentheses around lambda-abstractions are not necessary in LambdaProlog when the abstraction is the last argument of an application. I.e. \texttt{lam x \ app x x} is to be read as \texttt{lam (x \ app x x)}.
+
+Observe that the code of the type-checker is really minimal and in one-to-one correspondence with the two derivation rules one writes usually on paper. However, there are some differences as well. In particular, the typing judgement \texttt{term T TY} (``\texttt{T}'' is a term of type ``\texttt{TY}'') does not mention any context $\Gamma$. Instead, in the rule for lambda-abstraction, the hypothesis that the fresh variable \texttt{x} has type \texttt{A} is directly assumed and put temporarily in the program code using logical implication \texttt{=>}.
+For example, the query \texttt{term (lam y \ app y y) TY} will match the second
+clause and trigger the new query \texttt{term (app x x) B} after having istantiated \texttt{TY} with \texttt{arr A B} where \texttt{x} is fresh (because introduced by \texttt{pi}) and it is known to have type \texttt{A}.
+
+Finally, we will use the cut predicate of Prolog \texttt{!} with the same
+non-logical semantics. We say that a predicate does not have a logical semantics
+when it breaks the commutativity rule of conunction or, equivalently, commutation of the semantics with istantiation.
+
+\begin{table}[t]
+\begin{Verbatim}[numbers=left,numbersep=1pt,frame=leftline]
+term (app M N) B :- term M (arr A B), term N A.
+term (lam F) (arr A B) :- pi x\ term x A => term (F x) B.
+\end{Verbatim}
+\caption{\label{type-checker1}A type-checker for simply typed lambda calculus.}
+\end{table}
 
 \section{HOL in a nutshell and its implementation in ML}
 
