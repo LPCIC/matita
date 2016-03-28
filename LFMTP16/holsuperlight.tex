@@ -246,7 +246,22 @@ allows to inspect a theorem to recover what has been proved. Of course, it does 
 
 An important feature of this approach, that dates back to LCF and puts it apart from the Curry-Howard approach used for Coq and other systems for dependently typed lanugages, is that \emph{no proof object} need to be stored. Indeed, an inhabitant of \verb+thm+ really is (in HOL Light) just a pair hypotheses/conclusion.
 
-The functions implemented in the kernel already allow to build proofs in bottom-up style. CONTINUARE PARLANDO DELLE PROVE TOP-DOWN E DELLE METAVARIABILI
+The functions implemented in the kernel already allow to build proofs in bottom-up style. Quite frequently, however, the user would like to mix the bottom-up and the top-down styles, and he would like to be able to use metavariables for yet unknown formulae during a top-down proof.
+
+Again following Milner's LCF, HOL Light implements outside the kernel a mechanism for top-down proofs based on the notion of tactic. Simplifying, the tactic type is defined as\\
+\verb+type tactic =+\\
+\verb+  sequent -> sequent list * instantiation * metavariables * justification+\\
+\verb+type justification = instantiation -> thm list -> thm+
+
+Ignoring the instantiation and metavariables, a tactic is a function that takes in input the sequent to be proved and return a list of new sequents to be proved and a justification. When the new sequents are proved, a list of theorems is obtained. The justification, fed with this list of theorems, returns the theorem for the initial sequent. In other words, each tactic implements a top-down reasoning step by producing the list of new subgoals plus the ``inverse'' bottom-up proof. When those are composed, the theorem is proved. Variables recorded as metavariables, i.e. omitted information, and instantiations for them complete the picture.
+
+We make a few observations here:
+\begin{itemize}
+\item As we already noticed in~\cite{??}, LCF tactics have a few drawbacks. They only allow to reason locally on one goal, because they do not take in input the global proof state. In case of mutual dependencies between goals due to metavariables, it becomes impossible to reduce the search space using global reasoning. Moreover, it is not possible to interrupt the execution of a tactic in the middle, for example to observe the intermediate states. The tinycals introduced in~\cite{??}, which can now be implemented in Coq as well after~\cite{??}, are a better solution but they require a first class representation of the entire proof state.
+\item During a top-down proof, the system temporarily records a proof object in the form of a justification, that is lazily consumed as soon as the corresponding subproof is completed (all leaves are closed). We would like to avoid this if possible.
+\item Every bottom-up inference rule --- primitive or derived --- performs some checks that are performed twice when the rule is turned into a top-down tactic.
+For example, the top-down tactic for the \verb+DEDUCT\_ANTISYM\_RULE+ rule must analyse the sequent in input to verify that it is of the form $\Gamma \vdash p=q$, yielding the two new goals $\Gamma, q \vdash p$ and $\Gamma, p \vdash q$. Later the justification \verb+DEDUCT\_ANTISYM\_RULE+ needs to pattern match the list of theorems in input against $\Gamma_1,q \vdash p$ and $\Gamma_2,p \vdash q$. The ``duplicate'' inverse checks are necessary because the kernel does not trust the outer parts of the system, but are still somehow undesired.
+\end{itemize}
 
 \section{The kernel in LamdbaProlog}
 
