@@ -31,6 +31,7 @@
 
 \usepackage{amsmath}
 \usepackage{fancyvrb}
+\usepackage{bussproofs}
 
 \newcommand{\cL}{{\cal L}}
 
@@ -181,9 +182,54 @@ term (lam F) (A --> B) :- pi x\ term x A => term (F x) B.
 \end{table}
 
 \section{HOL in a nutshell and its implementation in ML}
-HOL is a variant of Church's simple theory of types. Its precise syntax and semantics can be found in~\cite{the_HOL_system_LOGIC} even if we will implement a constructive variant of it, and we will refer for inspiration to the HOL Light version and implementation of a classical variant of HOL.
+HOL is a variant of Church's simple theory of types. Its precise syntax and semantics can be found in~\cite{the_HOL_system_LOGIC} even if we will implement a constructive variant of it, and we will refer for inspiration to the HOL Light version and implementation of a classical variant of HOL. Types and terms have the
+following syntax:
+$$\begin{array}{l}
+T ::= \alpha ~|~ u~T_1\ldots T_n ~|~ T \rightarrow T\\
+t ::= x_T ~|~ c_T ~|~ \lambda x_T. t ~|~ tt
+\end{array}$$
+where $u$ ranges over type constructors (constants when $n=0$) and $\alpha$
+ranges over type variables. Contrarily to System-F~\cite{???}, HOL has no type
+abstractions/applications. However, it is possible to assign to constants
+schematic types containing type variables $\alpha, \beta, \ldots$. For example,
+the append function \texttt{@} can be typed as $\mathtt{list}~\alpha \rightarrow \mathtt{list}~\alpha \rightarrow \mathtt{list}~\alpha$.
 
-AAAAA SYNTAX OF TYPES AND TERMS OF HOL AAAAAAA
+Variables $x_T$ and constants $c_T$ carry explicitly their type $T$ and they are equal iff both the name and the types are. In particular, each occurrence of a polymorphic constant, carrying its type, explicitly carries an instantiation for every type variable occurring in its type. For example
+\texttt{@}$_{\mathtt{list}~\mathtt{nat} \rightarrow \mathtt{list}~\mathtt{nat} \rightarrow \mathtt{list}~\mathtt{nat}}$ implicitly encodes the instantiation $\alpha := \mathtt{nat}$. In System-F the constant occurrence would be applied to the type: $\texttt{@}~\mathtt{nat}$.
+
+HOL systems assume the existence of two predefined types, one for propositions \texttt{bool} and one for individuals \texttt{ind} (also written $o$ and $\iota$ in the litterature). Logical connectives and quantifiers are just single out constants. For example, conjuction is given the monomorphic type $\mathtt{bool} \rightarrow \mathtt{bool} \rightarrow \mathtt{bool}$ and universal quantification the polymorphic type scheme $(\alpha \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}$. The usual trick of higher-order syntax is used to reduce all binders to $\lambda$-abstraction: $\forall x:\mathtt{nat}.P$ is represented as $\mathtt{forall}_{(\mathtt{nat} \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}} (\lambda x.P)$. In the case of the HOL Light variant, the only constant that is initially assumed to exist is polymorphic equality $\mathtt{=}_{\alpha \rightarrow \alpha \rightarrow \mathtt{bool}}$, that also doubles for coimplication when $\alpha = \mathtt{bool}$.
+
+The derivation system of the logic is made of two judgements, one for typing terms and the other for proving formulae in contexts (see ~\cite{???} for the XX derivation rules of the HOL Light implementation). Two examples of such rules are
+
+\AxiomC{$\vdash p : \mathtt{bool}$}
+\AxiomC{$\Gamma_1,p \vdash q$}
+\AxiomC{$\Gamma_2,q \vdash p$}
+\RightLabel{\tiny DEDUCT\_ANTISYM\_RULE}
+\TrinaryInfC{$\Gamma_1,\Gamma2 \vdash p = q$}
+\DisplayProof
+
+\AxiomC{$\Gamma \vdash p$}
+\RightLabel{\tiny INST\_RULE}
+\UnaryInfC{$\Gamma \sigma \vdash p \sigma$}
+\DisplayProof
+
+Like in the HOL Light implementation, the check for $p$ being a boolean in the former rule can be post-poned to the time the hypothesis is used (the HYP rule, here not shown).
+The latter rule is used to apply the substitution $\sigma$ that maps free variable names to terms. Its application must avoid variable capturing.
+
+An HOL theory is a list of declarations of types, constants and axioms, the latter being just formulae assumed to hold.
+
+The implementation of an HOL systems is rooted in the principle of conservative extensions: in order to introduce a new constant or a new type that satisfy certain axioms, the user must prove the existence of such a constant/type. We only show here the rule for introducing new definitions to explain a kind of complexity that involves free and bound names. 
+
+To introduce a new (polymorphic) constant $c_T$, the user must give a term $t$
+of type $T$ such that all free type variables contained in $t$ also occur in
+$T$. After checking the conditions and veryfing that no constant named $c$ is already defined in the current theory, the latter is extended with the new
+constant $c_T$ and the axiom $c_T = t$.
+
+The condition on the free type variables of $t$ avoids logical inconsistency
+and would not be necessary in System-F where every occurrence of $c$ would be explicitly applied to every free type variable that occurs in $t$. In HOL, instead, only the type instantiations for the type variables that occur in the type of $c$ can be recovered from the type of $c$. Therefore, if the condition is violated, $c_T$ could be rewritten via the axiom to an instantiation of $t$ that still contains free type variables. Example: $c_\mathtt{bool} = ! x_\alpha y_\alpha \  x_\alpha = y_\alpha$ that from $c_\mathtt{bool} = c_\mathtt{bool}$ via two instantiations would imply $! x_\mathtt{bool} y_\mathtt{bool} \  x_\mathtt{bool}= y_\mathtt{bool} \iff ! x_\mathtt{unit} y_\mathtt{unit} \  x_\mathtt{unit}= y_\mathtt{unit}$ i.e. $\mathtt{false} = \mathtt{true}$.
+
+\subsection{HOL (Light) in ML}
+
 
 \section{The kernel in LamdbaProlog}
 
