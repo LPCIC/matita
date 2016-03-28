@@ -204,7 +204,7 @@ The derivation system of the logic is made of two judgements, one for typing ter
 \AxiomC{$\vdash p : \mathtt{bool}$}
 \AxiomC{$\Gamma_1,p \vdash q$}
 \AxiomC{$\Gamma_2,q \vdash p$}
-\RightLabel{\tiny DEDUCT\_ANTISYM\_RULE}
+\RightLabel{\tiny DEDUCT\_ANTISYM\_RULE \label{krule}}
 \TrinaryInfC{$\Gamma_1,\Gamma2 \vdash p = q$}
 \DisplayProof
 
@@ -229,7 +229,24 @@ The condition on the free type variables of $t$ avoids logical inconsistency
 and would not be necessary in System-F where every occurrence of $c$ would be explicitly applied to every free type variable that occurs in $t$. In HOL, instead, only the type instantiations for the type variables that occur in the type of $c$ can be recovered from the type of $c$. Therefore, if the condition is violated, $c_T$ could be rewritten via the axiom to an instantiation of $t$ that still contains free type variables. Example: $c_\mathtt{bool} = ! x_\alpha y_\alpha \  x_\alpha = y_\alpha$ that from $c_\mathtt{bool} = c_\mathtt{bool}$ via two instantiations would imply $! x_\mathtt{bool} y_\mathtt{bool} \  x_\mathtt{bool}= y_\mathtt{bool} \iff ! x_\mathtt{unit} y_\mathtt{unit} \  x_\mathtt{unit}= y_\mathtt{unit}$ i.e. $\mathtt{false} = \mathtt{true}$.
 
 \subsection{HOL (Light) in ML}
+HOL Light~\cite{??} is an extremely lightweight implementation of HOL in ML that reuses the ML toplevel, following the tradition started by Milner~\cite{???}. The key idea is the possibility in ML of encoding \emph{private data types}~\cite{??}, i.e. data types whose values can be inspected via pattern matching outside the module that defines them, but that cannot be directly constructed outside the module. Instead, from outside the module, it is only possible to invoke a function, implemented in the module, that returns an inhabitant of the type.
 
+Private types can be used to encorce invariants: the functions of the module only builds terms that satisfy the invariants. Therefore, all inhabitants built outside the module are correct by construction, and the trusted code base for the maintainance of the invariants is lexically delimited by the module.
+
+HOL Light implements two private types corresponding to the two judgement of the logic: 1) the type of well typed terms $t$ such that there exists a $T$ s.t. $\vdash t : T$; 2) the type of theorems, i.e. pairs context $\Gamma$, formula $F$ such that $\Gamma \vdash F$. Theories could also have been implemented as a third private type (like what Coq does), but they are actually hidden inside the module that define the type of (well typed) terms.
+
+In particular, every inference rule of HOL corresponds to a function over theorems exported from the ``kernel'' module of HOL.
+
+\noindent
+\verb+val mkComb : term -> term -> term+\\
+\verb+val DEDUCT\_ANTISYM\_RULE : thm -> thm -> thm+\\
+for example correspond respectively to the typing rule for application $t_1 t_2$ and to the inference rule shown on page~\ref{krule}. The function\\
+\verb+val dest_thm : thm -> term list * term+\\
+allows to inspect a theorem to recover what has been proved. Of course, it does not have an inverse function that would correspond to claiming that $\Gamma \vdash p$ is a theorem without actually proving it.
+
+An important feature of this approach, that dates back to LCF and puts it apart from the Curry-Howard approach used for Coq and other systems for dependently typed lanugages, is that \emph{no proof object} need to be stored. Indeed, an inhabitant of \verb+thm+ really is (in HOL Light) just a pair hypotheses/conclusion.
+
+The functions implemented in the kernel already allow to build proofs in bottom-up style. CONTINUARE PARLANDO DELLE PROVE TOP-DOWN E DELLE METAVARIABILI
 
 \section{The kernel in LamdbaProlog}
 
