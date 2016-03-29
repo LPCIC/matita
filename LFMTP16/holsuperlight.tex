@@ -328,7 +328,9 @@ Work in this direction is in progress. As a first step that does not involve con
 \item \verb+$delay G X+ always holds, putting the goal \verb+G+ into a list of delayed goals, to be resumed as soon as the metavariable \verb+X+ is instantiated.
 \end{enumerate}
 
-With these two primitives, turning \verb+term+ into a constraint on flexible terms can be encoded as follows:
+With these two primitives, turning \verb+term+ into a constraint on flexible terms can be encoded as in Table~\ref{type-checker2}.
+\begin{table}[t]
+\begin{small}
 \begin{verbatim}
 term T TY :- $is_flex T, !, $delay (term T TY) T.
 term T TY :- term' T TY.
@@ -336,6 +338,9 @@ term' (lam A F) (A --> B) :- pi x\ term' x A => term (F x) B.
 term' (F ' T) B :- term F (A --> B), term T A.
 term' eq (A --> A --> prop).
 \end{verbatim}
+\end{small}
+\caption{\label{type-checker2}A type-checker for simply typed lambda calculus in Constraint Programming style.}
+\end{table}
 
 The first line delays the goal \verb+term T TY+ iff \verb+T+ is flexible. Otherwise the second line immediately turns it into \verb+term' T TY+. The next lines are the old implementation of \verb+term+ where \verb+term'+ is used in place of \verb+term+ in the heads of the clauses. The reason for the introduction of \verb+term'+ is that the new clauses \verb+term' x A+ introduced in the body of the lambda-abstraction case must be used strictly after the first, delaying clause. According to the standard semantics of LamdaProlog, a clause introduced by logical implication is always tried first. Hence the need for the technical \verb+term/term'+ distinction.
 
