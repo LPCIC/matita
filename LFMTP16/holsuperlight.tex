@@ -349,19 +349,147 @@ The \verb+$is_flex+ predicate is clearly extra-logical (it does not commute with
 We also have an experimental, CHR-inspired syntax to propagate constraints, but we omit its explanation from the paper because it is still work in progress. We only note here that propagation is a logical operation iff the propagation rule can be proved to holds as a meta-theoretical theorem. Therefore, so far, the proposed extensions are fully in the spirit of logic programming.
 
 \section{The kernel in LamdbaProlog}
+The second judgement implemented in our kernel is the derivation judgement in top-down style. It is encoded via three predicates, \verb+prove+, \verb+loop+ and \verb+thm+.
+
+The predicate \verb+loop SEQS CERTIFICATE+ holds when the list of well-typed sequents \verb+SEQS+ can all be proved following instructions from the certificate \verb+CERTIFICATE+.
+
+The predicate \verb+prove G CERTIFICATE+ holds when the formula \verb+G+ is well-typed of type \verb+prop+ and moreover \verb+loop [(seq [] G)] CERTIFICATE+ holds, where \verb+seq [] G+ represents a sequent whose context is empty and whose conclusion is the closed formula \verb+G+.
+\begin{small}
+\begin{verbatim}
+prove G TACS :-
+ (term G prop, ! ; parse PG G, $print "Bad statement:" PG, fail),
+ loop [ seq [] G ] TACS.
+\end{verbatim}
+\end{small}
+The code executed when type-checking fails provides a nice error message to the user. We call the type of propositions \verb+prop+ in place of \verb+bool+ because our logic is intuitionistic.
+
+The code for \verb+loop+ is the following:
+\begin{small}
+\begin{verbatim}
+loop [] CERTIFICATE :- end_of_proof CERTIFICATE.
+loop [ SEQ | OLD ] CERTIFICATE :-
+ next_tactic [ SEQ | OLD ] CERTIFICATE ITAC,
+ thm ITAC SEQ NEW,
+ append' NEW OLD SEQS,
+ update_certificate CERTIFICATE ITAC NEW NEW_CERTIFICATE,
+ loop SEQS NEW_CERTIFICATE.
+\end{verbatim}
+\end{small}
+The predicate calls the three predicates \verb+end_of_proof, next_tactic, update_certificate+ that are untrusted and defined outside of the kernel. Their intended usage is to extract from the certificate the next rule to use (a primitive inference rule or a user-defined tactic), and to update the certificate according to the new proof state. They are closely reminiscent of the corresponding ones in~\cite{miller????}.
+
+Predicate \verb+loop+ succeeds when there are no more sequents to prove, informing the certificate via \verb+end_of_proof+ (or verifying that the certificate agrees). Otherwise the predicate feeds the global proof state (the list of sequents) to \verb+next_tactic+ that, according to the certificate and the proof state, returns a rule \verb+ITAC+ to apply.
+
+Then \verb+loop+ invokes \verb+thm ITAC SEQ NEW+ that applied the rule \verb+ITAC+ to the goal \verb+SEQ+, reducing in top-down style a proof of it to a proof of the list \verb+NEW+ of new sequents (the hypotheses of the rule). Each primitive inference rule of HOL (Light) is implemented by \verb+ITAC+. For example, \verb+DEDUCT\_ANTISYM\_RULE+ (that we simply cal \verb+k+) is implemented by
+
+\verb+thm s (seq Gamma (eq ' P ' Q)) [ seq (P :: Gamma) Q, seq (Q :: Gamma) P ] :- reterm P prop.+
+
+As an invariant, we already know that \verb+eq ' P ' Q+ is well typed. The \verb+reterm P prop+ judgement is a variant of \verb+term+ that performs less checks knowing that \verb+P+ is already well typed. Note that, of the three premises of \verb+DEDUCT\_ANTISYM\_RULE+, the typing one is automatically discharged because retyping is decidable and efficient. The same happens in HOL Light.
+
+Once \verb+thm+ returns, the list of new sequents to prove is inserted in the
+proof state and the certificate is updated via \verb+update_certificate+ before entering the next loop iteration.
+
+All predicates involved but \verb+prove+, i.e. \verb+loop,thm,term,term',reterm+ are declared \verb+local+ to the kernel and the code is written carefully to avoid leaking them. Indeed, if such a predicate leaked out, it would be possible for a malicious user to augment the clauses about the predicate, breaking logical correctness (e.g. executing \verb+thm [seq [] false] [] ==> prove false X+). The problem of avoid leaking is clearly undecidable, but a simple static analysis can verify that our kernel does not leak (essentially because the predicates are only used in the kernel in head position and never in argument position and so they cannot be leaked out). The static analysis has not been implemented yet.
+
+Compared to the HOL Light kernel, our kernel verifies whole proofs, whereas HOL Light only verifies the application of a single inference rule. The reason is that, because of the private type implementable in ML, composing inference rules outside the kernel via function application is a safe operation in ML. In our case, without the private type, composition of rules must be fully implemented inside the kernel.
+
+\subsection{Free names in sequents}
+In HOL sequents can contain free variables of any type, and the \verb+INST\_RULE+ allows to later instantiate them freely. In LambdaProlog we want to work only on closed terms in order to reuse the language binding mechanism to avoid implementing $\alpha$-conversion, instantiation, etc. Some inference rules, however, do introduce fresh names (typical examples are the introduction rule for the universal quantifier). Because free variables are not allowed in the semi-shallow encoding, we need to find a representation of sequents where all variables are bound ``outside the sequent''. The one we chose puts enough \verb+bind TYPE+ binders around the sequent. For example, the primitive congruence rule for $\lambda$-abstractions is written as:
+
+\begin{small}
+\begin{verbatim}
+thm k (seq Gamma (eq ' (lam A S) ' (lam A T)))
+ [ bind A x \ seq Gamma (eq ' (S x) ' (T x)) ].
+\end{verbatim}
+\end{small}
+
+Correspondingly, we introduce two new primitive rules to prove sequents
+that have free names:
+
+\begin{small}
+\begin{verbatim}
+thm (bind A TAC) (bind A SEQ) NEWL :-
+ pi x \ term' x A => thm (TAC x) (SEQ x) (NEW x), put_binds' (NEW x) x A NEWL.
+
+thm ww (bind A x \ SEQ) [ SEQ ].
+\end{verbatim}
+\end{small}
+
+Rule \verb+ww+ (for weakening) is easier to understand: if \verb+x+ does not occur in the sequent, proving \verb+bind A x \ SEQ+ is equivalent to proving \verb+SEQ+.
+
+The first rule says that to prove a \verb+bind A x SEQ+ using a rule \verb+bind A TAC+ which is itself parametric on a variable having the same type, it is sufficient to pick a fresh name \verb+x+, assume that is has type \verb+A+, and then call rule \verb+TAC x+ (the rule ``instantiated'' on the fresh name) on \verb+SEQ x+ (the sequent ``instantiated'' on the fresh name). The result will be a list of new sequents \verb+NEW x+ where \verb+x+ can occur. The predicate \verb+put_binds'+ (code of 4 lines not shown for space reasons) prefixes every sequent in the list \verb+NEW x+ with the \verb+bind A x \+ binder.
+
+Compared to HOL Light, these two rules are new, but \verb+INST\_RULE+ (and the corresponding one for type variable instantiation) are no longer necessary. Moreover, the remaining primitive rules are slightly simplified by removing $\alpha$-equivalence tests where they occur in HOL Light code.
+
+\subsection{Tactics as macros}
+A rule in the previous paragraphs is meant to be either a primitive rule of the logic, or a user-defined tactic. In LCF tradition a tactic takes in input a local proof state and applies a bunch of other rules, either primitives or tactics.
+
+In our code, a tactic is essentially a user-defined macro that expands to the composition of other rules. The expansion is determined by the tactic parameters but also by the (local) proof state. The invocation of the expansion is implemented in the kernel, but the expansion predicate \verb+deftac+ is untrusted and freely implemented outside.
+
+\begin{small}
+\begin{verbatim}
+thm TAC SEQ SEQS :- deftac TAC SEQ XTAC, thm XTAC SEQ SEQ.
+
+% Example outside the kernel
+deftac forall_i (seq Gamma (forall '' _ ' lam _ G)) TAC :-
+ TAC = then (conv dd) (then k (bind _ x \ eq_true_intro)).
+\end{verbatim}
+\end{small}
+
+Note how the \verb+forall\_i+ tactic for the introduction of universal quantifiers is implemented composing other tactics (\verb+eq\_true\_intro, k+ and the conversion \verb+conv dd+) via LCF tacticals (\verb+then, thens,+ \ldots). Note also that, contrarily to every other interactive theorem prover out there, our scripts containts binders for the names of freshly introduced variables. For example, as we have seen in Section~\ref{???} the \verb+k+ rule above introduces a fresh name, and the tactic definition must start binding the name and retrieving its type (via \verb+bind _ x+). The name can then be used in the rest of the script if necessary.
+
+The use of binders in the scripts is a clear improvement over other systems, where just strings are used to refer to the name of hypotheses, with major problems in case the names change, e.g. because of a new version of the system. Proof refactoring~\cite{???} should also be simplified.
+
+A tactical \verb+bind* TAC+ is also provided to bind-and-ignore as many fresh names as possible, that are not bound in \verb+TAC+ that therefore cannot use them. It is necessary, for example, after the application of the \verb+repeat+ tactical to a tactic that generates fresh names, because it is statically unknown how many fresh names will be generated.
+
+For the time being we do not assign names to hypotheses, like in HOL Light and unlike other theorem provers like Coq. Adding names to hypotheses via binders in the script as we did for fresh names does not introduce any new difficulty.
+
+\subsection{Tacticals}
+An LCF tactical is an higher order tactic. Most tacticals starts applying a tactic and then continue on the resulting subgoals. Tacticals can be defined in ML outside the kernel by inspecting the result of the first tactic application and using safe function composition. We are forced again to provide a kernel-side mechanism to implement tacticals as we did for tactics. It boils down to the new following primitive rules:
+
+\begin{small}
+\begin{verbatim}
+thm (thenll TAC1 TACN) SEQ SEQS :-
+ thm TAC1 SEQ NEW,
+ deftacl TACN NEW TACL,
+ fold2_append' TACL NEW thm SEQS.
+
+thm (! TAC) SEQ SEQS :- thm TAC SEQ SEQS, !.
+
+thm id SEQ [ SEQ ].
+\end{verbatim}
+\end{small}
+
+The first rule apply a tactic \verb+TAC1+ and then asks the untrusted predicate \verb+deftacl+ defined in user space to expand the ``tactic'' (certificate?) \verb+TACN+ to a list of tactics \verb+TACL+. The expansion can observe the list of goals generated by \verb+TAC1+ and each new tactic will be applied to the corresponding new goal by \verb+fold2\_append+ that also collects the set of new, final goals.
+
+Rule \verb+thenll+ already allows to implement in user space most LCF tacticals like \verb+then+ and \verb+thenl+. The remaining can be implemented using the \verb+id+ rule too, that is the neutral element of composition (it does nothing).
+
+Finally, the extra-logical \verb+(! TAC)+ tactical applies the tactic \verb+TAC+ and then suppress all backtrackings via cut. It is very useful in those situations where the user whants to implement invertible tactics~\cite{????}, i.e. tactics that may be backtracked, but that do not change provability and thus should not be backtracked.
+
+We observe that the tactics and tacticals that can be implemented in our system goes beyond the LCF ones because we inherit full-backtracking from LambdaProlog. In particular, our tactics are naturally non-deterministic, i.e. they can have multiple solutions (that are enumerated via backtracking).
+The LCF version of the \verb+then+ tactical that never backtracks the first tactic corresponds to our restriction to banged tactics: \verb+then (! TAC1) TAC2+.
+
+\subsection{Uses of the certificates}
+
+QUI DIRE CHE LI USIAMO SIA PER RIPRODURRE LE PROVE CHE PER GENERALE INTERATTIVAMENTE
+
+\subsection{Final considerations}
+
+QUI DIRE CHE NONOSTANTE LE REGOLE AGGIUNTIVE INTRODOTTE NEL NUCLEO, IL NOSTRO NUCLEO E' PIU' PICCOLO (DI QUANTO?) DI QUELLO DI HOL LIGHT
 
 \section{Parsing and Pretty Printing}
 
-\section{Tactics and Tacticals}
+QUA PARLARE ANCHE DELLA SFIGA DEI NOMI PERDUTI NEI BINDER
 
 \section{Definitional Mechanisms}
 
+SE NON C'E' SPAZIO POSSIAMO SOPPRIMERE QUESTO
+
 \section{Conclusions and Future Work}
 
-\appendix
-\section{Appendix Title}
+%\appendix
+%\section{Appendix Title}
 
-This is the text of the appendix, if you need one.
+%This is the text of the appendix, if you need one.
 
 \acks
 
