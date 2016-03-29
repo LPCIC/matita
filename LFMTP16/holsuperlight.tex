@@ -161,11 +161,11 @@ syntactic sugar \texttt{\{ local x.} $H_1.\;\ldots\; H_n.$ \texttt{\}} (where th
 
 The other major difference between the ELPI version of LambdaProlog and the ``official'' one of Teyjus is that we do not enforce any type discipline, nor we try to statically enforce the restriction to HOHHF. Errors at run-time (e.g. invoking a list as a predicate) result in abortion of the program execution. On the other hand, it is for example possible to read from the terminal a query and execute it, which is prohibited by Teyjus because the correctness of the query cannot be statically enforced.
 
-To illustrate a typical LambdaProlog example, in Table~\ref{type-checker1} we show the code of a type-checker for closed terms of the simply typed lambda-calculus. We use the binary constant \verb+app+ to encode application, the unary constant \verb+lam+ for lambda-abstraction, and the infix constant \verb+-->+ for the function space type. The latter is to be applied to a meta-level lamdba-abstraction in the spirit of higher-order abstract syntax. For example, the term $\lambda x.xx$ is encoded as \verb+lam x \ app x x+. Note that, in the concrete syntax, parentheses around lambda-abstractions are not necessary in LambdaProlog when the abstraction is the last argument of an application. I.e. \verb+lam x \ app x x+ is to be read as \verb+lam (x \ app x x)+.
+To illustrate a typical LambdaProlog example, in Table~\ref{type-checker1} we show the code of a type-checker for closed terms of the simply typed lambda-calculus. We use the infix constant \verb+'+ to encode application, the unary constant \verb+lam+ for lambda-abstraction, and the infix constant \verb+-->+ for the function space type. The latter is to be applied to a meta-level lamdba-abstraction in the spirit of higher-order abstract syntax. For example, the term $\lambda x.xx$ is encoded as \verb+lam x \ x ' x+. Note that, in the concrete syntax, parentheses around lambda-abstractions are not necessary in LambdaProlog when the abstraction is the last argument of an application. I.e. \verb+lam x \ x ' x+ is to be read as \verb+lam (x \ x ' x)+.
 
 Observe that the code of the type-checker is really minimal and in one-to-one correspondence with the two derivation rules one writes usually on paper. However, there are some differences as well. In particular, the typing judgement \texttt{term T TY} (``\texttt{T}'' is a term of type ``\texttt{TY}'') does not mention any context $\Gamma$. Instead, in the rule for lambda-abstraction, the hypothesis that the fresh variable \texttt{x} has type \texttt{A} is directly assumed and put temporarily in the program code using logical implication \texttt{=>}.
-For example, the query \texttt{term (lam y \ app y y) TY} will match the second
-clause and trigger the new query \texttt{term (app x x) B} after having istantiated \texttt{TY} with \texttt{A --> B} where \texttt{x} is fresh (because introduced by \texttt{pi}) and it is known to have type \texttt{A}.
+For example, the query \texttt{term (lam y \ y ' y) TY} will match the second
+clause and trigger the new query \texttt{term (x ' x) B} after having istantiated \texttt{TY} with \texttt{A --> B} where \texttt{x} is fresh (because introduced by \texttt{pi}) and it is known to have type \texttt{A}.
 
 Finally, we will use the cut predicate of Prolog \texttt{!} with the same
 non-logical semantics. We say that a predicate does not have a logical semantics
@@ -174,7 +174,7 @@ when it breaks the commutativity rule of conunction or, equivalently, commutatio
 \begin{table}[t]
 \begin{small}
 \begin{Verbatim}[numbers=left,numbersep=1pt,frame=leftline]
-term (app M N) B :- term M (A --> B), term N A.
+term (M ' N) B :- term M (A --> B), term N A.
 term (lam F) (A --> B) :- pi x\ term x A => term (F x) B.
 \end{Verbatim}
 \end{small}
@@ -263,9 +263,87 @@ We make a few observations here:
 For example, the top-down tactic for the \verb+DEDUCT\_ANTISYM\_RULE+ rule must analyse the sequent in input to verify that it is of the form $\Gamma \vdash p=q$, yielding the two new goals $\Gamma, q \vdash p$ and $\Gamma, p \vdash q$. Later the justification \verb+DEDUCT\_ANTISYM\_RULE+ needs to pattern match the list of theorems in input against $\Gamma_1,q \vdash p$ and $\Gamma_2,p \vdash q$. The ``duplicate'' inverse checks are necessary because the kernel does not trust the outer parts of the system, but are still somehow undesired.
 \end{itemize}
 
-\section{The kernel in LamdbaProlog}
+\section{Requirements and Term Encoding}
+We begin the description of our implementation of (a constructive variant of)
+HOL in ELPI, our LambdaProlog interpreter. The code described here is available at~XXXXX. The implementation is meant as an experiment to evaluate if Higher Order Logic Programming can indeed be employed concisely and effectively for the implementation of interactive theorem provers. In this experiment, we take inspiration from HOL Light and we set the following requirements:
+\begin{enumerate}
+\item The system must have a small trusted code based, henceforth called the ``kernel''. Bugs outside the kernel must not allow to conclude that a non-tautological formula $F$ is a theorem.
+\item The LCF architecture does not need to record proof objects. Therefore we do not want to record proof objects as well.
+\item The implementation must use genuine Higher Order Logic Programming techniques. Binders have to be handled exploiting the binding machinery of the language. Object level metavariables must be represented by the metavariables of the language.
+\item Tactics must be able to inspect the global proof state.
+\end{enumerate}
+
+The third requirement rules out the encoding of the HOL Light in LambdaProlog. A mechanical encoding is possible because the language is Turing complete, but it would not benefit from the features of the language.
+
+The second and fourth requirement rule out the technique used by Amy Felty and, more recently, by the group of Dale Miller~\cite{???}. Felty and Miller encodes the judgements of the object logic via a LambdaProlog predicate that defined by recursion over a proof object (Felty) or a proof certificate (Miller).
+For example, the proof object can decide to apply the transitivity rule for application to a goal where multiple rules apply. A proof certificate is similar to a proof object, but it can avoid recording all the needed information or encode it at a different level of detail. Therefore, a proof certificate may be non syntax directed, in the sense that multiple rules can be tried according to the same certificate, triggering backtracking if needed.
+
+In both cases, the system can be simply turned into both an automatic or an interactive theorem prover. In the first case, it is sufficient to replace the certificate with a metavariable: the LambdaProlog predicate will then work in a generative way, blindly enumerating all possible proof objects (and potentially diverging because of depth-first search, that can be replaced with iterative deepening to keep completeness). To obtain an interactive prover, the certificate is replaced with the request to the user to type the next rule to be tried. The user interaction can also print the sequent to be proved, but not the other open branches of the proof, that are kept at the meta-level in the and/or tree of the LambdaProlog interpreter.
+
+Finally, we cannot implement the kernel using a private type like in ML because Logic Programming rules out private types. To understand why, remember that every predicate in a (pure) logic programming language is invertible. Therefore it is not possible to implement a type with a predicate to reveal the data, but preventing its use to build the data as well. In particular, the predicate \verb+dest\_thm+ corresponding to the function with the same name in HOL would allow to feed it any pair context-formula to obtain a theorem without any further control.
+
+The only way to protect part of the code in LamdaProlog is to existentially quantify a predicate to be kept secret to the rest of the code. Therefore, our kernel implements two predicates, one for the typing judgement and one for derivability, that are kept local. In order to fullfill requirement number 4, derivability will work on list of sequents (the proof state) in place of a single sequent. Finally, to avoid the repetition of code and checks in the HOL approach, we only focus for now on top-down proofs.
+
+We detail now the implementation of the kernel.
+
+\subsection{Semi-shallow encoding of terms}
+Before starting, we first need to choose a syntactic representation for both
+terms and types that respect requirement 3, that rules out deep encodings.
+A deep encoding for simply typed $\lambda$-calculus with metavariables would
+look like this and be very similar to the data type Coq and Matita are build around:
+
+$$ t ::= var~\mathtt{NAME} ~|~ app~t~t ~|~ lam~\mathtt{TYPE}~\mathtt{NAME}~t ~|~ meta~\mathtt{NAME}$$
+
+Assuming $\mathtt{NAME}$s to be either strings or De Brujin indexes, a deep encoding forces the implmenetation of $\alpha$-conversion, lifting, substitution, instantiation of metavariables, etc.
+
+At the other side of the spectrum we find the shallow encoding for closed terms: we just encode object level terms with language level terms, object level metavariables with LambdaProlog metavariables and so on. Instantiation of metavariables as well as $\alpha$-conversion and $\beta$-reduction comes for free. However, it becomes impossible to implement --- without extra-logical extensions of the language --- both the derivation and the typing judgements. For example, the code
+\verb+type (F X) B :- type X A, type F (A --> B)+ does not do what it seems to
+do, because applied to the query \verb+type (f a) Z+, it yields the higher order
+unification problem \verb+F X = f a+ that admits multiple solutions like
+\verb+F := x \ f a+, \verb+X := 0+.
+
+We therefore propose what we call the \emph{semi-shallow} encoding:
+
+$$t ::= t~\verb+'+~t ~|~ lam~\mathtt{TYPE}~F$$
+
+where \verb+'+ is just an infix constructor, \verb+F+ is a LambdaProlog function from terms to terms and object level metavariables are encoded via language level metavariables. For example, $\lambda x\!:\!o. X~x$ is encoded as
+\verb+lam o x \ X x+. Ignoring the issue about metavariables, the semi-shallow encoding was the one already used in Table~\ref{type-checker1}, that essentially show the typing judgement of our implementation of HOL Light, which includes a few other clauses for primitive constants, like \verb+term eq (A --> A --> prop)+.
+
+For simply typed $\lambda$-calculus (plus type variables) type checking is decidable and the typing judgement of Table~\ref{type-checker1} is already syntax directed. Therefore HOL never asks the user to prove that a term has a certain type: type checking/inference is run fully automatically.
+
+Because we can inject LambdaProlog variables in place of types of bound variables, our type checking judgement already doubles as type inference. E.g. \verb+term (lam A x \ x + 1) B+ yields \verb+A := nat, B := nat+.
 
 \section{Towards a Constrained Programming Extension of LambdaProlog}
+What happens when the typing judgement is called on a term that contains a metavariables (like in \verb+lam A x \ X x+)? Without changes to the system, the \verb+term+ predicate will start blindly enumerating all well typed terms in generative mode. This is definitely not the behaviour we expect from an interactive prover.
+
+The correct behaviour, implemented for example by Coq as well, is to stop execution of the type-checking judgement, to be resumed only when the metavariable will be istantiated. A more insightful way to read this behaviour is to imagine that the judgement is turned into a \emph{constraint} imposed on the metavariable, that ranges over the infinite domain of terms. In particular, \verb+term X T+ is turned into the constraint that \verb+X+ must have type \verb+T+. When later \verb+X+ is instantiated, the constraint is verified.
+
+The explanation based on constraints is particularly insightful because it suggests the other fundamental operation of Constraint Programming: constraint propagation. Imagine, for example, that the same metavariable \verb+X+ occurs twice in a term to be type-checked. Type-checking will impose two constraints over \verb+X+, for example \verb+term X (A --> nat)+ and \verb+term X B+. Because of unicity of typing, a metatheoretical result about the simply typed $\lambda$-calculus, we know that this can be the case iff \verb+(A --> nat) = B+. Therefore the metatheorem can be turned into a contraint propagation rule that, given two typing constraints on the same variable, removes one of them generating a new unification problem.
+
+Propagation of typing constraints is implemented in Coq in an ad-hoc way. The Lean implementation, instead, starts building a generic constraint programming machinery on top of C++~\cite{???}. Similarly, we want to extend our LambdaProlog langauge to an \emph{Higher Order Constraint Logic Programming Language} where the set of constraints and propagation rules are described in user space, much in the spirit of the Constraint Handling Rules (CHR) language.
+
+Work in this direction is in progress. As a first step that does not involve constraint propagation, we would like to specify that a syntax directed predicate is to be turned into a constraint when it faces a metavariable. Hypothetical syntax: \verb+delay (term X T) until not flexible X.+ For the time being, we encode the syntax above with two low-level primitives not in standard LambdaProlog:
+\begin{enumerate}
+\item \verb+$is_flex X+ holds iff \verb+X+ is a flexible term, i.e. a metavariable or an application of a metavariable.
+\item \verb+$delay G X+ always holds, putting the goal \verb+G+ into a list of delayed goals, to be resumed as soon as the metavariable \verb+X+ is instantiated.
+\end{enumerate}
+
+With these two primitives, turning \verb+term+ into a constraint on flexible terms can be encoded as follows:
+\begin{verbatim}
+term T TY :- $is_flex T, !, $delay (term T TY) T.
+term T TY :- term' T TY.
+term' (lam A F) (A --> B) :- pi x\ term' x A => term (F x) B.
+term' (F ' T) B :- term F (A --> B), term T A.
+term' eq (A --> A --> prop).
+\end{verbatim}
+
+The first line delays the goal \verb+term T TY+ iff \verb+T+ is flexible. Otherwise the second line immediately turns it into \verb+term' T TY+. The next lines are the old implementation of \verb+term+ where \verb+term'+ is used in place of \verb+term+ in the heads of the clauses. The reason for the introduction of \verb+term'+ is that the new clauses \verb+term' x A+ introduced in the body of the lambda-abstraction case must be used strictly after the first, delaying clause. According to the standard semantics of LamdaProlog, a clause introduced by logical implication is always tried first. Hence the need for the technical \verb+term/term'+ distinction.
+
+The \verb+$is_flex+ predicate is clearly extra-logical (it does not commute with instantiation). However, the high-level programming construct \verb+delay+ \ldots \verb+until not flexible+ that we have just encoded is perfectly logical.
+
+We also have an experimental, CHR-inspired syntax to propagate constraints, but we omit its explanation from the paper because it is still work in progress. We only note here that propagation is a logical operation iff the propagation rule can be proved to holds as a meta-theoretical theorem. Therefore, so far, the proposed extensions are fully in the spirit of logic programming.
+
+\section{The kernel in LamdbaProlog}
 
 \section{Parsing and Pretty Printing}
 
