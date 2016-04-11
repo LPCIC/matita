@@ -311,42 +311,151 @@ where \verb+'+ is just an infix constructor, \verb+F+ is a LambdaProlog function
 
 For simply typed $\lambda$-calculus (plus type variables) type checking is decidable and the typing judgement of Table~\ref{type-checker1} is already syntax directed. Therefore HOL never asks the user to prove that a term has a certain type: type checking/inference is run fully automatically.
 
-Because we can inject LambdaProlog variables in place of types of bound variables, our type checking judgement already doubles as type inference. E.g. \verb+term (lam A x \ x + 1) B+ yields \verb+A := nat, B := nat+.
+Because we can inject LambdaProlog variables in place of types of bound variables, our type checking judgement already doubles as type inference. E.g. \verb/term (lam A x \ x + 1) B/ yields \verb+A := nat, B := nat+.
 
-\section{Towards a Constrained Programming Extension of LambdaProlog}
-What happens when the typing judgement is called on a term that contains a metavariables (like in \verb+lam A x \ X x+)? Without changes to the system, the \verb+term+ predicate will start blindly enumerating all well typed terms in generative mode. This is definitely not the behaviour we expect from an interactive prover.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Towards a Constrained Programming Extension of $\lambda$Prolog}
 
-The correct behaviour, implemented for example by Coq as well, is to stop execution of the type-checking judgement, to be resumed only when the metavariable will be istantiated. A more insightful way to read this behaviour is to imagine that the judgement is turned into a \emph{constraint} imposed on the metavariable, that ranges over the infinite domain of terms. In particular, \verb+term X T+ is turned into the constraint that \verb+X+ must have type \verb+T+. When later \verb+X+ is instantiated, the constraint is verified.
+The prover has to be able to apply the typing judgement to incomplete terms,
+i.e. terms that contain metavariables to be later instantiated by the
+user.  If such judgement is expressed as a regular logic program the choice
+of using $\lambda$Prolog metavariables to represent object-level metavariables
+may causes serious issues, since logic programs do not normally distinguish
+between input and output, and hence could generate the term in place of the
+user.  Take for example the \verb+term+ clause for lambda and imagine
+it is run on an incomplete term \verb+(lam nat n\X n) T+
 
-The explanation based on constraints is particularly insightful because it suggests the other fundamental operation of Constraint Programming: constraint propagation. Imagine, for example, that the same metavariable \verb+X+ occurs twice in a term to be type-checked. Type-checking will impose two constraints over \verb+X+, for example \verb+term X (A --> nat)+ and \verb+term X B+. Because of unicity of typing, a metatheoretical result about the simply typed $\lambda$-calculus, we know that this can be the case iff \verb+(A --> nat) = B+. Therefore the metatheorem can be turned into a contraint propagation rule that, given two typing constraints on the same variable, removes one of them generating a new unification problem.
-
-Propagation of typing constraints is implemented in Coq in an ad-hoc way. The Lean implementation, instead, starts building a generic constraint programming machinery on top of C++~\cite{???}. Similarly, we want to extend our LambdaProlog langauge to an \emph{Higher Order Constraint Logic Programming Language} where the set of constraints and propagation rules are described in user space, much in the spirit of the Constraint Handling Rules (CHR) language.
-
-Work in this direction is in progress. As a first step that does not involve constraint propagation, we would like to specify that a syntax directed predicate is to be turned into a constraint when it faces a metavariable. Hypothetical syntax: \verb+delay (term X T) until not flexible X.+ For the time being, we encode the syntax above with two low-level primitives not in standard LambdaProlog:
-\begin{enumerate}
-\item \verb+$is_flex X+ holds iff \verb+X+ is a flexible term, i.e. a metavariable or an application of a metavariable.
-\item \verb+$delay G X+ always holds, putting the goal \verb+G+ into a list of delayed goals, to be resumed as soon as the metavariable \verb+X+ is instantiated.
-\end{enumerate}
-
-With these two primitives, turning \verb+term+ into a constraint on flexible terms can be encoded as in Table~\ref{type-checker2}.
-\begin{table}[t]
-\begin{small}
 \begin{verbatim}
-term T TY :- $is_flex T, !, $delay (term T TY) T.
-term T TY :- term' T TY.
-term' (lam A F) (A --> B) :- pi x\ term' x A => term (F x) B.
-term' (F ' T) B :- term F (A --> B), term T A.
-term' eq (A --> A --> prop).
+term (lam A F) (A --> B) :- pi x\ term x A => term (F x) B
 \end{verbatim}
-\end{small}
-\caption{\label{type-checker2}A type-checker for simply typed lambda calculus in Constraint Programming style.}
-\end{table}
 
-The first line delays the goal \verb+term T TY+ iff \verb+T+ is flexible. Otherwise the second line immediately turns it into \verb+term' T TY+. The next lines are the old implementation of \verb+term+ where \verb+term'+ is used in place of \verb+term+ in the heads of the clauses. The reason for the introduction of \verb+term'+ is that the new clauses \verb+term' x A+ introduced in the body of the lambda-abstraction case must be used strictly after the first, delaying clause. According to the standard semantics of LamdaProlog, a clause introduced by logical implication is always tried first. Hence the need for the technical \verb+term/term'+ distinction.
+By applying such clause one would end up with the goal \verb+term (X n) B+
+under a program augmented with the clause \verb+term n nat+.  Such
+clause, as well as any other one for \verb+term+ would apply.  As a result
+the meta variable \verb+X+ would be instantiated by \verb+n+, or as an
+alternative solution \verb+(lam ..)+.
 
-The \verb+$is_flex+ predicate is clearly extra-logical (it does not commute with instantiation). However, the high-level programming construct \verb+delay+ \ldots \verb+until not flexible+ that we have just encoded is perfectly logical.
+What provers implemented in ML, like Coq or Matita, do is to keep
+a data structure that assigns a type to each metavariable, typically called
+$\Sigma$.  When an incomplete term is found the algorithm stops and check
+that the (occurrence of) the metavariable has the type declared in $\Sigma$ (1).
+In a different part of code, when a metavariable is instantiated, the system
+checks that the instantiation is compatible with type declared in $\Sigma$ (2).
 
-We also have an experimental, CHR-inspired syntax to propagate constraints, but we omit its explanation from the paper because it is still work in progress. We only note here that propagation is a logical operation iff the propagation rule can be proved to holds as a meta-theoretical theorem. Therefore, so far, the proposed extensions are fully in the spirit of logic programming.
+The reading of this behavior in terms of logic programming points toward two
+well known mechanisms.  
+
+First, a goal like \verb+term (X n) B+ has to be
+\emph{delayed}, a very well known mechanisms justified by the commutativity of
+conjunction: postponing a goal does not change the meaning of the program.
+Actually one can see the $\lambda$Prolog goals as a set of \emph{constraints},
+all to be solved at some point.  Most Prolog system provides such mechanism.
+Teyjus has it too but only for internal use, i.e. delay hard HO unification
+problems falling outside the L$_\lambda$ fragment.  Goals are delayed on
+a specific metavariable and are re-scheduled when such metavariable
+gets instantiated.  This mechanism avoids entering generative mode and
+faithfully models (2).
+
+Last, when two goal, i.e. constraints, are delayed on the same meta variable
+one could add to the set of goals an equation between the two types.  The
+manipulation of the set of delayed goals is again a mechanism that accompanies
+many Prolog implementations in the for of \emph{constrain handling rules},
+or CHR.  Teyjus does not provide such mechanism.
+
+At the light of that we augmented ELPI with these two mechanism letting us
+express the typing judgement as follows
+
+\begin{verbatim}
+mode term(-,+) {
+  term (M ' N) T :- term M (A --> B), term N A.
+  term (lam A F) B :- pi x\ term x A => term (F x) B.
+  term eq (A --> A --> prop).
+  % pick your favourite
+  term (? as K) T :- constraint (term Key T) K.
+  term (? as K) T  as Goal :- constraint Goal K.
+}
+\end{verbatim}
+
+The \verb/mode term(-,+)/ block declares that \verb+term+
+is never generative on the first argument.  The last line uses the \verb+?+
+keyword, only available in a \verb+mode+ block, to recognize
+flexible arguments.  The \verb+as K+ is just sugar reminiscent of ML
+pattern matching to name a sub expression expression, in this case
+the metavariable.  \verb+constraint+ declares a new constraint.
+Note that also dynamic clauses, like the \verb+term x A+ in the
+\verb+lam+ rule lives in the \verb+mode+ block and hence
+consumes, never generates, its first argument.
+
+As a companion mechanism we provide the possibility to declare constrain
+handling rules
+
+\begin{verbatim}
+constraint term {
+  rule [ term (? as X) T1 ] [ term (? as Y) T2 ] (T1 = T2) :- X = Y.
+}
+\end{verbatim}
+
+The syntax departs a little from the standard CHR one.  The first two
+arguments are lists of goals, the second one to be removed.  The third argument
+is a goal to be added and the premised of the rules is the guard. The rule
+above hence reads: if two \verb+term+ constraints are on the same meta variable,
+remove the second one and add a goal \verb+T1 = T2+.
+
+Rules like this one are typically justified by the meta theory of the
+object level language.  In particular this one corresponds to the uniqueness
+of typing.
+
+\subsection{HO extensions (maybe in the conclusions)}
+
+$\lambda$Prolog goals live in a context (the dynamic part of the program)
+that also has to be made available to
+the constraint handling rules.  For example one may check that not only the
+instance of meta variables are well typed, but also that all occurrences of the
+metavariable itself are (makes sense?).
+
+\begin{verbatim}
+constraint term ?- term {
+  rule [ G1 ?- term (?K1 L1) _ ] [ G2 ?- term (?K2 L2) _ ] CompCtx :-
+    K1 = K2, aux L1 G1 L2 G2 CompCtx.
+
+  aux [X|XS] G1 [Y|YS] G2 (TX = TY, CompCtx) :-
+    % requires simple clausify fix
+    (G1 => term X TX), (G2 => term Y TY), aux XS G1 YS G2 ComCtx.
+  aux nil nil nil nil true.
+  aux _ _ _ _ false.   
+}
+\end{verbatim}
+
+For both performance and usability reasons one has to specify
+which components of a program context he is interested in.  Hence the
+\verb+term ?-+ part saying that the context items we are interested in
+are only the ones with \verb+term+.  Talk about nabla?
+
+% Work in this direction is in progress. As a first step that does not involve constraint propagation, we would like to specify that a syntax directed predicate is to be turned into a constraint when it faces a metavariable. Hypothetical syntax: \verb+delay (term X T) until not flexible X.+ For the time being, we encode the syntax above with two low-level primitives not in standard LambdaProlog:
+% \begin{enumerate}
+% \item \verb+$is_flex X+ holds iff \verb+X+ is a flexible term, i.e. a metavariable or an application of a metavariable.
+% \item \verb+$delay G X+ always holds, putting the goal \verb+G+ into a list of delayed goals, to be resumed as soon as the metavariable \verb+X+ is instantiated.
+% \end{enumerate}
+% 
+% With these two primitives, turning \verb+term+ into a constraint on flexible terms can be encoded as in Table~\ref{type-checker2}.
+% \begin{table}[t]
+% \begin{small}
+% \begin{verbatim}
+% term T TY :- $is_flex T, !, $delay (term T TY) T.
+% term T TY :- term' T TY.
+% term' (lam A F) (A --> B) :- pi x\ term' x A => term (F x) B.
+% term' (F ' T) B :- term F (A --> B), term T A.
+% term' eq (A --> A --> prop).
+% \end{verbatim}
+% \end{small}
+% \caption{\label{type-checker2}A type-checker for simply typed lambda calculus in Constraint Programming style.}
+% \end{table}
+% 
+% The first line delays the goal \verb+term T TY+ iff \verb+T+ is flexible. Otherwise the second line immediately turns it into \verb+term' T TY+. The next lines are the old implementation of \verb+term+ where \verb+term'+ is used in place of \verb+term+ in the heads of the clauses. The reason for the introduction of \verb+term'+ is that the new clauses \verb+term' x A+ introduced in the body of the lambda-abstraction case must be used strictly after the first, delaying clause. According to the standard semantics of LamdaProlog, a clause introduced by logical implication is always tried first. Hence the need for the technical \verb+term/term'+ distinction.
+% 
+% The \verb+$is_flex+ predicate is clearly extra-logical (it does not commute with instantiation). However, the high-level programming construct \verb+delay+ \ldots \verb+until not flexible+ that we have just encoded is perfectly logical.
+% 
+% We also have an experimental, CHR-inspired syntax to propagate constraints, but we omit its explanation from the paper because it is still work in progress. We only note here that propagation is a logical operation iff the propagation rule can be proved to holds as a meta-theoretical theorem. Therefore, so far, the proposed extensions are fully in the spirit of logic programming.
 
 \section{The kernel in LamdbaProlog}
 The second judgement implemented in our kernel is the derivation judgement in top-down style. It is encoded via three predicates, \verb+prove+, \verb+loop+ and \verb+thm+.
