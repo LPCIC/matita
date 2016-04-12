@@ -315,6 +315,7 @@ Because we can inject LambdaProlog variables in place of types of bound variable
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Towards a Constrained Programming Extension of $\lambda$Prolog}
+\label{cholp}
 
 The prover has to be able to apply the typing judgement to incomplete terms,
 i.e. terms that contain metavariables to be later instantiated by the
@@ -588,11 +589,80 @@ At the end of an interactive proof, the interactive certificate has been fully i
 As described in the previous sections, our kernel implements an higher number
 of basic inference rules w.r.t. the HOL Light kernel. Nevertheless, as expected, our kernel is considerably smaller: 220 lines of self-contained LambdaProlog code vs 476 lines of OCaml code that also reuses standard library functions on lists. The greatest gain is due to saving most of the 228 lines of OCaml code that deal with instantiation, substitution, renaming and $\alpha$-conversion of terms in HOL Light: these operations all come for free in LambdaProlog thanks to the semi-shallow encoding.
 
-\section{Parsing and Pretty Printing}
+\section{Towards More Extensions to LamdbaProlog}
 
-QUA PARLARE ANCHE DELLA SFIGA DEI NOMI PERDUTI NEI BINDER
+In Section~\ref{cholp} we already discussed one of the drawbacks of the semi-shallow encoding: the need to extend the language with constraints in order to delay predicates --- like typing --- that are faced with metavariables that represent object level unknown terms.
 
-\section{Definitional Mechanisms}
+A similar problem, which requires a different solution, occurs in two more places in the code. The first place is parsing/pretty-printing (implemented by one predicate that can be used in two different ways): we want to write a function that abbreviates some common expressions using an ad-hoc syntax. For example, the following clause allows for the compact syntax \texttt{! x \ P ' x} for universal quantification in place of the inner representation \texttt{forall '' T '' lam T x \ P ' x} (where \texttt{T} is the type of the bound variable that is omitted):
+\begin{verb}
+parse (! F2) (forall '' _ ' lam _ F1) :- !, pi x \ parse (F2 x) (F1 x).
+\end{verb}
+
+When the \verb+parse+ predicate is fed (on the left, for parsing, or on the right, for pretty-printing) with a term that contains an (object-level) metavariable, it must not instantiate it. However, the semantics of LambdaProlog would just start instantiating the metavariable enumerating all possible terms.
+
+Therefore, we need a new mechanism to invoke a predicate specifying that the metavariables in one of the arguments are not to be instantiated or, equivalently, that backchaining over a clause must be performed up to matching only on the ``input'' argument.
+
+An hypothetical syntax could be:
+
+\begin{verb}
+\$mode [ parse(-,+) ] parse t X  % for parsing
+\$mode [ parse(+,-) ] parse X t  % for pretty-printing
+\end{verb}
+
+whose semantics is the follow: when backchaing over a clause of parse, \verb+t+
+will be matched, while \verb+X+ will be instantiated. Moreover, the same ``mode'' will be inherited by any recursive call of \verb+parse+ triggered in the body of the clause.
+
+Therefore, adding to \verb+parse+ the catch-all clause ``\verb+parse T T.+'', a metavariable will always be parsed/pretty-printed to itself.
+
+The second place in the code where a similar problem arises is in the implementation of automation. An automatic tactic chooses the next tactic to apply by inspection of the proof state, and it also has to determine if the proof step is invertible or not. In the former case, it does not change provability and therefore there is no necessity to backtrack it in case of failure.
+
+Without the possibility to inspect terms via matching only to detect metavariables in the sequent, it is impossible to determine invertibility of rules. For example, the rule ex-falso allows to prove any sequent $\Gamma \vdash P$ where
+$\bot \in \Gamma$ and it is an invertible rule. Therefore, adding a cut \texttt+!+ to the tactic invocation is desirable. However, it may be the case that
+a metavariable $X$ occurs in $\Gamma$. When LambdaProlog backchains over ex-falso, it will instantiate $X$ with $\bot$ solving the goal. The instantiation itself is not invertible, for example, when $X$ occurs in another goal $\vdash X$ that becomes unprovable.
+
+The solution to this and a few more similar examples consists again in backchaining using matching in place of unification for $\Gamma$ and it is therefore supported by our proposed language extension.
+
+As a final consideration, and contrarily to the extensions with constrains (and constrain propagation), the matching extension is not logical: matching does not commute with instantiation. This is the price to pay for the benefits of the semi-shallow encoding.
+
+\section{User Interface Issues}
+\subsection{Representation of Terms and Proof States}
+The internal representation of terms in an interactive prover is often very verbose and it is customary to allow to write terms using a so called ``outer'' syntax that allows for infix operators, mathematical notations and omission of information (e.g. types). In order to let the users extend the system easily, the outer notation should be also available when defining tactics.
+
+HOL Light is the system with the best support of outer syntax, even when defining tactics. This is achieved by means of a pre-processor for OCaml (written in camlp5~\cite{?}): all strings written in backquotes in the code of HOL Light are parsed and type-checked by the pre-processor and turned into well-typed terms. The opposite is done during printing. The code of the pre-processor amounts to 2845 lines. When an user develops a library, she does not need to write any additional parsing code, but she can always briefly define a new operator as prefix/infix/etc.
+
+In our prototype the user can directly write terms written in our semi-shallow encoding. For example, $P x \wedge Q$ should be written as \texttt{and ' (P ' x) ' Q}. To reduce the burden on the user, we provide the parse/pretty-printing predicate discussed in the previous Section. Contrarily to HOL Light, the outer syntax is not simply a string, but it is again a structured term that extends the one of the internal syntax. Infix binary operator and prefix/postfix unary operators can be directly used in the external syntax because LambdaProlog itself allows to declare constants as such. Thus, for example, \texttt{and ' (P ' x) ' Q} can be abbreviated to \texttt{P ' x \&\& Q} but not to \texttt{P ' x /\\ Q} because \texttt{/\\} is not a valid LambdaProlog constant. Moreover, infix ticks must still be used to separate between function arguments.
+
+A second difference  is that terms in the ``outer'' syntax can contain metavariables, allowing interpolation of (meta)variables for free like in \texttt{p X :- parse (X \&\& X) O, \$print O}. However, when used without care interpolation is computationally expensive. For example, the previous clause would interpolate \verb+X+ in \verb+X \&\& X+ before calling \verb+parse+ that will therefore traverse \verb+X+ twice. A better implementation would be \texttt{p X :- parse (Y \&\& Y) O, parse X Y.}.
+
+A third difference is that the terms of our syntax does not admit free variables: all variables have to be quantified, either inside the term, or outside it in the code. For example, where a HOL Light user would state the polyjorphic theorem \verb+ prove `a = b => b = a`+ our user must state \verb+theorem (pi A \ ! A a \ ! b \ a = b => b = a)+ where the two variables are universally quantified in the statement and the abstraction over the type $A$ is quantified outside it to make the theorem polymorphic.
+
+The last, and most annoying, difference is that the parsing predicate must be extended by the user every time it declares a new tactic whose syntax can contain a term, e.g. like in \texttt{parsetac (t Y) (t PY) :- parse Y PY.} where \verb+Y+ is a term argument of the tactic \verb+t+.
+
+All the above observations suggest that a better approach would be closer to the one of HOL Light: we could integrate in ELPI a pre-processor to detect and handle terms during the parsing and pretty-printing phase.
+
+In the semi-shallow encoding, bound variables are represented by variables bound at the metalevel. In non-interactive scripts, the binders are visible and the user can pick any name for the variables. However, in case of an interactive proof of, say \verb+! x \ P ' x+, after applying the introduction rule of forall the new sequent becomes \verb+ |- P ' a+ where the variable \verb+a+ is now bound by a meta-level \verb+pi a \ + that was traversed during the proof search. Unfortunately and for efficiency reasons, LambdaProlog does not remember the names of bound variables when execution goes under a \verb+pi+, but only their De Brujin level~\cite{???}. Therefore in the goal presented to the user the name \verb+a+ will be automatically generated without any control and no correlation to the initial \verb+x+.
+
+The problem can be improved at least in two ways: 1) modifying ELPI to remember names, at the price of performance; 2) making the hypothetical pre-processor discussed above insert string parameters in the syntax so that \verb+! x \ P+ would be parsed as \verb+! "x" x \ P+ and later processed via \verb+do_something (! s F) :- pi  x \ parse s x => do_something (F x).+
+
+\subsection{Top-level loop}
+
+HOL Light does not have an ad-hoc interactive loop: the OCaml top-level is used instead thanks to the private data types. In our implementation, instead, the toplevel loop mechanism is also part of the kernel and, as for the tactic loop, it asks a \emph{library certificate} (\verb+WHAT+ in the code) the next command to be executed
+(\verb+C+) and the continuation certificate (\verb+CONT+):
+
+\begin{verbatim}
+check WHAT :-
+ next_object WHAT C CONT,
+ (C = stop, !, K = true ; check1 C H , check_hyps [] H, K = (H => check CONT)),
+ !, K.
+\end{verbatim}
+
+If \verb+C+ is \verb+stop+ the toplevel loop ends successfully. Otherwise the command \verb+C+ is executed (by \verb+check1+) resulting in a new hypothesis \verb+H+ that is verified (by \verb+check_hyps+) and then assumed in the next iteration of the loop (\verb+H => check CONT+). The only available commands in HOL are: assuming a new axiom; declaring a new (polymorphic) definition; defining a new type as a conservative extension; proving a theorem. HOL packages can be easily implemented by the \verb+next_object+ predicate that is defined outside the kernel. For example, we implemented an \verb+inductive_def+ package that takes a piece of syntax that declares the introduction rules of a new inductively defined predicate and returns a bunch of definitions and theorems based on the Knaster-Tarski's fixpoint theorem. There are only a few kind of hypotheses returned by \verb+check1+ (that is defined in the kernel): assignment of a type to a constant (i.e. \verb+term c ty+), declaration of a constant as a type constructor (e.g. \verb+typ (list '' A) :- typ A.+), assigning a statement to a theorem/axiom name (i.e. \verb+provable c statement+). The \verb+check_hyps+ predicate just verifies that constants are assigned a type/statement once.
+
+As for tactics, we developed two kind of library certificates: the first one is non interactive and it consists in just a list of commands to be expanded by packages in the clauses of \verb+next_object+; the second one is interactive and it just parses from standard input the next command to be executed. In the case the command starts a proof, the interactive library certificate will use an interactive certificate for the proof, effectively entering the proof mode of the theorem prover.
+
+Finally, backtracking inside a proof is as simple as entering a \verb+backtrack+ command that just fails, invoking LambdaProlog backtracking mechanism. Note, however, that the behaviour is different than the one of HOL Light: backtracking can enumerate the next solution of a previous tactic, unless a Prolog cut was used to prune the remaining solutions.
+
+\subsection{Definitional Mechanisms}
 
 SE NON C'E' SPAZIO POSSIAMO SOPPRIMERE QUESTO
 
