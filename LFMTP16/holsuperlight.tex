@@ -579,11 +579,14 @@ The LCF version of the \verb+then+ tactical that never backtracks the first tact
 
 \subsection{Uses of the certificates}
 
-QUI DIRE CHE LI USIAMO SIA PER RIPRODURRE LE PROVE CHE PER GENERALE INTERATTIVAMENTE
+We implemented outside the kernel two kind of certificates: interactive and non interactive. A non interactive certificate is just a proof script, i.e. a list (usually a singleton) of tactics to be applied sequentially to prove the open goals. Non interactive certificates are partially inspired by the work of Chihani~\cite{chihaniXXX}: they also consist in a list of tactics, but at the first call a singleton list containing a metavariable is passed. When the next tactic is required, the tactic is interactively asked to the user and recorded in the certificate by instantiating the metavariable. Moreover, if the tactic is an application of the \texttt{thenll} tactical, the argument of \texttt{thenll} is a list of fresh metavariables that will be instantiated later with the tactics used in any branch.
+
+At the end of an interactive proof, the interactive certificate has been fully instantiated recording all tactics applied, and it becomes usable as a non interactive certificate (i.e. a proof script). To improve readability of the script, we wrote a normalization function that rewrites applications of \texttt{thenll} to application of \texttt{then} and \texttt{thenl} when possible. The normalized script is pretty-printed to the user that can copy\&paste it into the library.
 
 \subsection{Final considerations}
 
-QUI DIRE CHE NONOSTANTE LE REGOLE AGGIUNTIVE INTRODOTTE NEL NUCLEO, IL NOSTRO NUCLEO E' PIU' PICCOLO (DI QUANTO?) DI QUELLO DI HOL LIGHT
+As described in the previous sections, our kernel implements an higher number
+of basic inference rules w.r.t. the HOL Light kernel. Nevertheless, as expected, our kernel is considerably smaller: 220 lines of self-contained LambdaProlog code vs 476 lines of OCaml code that also reuses standard library functions on lists. The greatest gain is due to saving most of the 228 lines of OCaml code that deal with instantiation, substitution, renaming and $\alpha$-conversion of terms in HOL Light: these operations all come for free in LambdaProlog thanks to the semi-shallow encoding.
 
 \section{Parsing and Pretty Printing}
 
