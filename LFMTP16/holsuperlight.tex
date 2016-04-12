@@ -664,7 +664,18 @@ Finally, backtracking inside a proof is as simple as entering a \verb+backtrack+
 
 \subsection{Definitional Mechanisms}
 
-SE NON C'E' SPAZIO POSSIAMO SOPPRIMERE QUESTO
+We implemented definitional mechanisms similar to the one of HOL Light, but modified to have a constructive interpretation (see~\cite{??} for an explanation of why the ones of HOL Light entail excluded middle). The only significant change is about polymorphic constants where we preferred to employ System-F application, written in infix style using two quotes, e.g. \verb+monotone '' nat ' f+. Syntactically, the definition of monotone is as follows:
+
+\begin{verbatim}
+def monotone (pi A \ (((A --> prop) --> (A --> prop)) --> prop),
+  (lam (_ A) f \ ! x \ ! y \ x <<= y ==> f ' x <<= f ' y))
+\end{verbatim}
+
+where the type abstraction binds \verb+A+ both in the type and in the body.
+The new hypothesis that is added to the kernel after processing the definition
+is \verb+pi A \ term ' (monotone '' A) ' (((A --> prop) --> (A --> prop)) --> prop)+. When LambdaProlog backchains over the hypothesis, it automatically instantiates \verb+A+ with a fresh metavariable. Therefore we get the expected behaviour for free, without the need to syntactically introduce System-F type abstractions and type quantifiers.
+
+Despite the System-F terminology we employ, note that, as expected for an HOL system, the polymorphism achieved is the Hindley-Milner one, where quantifiers do not occur inside types.
 
 \section{Conclusions and Future Work}
 
@@ -675,7 +686,7 @@ SE NON C'E' SPAZIO POSSIAMO SOPPRIMERE QUESTO
 
 \acks
 
-Acknowledgments, if needed.
+We are greatly indebted with Dale Miller for long discussions over LambdaProlog, its use for implementing interactive provers and the constraint programming extensions.
 
 % We recommend abbrvnat bibliography style.
 
