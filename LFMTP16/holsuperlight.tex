@@ -677,7 +677,20 @@ is \verb+pi A \ term ' (monotone '' A) ' (((A --> prop) --> (A --> prop)) --> pr
 
 Despite the System-F terminology we employ, note that, as expected for an HOL system, the polymorphism achieved is the Hindley-Milner one, where quantifiers do not occur inside types.
 
+In HOL Light, the user does not even need to write the type quantifiers, that
+are automatically inserted to capture all metavariables that are left uninstantiated by type inference. Type inference in LambdaProlog came for free, but there is no operator to bind all metavariables left uninstantiated. Indeed, how to implement Hindley-Milner type-inference in LambdaProlog is an annoying problem left open for several years now.
+
 \section{Conclusions and Future Work}
+
+CONCLUSIONS MISSING
+
+FUTURE WORKS PART
+
+The whole HOL experiment is meant as a major test-case for the study of extensions of the language necessary to concisely implement an interactive prover. The next step is to understand what other problems can benefits from the same extensions. Promising ones are situations where the program must manipulate partial and incomplete data structures, like during type-inference. For example, good test cases could be automatic inference of behavioral types~\cite{???} or inference of XXX~\cite{HUGO} where sets of linear inequations are generated as constraints to be solved.
+
+SAY THAT WE NEED TO STUDY MORE HIGHER ORDER CONSTRAINT PROPAGATION
+
+The HOL library we have now is not large enough yet to compare the speed of HOL Light with our own implementation. In order to enlarge it to cover, say, arithmetic over natural numbers, we first need to 1) generalize the package for inductive definitions to accept parameterized types; 2) complete the package for inductive type declarations; 3) implement a transfer package to automatize some of the proofs like we did for monotonicity proofs, that are completely automatized. In the meantime, the impression is that we could be slower than HOL Light by one or two order of magnitudes, and the hope is that one order of magnitude could eventually disappear moving to a compiler for LambdaProlog.
 
 %\appendix
 %\section{Appendix Title}
