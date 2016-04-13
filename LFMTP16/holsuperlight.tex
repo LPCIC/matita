@@ -587,7 +587,7 @@ At the end of an interactive proof, the interactive certificate has been fully i
 \subsection{Final considerations}
 
 As described in the previous sections, our kernel implements an higher number
-of basic inference rules w.r.t. the HOL Light kernel. Nevertheless, as expected, our kernel is considerably smaller: 220 lines of self-contained LambdaProlog code vs 476 lines of OCaml code that also reuses standard library functions on lists. The greatest gain is due to saving most of the 228 lines of OCaml code that deal with instantiation, substitution, renaming and $\alpha$-conversion of terms in HOL Light: these operations all come for free in LambdaProlog thanks to the semi-shallow encoding.
+of basic inference rules w.r.t. the HOL Light kernel. Nevertheless, as expected, our kernel is considerably smaller: 220 lines of self-contained LambdaProlog code (16 due to the constructive flavour) vs 571 lines of OCaml code that also reuses standard library functions on lists. The greatest gain is due to saving most of the 323 lines of OCaml code that deal with instantiation, substitution, renaming and $\alpha$-conversion of terms and types in HOL Light: these operations all come for free in LambdaProlog thanks to the semi-shallow encoding.
 
 \section{Towards More Extensions to LamdbaProlog}
 
