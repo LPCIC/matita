@@ -106,7 +106,7 @@ In general, functional languages provide a good compromise between performance a
 The situation described above is bad in two respects.
 \begin{enumerate}
 \item All the code that deals with the three problems is essentially logic-independent, but it requires to be re-implemented when ones wants to experiment with a new logic or implement a new system. With the exception of the monad cited above, it also seems hard to encapsulate the boilerplate code into a reusable library: a real extension of the programming language is necessary.
-\item The code of the systems becomes very low-level, having to deal with all kind of intricacies due to binders and metavariables. Therefore it is hard for external programmers to contribute to the code base, for example to implement new domain specific tactics. The result is that these systems often implement in user space a second programming language, exposed to the user to write tactics, that takes care of binding, metavariables, backtracking and its control. For example, LTac~\cite{delahaye2000} is such a programming language for Coq, that also sports several other mini-languages to let the user customize the behaviour of the system (e.g. to declare type classes~\cite{ddd}, used to provide unification hints~\cite{asperti1}). Not only the system becomes more complex because of the need to provide and interpret a new programming language on top, but its semantics is problematic: the beaviour of the system becomes the combination of pieces of code written in multiple languages and interacting in non trivial ways. Static analysis of this kind of code is out of reach.
+\item The code of the systems becomes very low-level, having to deal with all kind of intricacies due to binders and metavariables. Therefore it is hard for external programmers to contribute to the code base, for example to implement new domain specific tactics. The result is that these systems often implement in user space a second programming language, exposed to the user to write tactics, that takes care of binding, metavariables, backtracking and its control. For example, LTac~\cite{delahaye2000} is such a programming language for Coq, that also sports several other mini-languages to let the user customize the behaviour of the system (e.g. to declare canonical structures~\cite{canstruct}, used to provide unification hints~\cite{asperti1}). Not only the system becomes more complex because of the need to provide and interpret a new programming language on top, but its semantics is problematic: the beaviour of the system becomes the combination of pieces of code written in multiple languages and interacting in non trivial ways. Static analysis of this kind of code is out of reach.
 \end{enumerate}
 
 Adopting an HOLP language seems a promising idea. First of all the boilerplate code is pushed once and for all in the interpreter of the language, becoming decoupled from the programming logic of the theorem prover. Therefore the code of the theorem prover becomes much more clean, and very close to the inference rules it implements. Secondly, because of the decoupling, it becomes possible to experiment with alternative implementations of the HOLP language, e.g. susbtituting De Bruijn levels for the indexes (like in~\cite{debrujn1}) or profiling the implementation of the language on different applications. Thirdly, and most importantly, there is no more any need for ad-hoc languages in user space: the users that want can directly contribute to the code base of the theorem proving ignoring all the gory details.
@@ -189,7 +189,8 @@ T ::= \alpha ~|~ u~T_1\ldots T_n ~|~ T \rightarrow T\\
 t ::= x_T ~|~ c_T ~|~ \lambda x_T. t ~|~ tt
 \end{array}$$
 where $u$ ranges over type constructors (constants when $n=0$) and $\alpha$
-ranges over type variables. Contrarily to System-F~\cite{???}, HOL has no type
+ranges over type variables. Contrarily to System-F,%~\cite{???}
+HOL has no type
 abstractions/applications. However, it is possible to assign to constants
 schematic types containing type variables $\alpha, \beta, \ldots$. For example,
 the append function \texttt{@} can be typed as $\mathtt{list}~\alpha \rightarrow \mathtt{list}~\alpha \rightarrow \mathtt{list}~\alpha$.
@@ -199,7 +200,7 @@ Variables $x_T$ and constants $c_T$ carry explicitly their type $T$ and they are
 
 HOL systems assume the existence of two predefined types, one for propositions \texttt{bool} and one for individuals \texttt{ind} (also written $o$ and $\iota$ in the litterature). Logical connectives and quantifiers are just single out constants. For example, conjuction is given the monomorphic type $\mathtt{bool} \rightarrow \mathtt{bool} \rightarrow \mathtt{bool}$ and universal quantification the polymorphic type scheme $(\alpha \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}$. The usual trick of higher-order syntax is used to reduce all binders to $\lambda$-abstraction: $\forall x:\mathtt{nat}.P$ is represented as $\mathtt{forall}_{(\mathtt{nat} \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}} (\lambda x.P)$. In the case of the HOL Light variant, the only constant that is initially assumed to exist is polymorphic equality $\mathtt{=}_{\alpha \rightarrow \alpha \rightarrow \mathtt{bool}}$, that also doubles for coimplication when $\alpha = \mathtt{bool}$.
 
-The derivation system of the logic is made of two judgements, one for typing terms and the other for proving formulae in contexts (see ~\cite{???} for the XX derivation rules of the HOL Light implementation). Two examples of such rules are
+The derivation system of the logic is made of two judgements, one for typing terms and the other for proving formulae in contexts (see ~\cite{hollightoverview} for the 10 derivation rules of the HOL Light implementation). Two examples of such rules are
 
 \AxiomC{$\vdash p : \mathtt{bool}$}
 \AxiomC{$\Gamma_1,p \vdash q$}
@@ -664,7 +665,7 @@ Finally, backtracking inside a proof is as simple as entering a \verb+backtrack+
 
 \subsection{Definitional Mechanisms}
 
-We implemented definitional mechanisms similar to the one of HOL Light, but modified to have a constructive interpretation (see~\cite{??} for an explanation of why the ones of HOL Light entail excluded middle). The only significant change is about polymorphic constants where we preferred to employ System-F application, written in infix style using two quotes, e.g. \verb+monotone '' nat ' f+. Syntactically, the definition of monotone is as follows:
+We implemented definitional mechanisms similar to the one of HOL Light, but modified to have a constructive interpretation (see~\cite{arthan} for an explanation of why the ones of HOL Light entail excluded middle). The only significant change is about polymorphic constants where we preferred to employ System-F application, written in infix style using two quotes, e.g. \verb+monotone '' nat ' f+. Syntactically, the definition of monotone is as follows:
 
 \begin{verbatim}
 def monotone (pi A \ (((A --> prop) --> (A --> prop)) --> prop),
