@@ -271,7 +271,7 @@ For example, the top-down tactic for the \verb+DEDUCT_ANTISYM_RULE+ rule must an
 
 \section{Requirements and Term Encoding}
 We begin the description of our implementation of (a constructive variant of)
-HOL in ELPI, our LambdaProlog interpreter. The code described here is available at~XXXXX. The implementation is meant as an experiment to evaluate if Higher Order Logic Programming can indeed be employed concisely and effectively for the implementation of interactive theorem provers. In this experiment, we take inspiration from HOL Light and we set the following requirements:
+HOL in ELPI, our LambdaProlog interpreter. The code is available at~\url{http://lpcic.gforge.inria.fr/system.html?content=systems}. The implementation is meant as an experiment to evaluate if Higher Order Logic Programming can indeed be employed concisely and effectively for the implementation of interactive theorem provers. In this experiment, we take inspiration from HOL Light and we set the following requirements:
 \begin{enumerate}
 \item The system must have a small trusted code based, henceforth called the ``kernel''. Bugs outside the kernel must not allow to conclude that a non-tautological formula $F$ is a theorem.
 \item The LCF architecture does not need to record proof objects. Therefore we do not want to record proof objects as well.
