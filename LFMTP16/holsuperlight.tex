@@ -179,18 +179,18 @@ term (lam F) (A --> B) :- pi x\ term x A => term (F x) B.
 \end{small}
 \caption{\label{type-checker1}A type-checker for simply typed lambda calculus.}
 \end{table}
-HOL is a variant of Church's simple theory of types. Its precise syntax and semantics can be found in~\cite{the_HOL_system_LOGIC} even if we will implement a constructive variant of it, and we will refer for inspiration to the HOL Light version and implementation of a classical variant of HOL. Types and terms have the
+HOL is a variant of Church's simple theory of types. Its precise syntax and semantics can be found in~\cite{the_HOL_system_LOGIC} even if we will implement a constructive variant of it, and we will refer for inspiration to the HOL Light classical version and implementation. Types and terms have the
 following syntax:
 $$\begin{array}{l}
 T ::= \alpha ~|~ u~T_1\ldots T_n ~|~ T \rightarrow T\\
 t ::= x_T ~|~ c_T ~|~ \lambda x_T. t ~|~ {tt_{bool}}
 \end{array}$$
 where $u$ ranges over type constructors (constants when $n=0$) and $\alpha$
-ranges over type variables. Contrarily to System-F,%~\cite{???}
+ranges over type variables. Contrarily to System-F,
 HOL has no type
 abstractions/applications. However, it is possible to assign to constants
-schematic types containing type variables $\alpha, \beta, \ldots$. For example,
-the append function \texttt{@} can be typed as $\mathtt{list}~\alpha \rightarrow \mathtt{list}~\alpha \rightarrow \mathtt{list}~\alpha$.
+schematic types containing type variables $\alpha, \beta, \ldots$. E.g.
+the append function \texttt{@} is typed $\mathtt{list}~\alpha \rightarrow \mathtt{list}~\alpha \rightarrow \mathtt{list}~\alpha$.
 
 Variables $x_T$ and constants $c_T$ carry explicitly their type $T$ and they are equal iff both the name and the types are. In particular, each occurrence of a polymorphic constant, carrying its type, explicitly carries an instantiation for every type variable occurring in its type. For example
 \texttt{@}$_{\mathtt{list}~\mathtt{nat} \rightarrow \mathtt{list}~\mathtt{nat} \rightarrow \mathtt{list}~\mathtt{nat}}$ implicitly encodes the instantiation $\alpha := \mathtt{nat}$. In System-F the constant occurrence would be applied to the type: $\texttt{@}~\mathtt{nat}$.
@@ -199,6 +199,7 @@ HOL systems assume the existence of two predefined types, one for propositions \
 
 The derivation system of the logic is made of two judgements, one for typing terms and the other for proving formulae in contexts (see ~\cite{hollightoverview} for the 10 derivation rules of the HOL Light implementation). Two examples of such rules are
 
+\begin{center}
 \AxiomC{$\vdash p : \mathtt{bool}$}
 \AxiomC{$\Gamma_1,p \vdash q$}
 \AxiomC{$\Gamma_2,q \vdash p$}
@@ -206,17 +207,19 @@ The derivation system of the logic is made of two judgements, one for typing ter
 \TrinaryInfC{$\Gamma_1,\Gamma2 \vdash p = q$}
 \DisplayProof
 
+\vspace{0.15cm}
 \AxiomC{$\Gamma \vdash p$}
 \RightLabel{\tiny INST\_RULE}
 \UnaryInfC{$\Gamma \sigma \vdash p \sigma$}
 \DisplayProof
+\end{center}
 
-Like in the HOL Light implementation, the check for $p$ being a boolean in the former rule can be post-poned to the time the hypothesis is used (the HYP rule, here not shown).
-The latter rule is used to apply the substitution $\sigma$ that maps free variable names to terms. Its application must avoid variable capturing.
+In the HOL Light implementation, the check for $p$ being a boolean in the first rule is post-poned to the time the hypothesis is used (the HYP rule, here not shown).
+The second rule is used to apply the substitution $\sigma$ that maps free variable names to terms. Its application must avoid variable capturing.
 
 An HOL theory is a list of declarations of types, constants and axioms, the latter being just formulae assumed to hold.
 
-The implementation of an HOL systems is rooted in the principle of conservative extensions: in order to introduce a new constant or a new type that satisfy certain axioms, the user must prove the existence of such a constant/type. We only show here the rule for introducing new definitions to explain a kind of complexity that involves free and bound names. 
+The implementation of an HOL systems is rooted in the principle of conservative extensions: in order to introduce a new constant or a new type that satisfy certain axioms, the user must prove the existence of such a constant/type. We only discuss here the rule for introducing new definitions to explain a kind of complexity that involves free and bound names. 
 
 To introduce a new (polymorphic) constant $c_T$, the user must give a term $t$
 of type $T$ such that all free type variables contained in $t$ also occur in
@@ -231,14 +234,15 @@ HOL Light~\cite{hol1} is an extremely lightweight implementation of HOL in ML th
 
 Private types can be used to enforce invariants: the functions of the module only builds terms that satisfy the invariants. Therefore, all inhabitants built outside the module are correct by construction, and the trusted code base for the maintainance of the invariants is lexically delimited by the module.
 
-HOL Light implements two private types corresponding to the two judgement of the logic: 1) the type of well typed terms $t$ such that there exists a $T$ s.t. $\vdash t : T$; 2) the type of theorems, i.e. pairs context $\Gamma$, formula $F$ such that $\Gamma \vdash F$. Theories could also have been implemented as a third private type (like what Coq does), but they are actually hidden inside the module that defines the type of (well typed) terms.
+HOL Light implements three private types corresponding to the three judgement of the logic: 1) the type of well typed terms $t$ such that there exists a $T$ s.t. $\vdash t : T$; 2) the type of theorems, i.e. pairs context $\Gamma$, formula $F$ such that $\Gamma \vdash F$; 3) the type of well-formed types. Theories could also have been implemented as a third private type (like what Coq does), but they are actually hidden inside the module that defines the type of (well typed) terms.
 
 In particular, every inference rule of HOL corresponds to a function over theorems exported from the ``kernel'' module of HOL.
 
-\noindent
 \verb+val mkComb : term -> term -> term+\\
+\indent
 \verb+val DEDUCT_ANTISYM_RULE : thm -> thm -> thm+\\
 for example correspond respectively to the typing rule for application $t_1 t_2$ and to the inference rule shown on page~\ref{krule}. The function\\
+\indent
 \verb+val dest_thm : thm -> term list * term+\\
 allows to inspect a theorem to recover what has been proved. Of course, it does not have an inverse function that would correspond to claiming that $\Gamma \vdash p$ is a theorem without actually proving it.
 
@@ -257,8 +261,7 @@ type justification = instantiation -> thm list -> thm
 }
 
 Ignoring the instantiation and metavariables, a tactic is a function that takes in input the sequent to be proved and return a list of new sequents to be proved and a justification. When the new sequents are proved, a list of theorems is obtained. The justification, fed with this list of theorems, returns the theorem for the initial sequent. In other words, each tactic implements a top-down reasoning step by producing the list of new subgoals plus the ``inverse'' bottom-up proof. When those are composed, the theorem is proved. Variables recorded as metavariables, i.e. omitted information, and instantiations for them complete the picture.
-
-We make a few observations here:
+We observe that:
 \begin{itemize}
 \item As we already noticed in~\cite{csc2}, LCF tactics have a few drawbacks. They only allow to reason locally on one goal, because they do not take in input the global proof state. In case of mutual dependencies between goals due to metavariables, it becomes impossible to reduce the search space using global reasoning. Moreover, it is not possible to interrupt the execution of a tactic in the middle, for example to observe the intermediate states. The tinycals introduced in~\cite{csc2}, which can now be implemented in Coq as well after~\cite{spiwack}, are a better solution but they require a first class representation of the entire proof state.
 \item During a top-down proof, the system temporarily records a proof object in the form of a justification, that is lazily consumed as soon as the corresponding subproof is completed (all leaves are closed). We would like to avoid this if possible.
@@ -285,7 +288,7 @@ In both cases, the system can be simply turned into both an automatic or an inte
 
 Finally, we cannot implement the kernel using a private type like in ML because Logic Programming rules out private types. To understand why, remember that every predicate in a (pure) logic programming language is invertible. Therefore it is not possible to implement a type with a predicate to reveal the data, but preventing its use to build the data as well. In particular, the predicate \verb+dest_thm+ corresponding to the function with the same name in HOL would allow to feed it any pair context-formula to obtain a theorem without any further control.
 
-The only way to protect part of the code in LamdaProlog is to existentially quantify a predicate to be kept secret to the rest of the code. Therefore, our kernel implements two predicates, one for the typing judgement and one for derivability, that are kept local. In order to fullfill requirement number 4, derivability will work on list of sequents (the proof state) in place of a single sequent. Finally, to avoid the repetition of code and checks in the HOL approach, we only focus for now on top-down proofs.
+The only way to protect part of the code in LamdaProlog is to existentially quantify a predicate to be kept secret to the rest of the code. Our kernel implements three predicates, one for recognizing well-typed types, one for the typing judgement and one for derivability, that are kept local. In order to fullfill requirement number 4, derivability will work on list of sequents (the proof state) in place of a single sequent. Finally, to avoid the repetition of code and checks in the HOL approach, we only focus for now on top-down proofs.
 
 We detail now the implementation of the kernel.
 
@@ -294,14 +297,12 @@ Before starting, we first need to choose a syntactic representation for both
 terms and types that respect requirement 3, that rules out deep encodings.
 A deep encoding for simply typed $\lambda$-calculus with metavariables would
 look like this and be very similar to the data type Coq and Matita are build around:
-
 $$ t ::= var~\mathtt{NAME} ~|~ app~t~t ~|~ lam~\mathtt{TYPE}~\mathtt{NAME}~t ~|~ meta~\mathtt{NAME}$$
-
 Assuming $\mathtt{NAME}$s to be either strings or De Bruijn indexes, a deep encoding forces the implmenetation of $\alpha$-conversion, lifting, substitution, instantiation of metavariables, etc.
 
 At the other side of the spectrum we find the shallow encoding for closed terms: we just encode object level terms with language level terms, object level metavariables with LambdaProlog metavariables and so on. Instantiation of metavariables as well as $\alpha$-conversion and $\beta$-reduction comes for free. However, it becomes impossible to implement --- without extra-logical extensions of the language --- both the derivation and the typing judgements. For example, the code
 {\small \verb+type (F X) B :- type X A, type F (A --> B).+} does not do what it seems to
-do, because applied to the query \verb+type (f a) Z+, it yields the higher order
+do, because applied to the query \verb+type (f a) Z+, it yields the HO 
 unification problem \verb+F X = f a+ that admits multiple solutions like
 \verb+F := x \ f a+, \verb+X := 0+.
 
@@ -312,7 +313,7 @@ $$t ::= t~\verb+'+~t ~|~ lam~\mathtt{TYPE}~F$$
 where \verb+'+ is just an infix constructor, \verb+F+ is a LambdaProlog function from terms to terms and object level metavariables are encoded via language level metavariables. For example, $\lambda x\!:\!o. X~x$ is encoded as
 \verb+lam o x \ X x+. Ignoring the issue about metavariables, the semi-shallow encoding was the one already used in Table~\ref{type-checker1}, that essentially shows the typing judgement of our implementation of HOL Light, which includes a few other clauses for primitive constants, like \verb+term eq (A --> A --> prop)+.
 
-For simply typed $\lambda$-calculus (plus type variables) type checking is decidable and the typing judgement of Table~\ref{type-checker1} is already syntax directed. Therefore HOL never asks the user to prove that a term has a certain type: type checking/inference is run fully automatically.
+For simply typed $\lambda$-calculus (plus type variables) type checking is decidable and the typing judgement of Table~\ref{type-checker1} is syntax directed. Therefore HOL never asks the user to prove that a term has a certain type: type checking/inference is run fully automatically.
 
 Because we can inject LambdaProlog variables in place of types of bound variables, our type checking judgement already doubles as type inference. E.g. \verb/term (lam A x \ x + 1) B/ yields \verb+A := nat, B := nat+.
 
