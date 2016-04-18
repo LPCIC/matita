@@ -344,7 +344,7 @@ second argument of the first clause would, among other things, pick
 visible trace in the input term.  Even worse, the recursive calls
 over \verb+X+ and \verb+Y+ would instantiate them indefinitely: the program
 would enter generative mode.  This problem is well known in Prolog, and
-various ad hoc predicates like \verb+var+ are provided to guard code against
+various non logical predicates like \verb+var+ are provided to handle
 this situation.
 
 This very same problem also arises is in the
@@ -355,8 +355,7 @@ trace.
 The situation is analog for typing.  
 {\small
 \begin{verbatim}
-term (lam A F) (A --> B) :-
- pi x\ term x A => term (F x) B.
+term (lam A F) (A --> B):- pi x\ term x A => term (F x) B.
 \end{verbatim}
 }
 
@@ -366,14 +365,13 @@ The program, augmented with the clause \verb+term n nat+, wound run
 on the sub goal \verb+term (X n) B+.
 Such clause, as well as any other one for \verb+term+, would apply.  As a result
 the meta variable \verb+X+ would be instantiated by \verb+n+.
-What provers implemented in ML, like Coq or Matita, do is to keep
+What provers implemented in ML, like Coq, do is to keep
 a data structure that assigns a type to each metavariable, typically called
 $\Sigma$.  When an incomplete term is found the algorithm stops and check
 that the (occurrence of) the metavariable has the type declared in $\Sigma$ (1).
 In a different part of the code, when a metavariable is instantiated, the system
 checks that the instantiation is compatible with type declared in $\Sigma$ (2).
-The reading of this behavior in terms of logic programming points toward two distinct
-but complementary mechanisms.  
+The reading of this behavior in terms of logic programming points toward two distinct, but complementary mechanisms.  
 
 First, a goal like \verb+term (X n) B+ has to be
 \emph{delayed}, a very well known mechanisms justified by the commutativity of
@@ -390,7 +388,7 @@ Last, when two goals, i.e. constraints, are delayed on the same meta variable
 one could add to the set of goals an equation between the two types.  The
 manipulation of the set of delayed goals is again a mechanism that accompanies
 many Prolog implementations in the for of \emph{constrain handling rules},
-or CHR.  Teyjus does not provide such mechanism.
+or CHR~\cite{CHR}.  Teyjus does not provide such mechanism.
 
 \subsection{Modes and matching}
 
