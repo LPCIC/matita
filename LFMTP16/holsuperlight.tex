@@ -122,8 +122,6 @@ The methodology we identified, presented in Section~\ref{methodology}, requires 
 
 As a final remark, the interest of the work, that is still on-going, is not to obtain a new competitive implementation of HOL, that would require several men years and could be of limited interest. In particular, we only developed the system so far to the point where all the parts of a typical HOL implementation are presents to judge the feasibility and economy of the implementation.
 
-Section~\ref{????} \ldots
-
 \section{LambdaProlog in a nutshell}
 LambdaProlog extends the core of Prolog in two directions.
 \begin{enumerate}
@@ -142,15 +140,15 @@ The (operational) semantics of the connectives that occurs respectively in goal 
 \begin{itemize}
 \item the goal $H_1 \wedge H_2$ is turned into the two goals $H_1$ and $H_2$,
  copying the program (i.e. the set of clauses/assumptions)
-\item the goal $H_1 \vee H_2$ is turned into the goal $H_1$; in case of failure of the proof search, one can backtrack and restart with the goal $H_2$
-\item $H \Rightarrow G$ assumes $H$, that is turned into a new program clause, to prove $G$
+\item the goal $H_1 \vee H_2$ is turned into the goal $H_1$; in case of failure of the proof search, the goal is backtracked to be $H_2$
+\item $H \Rightarrow G$ assumes $H$, turned into a clause, to prove $G$
 \item $\forall x.G$ introduces a fresh variable $y$ and proves $G$ after replacing $x$ with $y$ in $G$
-\item $\exists X.G$ introduces a fresh metavariable $Y$ and proves $G$ after replacing $X$ with $Y$ in $G$. Later $X$ can be istantiated with any term whose free variables were all in scope at the time $\exists X.G$ was processed
+\item $\exists X.G$ introduces a fresh metavariable $Y$ and proves $G$ after replacing $X$ with $Y$. Later $X$ can be istantiated with any term whose free variables were in scope for $\exists X.G$
 \item the goal $t$ where $t$ is atomic is proved unifying $t$ with the
 (hereditary) conclusion of one of the program clauses, possibly opening new
 goals as well (see case $G \Rightarrow H$ below)
 \item assuming $H_1 \wedge H_2$ means assuming both $H$s independently
-\item assuming $\forall X.H$ means assuming an infinite number of copies of $H$ for all fresh metavariables $Y$ substituted for $X$ in $H$. Concretely, the copy and substitution is performed lazily when the clause is used
+\item assuming $\forall X.H$ means assuming an infinite number of copies of $H$ for all fresh metavariables $Y$ substituted for $X$ in $H$. Concretely, the copy and substitution is performed lazily.
 \item assuming $\exists x.H$ means generating a new fresh constant $y$ and assuming $H$ after replacing $x$ with $y$
 \item assuming $G \Rightarrow H$ means assuming that $H$ holds under the assumption that $G$ holds as well. When the clause is used, the new goal $G$ will be added to the set of open goals to be proved
 \end{itemize}
@@ -166,7 +164,7 @@ To illustrate a typical LambdaProlog example, in Table~\ref{type-checker1} we sh
 
 Observe that the code of the type-checker is really minimal and in one-to-one correspondence with the two derivation rules one writes usually on paper. However, there are some differences as well. In particular, the typing judgement \texttt{term T TY} (``\texttt{T}'' is a term of type ``\texttt{TY}'') does not mention any context $\Gamma$. Instead, in the rule for lambda-abstraction, the hypothesis that the fresh variable \texttt{x} has type \texttt{A} is directly assumed and put temporarily in the program code using logical implication \texttt{=>}.
 For example, the query \texttt{term (lam y \ y ' y) TY} will match the second
-clause and trigger the new query \texttt{term (x ' x) B} after having istantiated \texttt{TY} with \texttt{A --> B} where \texttt{x} is fresh (because introduced by \texttt{pi}) and it is known to have type \texttt{A}.
+clause and trigger the new query \texttt{term (x ' x) B} after having istantiated \texttt{TY} with \texttt{A --> B} where \texttt{x} is fresh (because introduced by \texttt{pi}) and of type \texttt{A}.
 
 Finally, we will use the cut predicate of Prolog \texttt{!} with the same
 non-logical semantics. We say that a predicate does not have a logical semantics
@@ -182,7 +180,9 @@ term (lam F) (A --> B) :- pi x\ term x A => term (F x) B.
 \caption{\label{type-checker1}A type-checker for simply typed lambda calculus.}
 \end{table}
 
-\section{HOL in a nutshell and its implementation in ML}
+\newpage
+
+\section{HOL in a nutshell and its ML implementation}
 HOL is a variant of Church's simple theory of types. Its precise syntax and semantics can be found in~\cite{the_HOL_system_LOGIC} even if we will implement a constructive variant of it, and we will refer for inspiration to the HOL Light version and implementation of a classical variant of HOL. Types and terms have the
 following syntax:
 $$\begin{array}{l}
