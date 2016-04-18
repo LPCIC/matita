@@ -68,7 +68,7 @@
 \maketitle
 
 \begin{abstract}
-We present a proof-of-concept prototype of a (constructive variant of an) HOL interactive theorem prover written in a Higher Order Logic Programming (HOLP) language, namely an extension of LambdaProlog. The prototype is meant to support the claim, that we reinforce, that HOLP is the class of languages that provides the right abstraction level and programming primitives to obtain concise implementations of theorem provers. We identify and advocate for a programming technique, that we call semi-shallow embedding, while at the same time identifying the reasons why pure LambdaProlog is not sufficient to support that technique, and it needs to be extended.
+We present a proof-of-concept prototype of a (constructive variant of an) HOL interactive theorem prover written in a Higher Order Logic Programming (HOLP) language, namely an extension of $\lambda$Prolog. The prototype is meant to support the claim, that we reinforce, that HOLP is the class of languages that provides the right abstraction level and programming primitives to obtain concise implementations of theorem provers. We identify and advocate for a programming technique, that we call semi-shallow embedding, while at the same time identifying the reasons why pure $\lambda$Prolog is not sufficient to support that technique, and it needs to be extended.
 \end{abstract}
 
 \category{CR-number}{subcategory}{third-level}
@@ -79,7 +79,7 @@ We present a proof-of-concept prototype of a (constructive variant of an) HOL in
 %term1, term2
 
 \keywords
-LambdaProlog, HOL, Higher Order Logic Programming, Constraints
+$\lambda$Prolog, HOL, Higher Order Logic Programming, Constraints
 
 \section{Introduction}
 What are the programming paradigm and the programming languages better suited for the implementation of interactive theorem provers? Better suited here means providing high level primitives at the good level of abstraction, relieving the programmer from the burden of reimplementing the basic mechanisms.
@@ -93,7 +93,7 @@ Every (interactive) theorem prover has to:
 
 The three features discussed above also interact in complex ways. For example, renaming bound variables in a term that contains metavariables (i.e. omitted sub-terms) must record the renaming as an explicit substitution applied to the metavariable to resume the renaming when the metavariable will be istantiated. Or, backtracking must be aware of dependencies between subgoals due to sharing of metavariables in order to split the subgoals into independent clusters of goals: once a cluster is solved, backtrack that solution is useless because search spaces are orthogonal.
 
-In a series of papers from the 90s \cite{amy4}, \cite{amy3}, \cite{amy1}, Amy Felty already advocated Higher Order Logic Programming (HOLP) as the programming paradigm best suited for the three tasks above. LambdaProlog, the flagship of HOLP languages, manipulates syntax with binders, relieving the programmer from problems due to renaming and substitution; being a logic language it has backtracking for free; it allows to control backtracking via the usual Prolog's cut ("!") whose pragmatics is well known, even if it does not fit the logical semantics of the language; finally the language uses metavariables that range over both data and functions, and the complex implementation of LambdaProlog takes care of all interactions between binders ($\lambda$-abstraction) and metavariables, addressing the problem of higher-order unification under mixed prefixes~\cite{miller1}.
+In a series of papers from the 90s \cite{amy4}, \cite{amy3}, \cite{amy1}, Amy Felty already advocated Higher Order Logic Programming (HOLP) as the programming paradigm best suited for the three tasks above. $\lambda$Prolog, the flagship of HOLP languages, manipulates syntax with binders, relieving the programmer from problems due to renaming and substitution; being a logic language it has backtracking for free; it allows to control backtracking via the usual Prolog's cut ("!") whose pragmatics is well known, even if it does not fit the logical semantics of the language; finally the language uses metavariables that range over both data and functions, and the complex implementation of $\lambda$Prolog takes care of all interactions between binders ($\lambda$-abstraction) and metavariables, addressing the problem of higher-order unification under mixed prefixes~\cite{miller1}.
 
 Despite the push by Amy Felty, none of the interactive theorem provers in use is implemented in HOLP. With the exception of Mizar, implemented in Pascal for historical reasons, and the new Lean system, implemented in C++ for efficiency, all other systems (Coq, Isabelle, Agda, Matita, PVS, etc. \cite{17thproversoftheworld}) are implemented in either Haskell, an ML variant or a Lisp flavour.
 
@@ -112,18 +112,18 @@ The situation described above is bad in two respects.
 
 Adopting an HOLP language seems a promising idea. First of all the boilerplate code is pushed once and for all in the interpreter of the language, becoming decoupled from the programming logic of the theorem prover. Therefore the code of the theorem prover becomes much more clean, and very close to the inference rules it implements. Secondly, because of the decoupling, it becomes possible to experiment with alternative implementations of the HOLP language, e.g. susbtituting De Bruijn levels for the indexes (like in~\cite{debrujn1}) or profiling the implementation of the language on different applications. Thirdly, and most importantly, there is no more any need for ad-hoc languages in user space: the users that want can directly contribute to the code base of the theorem proving ignoring all the gory details.
 
-Nevertheless, as we said, no system has been implemented in LambdaProlog, despite the interest raised by the work of Felty (her paper~\cite{amy4} has more than 150 citations). One reason is due to performance: logic languages are hard to optimize, and LambdaProlog is orders of magnitudes harder than Prolog not only because of binders and higher order unification, but also because it is higher order (one can pass predicates around) and it allows a primitive (logical implication \texttt{P => Q}) to temporarily augment the code of the program (with \texttt{P}, while proving \texttt{Q}) in a lexically scoped way, making some well known Prolog static analyses and optimizations hard. Moreover, LambdaProlog had for some time only very slow implementations, until Teyjus was born~\cite{teyjus1} after the work of Felty. Recent work by the authors also showed that the performances of Teyjus are not so good~\cite{elpi1}, considering that Teyjus compiles the code to an extension of the Warren abstract machine instruction set, while the ELPI interpreter of the authors that attempts no compilation is able to run consistently faster than Teyjus (Section 6 of~\cite{elpi1}).
+Nevertheless, as we said, no system has been implemented in $\lambda$Prolog, despite the interest raised by the work of Felty (her paper~\cite{amy4} has more than 150 citations). One reason is due to performance: logic languages are hard to optimize, and $\lambda$Prolog is orders of magnitudes harder than Prolog not only because of binders and higher order unification, but also because it is higher order (one can pass predicates around) and it allows a primitive (logical implication \texttt{P => Q}) to temporarily augment the code of the program (with \texttt{P}, while proving \texttt{Q}) in a lexically scoped way, making some well known Prolog static analyses and optimizations hard. Moreover, $\lambda$Prolog had for some time only very slow implementations, until Teyjus was born~\cite{teyjus1} after the work of Felty. Recent work by the authors also showed that the performances of Teyjus are not so good~\cite{elpi1}, considering that Teyjus compiles the code to an extension of the Warren abstract machine instruction set, while the ELPI interpreter of the authors that attempts no compilation is able to run consistently faster than Teyjus (Section 6 of~\cite{elpi1}).
 
-In this paper we push seriously the idea of implementing in the ELPI variant of LambdaProlog an interactive prover, inspired by HOL Light, but for a constructive variant of the logic. The ongoing experiment aims to come up with implementation guidelines, that differ from the ones of Felty, and to quantify the loss in term of performance w.r.t. implementations in functional languages.
+In this paper we push seriously the idea of implementing in the ELPI variant of $\lambda$Prolog an interactive prover, inspired by HOL Light, but for a constructive variant of the logic. The ongoing experiment aims to come up with implementation guidelines, that differ from the ones of Felty, and to quantify the loss in term of performance w.r.t. implementations in functional languages.
 
 We also note that the expertise we acquired implementing Matita was used already in the implementation of ELPI. Indeed, we essentially had to split out the code of Matita that deals with the three problems above, and figure out how to integrate it in an interpreter for a logic language. In the long term, we would like to scale the HOL experiment to a new implementation of Matita/Coq (or at least its logical core, that excludes the user interface).
 
-The methodology we identified, presented in Section~\ref{methodology}, requires significant extensions of LambdaProlog, that we are implementing in ELPI and that are briefly described in the paper. 
+The methodology we identified, presented in Section~\ref{methodology}, requires significant extensions of $\lambda$Prolog, that we are implementing in ELPI and that are briefly described in the paper. 
 
 As a final remark, the interest of the work, that is still on-going, is not to obtain a new competitive implementation of HOL, that would require several men years and could be of limited interest. In particular, we only developed the system so far to the point where all the parts of a typical HOL implementation are presents to judge the feasibility and economy of the implementation.
 
-\section{LambdaProlog in a nutshell}
-LambdaProlog extends the core of Prolog in two directions.
+\section{$\lambda$Prolog in a nutshell}
+$\lambda$Prolog extends the core of Prolog in two directions.
 \begin{enumerate}
 \item it allows in the syntax $\lambda$-abstractions (written \verb+x\p+ for $\lambda x.p$), applications (written \verb+p q+ like in $\lambda$-calculus and unlike in Prolog) and metavariables both in argument and in head position (e.g. \verb+iter [X|XS] F [Y|YS] :- F X Y, iter XS F YS.+ where the metavariable \verb+F+ is to be istantiated with a binary predicate like \verb,(x\y\y=x+x),)
 \item it generalizes Horn clauses to Higher Order Hereditary Harrop Formulae (HOHHF) clauses, whose grammar is
@@ -133,7 +133,7 @@ G ::= x~t_1~\ldots~t_n ~|~ X~t_1~\ldots~t_n ~|~ G \wedge G ~|~ G \vee G\\
  \hspace{0.65cm} ~|~ \forall x.G ~|~ \exists X.G ~|~ H \Rightarrow G\\
 H,G \subseteq t ::= x ~|~ X ~|~ tt ~|~ x\backslash t
 \end{array}$$
-where $H$ ranges over HOHHF, $G$ ranges over goal formulae, $x$ are constants/universally quantified variables, $X$ are existentially quantified variables and $t$ are the higher order terms of the language. A LambdaProlog program is a list of HOHHF formulae. To run a LambdaProlog program the user submits a query $G$ that is automatically proved using the clauses in the program.
+where $H$ ranges over HOHHF, $G$ ranges over goal formulae, $x$ are constants/universally quantified variables, $X$ are existentially quantified variables and $t$ are the higher order terms of the language. A $\lambda$Prolog program is a list of HOHHF formulae. To run a $\lambda$Prolog program the user submits a query $G$ that is automatically proved using the clauses in the program.
 \end{enumerate}
 
 The (operational) semantics of the connectives that occurs respectively in goal formulae $G$ / in HOHHF $H$ is given by the introduction/elimination rules of the connectives in natural deduction for intuitionistic higher order logic. In particular:
@@ -155,12 +155,12 @@ goals as well (see case $G \Rightarrow H$ below)
 
 In concrete syntax we will write \verb+sigma X\t+ for $\exists X.t$, \verb+pi x\t+ for $\forall x.t$, \verb+ a => b+ or \verb+b := a+ for $a \Rightarrow b$, \verb+a,b+ for $a \wedge b$ and \verb+a;b+ for $a \vee b$. Moreover, all free uppercase/lowercase variables in a program clause are implicitly universally/existentially quantified globally/locally (like in Prolog).
 
-\texttt{sigma} in clause positions are not in ``standard'' LambdaProlog and they are accepted by our ELPI interpreter, but not from Teyjus. However, Teyjus implements a module system~\cite{gopalan1} that allows to declare variables local to the list $H_1,\ldots, H_n$ of clauses of the module. The same behaviour can be obtained in ELPI with (\texttt{sigma x \ }$H_1, \ldots, H_n$) or with the equivalent
-syntactic sugar \texttt{\{ local x.} $H_1.\;\ldots\; H_n.$ \texttt{\}} (where the curly braces are used to delimit the scope of the existential quantifier, i.e. the local declaration). Declaring local constants is the only and fundamental mechanism in LambdaProlog to restrict the trusted code base.
+\texttt{sigma} in clause positions are not in ``standard'' $\lambda$Prolog and they are accepted by our ELPI interpreter, but not from Teyjus. However, Teyjus implements a module system~\cite{gopalan1} that allows to declare variables local to the list $H_1,\ldots, H_n$ of clauses of the module. The same behaviour can be obtained in ELPI with (\texttt{sigma x \ }$H_1, \ldots, H_n$) or with the equivalent
+syntactic sugar \texttt{\{ local x.} $H_1.\;\ldots\; H_n.$ \texttt{\}} (where the curly braces are used to delimit the scope of the existential quantifier, i.e. the local declaration). Declaring local constants is the only and fundamental mechanism in $\lambda$Prolog to restrict the trusted code base.
 
-The other major difference between the ELPI version of LambdaProlog and the ``official'' one of Teyjus is that we do not enforce any type discipline, nor we try to statically enforce the restriction to HOHHF. Errors at run-time (e.g. invoking a list as a predicate) result in abortion of the program execution. On the other hand, it is for example possible to read from the terminal a query and execute it, which is prohibited by Teyjus because the correctness of the query cannot be statically enforced.
+The other major difference between the ELPI version of $\lambda$Prolog and the ``official'' one of Teyjus is that we do not enforce any type discipline, nor we try to statically enforce the restriction to HOHHF. Errors at run-time (e.g. invoking a list as a predicate) result in abortion of the program execution. On the other hand, it is for example possible to read from the terminal a query and execute it, which is prohibited by Teyjus because the correctness of the query cannot be statically enforced.
 
-To illustrate a typical LambdaProlog example, in Table~\ref{type-checker1} we show the code of a type-checker for closed terms of the simply typed lambda-calculus. We use the infix constant \verb+'+ to encode application, the unary constant \verb+lam+ for lambda-abstraction, and the infix constant \verb+-->+ for the function space type. The latter is to be applied to a meta-level lamdba-abstraction in the spirit of higher-order abstract syntax. For example, the term $\lambda x.xx$ is encoded as \verb+lam x \ x ' x+. Note that, in the concrete syntax, parentheses around lambda-abstractions are not necessary in LambdaProlog when the abstraction is the last argument of an application. I.e. \verb+lam x \ x ' x+ is to be read as \verb+lam (x \ x ' x)+.
+To illustrate a typical $\lambda$Prolog example, in Table~\ref{type-checker1} we show the code of a type-checker for closed terms of the simply typed lambda-calculus. We use the infix constant \verb+'+ to encode application, the unary constant \verb+lam+ for lambda-abstraction, and the infix constant \verb+-->+ for the function space type. The latter is to be applied to a meta-level lamdba-abstraction in the spirit of higher-order abstract syntax. For example, the term $\lambda x.xx$ is encoded as \verb+lam x \ x ' x+. Note that, in the concrete syntax, parentheses around lambda-abstractions are not necessary in $\lambda$Prolog when the abstraction is the last argument of an application. I.e. \verb+lam x \ x ' x+ is to be read as \verb+lam (x \ x ' x)+.
 
 Observe that the code of the type-checker is really minimal and in one-to-one correspondence with the two derivation rules one writes usually on paper. However, there are some differences as well. In particular, the typing judgement \texttt{term T TY} (``\texttt{T}'' is a term of type ``\texttt{TY}'') does not mention any context $\Gamma$. Instead, in the rule for lambda-abstraction, the hypothesis that the fresh variable \texttt{x} has type \texttt{A} is directly assumed and put temporarily in the program code using logical implication \texttt{=>}.
 For example, the query \texttt{term (lam y \ y ' y) TY} will match the second
@@ -271,7 +271,7 @@ For example, the top-down tactic for the \verb+DEDUCT_ANTISYM_RULE+ rule must an
 
 \section{Requirements and Term Encoding}
 We begin the description of our implementation of (a constructive variant of)
-HOL in ELPI, our LambdaProlog interpreter. The code is available at~\url{http://lpcic.gforge.inria.fr/system.html?content=systems}. The implementation is meant as an experiment to evaluate if Higher Order Logic Programming can indeed be employed concisely and effectively for the implementation of interactive theorem provers. In this experiment, we take inspiration from HOL Light and we set the following requirements:
+HOL in ELPI, our $\lambda$Prolog interpreter. The code is available at~\url{http://lpcic.gforge.inria.fr/system.html?content=systems}. The implementation is meant as an experiment to evaluate if Higher Order Logic Programming can indeed be employed concisely and effectively for the implementation of interactive theorem provers. In this experiment, we take inspiration from HOL Light and we set the following requirements:
 \begin{enumerate}
 \item The system must have a small trusted code based, henceforth called the ``kernel''. Bugs outside the kernel must not allow to conclude that a non-tautological formula $F$ is a theorem.
 \item The LCF architecture does not need to record proof objects. Therefore we do not want to record proof objects as well.
@@ -279,12 +279,12 @@ HOL in ELPI, our LambdaProlog interpreter. The code is available at~\url{http://
 \item Tactics must be able to inspect the global proof state.
 \end{enumerate}
 
-The third requirement rules out the encoding of the HOL Light in LambdaProlog. A mechanical encoding is possible because the language is Turing complete, but it would not benefit from the features of the language.
+The third requirement rules out the encoding of the HOL Light in $\lambda$Prolog. A mechanical encoding is possible because the language is Turing complete, but it would not benefit from the features of the language.
 
-The second and fourth requirement rule out the technique used by Amy Felty and, more recently, by the group of Dale Miller~\cite{miller3}. Felty and Miller encodes the judgements of the object logic via a LambdaProlog predicate that defined by recursion over a proof object (Felty) or a proof certificate (Miller).
+The second and fourth requirement rule out the technique used by Amy Felty and, more recently, by the group of Dale Miller~\cite{miller3}. Felty and Miller encodes the judgements of the object logic via a $\lambda$Prolog predicate that defined by recursion over a proof object (Felty) or a proof certificate (Miller).
 For example, the proof object can decide to apply the transitivity rule for application to a goal where multiple rules apply. A proof certificate is similar to a proof object, but it can avoid recording all the needed information or encode it at a different level of detail. Therefore, a proof certificate may be non syntax directed, in the sense that multiple rules can be tried according to the same certificate, triggering backtracking if needed.
 
-In both cases, the system can be simply turned into both an automatic or an interactive theorem prover. In the first case, it is sufficient to replace the certificate with a metavariable: the LambdaProlog predicate will then work in a generative way, blindly enumerating all possible proof objects (and potentially diverging because of depth-first search, that can be replaced with iterative deepening to keep completeness). To obtain an interactive prover, the certificate is replaced with the request to the user to type the next rule to be tried. The user interaction can also print the sequent to be proved, but not the other open branches of the proof, that are kept at the meta-level in the and/or tree of the LambdaProlog interpreter.
+In both cases, the system can be simply turned into both an automatic or an interactive theorem prover. In the first case, it is sufficient to replace the certificate with a metavariable: the $\lambda$Prolog predicate will then work in a generative way, blindly enumerating all possible proof objects (and potentially diverging because of depth-first search, that can be replaced with iterative deepening to keep completeness). To obtain an interactive prover, the certificate is replaced with the request to the user to type the next rule to be tried. The user interaction can also print the sequent to be proved, but not the other open branches of the proof, that are kept at the meta-level in the and/or tree of the $\lambda$Prolog interpreter.
 
 Finally, we cannot implement the kernel using a private type like in ML because Logic Programming rules out private types. To understand why, remember that every predicate in a (pure) logic programming language is invertible. Therefore it is not possible to implement a type with a predicate to reveal the data, but preventing its use to build the data as well. In particular, the predicate \verb+dest_thm+ corresponding to the function with the same name in HOL would allow to feed it any pair context-formula to obtain a theorem without any further control.
 
@@ -300,7 +300,7 @@ look like this and be very similar to the data type Coq and Matita are build aro
 $$ t ::= var~\mathtt{NAME} ~|~ app~t~t ~|~ lam~\mathtt{TYPE}~\mathtt{NAME}~t ~|~ meta~\mathtt{NAME}$$
 Assuming $\mathtt{NAME}$s to be either strings or De Bruijn indexes, a deep encoding forces the implmenetation of $\alpha$-conversion, lifting, substitution, instantiation of metavariables, etc.
 
-At the other side of the spectrum we find the shallow encoding for closed terms: we just encode object level terms with language level terms, object level metavariables with LambdaProlog metavariables and so on. Instantiation of metavariables as well as $\alpha$-conversion and $\beta$-reduction comes for free. However, it becomes impossible to implement --- without extra-logical extensions of the language --- both the derivation and the typing judgements. For example, the code
+At the other side of the spectrum we find the shallow encoding for closed terms: we just encode object level terms with language level terms, object level metavariables with $\lambda$Prolog metavariables and so on. Instantiation of metavariables as well as $\alpha$-conversion and $\beta$-reduction comes for free. However, it becomes impossible to implement --- without extra-logical extensions of the language --- both the derivation and the typing judgements. For example, the code
 {\small \verb+type (F X) B :- type X A, type F (A --> B).+} does not do what it seems to
 do, because applied to the query \verb+type (f a) Z+, it yields the HO 
 unification problem \verb+F X = f a+ that admits multiple solutions like
@@ -310,12 +310,12 @@ We therefore propose what we call the \emph{semi-shallow} encoding:
 
 $$t ::= t~\verb+'+~t ~|~ lam~\mathtt{TYPE}~F$$
 
-where \verb+'+ is just an infix constructor, \verb+F+ is a LambdaProlog function from terms to terms and object level metavariables are encoded via language level metavariables. For example, $\lambda x\!:\!o. X~x$ is encoded as
+where \verb+'+ is just an infix constructor, \verb+F+ is a $\lambda$Prolog function from terms to terms and object level metavariables are encoded via language level metavariables. For example, $\lambda x\!:\!o. X~x$ is encoded as
 \verb+lam o x \ X x+. Ignoring the issue about metavariables, the semi-shallow encoding was the one already used in Table~\ref{type-checker1}, that essentially shows the typing judgement of our implementation of HOL Light, which includes a few other clauses for primitive constants, like \verb+term eq (A --> A --> prop)+.
 
 For simply typed $\lambda$-calculus (plus type variables) type checking is decidable and the typing judgement of Table~\ref{type-checker1} is syntax directed. Therefore HOL never asks the user to prove that a term has a certain type: type checking/inference is run fully automatically.
 
-Because we can inject LambdaProlog variables in place of types of bound variables, our type checking judgement already doubles as type inference. E.g. \verb/term (lam A x \ x + 1) B/ yields \verb+A := nat, B := nat+.
+Because we can inject $\lambda$Prolog variables in place of types of bound variables, our type checking judgement already doubles as type inference. E.g. \verb/term (lam A x \ x + 1) B/ yields \verb+A := nat, B := nat+.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Language features for semi-shallow encodings}
@@ -399,6 +399,9 @@ having the two desired modes with the following syntax:
 {\small
 \begin{verbatim}
 mode (pp i o) as parse, (pp o i) as print.
+pp (X <=> Y) (eq " prop ' A ' B) :- pp X A, pp Y B.
+pp (X  =  Y) (eq " _ ' A ' B)    :- pp X A, pp Y B.
+pp A A.
 \end{verbatim}
 }
 
@@ -407,21 +410,11 @@ marking its first argument as an input one.  Conversely for
 \verb+print+.  Input arguments are \emph{matched} against
 the goal, i.e. no unification variable present in the
 goal is instantiated as part of the unification process.
-
-This is sufficient to make the predicate \verb+pp+ usable
-in both direction if one add the catch all clause.
-
-{\small
-\begin{verbatim}
-pp A A.
-\end{verbatim}
-}
-
-Such clause prints/parses each meta variable with itself,
-as well as prints any term with no associated notation as
-itself.  Used in conjunction with $\lambda$Prolog implication,
-the \verb+pp+ predicate can serve as a mechanism for scoped, printed and
-parsed, notations, like names for bound variables.  E.g.
+T he catch all clause.  \verb+pp A A+.  Such clause prints/parses each meta
+variable with itself, as well as prints any term with no associated notation as
+itself.  Used in conjunction with $\lambda$Prolog implication, the \verb+pp+
+predicate can serve as a mechanism for scoped, printed and parsed, notations,
+like names for bound variables.  E.g.
 
 {\small
 \begin{verbatim}
@@ -526,7 +519,7 @@ For this and other reasons, the CHR extensions to ELPI are still work in progres
 % \end{verbatim}
 % }
 % 
-% When the \verb+parse+ predicate is fed (on the left, for parsing, or on the right, for pretty-printing) with a term that contains an (object-level) metavariable, it must not instantiate it. However, the semantics of LambdaProlog would just start instantiating the metavariable enumerating all possible terms.
+% When the \verb+parse+ predicate is fed (on the left, for parsing, or on the right, for pretty-printing) with a term that contains an (object-level) metavariable, it must not instantiate it. However, the semantics of $\lambda$Prolog would just start instantiating the metavariable enumerating all possible terms.
 % 
 % Therefore, we need a new mechanism to invoke a predicate specifying that the metavariables in one of the arguments are not to be instantiated or, equivalently, that backchaining over a clause must be performed up to matching only on the ``input'' argument.
 % 
@@ -545,14 +538,14 @@ For this and other reasons, the CHR extensions to ELPI are still work in progres
 
 % Without the possibility to inspect terms via matching only to detect metavariables in the sequent, it is impossible to determine invertibility of rules. For example, the rule ex-falso allows to prove any sequent $\Gamma \vdash P$ where
 % $\bot \in \Gamma$ and it is an invertible rule. Therefore, adding a cut {\texttt !} to the tactic invocation is desirable. However, it may be the case that
-% a metavariable $X$ occurs in $\Gamma$. When LambdaProlog backchains over ex-falso, it will instantiate $X$ with $\bot$ solving the goal. The instantiation itself is not invertible, for example, when $X$ occurs in another goal $\vdash X$ that becomes unprovable.
+% a metavariable $X$ occurs in $\Gamma$. When $\lambda$Prolog backchains over ex-falso, it will instantiate $X$ with $\bot$ solving the goal. The instantiation itself is not invertible, for example, when $X$ occurs in another goal $\vdash X$ that becomes unprovable.
 % 
 % The solution to this and a few more similar examples consists again in backchaining using matching in place of unification for $\Gamma$ and it is therefore supported by our proposed language extension.
 % 
 % As a final consideration, and contrarily to the extensions with constrains (and constrain propagation), the matching extension is not logical: matching does not commute with instantiation. This is the price to pay for the benefits of the semi-shallow encoding.
 % 
 
-% Work in this direction is in progress. As a first step that does not involve constraint propagation, we would like to specify that a syntax directed predicate is to be turned into a constraint when it faces a metavariable. Hypothetical syntax: \verb+delay (term X T) until not flexible X.+ For the time being, we encode the syntax above with two low-level primitives not in standard LambdaProlog:
+% Work in this direction is in progress. As a first step that does not involve constraint propagation, we would like to specify that a syntax directed predicate is to be turned into a constraint when it faces a metavariable. Hypothetical syntax: \verb+delay (term X T) until not flexible X.+ For the time being, we encode the syntax above with two low-level primitives not in standard $\lambda$Prolog:
 % \begin{enumerate}
 % \item \verb+$is_flex X+ holds iff \verb+X+ is a flexible term, i.e. a metavariable or an application of a metavariable.
 % \item \verb+$delay G X+ always holds, putting the goal \verb+G+ into a list of delayed goals, to be resumed as soon as the metavariable \verb+X+ is instantiated.
@@ -629,7 +622,7 @@ All predicates involved but \verb+prove+, i.e. \verb+loop+, \verb+thm+, \verb+te
 Compared to the HOL Light kernel, our kernel verifies whole proofs, whereas HOL Light only verifies the application of a single inference rule. The reason is that, because of the private type implementable in ML, composing inference rules outside the kernel via function application is a safe operation in ML. In our case, without the private type, composition of rules must be fully implemented inside the kernel.
 
 \subsection{Free names in sequents}
-In HOL sequents can contain free variables of any type, and the \verb+INST_RULE+ allows to later instantiate them freely. In LambdaProlog we want to work only on closed terms in order to reuse the language binding mechanism to avoid implementing $\alpha$-conversion, instantiation, etc. Some inference rules, however, do introduce fresh names (typical example is the introduction rule for the universal quantifier). Because free variables are not allowed in the semi-shallow encoding, we need to find a representation of sequents where all variables are bound ``outside the sequent''. The one we chose puts enough \verb+bind TYPE+ binders around the sequent. For example, the primitive congruence rule for $\lambda$-abstractions is written as:
+In HOL sequents can contain free variables of any type, and the \verb+INST_RULE+ allows to later instantiate them freely. In $\lambda$Prolog we want to work only on closed terms in order to reuse the language binding mechanism to avoid implementing $\alpha$-conversion, instantiation, etc. Some inference rules, however, do introduce fresh names (typical example is the introduction rule for the universal quantifier). Because free variables are not allowed in the semi-shallow encoding, we need to find a representation of sequents where all variables are bound ``outside the sequent''. The one we chose puts enough \verb+bind TYPE+ binders around the sequent. For example, the primitive congruence rule for $\lambda$-abstractions is written as:
 
 \begin{small}
 \begin{verbatim}
@@ -702,7 +695,7 @@ Rule \verb+thenll+ already allows to implement in user space most LCF tacticals 
 
 Finally, the extra-logical \verb+(! TAC)+ tactical applies the tactic \verb+TAC+ and then suppress all backtrackings via cut. It is very useful in those situations where the user whants to implement invertible tactics, i.e. tactics that may be backtracked, but that do not change provability and thus should not be backtracked.
 
-We observe that the tactics and tacticals that can be implemented in our system go beyond the LCF ones because we inherit full-backtracking from LambdaProlog. In particular, our tactics are naturally non-deterministic, i.e. they can have multiple solutions (that are enumerated via backtracking).
+We observe that the tactics and tacticals that can be implemented in our system go beyond the LCF ones because we inherit full-backtracking from $\lambda$Prolog. In particular, our tactics are naturally non-deterministic, i.e. they can have multiple solutions (that are enumerated via backtracking).
 The LCF version of the \verb+then+ tactical that never backtracks the first tactic corresponds to our restriction to banged tactics: \verb+then (! TAC1) TAC2+.
 
 \subsection{Uses of the certificates}
@@ -714,7 +707,7 @@ At the end of an interactive proof, the interactive certificate has been fully i
 \subsection{Final considerations}
 
 As described in the previous sections, our kernel implements an higher number
-of basic inference rules w.r.t. the HOL Light kernel. Nevertheless, as expected, our kernel is considerably smaller: 220 lines of self-contained LambdaProlog code (16 due to the constructive flavour) vs 571 lines of OCaml code that also reuses standard library functions on lists. The greatest gain is due to saving most of the 323 lines of OCaml code that deal with instantiation, substitution, renaming and $\alpha$-conversion of terms and types in HOL Light: these operations all come for free in LambdaProlog thanks to the semi-shallow encoding.
+of basic inference rules w.r.t. the HOL Light kernel. Nevertheless, as expected, our kernel is considerably smaller: 220 lines of self-contained $\lambda$Prolog code (16 due to the constructive flavour) vs 571 lines of OCaml code that also reuses standard library functions on lists. The greatest gain is due to saving most of the 323 lines of OCaml code that deal with instantiation, substitution, renaming and $\alpha$-conversion of terms and types in HOL Light: these operations all come for free in $\lambda$Prolog thanks to the semi-shallow encoding.
 
 \section{User Interface Issues}
 \subsection{Representation of Terms and Proof States}
@@ -722,7 +715,7 @@ The internal representation of terms in an interactive prover is often very verb
 
 HOL Light is the system with the best support of outer syntax, even when defining tactics. This is achieved by means of a pre-processor for OCaml (written in camlp5 (\url{http://camlp5.gforge.inria.fr})): all strings written in backquotes in the code of HOL Light are parsed and type-checked by the pre-processor and turned into well-typed terms. The opposite is done during printing. The code of the pre-processor amounts to 2845 lines. When an user develops a library, she does not need to write any additional parsing code, but she can always briefly define a new operator as prefix/infix/etc.
 
-In our prototype the user can directly write terms written in our semi-shallow encoding. For example, $P x \wedge Q$ should be written as \texttt{and ' (P ' x) ' Q}. To reduce the burden on the user, we provide the parse/pretty-printing predicate discussed in the previous Section. Contrarily to HOL Light, the outer syntax is not simply a string, but it is again a structured term that extends the one of the internal syntax. Infix binary operator and prefix/postfix unary operators can be directly used in the external syntax because LambdaProlog itself allows to declare constants as such. Thus, for example, \texttt{and ' (P ' x) ' Q} can be abbreviated to \texttt{P ' x \&\& Q} but not to \texttt{P ' x} $/\backslash$ \texttt{Q} because $/\backslash$ is not a valid LambdaProlog constant. Moreover, infix ticks must still be used to separate between function arguments.
+In our prototype the user can directly write terms written in our semi-shallow encoding. For example, $P x \wedge Q$ should be written as \texttt{and ' (P ' x) ' Q}. To reduce the burden on the user, we provide the parse/pretty-printing predicate discussed in the previous Section. Contrarily to HOL Light, the outer syntax is not simply a string, but it is again a structured term that extends the one of the internal syntax. Infix binary operator and prefix/postfix unary operators can be directly used in the external syntax because $\lambda$Prolog itself allows to declare constants as such. Thus, for example, \texttt{and ' (P ' x) ' Q} can be abbreviated to \texttt{P ' x \&\& Q} but not to \texttt{P ' x} $/\backslash$ \texttt{Q} because $/\backslash$ is not a valid $\lambda$Prolog constant. Moreover, infix ticks must still be used to separate between function arguments.
 
 A second difference  is that terms in the ``outer'' syntax can contain metavariables, allowing interpolation of (meta)variables for free like in \texttt{p X :- parse (X \&\& X) O, \$print O}. However, when used without care interpolation is computationally expensive. For example, the previous clause would interpolate \verb+X+ in \verb+X && X+ before calling \verb+parse+ that will therefore traverse \verb+X+ twice. A better implementation would be \texttt{p X :- parse (Y \&\& Y) O, parse X Y}.
 
@@ -732,7 +725,7 @@ The last, and most annoying, difference is that the parsing predicate must be ex
 
 All the above observations suggest that a better approach would be closer to the one of HOL Light: we could integrate in ELPI a pre-processor to detect and handle terms during the parsing and pretty-printing phase.
 
-In the semi-shallow encoding, bound variables are represented by variables bound at the metalevel. In non-interactive scripts, the binders are visible and the user can pick any name for the variables. However, in case of an interactive proof of, say \verb+! x \ P ' x+, after applying the introduction rule of forall the new sequent becomes \verb+ |- P ' a+ where the variable \verb+a+ is now bound by a meta-level \verb+pi a \ + that was traversed during the proof search. Unfortunately and for efficiency reasons, LambdaProlog does not remember the names of bound variables when execution goes under a \verb+pi+, but only their De Bruijn level~\cite{debrujn1}. Therefore in the goal presented to the user the name \verb+a+ will be automatically generated without any control and no correlation to the initial \verb+x+.
+In the semi-shallow encoding, bound variables are represented by variables bound at the metalevel. In non-interactive scripts, the binders are visible and the user can pick any name for the variables. However, in case of an interactive proof of, say \verb+! x \ P ' x+, after applying the introduction rule of forall the new sequent becomes \verb+ |- P ' a+ where the variable \verb+a+ is now bound by a meta-level \verb+pi a \ + that was traversed during the proof search. Unfortunately and for efficiency reasons, $\lambda$Prolog does not remember the names of bound variables when execution goes under a \verb+pi+, but only their De Bruijn level~\cite{debrujn1}. Therefore in the goal presented to the user the name \verb+a+ will be automatically generated without any control and no correlation to the initial \verb+x+.
 
 The problem can be improved at least in two ways: 1) modifying ELPI to remember names, at the price of performance; 2) making the hypothetical pre-processor discussed above insert string parameters in the syntax so that \verb+! x \ P+ would be parsed as \verb+! "x" x \ P+ and later processed via
 {\small \begin{verbatim}
@@ -759,7 +752,7 @@ If \verb+C+ is \verb+stop+ the toplevel loop ends successfully. Otherwise the co
 
 As for tactics, we developed two kind of library certificates: the first one is non interactive and it consists in just a list of commands to be expanded by packages in the clauses of \verb+next_object+; the second one is interactive and it just parses from standard input the next command to be executed. In the case the command starts a proof, the interactive library certificate will use an interactive certificate for the proof, effectively entering the proof mode of the theorem prover.
 
-Finally, backtracking inside a proof is as simple as entering a \verb+backtrack+ command that just fails, invoking LambdaProlog backtracking mechanism. Note, however, that the behaviour is different than the one of HOL Light: backtracking can enumerate the next solution of a previous tactic, unless a Prolog cut ($!$) was used to prune the remaining solutions.
+Finally, backtracking inside a proof is as simple as entering a \verb+backtrack+ command that just fails, invoking $\lambda$Prolog backtracking mechanism. Note, however, that the behaviour is different than the one of HOL Light: backtracking can enumerate the next solution of a previous tactic, unless a Prolog cut ($!$) was used to prune the remaining solutions.
 
 \subsection{Definitional Mechanisms}
 
@@ -780,12 +773,12 @@ is
 pi A \ term (monotone '' A) 
  (((A --> prop) --> (A --> prop)) --> prop).
 \end{verbatim}}
-When LambdaProlog backchains over the hypothesis, it automatically instantiates \verb+A+ with a fresh metavariable. Therefore we get the expected behaviour for free, without the need to syntactically introduce System-F type abstractions and type quantifiers.
+When $\lambda$Prolog backchains over the hypothesis, it automatically instantiates \verb+A+ with a fresh metavariable. Therefore we get the expected behaviour for free, without the need to syntactically introduce System-F type abstractions and type quantifiers.
 
 Despite the System-F terminology we employ, note that, as expected for an HOL system, the polymorphism achieved is the Hindley-Milner one, where quantifiers do not occur inside types.
 
 In HOL Light, the user does not even need to write the type quantifiers, that
-are automatically inserted to capture all metavariables that are left uninstantiated by type inference. Type inference in LambdaProlog came for free, but there is no operator to bind all metavariables left uninstantiated. Indeed, how to implement Hindley-Milner type-inference in LambdaProlog is an annoying problem left open for several years now.
+are automatically inserted to capture all metavariables that are left uninstantiated by type inference. Type inference in $\lambda$Prolog came for free, but there is no operator to bind all metavariables left uninstantiated. Indeed, how to implement Hindley-Milner type-inference in $\lambda$Prolog is an annoying problem left open for several years now.
 
 \section{Conclusions and Future Work}
 
@@ -797,7 +790,7 @@ The whole HOL experiment is meant as a major test-case for the study of extensio
 
 SAY THAT WE NEED TO STUDY MORE HIGHER ORDER CONSTRAINT PROPAGATION
 
-The HOL library we have now is not large enough yet to compare the speed of HOL Light with our own implementation. In order to enlarge it to cover, say, arithmetic over natural numbers, we first need to 1) generalize the package for inductive definitions to accept parameterized types; 2) complete the package for inductive type declarations; 3) implement a transfer package to automatize some of the proofs like we did for monotonicity proofs, that are completely automatized. In the meantime, the impression is that we could be slower than HOL Light by one or two order of magnitudes, and the hope is that one order of magnitude could eventually disappear moving to a compiler for LambdaProlog.
+The HOL library we have now is not large enough yet to compare the speed of HOL Light with our own implementation. In order to enlarge it to cover, say, arithmetic over natural numbers, we first need to 1) generalize the package for inductive definitions to accept parameterized types; 2) complete the package for inductive type declarations; 3) implement a transfer package to automatize some of the proofs like we did for monotonicity proofs, that are completely automatized. In the meantime, the impression is that we could be slower than HOL Light by one or two order of magnitudes, and the hope is that one order of magnitude could eventually disappear moving to a compiler for $\lambda$Prolog.
 
 
 %\appendix
@@ -807,7 +800,7 @@ The HOL library we have now is not large enough yet to compare the speed of HOL 
 
 \acks
 
-We are greatly indebted with Dale Miller for long discussions over LambdaProlog, its use for implementing interactive provers and the constraint programming extensions.
+We are greatly indebted with Dale Miller for long discussions over $\lambda$Prolog, its use for implementing interactive provers and the constraint programming extensions.
 
 % We recommend abbrvnat bibliography style.
 
