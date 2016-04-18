@@ -710,7 +710,7 @@ where the type abstraction binds \verb+A+ both in the type and in the body.
 The new hypothesis that is added to the kernel after processing the definition
 is
 {\small \begin{verbatim}
-pi A \ term ' (monotone '' A) '
+pi A \ term (monotone '' A) 
  (((A --> prop) --> (A --> prop)) --> prop).
 \end{verbatim}}
 When LambdaProlog backchains over the hypothesis, it automatically instantiates \verb+A+ with a fresh metavariable. Therefore we get the expected behaviour for free, without the need to syntactically introduce System-F type abstractions and type quantifiers.
