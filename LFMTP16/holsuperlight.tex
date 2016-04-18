@@ -500,7 +500,9 @@ are only the ones about the \verb+term+ relation.  Note that contexts like
 \verb+G1+ can be used in conjunction with the implication to run
 a goal in a custom context in the right hand side of the constraint
 handling rule. Finally \verb+L1+ and \verb+L2+ are the list
-of context variables visible to \verb+K+.
+of context variables visible to \verb+K+, i.e. introduced by
+the \verb+pi+ binder in the \verb+lam+ rule for the \verb+term+
+predicate.
 
 It is also worth mentioning that $\lambda$Prolog goals should be unified taking
 into account injective renaming of bound variables, known as \emph{equivariate
