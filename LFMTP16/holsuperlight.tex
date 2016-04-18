@@ -799,7 +799,11 @@ The whole HOL experiment is meant as a major test-case for the study of extensio
 
 SAY THAT WE NEED TO STUDY MORE HIGHER ORDER CONSTRAINT PROPAGATION
 
-The HOL library we have now is not large enough yet to compare the speed of HOL Light with our own implementation. In order to enlarge it to cover, say, arithmetic over natural numbers, we first need to 1) generalize the package for inductive definitions to accept parameterized types; 2) complete the package for inductive type declarations; 3) implement a transfer package to automatize some of the proofs like we did for monotonicity proofs, that are completely automatized. In the meantime, the impression is that we could be slower than HOL Light by one or two order of magnitudes, and the hope is that one order of magnitude could eventually disappear moving to a compiler for $\lambda$Prolog.
+The HOL library we have now is not large enough yet to compare the speed of HOL Light with our own implementation. Currently, it includes only the definition of logical constants and their properties, the Knaster-Tarski fixpoint theorem, and a manual construction of natural numbers from a constructive universe. It ends with the definition of addition between natural numbers and the proof that it is commutative. Before progressing in the library, we first need to 1) implement a transfer package to automatize some of the proofs, like we did for monotonicity proofs, that are completely automatized; 2) automatize the construction of inductive types via the inductive definition package (that we already have) and the transfer package; 3) improve proof automation and revise the set of tactics.
+
+LA FRASE SEGUENTE ORA E' FALSA PER VIA DEL TYPE-CHECKING RIPETUTO
+
+In the meantime, the impression is that we could be slower than HOL Light by one or two order of magnitudes, and the hope is that one order of magnitude could eventually disappear moving to a compiler for $\lambda$Prolog.
 
 
 %\appendix
