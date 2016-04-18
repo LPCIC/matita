@@ -392,7 +392,7 @@ or CHR~\cite{CHR}.  Teyjus does not provide such mechanism.
 
 \subsection{Modes and matching}
 
-To tackle both problems we introduce in ELPI the concept of
+To tackle this class of problems we introduce in ELPI the concept of
 \emph{modes}.  For example the \verb+pp+ predicate can be declared
 having the two desired modes with the following syntax:
 
@@ -408,8 +408,8 @@ marking its first argument as an input one.  Conversely for
 the goal, i.e. no unification variable present in the
 goal is instantiated as part of the unification process.
 
-This is sufficient to make the predicate \verb+pp+ be usable
-in both direction if one adds a catch all clause.
+This is sufficient to make the predicate \verb+pp+ usable
+in both direction if one add the catch all clause.
 
 {\small
 \begin{verbatim}
@@ -421,20 +421,20 @@ Such clause prints/parses each meta variable with itself,
 as well as prints any term with no associated notation as
 itself.  Used in conjunction with $\lambda$Prolog implication,
 the \verb+pp+ predicate can serve as a mechanism for scoped, printed and
-parsed, notations, like names for bound variables.  Eg
+parsed, notations, like names for bound variables.  E.g.
 
 {\small
 \begin{verbatim}
- ?- pi x\ pp delta x =>
-       print Nice (eq " nat ' x ' 0),
-       parse (delta = 0) (Ugly x).
+ ?- pi w\ pp delta w =>
+       print Nice (eq " nat ' w ' 0),
+       parse (delta = 0) (Ugly w).
  % Nice = (delta = 0)
  % Ugly = x\ eq " T ' x ' 0
 \end{verbatim}
 }
 
 Modes alone are not sufficient to solve the problems we described for
-the \verb+term+ predicate, but make the declaration of a constrain
+the \verb+term+ predicate, but make the declaration of a constraint
 quite compact:
 
 {\small
@@ -446,19 +446,20 @@ term (?? as K) T :- constraint (term K T) K.
 }
 
 The \verb+??+ symbol, only available for input arguments, can be used to
-recognize flexible terms.  The \verb+as K+ syntactic sugar is reminiscent of
+recognize flexible terms.  The \verb+(... as K)+ syntactic sugar is reminiscent of
 ML's pattern matching syntax to name sub expressions, in this case the
 metavariable.
 \verb+constraint+ delays the current goal, declaring it as a new constraint.
 
-Note that also dynamic clauses, like the \verb+term x A+ in the
-\verb+lam+ rule, are affected by the mode directive making
-the higher order program \verb+term+ never enter generative mode.
+Note that also dynamic clauses, like the \verb+term x A+ one 
+added by the
+\verb+lam+ rule, are affected by the mode directive and as a consequence
+the higher order program \verb+term+ never enters generative mode.
 
 \subsection{Toward a CHR extension of $\lambda$Prolog}
 
 As a companion mechanism we intend to provide the possibility to
-declare constrain handling rules
+declare constrain handling rules:
 
 {\small
 \begin{verbatim}
