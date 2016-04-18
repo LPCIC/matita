@@ -169,7 +169,7 @@ clause and trigger the new query \texttt{term (x ' x) B} after having istantiate
 Finally, we will use the cut predicate of Prolog \texttt{!} with the same
 non-logical semantics. We say that a predicate does not have a logical semantics
 when it breaks the commutativity rule of conunction or, equivalently, commutation of the semantics with istantiation.
-
+\section{HOL in a nutshell and its ML implementation}
 \begin{table}[t]
 \begin{small}
 \begin{Verbatim}[numbers=left,numbersep=1pt,frame=leftline]
@@ -179,10 +179,6 @@ term (lam F) (A --> B) :- pi x\ term x A => term (F x) B.
 \end{small}
 \caption{\label{type-checker1}A type-checker for simply typed lambda calculus.}
 \end{table}
-
-\newpage
-
-\section{HOL in a nutshell and its ML implementation}
 HOL is a variant of Church's simple theory of types. Its precise syntax and semantics can be found in~\cite{the_HOL_system_LOGIC} even if we will implement a constructive variant of it, and we will refer for inspiration to the HOL Light version and implementation of a classical variant of HOL. Types and terms have the
 following syntax:
 $$\begin{array}{l}
