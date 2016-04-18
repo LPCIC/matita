@@ -346,11 +346,9 @@ over \verb+X+ and \verb+Y+ would instantiate them indefinitely: the program
 would enter generative mode.  This problem is well known in Prolog, and
 various non logical predicates like \verb+var+ are provided to handle
 this situation.
-
-This very same problem also arises is in the
-implementation of automation. An automatic tactic chooses the next step
-by inspection of the goals.  Again this inspection should leave no visible
-trace.
+This very same problem also arises is in the implementation of automatic
+tactics, that have to be able to chooses the next step by inspection of the
+goals.  Of course, inspecting the goal should leave no visible trace.
 
 The situation is analog for typing.  
 {\small
@@ -451,10 +449,10 @@ added by the
 \verb+lam+ rule, are affected by the mode directive and as a consequence
 the higher order program \verb+term+ never enters generative mode.
 
-\subsection{Toward a CHR extension of $\lambda$Prolog}
+\subsection{Towards a CHR extension of $\lambda$Prolog}
 
 As a companion mechanism we intend to provide the possibility to
-declare constrain handling rules:
+declare constrain handling rules with the following syntax.
 
 {\small
 \begin{verbatim}
@@ -464,47 +462,43 @@ constraint term {
 \end{verbatim}
 }
 
-The first two
-arguments are lists of goals, the second one to be removed.  The third argument
-is a goal to be added. The rule
-above hence reads: if two \verb+term+ constraints are on the same meta variable,
-remove the second one and add a goal \verb+T1 = T2+.
+The first two arguments are lists of goals to be matched, the second one to be
+removed.  The third argument is a goal to be added. The rule above hence reads:
+if two \verb+term+ constraints are on the same meta variable, remove the second
+one and add the goal \verb+T1 = T2+.
 
 Rules like this one are typically justified by the meta theory of the
 object level language.  In particular this one corresponds to the uniqueness
 of typing.
 
-$\lambda$Prolog goals live in a context (the dynamic part of the program)
-that also has to be made available to
-the constraint handling rules.  For example one may check that not only the
-ground instances of meta variables are well typed, but also that all occurrences of the
-metavariable are.
+$\lambda$Prolog goals live in a context (the dynamic part of the program).
+Making this component available to the constraint handling rules lets one
+implement more sophisticated propagations.  For example one may check that not
+only the ground instances of meta variables are well typed, but also that all
+occurrences of the metavariable are.
 
 {\small
 \begin{verbatim}
 constraint term ?- term {
- rule [ G1 ?- term (?? K L1) _ ] [ G2 ?- term (?? K L2) _ ]
-  CompCtx :- aux L1 G1 L2 G2 CompCtx.
+ rule [ G ?- term (?? K R) _ ] [ D ?- term (?? K S) _ ] CC :-
+   aux R G S D CC.
 
- aux [X|XS] G1 [Y|YS] G2 (TX = TY, CompCtx) :-
-   (G1 => term X TX), (G2 => term Y TY),
-   aux XS G1 YS G2 ComCtx.
- aux nil nil nil nil true.
+ aux [X|XS] G [Y|YS] D (TX = TY, CC) :-
+  (G => term X TX), (D => term Y TY), aux XS G1 YS G2 CC.
+ aux [] [] [] [] true.
  aux _ _ _ _ false.   
 }
 \end{verbatim}
 }
 
-For both performance and usability reasons one has to specify
-which components of a program context he is interested in.  Hence the
-\verb+term ?-+ part saying that the context items we are interested in
-are only the ones about the \verb+term+ relation.  Note that contexts like
-\verb+G1+ can be used in conjunction with the implication to run
-a goal in a custom context in the right hand side of the constraint
-handling rule. Finally \verb+L1+ and \verb+L2+ are the list
-of context variables visible to \verb+K+, i.e. introduced by
-the \verb+pi+ binder in the \verb+lam+ rule for the \verb+term+
-predicate.
+For both performance and usability reasons one has to specify which components
+of a program context he is interested in.  Hence the \verb+term ?- ...+ part saying
+that the context items we are interested in are only the ones about the
+\verb+term+ relation.  Note that contexts like \verb+G1+ can be used in
+conjunction with the implication to run a goal in a custom context in the right
+hand side of the constraint handling rule. Finally \verb+R+ and \verb+S+ are
+the list of context variables visible to \verb+K+, i.e. introduced by the
+\verb+pi+ binder in the \verb+lam+ rule for the \verb+term+ predicate.
 
 It is also worth mentioning that $\lambda$Prolog goals should be unified taking
 into account injective renaming of bound variables, known as \emph{equivariate
@@ -791,19 +785,68 @@ are automatically inserted to capture all metavariables that are left uninstanti
 
 \section{Conclusions and Future Work}
 
-CONCLUSIONS MISSING
+We presented as a concrete case study the implementation of an HOL based prover
+in $\lambda$Prolog via a semi-shallow encoding of the object logic.  We
+identify a few limitations of the programming language and propose extensions
+to ease the development of an interactive prover.
 
-FUTURE WORKS PART
+A future line of research is to understand what other problems can benefits
+from the same extensions. Promising ones are situations where the program must
+manipulate partial and incomplete data structures, like during type-inference.
+For example, good test cases could be automatic inference of behavioral
+types~\cite{cosimo1} or inference of linear types~\cite{baillot1} via the
+generation of sets of inequalities then threated as constraints to be solved.
 
-The whole HOL experiment is meant as a major test-case for the study of extensions of the language necessary to concisely implement an interactive prover. The next step is to understand what other problems can benefits from the same extensions. Promising ones are situations where the program must manipulate partial and incomplete data structures, like during type-inference. For example, good test cases could be automatic inference of behavioral types~\cite{cosimo1} or inference of XXX~\cite{baillot1} where sets of linear inequations are generated as constraints to be solved.
+Another direction is to continue the study of constraint propagation rules
+in the context of an higher order language like $\lambda$Prolog.
 
-SAY THAT WE NEED TO STUDY MORE HIGHER ORDER CONSTRAINT PROPAGATION
+Last, we could analyze how the programming language features impact on
+performances. The HOL library we have now is not large enough yet to compare
+the speed of HOL Light with our own implementation Currently, it includes only
+the definition of logical constants and their properties, the Knaster-Tarski
+fixpoint theorem, and a manual construction of natural numbers from a
+constructive universe. It ends with the definition of addition between natural
+numbers and the proof that it is commutative. 
 
-The HOL library we have now is not large enough yet to compare the speed of HOL Light with our own implementation. Currently, it includes only the definition of logical constants and their properties, the Knaster-Tarski fixpoint theorem, and a manual construction of natural numbers from a constructive universe. It ends with the definition of addition between natural numbers and the proof that it is commutative. Before progressing in the library, we first need to 1) implement a transfer package to automatize some of the proofs, like we did for monotonicity proofs, that are completely automatized; 2) automatize the construction of inductive types via the inductive definition package (that we already have) and the transfer package; 3) improve proof automation and revise the set of tactics.
+So far, the impression is that the most expensive, and recurrent, check is that
+terms are well typed.  The HOL-light system makes an ingenious use of ML's
+private data types to avoid re-checking the same term over and over.
+Statically, the ML type system would ensure that term built out of already
+checked terms can be checked in a shallow way.  This source of repetition is
+typically solved in declarative languages by tabulating, i.e. caching recent
+computations.  In presence of binders tabulating is not an easy solution.  The
+abstraction mechanism of $\lambda$Prolog via \verb+local+ constants does not
+seem capable to solve the problem in a satisfactory way either, since it would
+make the data on which the invariant holds not easy to inspect.  An ambitious
+direction could be to study if the restriction on modes we presented in this
+paper could be combined with the standard type system of $\lambda$Prolog in
+order enable the programmer to express invariants similar to the ones one can
+express using ML's private data type.
 
-LA FRASE SEGUENTE ORA E' FALSA PER VIA DEL TYPE-CHECKING RIPETUTO
 
-In the meantime, the impression is that we could be slower than HOL Light by one or two order of magnitudes, and the hope is that one order of magnitude could eventually disappear moving to a compiler for $\lambda$Prolog.
+% 
+% An alternative option
+% could be to try to provide 
+% compiler would
+% 
+% term
+% 
+% 
+% So far the impression is that 
+
+
+% Before progressing in the library, we first need to 1)
+% implement a transfer package to automatize some of the proofs, like we did for
+% monotonicity proofs, that are completely automatized; 2) automatize the
+% construction of inductive types via the inductive definition package (that we
+% already have) and the transfer package; 3) improve proof automation and revise
+% the set of tactics.
+
+% LA FRASE SEGUENTE ORA E' FALSA PER VIA DEL TYPE-CHECKING RIPETUTO
+% 
+% In the meantime, the impression is that we could be slower than HOL Light by
+% one or two order of magnitudes, and the hope is that one order of magnitude
+% could eventually disappear moving to a compiler for $\lambda$Prolog.
 
 
 %\appendix
