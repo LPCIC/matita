@@ -288,7 +288,7 @@ In both cases, the system can be simply turned into both an automatic or an inte
 
 Finally, we cannot implement the kernel using a private type like in ML because Logic Programming rules out private types. To understand why, remember that every predicate in a (pure) logic programming language is invertible. Therefore it is not possible to implement a type with a predicate to reveal the data, but preventing its use to build the data as well. In particular, the predicate \verb+dest_thm+ corresponding to the function with the same name in HOL would allow to feed it any pair context-formula to obtain a theorem without any further control.
 
-The only way to protect part of the code in LamdaProlog is to existentially quantify a predicate to be kept secret to the rest of the code. Our kernel implements three predicates, one for recognizing well-typed types, one for the typing judgement and one for derivability, that are kept local. In order to fullfill requirement number 4, derivability will work on list of sequents (the proof state) in place of a single sequent. Finally, to avoid the repetition of code and checks in the HOL approach, we only focus for now on top-down proofs.
+The only way to protect part of the code in $\lambda$Prolog is to existentially quantify a predicate to be kept secret to the rest of the code. Our kernel implements three predicates, one for recognizing well-typed types, one for the typing judgement and one for derivability, that are kept local. In order to fullfill requirement number 4, derivability will work on list of sequents (the proof state) in place of a single sequent. Finally, to avoid the repetition of code and checks in the HOL approach, we only focus for now on top-down proofs.
 
 We detail now the implementation of the kernel.
 
@@ -507,7 +507,7 @@ into account injective renaming of bound variables, known as \emph{equivariate
 unification}, a complex and computationally expensive algorithm.
 For this and other reasons, the CHR extensions to ELPI are still work in progress.
 % 
-% %\section{Towards More Extensions to LamdbaProlog}
+% %\section{Towards More Extensions to $\lambda$Prolog}
 % 
 % In Section~\ref{cholp} we already discussed one of the drawbacks of the semi-shallow encoding: the need to extend the language with constraints in order to delay predicates --- like typing --- that are faced with metavariables that represent object level unknown terms.
 % 
@@ -565,13 +565,13 @@ For this and other reasons, the CHR extensions to ELPI are still work in progres
 % \caption{\label{type-checker2}A type-checker for simply typed lambda calculus in Constraint Programming style.}
 % \end{table}
 % 
-% The first line delays the goal \verb+term T TY+ iff \verb+T+ is flexible. Otherwise the second line immediately turns it into \verb+term' T TY+. The next lines are the old implementation of \verb+term+ where \verb+term'+ is used in place of \verb+term+ in the heads of the clauses. The reason for the introduction of \verb+term'+ is that the new clauses \verb+term' x A+ introduced in the body of the lambda-abstraction case must be used strictly after the first, delaying clause. According to the standard semantics of LamdaProlog, a clause introduced by logical implication is always tried first. Hence the need for the technical \verb+term/term'+ distinction.
+% The first line delays the goal \verb+term T TY+ iff \verb+T+ is flexible. Otherwise the second line immediately turns it into \verb+term' T TY+. The next lines are the old implementation of \verb+term+ where \verb+term'+ is used in place of \verb+term+ in the heads of the clauses. The reason for the introduction of \verb+term'+ is that the new clauses \verb+term' x A+ introduced in the body of the lambda-abstraction case must be used strictly after the first, delaying clause. According to the standard semantics of $\lambda$Prolog, a clause introduced by logical implication is always tried first. Hence the need for the technical \verb+term/term'+ distinction.
 % 
 % The \verb+$is_flex+ predicate is clearly extra-logical (it does not commute with instantiation). However, the high-level programming construct \verb+delay+ \ldots \verb+until not flexible+ that we have just encoded is perfectly logical.
 % 
 % We also have an experimental, CHR-inspired syntax to propagate constraints, but we omit its explanation from the paper because it is still work in progress. We only note here that propagation is a logical operation iff the propagation rule can be proved to holds as a meta-theoretical theorem. Therefore, so far, the proposed extensions are fully in the spirit of logic programming.
 
-\section{The kernel in LamdbaProlog}
+\section{The kernel in $\lambda$Prolog}
 The second judgement implemented in our kernel is the derivation judgement in top-down style. It is encoded via three predicates, \verb+prove+, \verb+loop+ and \verb+thm+.
 
 The predicate \verb+loop SEQS CERTIFICATE+ holds when the list of well-typed sequents \verb+SEQS+ can all be proved following instructions from the certificate \verb+CERTIFICATE+.
