@@ -32,6 +32,7 @@
 \usepackage{fancyvrb}
 \usepackage{bussproofs}
 \usepackage{hyperref}
+\usepackage{alltt}
 
 \newcommand{\cL}{{\cal L}}
 
@@ -154,7 +155,7 @@ goals as well (see case $G \Rightarrow H$ below)
 \item assuming $G \Rightarrow H$ means assuming that $H$ holds under the assumption that $G$ holds as well. When the clause is used, the new goal $G$ will be added to the set of open goals to be proved
 \end{itemize}
 
-In concrete syntax we will write \verb+sigma X\t+ for $\exists X.t$, \verb+pi x\t+ for $\forall x.t$, \verb+t_1 => t_2+ or \verb+t_2 := t_1+ for $t_1 \Rightarrow t_2$, \verb+t1,t2+ for $t_1 \wedge t_2$ and \verb+t1;t2+ for $t_1 \vee t_2$. Moreover, all free uppercase/lowercase variables in a program clause are implicitly universally/existentially quantified globally/locally (like in Prolog).
+In concrete syntax we will write \verb+sigma X\t+ for $\exists X.t$, \verb+pi x\t+ for $\forall x.t$, \verb+ a => b+ or \verb+b := a+ for $a \Rightarrow b$, \verb+a,b+ for $a \wedge b$ and \verb+a;b+ for $a \vee b$. Moreover, all free uppercase/lowercase variables in a program clause are implicitly universally/existentially quantified globally/locally (like in Prolog).
 
 \texttt{sigma} in clause positions are not in ``standard'' LambdaProlog and they are accepted by our ELPI interpreter, but not from Teyjus. However, Teyjus implements a module system~\cite{gopalan1} that allows to declare variables local to the list $H_1,\ldots, H_n$ of clauses of the module. The same behaviour can be obtained in ELPI with (\texttt{sigma x \ }$H_1, \ldots, H_n$) or with the equivalent
 syntactic sugar \texttt{\{ local x.} $H_1.\;\ldots\; H_n.$ \texttt{\}} (where the curly braces are used to delimit the scope of the existential quantifier, i.e. the local declaration). Declaring local constants is the only and fundamental mechanism in LambdaProlog to restrict the trusted code base.
@@ -186,7 +187,7 @@ HOL is a variant of Church's simple theory of types. Its precise syntax and sema
 following syntax:
 $$\begin{array}{l}
 T ::= \alpha ~|~ u~T_1\ldots T_n ~|~ T \rightarrow T\\
-t ::= x_T ~|~ c_T ~|~ \lambda x_T. t ~|~ tt
+t ::= x_T ~|~ c_T ~|~ \lambda x_T. t ~|~ {tt_{bool}}
 \end{array}$$
 where $u$ ranges over type constructors (constants when $n=0$) and $\alpha$
 ranges over type variables. Contrarily to System-F,%~\cite{???}
@@ -227,25 +228,25 @@ $T$. After checking the conditions and veryfing that no constant named $c$ is al
 constant $c_T$ and the axiom $c_T = t$.
 
 The condition on the free type variables of $t$ avoids logical inconsistency
-and would not be necessary in System-F where every occurrence of $c$ would be explicitly applied to every free type variable that occurs in $t$. In HOL, instead, only the type instantiations for the type variables that occur in the type of $c$ can be recovered from the type of $c$. Therefore, if the condition is violated, $c_T$ could be rewritten via the axiom to an instantiation of $t$ that still contains free type variables. Example: $c_\mathtt{bool} = ! x_\alpha y_\alpha \  x_\alpha = y_\alpha$ that from $c_\mathtt{bool} = c_\mathtt{bool}$ via two instantiations would imply $! x_\mathtt{bool} y_\mathtt{bool} \  x_\mathtt{bool}= y_\mathtt{bool} \iff ! x_\mathtt{unit} y_\mathtt{unit} \  x_\mathtt{unit}= y_\mathtt{unit}$ i.e. $\mathtt{false} = \mathtt{true}$.
+and would not be necessary in System-F where every occurrence of $c$ would be explicitly applied to every free type variable that occurs in $t$. In HOL, instead, only the type instantiations for the type variables that occur in the type of $c$ can be recovered from the type of $c$. Therefore, if the condition is violated, $c_T$ could be rewritten via the axiom to an instantiation of $t$ that still contains free type variables. Example: $c_\mathtt{bool} = \ ! x_\alpha y_\alpha. \  x_\alpha = y_\alpha$ that from $c_\mathtt{bool} = c_\mathtt{bool}$ via two instantiations would imply $! x_\mathtt{bool} y_\mathtt{bool}. \  x_\mathtt{bool}= y_\mathtt{bool} \iff ! x_\mathtt{unit} y_\mathtt{unit}. \  x_\mathtt{unit}= y_\mathtt{unit}$ i.e. $\mathtt{false} = \mathtt{true}$.
 
 \subsection{HOL (Light) in ML}
 HOL Light~\cite{hol1} is an extremely lightweight implementation of HOL in ML that reuses the ML toplevel, following the tradition started by Milner~\cite{milner1}. The key idea is the possibility in ML of encoding \emph{private data types}~\cite{leroy1}, i.e. data types whose values can be inspected via pattern matching outside the module that defines them, but that cannot be directly constructed outside the module. Instead, from outside the module, it is only possible to invoke a function, implemented in the module, that returns an inhabitant of the type.
 
-Private types can be used to encorce invariants: the functions of the module only builds terms that satisfy the invariants. Therefore, all inhabitants built outside the module are correct by construction, and the trusted code base for the maintainance of the invariants is lexically delimited by the module.
+Private types can be used to enforce invariants: the functions of the module only builds terms that satisfy the invariants. Therefore, all inhabitants built outside the module are correct by construction, and the trusted code base for the maintainance of the invariants is lexically delimited by the module.
 
-HOL Light implements two private types corresponding to the two judgement of the logic: 1) the type of well typed terms $t$ such that there exists a $T$ s.t. $\vdash t : T$; 2) the type of theorems, i.e. pairs context $\Gamma$, formula $F$ such that $\Gamma \vdash F$. Theories could also have been implemented as a third private type (like what Coq does), but they are actually hidden inside the module that define the type of (well typed) terms.
+HOL Light implements two private types corresponding to the two judgement of the logic: 1) the type of well typed terms $t$ such that there exists a $T$ s.t. $\vdash t : T$; 2) the type of theorems, i.e. pairs context $\Gamma$, formula $F$ such that $\Gamma \vdash F$. Theories could also have been implemented as a third private type (like what Coq does), but they are actually hidden inside the module that defines the type of (well typed) terms.
 
 In particular, every inference rule of HOL corresponds to a function over theorems exported from the ``kernel'' module of HOL.
 
 \noindent
 \verb+val mkComb : term -> term -> term+\\
-\verb+val DEDUCT\_ANTISYM\_RULE : thm -> thm -> thm+\\
+\verb+val DEDUCT_ANTISYM_RULE : thm -> thm -> thm+\\
 for example correspond respectively to the typing rule for application $t_1 t_2$ and to the inference rule shown on page~\ref{krule}. The function\\
 \verb+val dest_thm : thm -> term list * term+\\
 allows to inspect a theorem to recover what has been proved. Of course, it does not have an inverse function that would correspond to claiming that $\Gamma \vdash p$ is a theorem without actually proving it.
 
-An important feature of this approach, that dates back to LCF and puts it apart from the Curry-Howard approach used for Coq and other systems for dependently typed lanugages, is that \emph{no proof object} need to be stored. Indeed, an inhabitant of \verb+thm+ really is (in HOL Light) just a pair hypotheses/conclusion.
+An important feature of this approach, that dates back to LCF and puts it apart from the Curry-Howard approach used for Coq and other systems for dependently typed lanugages, is that \emph{no proof object} needs to be stored. Indeed, an inhabitant of \verb+thm+ really is (in HOL Light) just a pair hypotheses/conclusion.
 
 The functions implemented in the kernel already allow to build proofs in bottom-up style. Quite frequently, however, the user would like to mix the bottom-up and the top-down styles, and he would like to be able to use metavariables for yet unknown formulae during a top-down proof.
 
@@ -286,7 +287,7 @@ For example, the proof object can decide to apply the transitivity rule for appl
 
 In both cases, the system can be simply turned into both an automatic or an interactive theorem prover. In the first case, it is sufficient to replace the certificate with a metavariable: the LambdaProlog predicate will then work in a generative way, blindly enumerating all possible proof objects (and potentially diverging because of depth-first search, that can be replaced with iterative deepening to keep completeness). To obtain an interactive prover, the certificate is replaced with the request to the user to type the next rule to be tried. The user interaction can also print the sequent to be proved, but not the other open branches of the proof, that are kept at the meta-level in the and/or tree of the LambdaProlog interpreter.
 
-Finally, we cannot implement the kernel using a private type like in ML because Logic Programming rules out private types. To understand why, remember that every predicate in a (pure) logic programming language is invertible. Therefore it is not possible to implement a type with a predicate to reveal the data, but preventing its use to build the data as well. In particular, the predicate \verb+dest\_thm+ corresponding to the function with the same name in HOL would allow to feed it any pair context-formula to obtain a theorem without any further control.
+Finally, we cannot implement the kernel using a private type like in ML because Logic Programming rules out private types. To understand why, remember that every predicate in a (pure) logic programming language is invertible. Therefore it is not possible to implement a type with a predicate to reveal the data, but preventing its use to build the data as well. In particular, the predicate \verb+dest_thm+ corresponding to the function with the same name in HOL would allow to feed it any pair context-formula to obtain a theorem without any further control.
 
 The only way to protect part of the code in LamdaProlog is to existentially quantify a predicate to be kept secret to the rest of the code. Therefore, our kernel implements two predicates, one for the typing judgement and one for derivability, that are kept local. In order to fullfill requirement number 4, derivability will work on list of sequents (the proof state) in place of a single sequent. Finally, to avoid the repetition of code and checks in the HOL approach, we only focus for now on top-down proofs.
 
@@ -313,7 +314,7 @@ We therefore propose what we call the \emph{semi-shallow} encoding:
 $$t ::= t~\verb+'+~t ~|~ lam~\mathtt{TYPE}~F$$
 
 where \verb+'+ is just an infix constructor, \verb+F+ is a LambdaProlog function from terms to terms and object level metavariables are encoded via language level metavariables. For example, $\lambda x\!:\!o. X~x$ is encoded as
-\verb+lam o x \ X x+. Ignoring the issue about metavariables, the semi-shallow encoding was the one already used in Table~\ref{type-checker1}, that essentially show the typing judgement of our implementation of HOL Light, which includes a few other clauses for primitive constants, like \verb+term eq (A --> A --> prop)+.
+\verb+lam o x \ X x+. Ignoring the issue about metavariables, the semi-shallow encoding was the one already used in Table~\ref{type-checker1}, that essentially shows the typing judgement of our implementation of HOL Light, which includes a few other clauses for primitive constants, like \verb+term eq (A --> A --> prop)+.
 
 For simply typed $\lambda$-calculus (plus type variables) type checking is decidable and the typing judgement of Table~\ref{type-checker1} is already syntax directed. Therefore HOL never asks the user to prove that a term has a certain type: type checking/inference is run fully automatically.
 
@@ -327,7 +328,7 @@ The prover has to be able to apply the typing judgement to incomplete terms,
 i.e. terms that contain metavariables to be later instantiated by the
 user.  If such judgement is expressed as a regular logic program the choice
 of using $\lambda$Prolog metavariables to represent object-level metavariables
-may causes serious issues, since logic programs do not normally distinguish
+may cause serious issues, since logic programs do not normally distinguish
 between input and output, and hence could generate the term in place of the
 user.  Take for example the \verb+term+ clause for lambda and imagine
 it is run on an incomplete term \verb+(lam nat n\X n) T+:
@@ -346,7 +347,7 @@ What provers implemented in ML, like Coq or Matita, do is to keep
 a data structure that assigns a type to each metavariable, typically called
 $\Sigma$.  When an incomplete term is found the algorithm stops and check
 that the (occurrence of) the metavariable has the type declared in $\Sigma$ (1).
-In a different part of code, when a metavariable is instantiated, the system
+In a different part of the code, when a metavariable is instantiated, the system
 checks that the instantiation is compatible with type declared in $\Sigma$ (2).
 
 The reading of this behavior in terms of logic programming points toward two
@@ -363,13 +364,13 @@ a specific metavariable and are re-scheduled when such metavariable
 gets instantiated.  This mechanism avoids entering generative mode and
 faithfully models (2).
 
-Last, when two goal, i.e. constraints, are delayed on the same meta variable
+Last, when two goals, i.e. constraints, are delayed on the same meta variable
 one could add to the set of goals an equation between the two types.  The
 manipulation of the set of delayed goals is again a mechanism that accompanies
 many Prolog implementations in the for of \emph{constrain handling rules},
 or CHR.  Teyjus does not provide such mechanism.
 
-At the light of that we augmented ELPI with these two mechanism letting us
+At the light of that we augmented ELPI with these two mechanisms letting us
 express the typing judgement as follows
 
 {\small
@@ -391,7 +392,7 @@ keyword, only available in a \verb+mode+ block, to recognize
 flexible arguments.  The \verb+as K+ is just sugar reminiscent of ML
 pattern matching to name a sub expression expression, in this case
 the metavariable.  \verb+constraint+ declares a new constraint.
-Note that also dynamic clauses, like the \verb+term x A+ in the
+Note that also dynamic clause, like the \verb+term x A+ in the
 \verb+lam+ rule lives in the \verb+mode+ block and hence
 consumes, never generates, its first argument.
 
@@ -422,7 +423,7 @@ of typing.
 $\lambda$Prolog goals live in a context (the dynamic part of the program)
 that also has to be made available to
 the constraint handling rules.  For example one may check that not only the
-instance of meta variables are well typed, but also that all occurrences of the
+instances of meta variables are well typed, but also that all occurrences of the
 metavariable itself are (makes sense?).
 
 {\small
@@ -503,7 +504,7 @@ The predicate calls the predicates \verb+end_of_proof+, \verb+next_tactic+, \ver
 
 Predicate \verb+loop+ succeeds when there are no more sequents to prove, informing the certificate via \verb+end_of_proof+ (or verifying that the certificate agrees). Otherwise the predicate feeds the global proof state (the list of sequents) to \verb+next_tactic+ that, according to the certificate and the proof state, returns a rule \verb+ITAC+ to apply.
 
-Then \verb+loop+ invokes \verb+thm ITAC SEQ NEW+ that applied the rule \verb+ITAC+ to the goal \verb+SEQ+, reducing in top-down style a proof of it to a proof of the list \verb+NEW+ of new sequents (the hypotheses of the rule). Each primitive inference rule of HOL (Light) is implemented by \verb+ITAC+. For example, \verb+DEDUCT\_ANTISYM\_RULE+ (that we simply cal \verb+k+) is implemented by
+Then \verb+loop+ invokes \verb+thm ITAC SEQ NEW+ that applied the rule \verb+ITAC+ to the goal \verb+SEQ+, reducing in top-down style a proof of it to a proof of the list \verb+NEW+ of new sequents (the hypotheses of the rule). Each primitive inference rule of HOL (Light) is implemented by \verb+ITAC+. For example, \verb+DEDUCT_ANTISYM_RULE+ (that we simply cal \verb+k+) is implemented by
 
 {\small
 \begin{verbatim}
@@ -512,7 +513,7 @@ thm s (seq Gamma (eq ' P ' Q))
  :- reterm P prop.
 \end{verbatim}}
 
-As an invariant, we already know that \verb+eq ' P ' Q+ is well typed. The \verb+reterm P prop+ judgement is a variant of \verb+term+ that performs less checks knowing that \verb+P+ is already well typed. Note that, of the three premises of \verb+DEDUCT\_ANTISYM\_RULE+, the typing one is automatically discharged because retyping is decidable and efficient. The same happens in HOL Light.
+As an invariant, we already know that \verb+eq ' P ' Q+ is well typed. The \verb+reterm P prop+ judgement is a variant of \verb+term+ that performs less checks knowing that \verb+P+ is already well typed. Note that, of the three premises of \verb+DEDUCT_ANTISYM_RULE+, the typing one is automatically discharged because retyping is decidable and efficient. The same happens in HOL Light.
 
 Once \verb+thm+ returns, the list of new sequents is inserted in the
 proof state and the certificate is updated via \verb+update_certificate+ before entering the next loop iteration.
@@ -522,7 +523,7 @@ All predicates involved but \verb+prove+, i.e. \verb+loop+, \verb+thm+, \verb+te
 Compared to the HOL Light kernel, our kernel verifies whole proofs, whereas HOL Light only verifies the application of a single inference rule. The reason is that, because of the private type implementable in ML, composing inference rules outside the kernel via function application is a safe operation in ML. In our case, without the private type, composition of rules must be fully implemented inside the kernel.
 
 \subsection{Free names in sequents}
-In HOL sequents can contain free variables of any type, and the \verb+INST\_RULE+ allows to later instantiate them freely. In LambdaProlog we want to work only on closed terms in order to reuse the language binding mechanism to avoid implementing $\alpha$-conversion, instantiation, etc. Some inference rules, however, do introduce fresh names (typical examples are the introduction rule for the universal quantifier). Because free variables are not allowed in the semi-shallow encoding, we need to find a representation of sequents where all variables are bound ``outside the sequent''. The one we chose puts enough \verb+bind TYPE+ binders around the sequent. For example, the primitive congruence rule for $\lambda$-abstractions is written as:
+In HOL sequents can contain free variables of any type, and the \verb+INST_RULE+ allows to later instantiate them freely. In LambdaProlog we want to work only on closed terms in order to reuse the language binding mechanism to avoid implementing $\alpha$-conversion, instantiation, etc. Some inference rules, however, do introduce fresh names (typical example is the introduction rule for the universal quantifier). Because free variables are not allowed in the semi-shallow encoding, we need to find a representation of sequents where all variables are bound ``outside the sequent''. The one we chose puts enough \verb+bind TYPE+ binders around the sequent. For example, the primitive congruence rule for $\lambda$-abstractions is written as:
 
 \begin{small}
 \begin{verbatim}
@@ -546,7 +547,7 @@ thm ww (bind A x \ SEQ) [ SEQ ].
 
 Rule \verb+ww+ (for weakening) is easier to understand: if \verb+x+ does not occur in the sequent, proving \verb+bind A x \ SEQ+ is equivalent to proving \verb+SEQ+.
 
-The first rule says that to prove a \verb+bind A x SEQ+ using a rule \verb+bind A TAC+ which is itself parametric on a variable having the same type, it is sufficient to pick a fresh name \verb+x+, assume that is has type \verb+A+, and then call rule \verb+TAC x+ (the rule ``instantiated'' on the fresh name) on \verb+SEQ x+ (the sequent ``instantiated'' on the fresh name). The result will be a list of new sequents \verb+NEW x+ where \verb+x+ can occur. The predicate \verb+put_binds'+ (code of 4 lines not shown for space reasons) prefixes every sequent in the list \verb+NEW x+ with the \verb+bind A x \+ binder.
+The first rule says that to prove a \verb+bind A x SEQ+ using a rule \verb+bind A TAC+ which is itself parametric on a variable having the same type, it is sufficient to pick a fresh name \verb+x+, assume that it has type \verb+A+, and then call rule \verb+TAC x+ (the rule ``instantiated'' on the fresh name) on \verb+SEQ x+ (the sequent ``instantiated'' on the fresh name). The result will be a list of new sequents \verb+NEW x+ where \verb+x+ can occur. The predicate \verb+put_binds'+ (code of 4 lines not shown for space reasons) prefixes every sequent in the list \verb+NEW x+ with the \verb+bind A x \+ binder.
 
 Compared to HOL Light, these two rules are new, but {\small \verb+INST_RULE+} (and the corresponding one for type variable instantiation) are no longer necessary. Moreover, the remaining primitive rules are slightly simplified by removing $\alpha$-equivalence tests where they occur in HOL Light code.
 
@@ -574,7 +575,7 @@ A tactical \verb+bind* TAC+ is also provided to bind-and-ignore as many fresh na
 For the time being we do not assign names to hypotheses, like in HOL Light and unlike other theorem provers like Coq. Adding names to hypotheses via binders in the script as we did for fresh names does not introduce any new difficulty.
 
 \subsection{Tacticals}
-An LCF tactical is an higher order tactic. Most tacticals starts applying a tactic and then continue on the resulting subgoals. Tacticals can be defined in ML outside the kernel by inspecting the result of the first tactic application and using safe function composition. We are forced again to provide a kernel-side mechanism to implement tacticals as we did for tactics. It boils down to the new following primitive rules:
+An LCF tactical is an higher order tactic. Most tacticals start applying a tactic and then continue on the resulting subgoals. Tacticals can be defined in ML outside the kernel by inspecting the result of the first tactic application and using safe function composition. We are forced again to provide a kernel-side mechanism to implement tacticals as we did for tactics. It boils down to the new following primitive rules:
 
 \begin{small}
 \begin{verbatim}
@@ -595,7 +596,7 @@ Rule \verb+thenll+ already allows to implement in user space most LCF tacticals 
 
 Finally, the extra-logical \verb+(! TAC)+ tactical applies the tactic \verb+TAC+ and then suppress all backtrackings via cut. It is very useful in those situations where the user whants to implement invertible tactics, i.e. tactics that may be backtracked, but that do not change provability and thus should not be backtracked.
 
-We observe that the tactics and tacticals that can be implemented in our system goes beyond the LCF ones because we inherit full-backtracking from LambdaProlog. In particular, our tactics are naturally non-deterministic, i.e. they can have multiple solutions (that are enumerated via backtracking).
+We observe that the tactics and tacticals that can be implemented in our system go beyond the LCF ones because we inherit full-backtracking from LambdaProlog. In particular, our tactics are naturally non-deterministic, i.e. they can have multiple solutions (that are enumerated via backtracking).
 The LCF version of the \verb+then+ tactical that never backtracks the first tactic corresponds to our restriction to banged tactics: \verb+then (! TAC1) TAC2+.
 
 \subsection{Uses of the certificates}
@@ -613,7 +614,7 @@ of basic inference rules w.r.t. the HOL Light kernel. Nevertheless, as expected,
 
 In Section~\ref{cholp} we already discussed one of the drawbacks of the semi-shallow encoding: the need to extend the language with constraints in order to delay predicates --- like typing --- that are faced with metavariables that represent object level unknown terms.
 
-A similar problem, which requires a different solution, occurs in two more places in the code. The first place is parsing/pretty-printing (implemented by one predicate that can be used in two different ways): we want to write a function that abbreviates some common expressions using an ad-hoc syntax. For example, the following clause allows for the compact syntax \texttt{! x \ P ' x} for universal quantification in place of the inner representation \texttt{forall '' T '' lam T x \ P ' x} (where \texttt{T} is the type of the bound variable that is omitted):
+A similar problem, which requires a different solution, occurs in two more places in the code. The first place is parsing/pretty-printing (implemented by one predicate that can be used in two different ways): we want to write a function that abbreviates some common expressions using an ad-hoc syntax. For example, the following clause allows for the compact syntax \texttt{! x} $\backslash $ \texttt{P ' x} for universal quantification in place of the inner representation \texttt{forall '' T '' lam T x} $\backslash $\texttt{ P ' x} (where \texttt{T} is the type of the bound variable that is omitted):
 {\small
 \begin{verbatim}
 parse (! F2) (forall '' _ ' lam _ F1) :-
@@ -633,7 +634,7 @@ $mode [ parse(-,+) ] parse t X  % for parsing
 $mode [ parse(+,-) ] parse X t  % for pretty-printing
 \end{verbatim}}
 
-whose semantics is the follow: when backchaing over a clause of parse, \verb+t+
+whose semantics is the following: when backchaing over a clause of parse, \verb+t+
 will be matched, while \verb+X+ will be instantiated. Moreover, the same ``mode'' will be inherited by any recursive call of \verb+parse+ triggered in the body of the clause.
 
 Therefore, adding to \verb+parse+ the catch-all clause \verb+parse T T+, a metavariable will always be parsed/pretty-printed to itself.
@@ -641,7 +642,7 @@ Therefore, adding to \verb+parse+ the catch-all clause \verb+parse T T+, a metav
 The second place in the code where a similar problem arises is in the implementation of automation. An automatic tactic chooses the next tactic to apply by inspection of the proof state, and it also has to determine if the proof step is invertible or not. In the former case, it does not change provability and therefore there is no necessity to backtrack it in case of failure.
 
 Without the possibility to inspect terms via matching only to detect metavariables in the sequent, it is impossible to determine invertibility of rules. For example, the rule ex-falso allows to prove any sequent $\Gamma \vdash P$ where
-$\bot \in \Gamma$ and it is an invertible rule. Therefore, adding a cut \texttt+!+ to the tactic invocation is desirable. However, it may be the case that
+$\bot \in \Gamma$ and it is an invertible rule. Therefore, adding a cut {\texttt !} to the tactic invocation is desirable. However, it may be the case that
 a metavariable $X$ occurs in $\Gamma$. When LambdaProlog backchains over ex-falso, it will instantiate $X$ with $\bot$ solving the goal. The instantiation itself is not invertible, for example, when $X$ occurs in another goal $\vdash X$ that becomes unprovable.
 
 The solution to this and a few more similar examples consists again in backchaining using matching in place of unification for $\Gamma$ and it is therefore supported by our proposed language extension.
@@ -654,9 +655,9 @@ The internal representation of terms in an interactive prover is often very verb
 
 HOL Light is the system with the best support of outer syntax, even when defining tactics. This is achieved by means of a pre-processor for OCaml (written in camlp5 (\url{http://camlp5.gforge.inria.fr})): all strings written in backquotes in the code of HOL Light are parsed and type-checked by the pre-processor and turned into well-typed terms. The opposite is done during printing. The code of the pre-processor amounts to 2845 lines. When an user develops a library, she does not need to write any additional parsing code, but she can always briefly define a new operator as prefix/infix/etc.
 
-In our prototype the user can directly write terms written in our semi-shallow encoding. For example, $P x \wedge Q$ should be written as \texttt{and ' (P ' x) ' Q}. To reduce the burden on the user, we provide the parse/pretty-printing predicate discussed in the previous Section. Contrarily to HOL Light, the outer syntax is not simply a string, but it is again a structured term that extends the one of the internal syntax. Infix binary operator and prefix/postfix unary operators can be directly used in the external syntax because LambdaProlog itself allows to declare constants as such. Thus, for example, \texttt{and ' (P ' x) ' Q} can be abbreviated to \texttt{P ' x \&\& Q} but not to \texttt{P ' x /\textbackslash Q} because \texttt{/\textbackslash} is not a valid LambdaProlog constant. Moreover, infix ticks must still be used to separate between function arguments.
+In our prototype the user can directly write terms written in our semi-shallow encoding. For example, $P x \wedge Q$ should be written as \texttt{and ' (P ' x) ' Q}. To reduce the burden on the user, we provide the parse/pretty-printing predicate discussed in the previous Section. Contrarily to HOL Light, the outer syntax is not simply a string, but it is again a structured term that extends the one of the internal syntax. Infix binary operator and prefix/postfix unary operators can be directly used in the external syntax because LambdaProlog itself allows to declare constants as such. Thus, for example, \texttt{and ' (P ' x) ' Q} can be abbreviated to \texttt{P ' x \&\& Q} but not to \texttt{P ' x} $/\backslash$ \texttt{Q} because $/\backslash$ is not a valid LambdaProlog constant. Moreover, infix ticks must still be used to separate between function arguments.
 
-A second difference  is that terms in the ``outer'' syntax can contain metavariables, allowing interpolation of (meta)variables for free like in \texttt{p X :- parse (X \&\& X) O, \$print O}. However, when used without care interpolation is computationally expensive. For example, the previous clause would interpolate \verb+X+ in \verb+X \&\& X+ before calling \verb+parse+ that will therefore traverse \verb+X+ twice. A better implementation would be \texttt{p X :- parse (Y \&\& Y) O, parse X Y}.
+A second difference  is that terms in the ``outer'' syntax can contain metavariables, allowing interpolation of (meta)variables for free like in \texttt{p X :- parse (X \&\& X) O, \$print O}. However, when used without care interpolation is computationally expensive. For example, the previous clause would interpolate \verb+X+ in \verb+X && X+ before calling \verb+parse+ that will therefore traverse \verb+X+ twice. A better implementation would be \texttt{p X :- parse (Y \&\& Y) O, parse X Y}.
 
 A third difference is that our syntax only admits close terms: all variables have to be quantified, either inside the term, or outside it in the code. For example, where a HOL Light user would state the polymorphic theorem \verb+ prove `a = b => b = a`+ our user must state \verb+theorem (pi A \ ! A a \ ! b \ a = b => b = a)+ where the two variables are universally quantified in the statement and the abstraction over the type $A$ is quantified outside it to make the theorem polymorphic.
 
