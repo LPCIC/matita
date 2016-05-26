@@ -82,7 +82,7 @@ We present a proof-of-concept prototype of a (constructive variant of an) HOL in
 $\lambda$Prolog, HOL, Higher Order Logic Programming, Constraints
 
 \section{Introduction}
-What are the programming paradigm and the programming languages better suited for the implementation of interactive theorem provers? Better suited here means providing high level primitives at the good level of abstraction, relieving the programmer from the burden of reimplementing the basic mechanisms.
+What are the programming paradigms and the programming languages better suited for the implementation of interactive theorem provers? Better suited here means providing high level primitives at the good level of abstraction, relieving the programmer from the burden of reimplementing the basic mechanisms.
 
 Every (interactive) theorem prover has to:
 \begin{enumerate}
@@ -91,7 +91,7 @@ Every (interactive) theorem prover has to:
 \item manipulate incomplete data structures, i.e. data structures having parts not specified yet. Moreover, invariants have to be enforced on the data structures and lazily checked when the data structures get instantiated. Examples of incomplete data occurs in formulae (omission of types to be inferred), sequents (omission of terms to be identified later, e.g. writing $X$ for a yet unknown witness of an existential statement), and proof objects (an incomplete proof has a proof object containing an hole).
 \end{enumerate}
 
-The three features discussed above also interact in complex ways. For example, renaming bound variables in a term that contains metavariables (i.e. omitted sub-terms) must record the renaming as an explicit substitution applied to the metavariable to resume the renaming when the metavariable will be istantiated. Or, backtracking must be aware of dependencies between subgoals due to sharing of metavariables in order to split the subgoals into independent clusters of goals: once a cluster is solved, backtrack that solution is useless because search spaces are orthogonal.
+The three features discussed above also interact in complex ways. For example, renaming bound variables in a term that contains metavariables (i.e. omitted sub-terms) must record the renaming as an explicit substitution applied to the metavariable to resume the renaming when the metavariable will be instantiated. Or, backtracking must be aware of dependencies between subgoals due to sharing of metavariables in order to split the subgoals into independent clusters of goals: once a cluster is solved, backtrack that solution is useless because search spaces are orthogonal.
 
 In a series of papers from the 90s \cite{amy4}, \cite{amy3}, \cite{amy1}, Amy Felty already advocated Higher Order Logic Programming (HOLP) as the programming paradigm best suited for the three tasks above. $\lambda$Prolog, the flagship of HOLP languages, manipulates syntax with binders, relieving the programmer from problems due to renaming and substitution; being a logic language it has backtracking for free; it allows to control backtracking via the usual Prolog's cut ("!") whose pragmatics is well known, even if it does not fit the logical semantics of the language; finally the language uses metavariables that range over both data and functions, and the complex implementation of $\lambda$Prolog takes care of all interactions between binders ($\lambda$-abstraction) and metavariables, addressing the problem of higher-order unification under mixed prefixes~\cite{miller1}.
 
@@ -125,7 +125,7 @@ As a final remark, the interest of the work, that is still on-going, is not to o
 \section{$\lambda$Prolog in a nutshell}
 $\lambda$Prolog extends the core of Prolog in two directions.
 \begin{enumerate}
-\item it allows in the syntax $\lambda$-abstractions (written \verb+x\p+ for $\lambda x.p$), applications (written \verb+p q+ like in $\lambda$-calculus and unlike in Prolog) and metavariables both in argument and in head position (e.g. \verb+iter [X|XS] F [Y|YS] :- F X Y, iter XS F YS.+ where the metavariable \verb+F+ is to be istantiated with a binary predicate like \verb,(x\y\y=x+x),)
+\item it allows in the syntax $\lambda$-abstractions (written \verb+x\p+ for $\lambda x.p$), applications (written \verb+p q+ like in $\lambda$-calculus and unlike in Prolog) and metavariables both in argument and in head position (e.g. \verb+iter [X|XS] F [Y|YS] :- F X Y, iter XS F YS.+ where the metavariable \verb+F+ is to be instantiated with a binary predicate like \verb,(x\y\y=x+x),)
 \item it generalizes Horn clauses to Higher Order Hereditary Harrop Formulae (HOHHF) clauses, whose grammar is
 $$\begin{array}{l}
 H ::= x~t_1~\ldots~t_n ~|~ H \wedge H ~|~ \forall X.H ~|~ \exists x.H ~|~ G \Rightarrow H\\
@@ -133,7 +133,7 @@ G ::= x~t_1~\ldots~t_n ~|~ X~t_1~\ldots~t_n ~|~ G \wedge G ~|~ G \vee G\\
  \hspace{0.65cm} ~|~ \forall x.G ~|~ \exists X.G ~|~ H \Rightarrow G\\
 H,G \subseteq t ::= x ~|~ X ~|~ tt ~|~ x\backslash t
 \end{array}$$
-where $H$ ranges over HOHHF, $G$ ranges over goal formulae, $x$ are constants/universally quantified variables, $X$ are existentially quantified variables and $t$ are the higher order terms of the language. A $\lambda$Prolog program is a list of HOHHF formulae. To run a $\lambda$Prolog program the user submits a query $G$ that is automatically proved using the clauses in the program.
+where $H$ ranges over HOHHF, $G$ ranges over goal formulae, $x$ are constants/universally quantified variables, $X$ are existentially quantified variables and $t$ are the higher order terms of the language. A $\lambda$Prolog program is a list of HOHHF. To run a $\lambda$Prolog program the user submits a query $G$ that is automatically proved using the clauses in the program.
 \end{enumerate}
 
 The (operational) semantics of the connectives that occurs respectively in goal formulae $G$ / in HOHHF $H$ is given by the introduction/elimination rules of the connectives in natural deduction for intuitionistic higher order logic. In particular:
@@ -143,7 +143,7 @@ The (operational) semantics of the connectives that occurs respectively in goal 
 \item the goal $H_1 \vee H_2$ is turned into the goal $H_1$; in case of failure of the proof search, the goal is backtracked to be $H_2$
 \item $H \Rightarrow G$ assumes $H$, turned into a clause, to prove $G$
 \item $\forall x.G$ introduces a fresh variable $y$ and proves $G$ after replacing $x$ with $y$ in $G$
-\item $\exists X.G$ introduces a fresh metavariable $Y$ and proves $G$ after replacing $X$ with $Y$. Later $X$ can be istantiated with any term whose free variables were in scope for $\exists X.G$
+\item $\exists X.G$ introduces a fresh metavariable $Y$ and proves $G$ after replacing $X$ with $Y$. Later $Y$ can be instantiated with any term whose free variables were in scope for $\exists X.G$
 \item the goal $t$ where $t$ is atomic is proved unifying $t$ with the
 (hereditary) conclusion of one of the program clauses, possibly opening new
 goals as well (see case $G \Rightarrow H$ below)
@@ -160,15 +160,15 @@ syntactic sugar \texttt{\{ local x.} $H_1.\;\ldots\; H_n.$ \texttt{\}} (where th
 
 The other major difference between the ELPI version of $\lambda$Prolog and the ``official'' one of Teyjus is that we do not enforce any type discipline, nor we try to statically enforce the restriction to HOHHF. Errors at run-time (e.g. invoking a list as a predicate) result in abortion of the program execution. On the other hand, it is for example possible to read from the terminal a query and execute it, which is prohibited by Teyjus because the correctness of the query cannot be statically enforced.
 
-To illustrate a typical $\lambda$Prolog example, in Table~\ref{type-checker1} we show the code of a type-checker for closed terms of the simply typed lambda-calculus. We use the infix constant \verb+'+ to encode application, the unary constant \verb+lam+ for lambda-abstraction, and the infix constant \verb+-->+ for the function space type. The latter is to be applied to a meta-level lamdba-abstraction in the spirit of higher-order abstract syntax. For example, the term $\lambda x.xx$ is encoded as \verb+lam x \ x ' x+. Note that, in the concrete syntax, parentheses around lambda-abstractions are not necessary in $\lambda$Prolog when the abstraction is the last argument of an application. I.e. \verb+lam x \ x ' x+ is to be read as \verb+lam (x \ x ' x)+.
+To illustrate a typical $\lambda$Prolog example, in Table~\ref{type-checker1} we show the code of a type-checker for closed terms of the simply typed lambda-calculus. We use the infix constant \verb+'+ to encode application, the unary constant \verb+lam+ for lambda-abstraction, and the infix constant \verb+-->+ for the function space type. The former is to be applied to a meta-level lamdba-abstraction in the spirit of higher-order abstract syntax. For example, the term $\lambda x.xx$ is encoded as \verb+lam x \ x ' x+. Note that, in the concrete syntax, parentheses around lambda-abstractions are not necessary in $\lambda$Prolog when the abstraction is the last argument of an application. I.e. \verb+lam x \ x ' x+ is to be read as \verb+lam (x \ x ' x)+.
 
 Observe that the code of the type-checker is really minimal and in one-to-one correspondence with the two derivation rules one writes usually on paper. However, there are some differences as well. In particular, the typing judgement \texttt{term T TY} (``\texttt{T}'' is a term of type ``\texttt{TY}'') does not mention any context $\Gamma$. Instead, in the rule for lambda-abstraction, the hypothesis that the fresh variable \texttt{x} has type \texttt{A} is directly assumed and put temporarily in the program code using logical implication \texttt{=>}.
 For example, the query \texttt{term (lam y \ y ' y) TY} will match the second
-clause and trigger the new query \texttt{term (x ' x) B} after having istantiated \texttt{TY} with \texttt{A --> B} where \texttt{x} is fresh (because introduced by \texttt{pi}) and of type \texttt{A}.
+clause and trigger the new query \texttt{term (x ' x) B} after having instantiated \texttt{TY} with \texttt{A --> B} where \texttt{x} is fresh (because introduced by \texttt{pi}) and of type \texttt{A}.
 
 Finally, we will use the cut predicate of Prolog \texttt{!} with the same
 non-logical semantics. We say that a predicate does not have a logical semantics
-when it breaks the commutativity rule of conunction or, equivalently, commutation of the semantics with istantiation.
+when it breaks the commutativity rule of conjunction or, equivalently, commutation of the semantics with instantiation.
 \section{HOL in a nutshell and its ML implementation}
 \begin{table}[t]
 \begin{small}
@@ -195,7 +195,7 @@ the append function \texttt{@} is typed $\mathtt{list}~\alpha \rightarrow \matht
 Variables $x_T$ and constants $c_T$ carry explicitly their type $T$ and they are equal iff both the name and the types are. In particular, each occurrence of a polymorphic constant, carrying its type, explicitly carries an instantiation for every type variable occurring in its type. For example
 \texttt{@}$_{\mathtt{list}~\mathtt{nat} \rightarrow \mathtt{list}~\mathtt{nat} \rightarrow \mathtt{list}~\mathtt{nat}}$ implicitly encodes the instantiation $\alpha := \mathtt{nat}$. In System-F the constant occurrence would be applied to the type: $\texttt{@}~\mathtt{nat}$.
 
-HOL systems assume the existence of two predefined types, one for propositions \texttt{bool} and one for individuals \texttt{ind} (also written $o$ and $\iota$ in the litterature). Logical connectives and quantifiers are just single out constants. For example, conjuction is given the monomorphic type $\mathtt{bool} \rightarrow \mathtt{bool} \rightarrow \mathtt{bool}$ and universal quantification the polymorphic type scheme $(\alpha \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}$. The usual trick of higher-order syntax is used to reduce all binders to $\lambda$-abstraction: $\forall x:\mathtt{nat}.P$ is represented as $\mathtt{forall}_{(\mathtt{nat} \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}} (\lambda x.P)$. In the case of the HOL Light variant, the only constant that is initially assumed to exist is polymorphic equality $\mathtt{=}_{\alpha \rightarrow \alpha \rightarrow \mathtt{bool}}$, that also doubles for coimplication when $\alpha = \mathtt{bool}$.
+HOL systems assume the existence of two predefined types, one for propositions \texttt{bool} and one for individuals \texttt{ind} (also written $o$ and $\iota$ in the literature). Logical connectives and quantifiers are just single out constants. For example, conjuction is given the monomorphic type $\mathtt{bool} \rightarrow \mathtt{bool} \rightarrow \mathtt{bool}$ and universal quantification the polymorphic type scheme $(\alpha \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}$. The usual trick of higher-order syntax is used to reduce all binders to $\lambda$-abstraction: $\forall x:\mathtt{nat}.P$ is represented as $\mathtt{forall}_{(\mathtt{nat} \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}} (\lambda x.P)$. In the case of the HOL Light variant, the only constant that is initially assumed to exist is polymorphic equality $\mathtt{=}_{\alpha \rightarrow \alpha \rightarrow \mathtt{bool}}$, that also doubles for coimplication when $\alpha = \mathtt{bool}$.
 
 The derivation system of the logic is made of two judgements, one for typing terms and the other for proving formulae in contexts (see ~\cite{hollightoverview} for the 10 derivation rules of the HOL Light implementation). Two examples of such rules are
 
@@ -204,7 +204,7 @@ The derivation system of the logic is made of two judgements, one for typing ter
 \AxiomC{$\Gamma_1,p \vdash q$}
 \AxiomC{$\Gamma_2,q \vdash p$}
 \RightLabel{\tiny DEDUCT\_ANTISYM\_RULE \label{krule}}
-\TrinaryInfC{$\Gamma_1,\Gamma2 \vdash p = q$}
+\TrinaryInfC{$\Gamma_1,\Gamma_2 \vdash p = q$}
 \DisplayProof
 
 \vspace{0.15cm}
@@ -665,7 +665,7 @@ deftac forall_i (seq Gamma (forall '' _ ' lam _ G)) TAC :-
 \end{verbatim}
 \end{small}
 
-Note how the \verb+forall_i+ tactic for the introduction of universal quantifiers is implemented composing other tactics (\verb+eq_true_intro+, \verb+k+ and the conversion \verb+conv dd+) via LCF tacticals (\verb+then, thens,+ \ldots). Note also that, contrarily to every other interactive theorem prover out there, our scripts containts binders for the names of freshly introduced variables. For example, as we have seen in Section~\ref{thmk} the \verb+k+ rule above introduces a fresh name, and the tactic definition must start binding the name and retrieving its type (via \verb+bind _ x+). The name can be used in the rest of the script.
+Note how the \verb+forall_i+ tactic for the introduction of universal quantifiers is implemented composing other tactics (\verb+eq_true_intro+, \verb+k+ and the conversion \verb+conv dd+) via LCF tacticals (\verb+then, thens,+ \ldots). Note also that, contrarily to every other interactive theorem prover out there, our scripts contains binders for the names of freshly introduced variables. For example, as we have seen in Section~\ref{thmk} the \verb+k+ rule above introduces a fresh name, and the tactic definition must start binding the name and retrieving its type (via \verb+bind _ x+). The name can be used in the rest of the script.
 
 The use of binders in the scripts is a clear improvement over other systems, where just strings are used to refer to the name of hypotheses, with major problems in case the names change, e.g. because of a new version of the system. Proof refactoring~\cite{iain1} should also be simplified.
 
