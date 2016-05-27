@@ -86,7 +86,7 @@ What are the programming paradigms and the programming languages better suited f
 
 Every (interactive) theorem prover has to:
 \begin{enumerate}
-\item manipulate expressions with binders up to $\alpha$-conversion, and it needs to implement substitution. Binders are ubiqutous: they occur in formulae, but also in both procedural and declarative scripts (new hypotheses are named and have an associated scope), and in proof objects as well.
+\item manipulate expressions with binders up to $\alpha$-conversion, and it needs to implement substitution. Binders are ubiquitous: they occur in formulae, but also in both procedural and declarative scripts (new hypotheses are named and have an associated scope), and in proof objects as well.
 \item implement automatic proof search, either in the small or in the large, that requires to explore the search space via backtracking. Because the search space can be very large, the programmer needs way to control backtracking and direct the exploration.
 \item manipulate incomplete data structures, i.e. data structures having parts not specified yet. Moreover, invariants have to be enforced on the data structures and lazily checked when the data structures get instantiated. Examples of incomplete data occurs in formulae (omission of types to be inferred), sequents (omission of terms to be identified later, e.g. writing $X$ for a yet unknown witness of an existential statement), and proof objects (an incomplete proof has a proof object containing an hole).
 \end{enumerate}
@@ -95,7 +95,7 @@ The three features discussed above also interact in complex ways. For example, r
 
 In a series of papers from the 90s \cite{amy4}, \cite{amy3}, \cite{amy1}, Amy Felty already advocated Higher Order Logic Programming (HOLP) as the programming paradigm best suited for the three tasks above. $\lambda$Prolog, the flagship of HOLP languages, manipulates syntax with binders, relieving the programmer from problems due to renaming and substitution; being a logic language it has backtracking for free; it allows to control backtracking via the usual Prolog's cut ("!") whose pragmatics is well known, even if it does not fit the logical semantics of the language; finally the language uses metavariables that range over both data and functions, and the complex implementation of $\lambda$Prolog takes care of all interactions between binders ($\lambda$-abstraction) and metavariables, addressing the problem of higher-order unification under mixed prefixes~\cite{miller1}.
 
-Despite the push by Amy Felty, none of the interactive theorem provers in use is implemented in HOLP. With the exception of Mizar, implemented in Pascal for historical reasons, and the new Lean system, implemented in C++ for efficiency, all other systems (Coq, Isabelle, Agda, Matita, PVS, etc. \cite{17thproversoftheworld}) are implemented in either Haskell, an ML variant or a Lisp flavour.
+Despite the push by Amy Felty, none of the interactive theorem provers in use is implemented in HOLP. With the exception of Mizar, implemented in Pascal for historical reasons, and the new Lean system, implemented in C++ for efficiency, all other systems (Coq, Isabelle, Agda, Matita, PVS, etc. \cite{17thproversoftheworld}) are implemented in either Haskell, an ML variant or a Lisp flavor.
 
 In general, functional languages provide a good compromise between performance and high-level coding, and algebraic data types can naturally encode syntax without binders. In particular, ML was born as the language for implementing the LCF theorem prover, one of the first theorem provers of the world. Nevertheless, these languages solve none of the three problems above:
 \begin{enumerate}
@@ -107,10 +107,10 @@ In general, functional languages provide a good compromise between performance a
 The situation described above is bad in two respects.
 \begin{enumerate}
 \item The code that deals with the three problems is essentially logic-independent, but it requires to be re-implemented when one wants to experiment with a new logic or implement a new system. With the exception of the monad cited above, it also seems hard to encapsulate the boilerplate code into a reusable library: a real extension of the programming language is necessary.
-\item The code of the systems becomes very low-level, having to deal with all kind of intricacies due to binders and metavariables. Therefore it is hard for external programmers to contribute to the code base, for example to implement new domain specific tactics. The result is that these systems often implement in user space a second programming language, exposed to the user to write tactics, that takes care of binding, metavariables, backtracking and its control. For example, LTac~\cite{delahaye2000} is such a programming language for Coq, that also supports several other mini-languages to let the user customize the behaviour of the system (e.g. to declare canonical structures~\cite{canstruct}, used to provide unification hints~\cite{asperti1}). Not only the system becomes more complex because of the need to provide and interpret a new programming language on top, but its semantics is problematic: the beaviour of the system becomes the combination of pieces of code written in multiple languages and interacting in non trivial ways. Static analysis of this kind of code is out of reach.
+\item The code of the systems becomes very low-level, having to deal with all kind of intricacies due to binders and metavariables. Therefore it is hard for external programmers to contribute to the code base, for example to implement new domain specific tactics. The result is that these systems often implement in user space a second programming language, exposed to the user to write tactics, that takes care of binding, metavariables, backtracking and its control. For example, LTac~\cite{delahaye2000} is such a programming language for Coq, that also supports several other mini-languages to let the user customize the behavior of the system (e.g. to declare canonical structures~\cite{canstruct}, used to provide unification hints~\cite{asperti1}). Not only the system becomes more complex because of the need to provide and interpret a new programming language on top, but its semantics is problematic: the behavior of the system becomes the combination of pieces of code written in multiple languages and interacting in non trivial ways. Static analysis of this kind of code is out of reach.
 \end{enumerate}
 
-Adopting an HOLP language seems a promising idea. First of all the boilerplate code is pushed once and for all in the interpreter of the language, becoming decoupled from the programming logic of the theorem prover. Therefore the code of the theorem prover becomes much more clean, and very close to the inference rules it implements. Secondly, because of the decoupling, it becomes possible to experiment with alternative implementations of the HOLP language, e.g. susbtituting De Bruijn levels for the indexes (like in~\cite{debrujn1}) or profiling the implementation of the language on different applications. Thirdly, and most importantly, there is no more any need for ad-hoc languages in user space: the users that want can directly contribute to the code base of the theorem proving ignoring all the gory details.
+Adopting an HOLP language seems a promising idea. First of all the boilerplate code is pushed once and for all in the interpreter of the language, becoming decoupled from the programming logic of the theorem prover. Therefore the code of the theorem prover becomes much more clean, and very close to the inference rules it implements. Secondly, because of the decoupling, it becomes possible to experiment with alternative implementations of the HOLP language, e.g. substituting De Bruijn levels for the indexes (like in~\cite{debrujn1}) or profiling the implementation of the language on different applications. Thirdly, and most importantly, there is no more any need for ad-hoc languages in user space: the users that want can directly contribute to the code base of the theorem proving ignoring all the gory details.
 
 Nevertheless, as we said, no system has been implemented in $\lambda$Prolog, despite the interest raised by the work of Felty (her paper~\cite{amy4} has more than 150 citations). One reason is due to performance: logic languages are hard to optimize, and $\lambda$Prolog is orders of magnitudes harder than Prolog not only because of binders and higher order unification, but also because it is higher order (one can pass predicates around) and it allows a primitive (logical implication \texttt{P => Q}) to temporarily augment the code of the program (with \texttt{P}, while proving \texttt{Q}) in a lexically scoped way, making some well known Prolog static analyses and optimizations hard. Moreover, $\lambda$Prolog had for some time only very slow implementations, until Teyjus was born~\cite{teyjus1} after the work of Felty. Recent work by the authors also showed that the performances of Teyjus are not so good~\cite{elpi1}, considering that Teyjus compiles the code to an extension of the Warren abstract machine instruction set, while the ELPI interpreter of the authors that attempts no compilation is able to run consistently faster than Teyjus (Section 6 of~\cite{elpi1}).
 
@@ -155,7 +155,7 @@ goals as well (see case $G \Rightarrow H$ below)
 
 In concrete syntax we will write \verb+sigma X\t+ for $\exists X.t$, \verb+pi x\t+ for $\forall x.t$, \verb+ a => b+ or \verb+b := a+ for $a \Rightarrow b$, \verb+a,b+ for $a \wedge b$ and \verb+a;b+ for $a \vee b$. Moreover, all free uppercase/lowercase variables in a program clause are implicitly universally/existentially quantified globally/locally (like in Prolog).
 
-\texttt{sigma} in clause positions are not in ``standard'' $\lambda$Prolog and they are accepted by our ELPI interpreter, but not from Teyjus. However, Teyjus implements a module system~\cite{gopalan1} that allows to declare variables local to the list $H_1,\ldots, H_n$ of clauses of the module. The same behaviour can be obtained in ELPI with (\texttt{sigma x \ }$H_1, \ldots, H_n$) or with the equivalent
+\texttt{sigma} in clause positions are not in ``standard'' $\lambda$Prolog and they are accepted by our ELPI interpreter, but not from Teyjus. However, Teyjus implements a module system~\cite{gopalan1} that allows to declare variables local to the list $H_1,\ldots, H_n$ of clauses of the module. The same behavior can be obtained in ELPI with (\texttt{sigma x \ }$H_1, \ldots, H_n$) or with the equivalent
 syntactic sugar \texttt{\{ local x.} $H_1.\;\ldots\; H_n.$ \texttt{\}} (where the curly braces are used to delimit the scope of the existential quantifier, i.e. the local declaration). Declaring local constants is the only and fundamental mechanism in $\lambda$Prolog to restrict the trusted code base.
 
 The other major difference between the ELPI version of $\lambda$Prolog and the ``official'' one of Teyjus is that we do not enforce any type discipline, nor we try to statically enforce the restriction to HOHHF. Errors at run-time (e.g. invoking a list as a predicate) result in abortion of the program execution. On the other hand, it is for example possible to read from the terminal a query and execute it, which is prohibited by Teyjus because the correctness of the query cannot be statically enforced.
@@ -195,7 +195,7 @@ the append function \texttt{@} is typed $\mathtt{list}~\alpha \rightarrow \matht
 Variables $x_T$ and constants $c_T$ carry explicitly their type $T$ and they are equal iff both the name and the types are. In particular, each occurrence of a polymorphic constant, carrying its type, explicitly carries an instantiation for every type variable occurring in its type. For example
 \texttt{@}$_{\mathtt{list}~\mathtt{nat} \rightarrow \mathtt{list}~\mathtt{nat} \rightarrow \mathtt{list}~\mathtt{nat}}$ implicitly encodes the instantiation $\alpha := \mathtt{nat}$. In System-F the constant occurrence would be applied to the type: $\texttt{@}~\mathtt{nat}$.
 
-HOL systems assume the existence of two predefined types, one for propositions \texttt{bool} and one for individuals \texttt{ind} (also written $o$ and $\iota$ in the literature). Logical connectives and quantifiers are just single out constants. For example, conjuction is given the monomorphic type $\mathtt{bool} \rightarrow \mathtt{bool} \rightarrow \mathtt{bool}$ and universal quantification the polymorphic type scheme $(\alpha \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}$. The usual trick of higher-order syntax is used to reduce all binders to $\lambda$-abstraction: $\forall x:\mathtt{nat}.P$ is represented as $\mathtt{forall}_{(\mathtt{nat} \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}} (\lambda x.P)$. In the case of the HOL Light variant, the only constant that is initially assumed to exist is polymorphic equality $\mathtt{=}_{\alpha \rightarrow \alpha \rightarrow \mathtt{bool}}$, that also doubles for coimplication when $\alpha = \mathtt{bool}$.
+HOL systems assume the existence of two predefined types, one for propositions \texttt{bool} and one for individuals \texttt{ind} (also written $o$ and $\iota$ in the literature). Logical connectives and quantifiers are just single out constants. For example, conjunction is given the monomorphic type $\mathtt{bool} \rightarrow \mathtt{bool} \rightarrow \mathtt{bool}$ and universal quantification the polymorphic type scheme $(\alpha \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}$. The usual trick of higher-order syntax is used to reduce all binders to $\lambda$-abstraction: $\forall x:\mathtt{nat}.P$ is represented as $\mathtt{forall}_{(\mathtt{nat} \rightarrow \mathtt{bool}) \rightarrow \mathtt{bool}} (\lambda x.P)$. In the case of the HOL Light variant, the only constant that is initially assumed to exist is polymorphic equality $\mathtt{=}_{\alpha \rightarrow \alpha \rightarrow \mathtt{bool}}$, that also doubles for coimplication when $\alpha = \mathtt{bool}$.
 
 The derivation system of the logic is made of two judgements, one for typing terms and the other for proving formulae in contexts (see ~\cite{hollightoverview} for the 10 derivation rules of the HOL Light implementation). Two examples of such rules are
 
@@ -223,7 +223,7 @@ The implementation of an HOL systems is rooted in the principle of conservative 
 
 To introduce a new (polymorphic) constant $c_T$, the user must give a term $t$
 of type $T$ such that all free type variables contained in $t$ also occur in
-$T$. After checking the conditions and veryfing that no constant named $c$ is already defined in the current theory, the latter is extended with the new
+$T$. After checking the conditions and verifying that no constant named $c$ is already defined in the current theory, the latter is extended with the new
 constant $c_T$ and the axiom $c_T = t$.
 
 The condition on the free type variables of $t$ avoids logical inconsistency
@@ -232,7 +232,7 @@ and would not be necessary in System-F where every occurrence of $c$ would be ex
 \subsection{HOL (Light) in ML}
 HOL Light~\cite{hol1} is an extremely lightweight implementation of HOL in ML that reuses the ML toplevel, following the tradition started by Milner~\cite{milner1}. The key idea is the possibility in ML of encoding \emph{private data types}~\cite{leroy1}, i.e. data types whose values can be inspected via pattern matching outside the module that defines them, but that cannot be directly constructed outside the module. Instead, from outside the module, it is only possible to invoke a function, implemented in the module, that returns an inhabitant of the type.
 
-Private types can be used to enforce invariants: the functions of the module only builds terms that satisfy the invariants. Therefore, all inhabitants built outside the module are correct by construction, and the trusted code base for the maintainance of the invariants is lexically delimited by the module.
+Private types can be used to enforce invariants: the functions of the module only builds terms that satisfy the invariants. Therefore, all inhabitants built outside the module are correct by construction, and the trusted code base for the maintenance of the invariants is lexically delimited by the module.
 
 HOL Light implements three private types corresponding to the three judgement of the logic: 1) the type of well typed terms $t$ such that there exists a $T$ s.t. $\vdash t : T$; 2) the type of theorems, i.e. pairs context $\Gamma$, formula $F$ such that $\Gamma \vdash F$; 3) the type of well-formed types. Theories could also have been implemented as a third private type (like what Coq does), but they are actually hidden inside the module that defines the type of (well typed) terms.
 
@@ -246,7 +246,7 @@ for example correspond respectively to the typing rule for application $t_1 t_2$
 \verb+val dest_thm : thm -> term list * term+\\
 allows to inspect a theorem to recover what has been proved. Of course, it does not have an inverse function that would correspond to claiming that $\Gamma \vdash p$ is a theorem without actually proving it.
 
-An important feature of this approach, that dates back to LCF and puts it apart from the Curry-Howard approach used for Coq and other systems for dependently typed lanugages, is that \emph{no proof object} needs to be stored. Indeed, an inhabitant of \verb+thm+ really is (in HOL Light) just a pair hypotheses/conclusion.
+An important feature of this approach, that dates back to LCF and puts it apart from the Curry-Howard approach used for Coq and other systems for dependently typed languages, is that \emph{no proof object} needs to be stored. Indeed, an inhabitant of \verb+thm+ really is (in HOL Light) just a pair hypotheses/conclusion.
 
 The functions implemented in the kernel already allow to build proofs in bottom-up style. Quite frequently, however, the user would like to mix the bottom-up and the top-down styles, and he would like to be able to use metavariables for yet unknown formulae during a top-down proof.
 
@@ -288,7 +288,7 @@ In both cases, the system can be simply turned into both an automatic or an inte
 
 Finally, we cannot implement the kernel using a private type like in ML because Logic Programming rules out private types. To understand why, remember that every predicate in a (pure) logic programming language is invertible. Therefore it is not possible to implement a type with a predicate to reveal the data, but preventing its use to build the data as well. In particular, the predicate \verb+dest_thm+ corresponding to the function with the same name in HOL would allow to feed it any pair context-formula to obtain a theorem without any further control.
 
-The only way to protect part of the code in $\lambda$Prolog is to existentially quantify a predicate to be kept secret to the rest of the code. Our kernel implements three predicates, one for recognizing well-typed types, one for the typing judgement and one for derivability, that are kept local. In order to fullfill requirement number 4, derivability will work on list of sequents (the proof state) in place of a single sequent. Finally, to avoid the repetition of code and checks in the HOL approach, we only focus for now on top-down proofs.
+The only way to protect part of the code in $\lambda$Prolog is to existentially quantify a predicate to be kept secret to the rest of the code. Our kernel implements three predicates, one for recognizing well-typed types, one for the typing judgement and one for derivability, that are kept local. In order to fulfill requirement number 4, derivability will work on list of sequents (the proof state) in place of a single sequent. Finally, to avoid the repetition of code and checks in the HOL approach, we only focus for now on top-down proofs.
 
 We detail now the implementation of the kernel.
 
@@ -298,7 +298,7 @@ terms and types that respect requirement 3, that rules out deep encodings.
 A deep encoding for simply typed $\lambda$-calculus with metavariables would
 look like this and be very similar to the data type Coq and Matita are build around:
 $$ t ::= var~\mathtt{NAME} ~|~ app~t~t ~|~ lam~\mathtt{TYPE}~\mathtt{NAME}~t ~|~ meta~\mathtt{NAME}$$
-Assuming $\mathtt{NAME}$s to be either strings or De Bruijn indexes, a deep encoding forces the implmenetation of $\alpha$-conversion, lifting, substitution, instantiation of metavariables, etc.
+Assuming $\mathtt{NAME}$s to be either strings or De Bruijn indexes, a deep encoding forces the implementation of $\alpha$-conversion, lifting, substitution, instantiation of metavariables, etc.
 
 At the other side of the spectrum we find the shallow encoding for closed terms: we just encode object level terms with language level terms, object level metavariables with $\lambda$Prolog metavariables and so on. Instantiation of metavariables as well as $\alpha$-conversion and $\beta$-reduction comes for free. However, it becomes impossible to implement --- without extra-logical extensions of the language --- both the derivation and the typing judgements. For example, the code
 {\small \verb+type (F X) B :- type X A, type F (A --> B).+} does not do what it seems to
@@ -529,7 +529,7 @@ For this and other reasons, the CHR extensions to ELPI are still work in progres
 % $mode [ parse(+,-) ] parse X t  % for pretty-printing
 % \end{verbatim}}
 % 
-% whose semantics is the following: when backchaing over a clause of parse, \verb+t+
+% whose semantics is the following: when backchaining over a clause of parse, \verb+t+
 % will be matched, while \verb+X+ will be instantiated. Moreover, the same ``mode'' will be inherited by any recursive call of \verb+parse+ triggered in the body of the clause.
 % 
 % Therefore, adding to \verb+parse+ the catch-all clause \verb+parse T T+, a metavariable will always be parsed/pretty-printed to itself.
@@ -693,7 +693,7 @@ The first rule apply a tactic \verb+TAC1+ and then asks the untrusted predicate 
 
 Rule \verb+thenll+ already allows to implement in user space most LCF tacticals like \verb+then+ and \verb+thenl+. The remaining can be implemented using the \verb+id+ rule too, that is the neutral element of composition (it does nothing).
 
-Finally, the extra-logical \verb+(! TAC)+ tactical applies the tactic \verb+TAC+ and then suppress all backtrackings via cut. It is very useful in those situations where the user whants to implement invertible tactics, i.e. tactics that may be backtracked, but that do not change provability and thus should not be backtracked.
+Finally, the extra-logical \verb+(! TAC)+ tactical applies the tactic \verb+TAC+ and then suppress all backtracking via cut. It is very useful in those situations where the user wants to implement invertible tactics, i.e. tactics that may be backtracked, but that do not change provability and thus should not be backtracked.
 
 We observe that the tactics and tacticals that can be implemented in our system go beyond the LCF ones because we inherit full-backtracking from $\lambda$Prolog. In particular, our tactics are naturally non-deterministic, i.e. they can have multiple solutions (that are enumerated via backtracking).
 The LCF version of the \verb+then+ tactical that never backtracks the first tactic corresponds to our restriction to banged tactics: \verb+then (! TAC1) TAC2+.
@@ -755,7 +755,7 @@ If \verb+C+ is \verb+stop+ the toplevel loop ends successfully. Otherwise the co
 
 As for tactics, we developed two kind of library certificates: the first one is non interactive and it consists in just a list of commands to be expanded by packages in the clauses of \verb+next_object+; the second one is interactive and it just parses from standard input the next command to be executed. In the case the command starts a proof, the interactive library certificate will use an interactive certificate for the proof, effectively entering the proof mode of the theorem prover.
 
-Finally, backtracking inside a proof is as simple as entering a \verb+backtrack+ command that just fails, invoking $\lambda$Prolog backtracking mechanism. Note, however, that the behaviour is different than the one of HOL Light: backtracking can enumerate the next solution of a previous tactic, unless a Prolog cut ($!$) was used to prune the remaining solutions.
+Finally, backtracking inside a proof is as simple as entering a \verb+backtrack+ command that just fails, invoking $\lambda$Prolog backtracking mechanism. Note, however, that the behavior is different than the one of HOL Light: backtracking can enumerate the next solution of a previous tactic, unless a Prolog cut ($!$) was used to prune the remaining solutions.
 
 \subsection{Definitional Mechanisms}
 
@@ -776,7 +776,7 @@ is
 pi A \ term (monotone '' A) 
  (((A --> prop) --> (A --> prop)) --> prop).
 \end{verbatim}}
-When $\lambda$Prolog backchains over the hypothesis, it automatically instantiates \verb+A+ with a fresh metavariable. Therefore we get the expected behaviour for free, without the need to syntactically introduce System-F type abstractions and type quantifiers.
+When $\lambda$Prolog backchains over the hypothesis, it automatically instantiates \verb+A+ with a fresh metavariable. Therefore we get the expected behavior for free, without the need to syntactically introduce System-F type abstractions and type quantifiers.
 
 Despite the System-F terminology we employ, note that, as expected for an HOL system, the polymorphism achieved is the Hindley-Milner one, where quantifiers do not occur inside types.
 
@@ -795,7 +795,7 @@ from the same extensions. Promising ones are situations where the program must
 manipulate partial and incomplete data structures, like during type-inference.
 For example, good test cases could be automatic inference of behavioral
 types~\cite{cosimo1} or inference of linear types~\cite{baillot1} via the
-generation of sets of inequalities then threated as constraints to be solved.
+generation of sets of inequalities then treated as constraints to be solved.
 
 Another direction is to continue the study of constraint propagation rules
 in the context of an higher order language like $\lambda$Prolog.
