@@ -1,6 +1,6 @@
 [submodule "poc_elpi/matita"]
 	path = poc_elpi/matita
-	url = git@github.com:gares/matita.git
+	url = https://github.com/gares/matita.git
 	ignore = untracked
 [submodule "elpi/bench/sources/checkers"]
 	path = elpi/bench/sources/checkers
