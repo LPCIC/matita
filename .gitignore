@@ -28,5 +28,6 @@ elpi/bench/data.csv*
 elpi/trace_ppx
 elpi/.depends
 elpi/.depends.parser
+elpi/META.elpi
 papers/LPAR2015/*.pdf
 papers/LPAR2015/*.zip
