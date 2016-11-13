@@ -10,11 +10,9 @@ comp A B C D E :- $print "##" (comp A B C D E), fail.
 
 %%%%%%%%%% BUG/TODO:
 % - Mancano casi X vs X e X vs Y
-% - Manca riduzione nel lato concreto che potrebbe portare ad altre soluzioni
-%   nel caso leq
 
 % T1 :- lam TYA F  + beta step
-comp (?? as T1) [A|AS] M T2 L2 :- !,
+comp (?? as T1) [A|AS] M T2 L2 :-
  of A TYA, T1 = lam TYA F, pi x \ val x TYA A _NF => comp (F x) AS M T2 L2.
 
 % PROJECTION
@@ -22,11 +20,11 @@ comp (?? as V1) [] M T2 S2 :- val X _ _ _, V1 = X, comp V1 [] M T2 S2, !.
 
 % MIMIC
 comp (?? as V1) [] _ T2 S2 :-
- append S21 [S2l] S2, !,
+ append S21 [S2l] S2,
  V1 = app X Y, comp X [] eq T2 S21, comp Y [] eq S2l [].
-comp (?? as V1) [] M T2 [] :- mcomp V1 M T2, !. % mcomp used generatively
+comp (?? as V1) [] M T2 [] :- mcomp V1 M T2. % mcomp used generatively
 % variables and constants
-comp (?? as V1) [] M T2 [] :- !, V1 = T2.
+comp (?? as V1) [] M T2 [] :- V1 = T2.
 
 % MIMIC
 mcomp (sort I) eq (sort I) :- !.
@@ -41,7 +39,7 @@ mcomp (arr TY1 F1) M (arr TY2 F2) :-
 %%%%%%%%% symmetric cases
 
 % T1 :- lam TYA F  + beta step
-comp T2 L2 M (?? as T1) [A|AS] :- !,
+comp T2 L2 M (?? as T1) [A|AS] :-
  of A TYA, T1 = lam TYA F, pi x \ val x TYA A _NF => comp T2 L2 M (F x) AS.
 
 % PROJECTION
@@ -49,8 +47,8 @@ comp T2 S2 M (?? as V1) :- val X _ _ _, V1 = X, comp T2 S2 M V1 [], !.
 
 % MIMIC
 comp T2 S2 _ (?? as V1) [] :-
- append S21 [S2l] S2, !,
+ append S21 [S2l] S2,
  V1 = app X Y, comp T2 S21 eq X [], comp S2l [] eq Y [].
-comp T2 [] M (?? as V1) [] :- mcomp T2 M V1, !. % mcomp used generatively
+comp T2 [] M (?? as V1) [] :- mcomp T2 M V1. % mcomp used generatively
 % variables and constants
-comp T2 [] M (?? as V1) [] :- !, V1 = T2.
+comp T2 [] M (?? as V1) [] :- V1 = T2.

@@ -55,4 +55,7 @@ main :-
   of T TY, $print 7 T ":" TY),
 
  % unification test:
- (sigma B \ sigma C \ sigma X \ pi a \ pi b \ pi c \ val b nat (app s a) (B a) => val c nat a (C a) => conv (X a b c) (app (app s a) a), $print 8 X ).
+ (sigma B \ sigma C \ sigma X \ pi a \ pi b \ pi c \ val b nat (app s a) (B a) => val c nat a (C a) => conv (X a b c) (app (app s a) a), $print 8 X ),
+
+ % reduction during unification test:
+ (sigma X \ pi x \ of x nat => conv X (app (lam nat y \ o) x), $print 9 X).

@@ -60,5 +60,5 @@ comp X S1 _ X S2 :- forall2 S1 S2 conv, !.
 comp (lam T1 F1) [] _ (lam T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
 comp (arr T1 F1) [] D (arr T2 F2) [] :- conv T1 T2, pi x \ comp (F1 x) [] D (F2 x) [].
 % reduction rules
-comp T1 S1 D T2 S2 :- whd1 T1 S1 (_ \ t1 \ s1 \ comp t1 s1 D T2 S2), !.
-comp T1 S1 D T2 S2 :- whd1 T2 S2 (_ \ t2 \ s2 \ comp T1 S1 D t2 s2).
+comp T1 S1 D T2 S2 :- $print "AAA", whd1 T1 S1 (_ \ t1 \ s1 \ comp t1 s1 D T2 S2), !.
+comp T1 S1 D T2 S2 :- $print "BBB", whd1 T2 S2 (_ \ t2 \ s2 \ comp T1 S1 D t2 s2).
