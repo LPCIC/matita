@@ -14,7 +14,7 @@ comp (?? as T1) [A|AS] M T2 L2 :- !,
  of A TYA, pi x \ val x TYA A _NF => comp (T1 x) AS M T2 L2.
 
 % PROJECTION
-comp (?? as V1) [] M T2 S2 :- val X _ _ _, $print "!!" V1 X, V1 = X, $print "!!2" V1 (T2 S2), comp V1 [] M T2 S2.
+comp (?? as V1) [] M T2 S2 :- val X _ _ _, V1 = X, comp V1 [] M T2 S2.
 
 % MIMIC
 comp (?? as V1) [] M (sort I) [] :- !, V1 = sort J, comp V1 [] M (sort I) [].
@@ -27,7 +27,7 @@ comp (?? as V1) [] M ((lam TY2 F2) as T2) [] :-
 comp (?? as V1) [] M ((arr TY2 F2) as T2) [] :-
  !, V1 = arr TY2 F, comp V1 [] M T2 [].
 % variables and constants
-comp (?? as V1) [] M T2 [] :- !, $print "@@1", V1 = T2, $print "@@2".
+comp (?? as V1) [] M T2 [] :- !, V1 = T2.
 
 %%%%%%%%% symmetric cases
 
@@ -37,6 +37,9 @@ comp T2 L2 M (?? as T1) [A|AS] :- !,
  of A TYA, pi x \ val x TYA A _NF => comp T2 L2 M (T1 x) AS M.
 
 comp T2 L2 M (?? as V1) [] :- !, $print "## GIVE UP" (comp T2 L2 M V1 []).
+
+%%%%%%%%% tests
+%pi a \ pi b \ pi c \ val b nat (app s a) (B a) => val c nat a (C a) => conv (X a b c) (app (app s a) a).
 
 /*
 % Bug1: ci possono essere let-in sulle var in Ti
