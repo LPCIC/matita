@@ -58,4 +58,7 @@ main :-
  (sigma B \ sigma C \ sigma X \ pi a \ pi b \ pi c \ val b nat (app s a) (B a) => val c nat a (C a) => conv (X a b c) (app (app s a) a), $print 8 X ),
 
  % reduction during unification test:
- (sigma X \ pi x \ of x nat => conv X (app (lam nat y \ o) x), $print 9 X).
+ (sigma X \ pi x \ of x nat => conv X (app (lam nat y \ o) x), $print 9 X),
+
+ % reduction during unification that generates leq constraint
+ (sigma X \ sigma U \ pi c \ pi x \ of x nat => sub (X c) (app (lam (sort U) x \ x) (sort c)), $print 10 X).

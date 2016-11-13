@@ -26,6 +26,13 @@ comp (?? as V1) [] M T2 [] :- mcomp V1 M T2. % mcomp used generatively
 % variables and constants
 comp (?? as V1) [] M T2 [] :- V1 = T2.
 
+% REDUCTION
+comp (?? as V1) [] D T2 S2 :- whd1 T2 S2 (_ \ t2 \ s2 \ comp V1 [] D t2 s2).
+
+% FAIL
+comp ?? [] _ _ _ :- !, fail. % to avoid falling back in the fast path of the
+                             % kernel
+
 % MIMIC
 mcomp (sort I) eq (sort I) :- !.
 mcomp (sort J) leq (sort I) :- !, leq J I.
@@ -52,3 +59,10 @@ comp T2 S2 _ (?? as V1) [] :-
 comp T2 [] M (?? as V1) [] :- mcomp T2 M V1. % mcomp used generatively
 % variables and constants
 comp T2 [] M (?? as V1) [] :- V1 = T2.
+
+% REDUCTION
+comp T2 S2 D (?? as V1) [] :- whd1 T2 S2 (_ \ t2 \ s2 \ comp t2 s2 D V1 []).
+
+% FAIL
+comp _ _ _ ?? [] :- !, fail. % to avoid falling back in the fast path of the
+                             % kernel
