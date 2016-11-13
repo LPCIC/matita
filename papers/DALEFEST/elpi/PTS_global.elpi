@@ -15,34 +15,35 @@ expand _ P P.
 % FORCED DELTA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % parallel delta.
-convm T P1 M T P2 :- env T _ U, !,
-                     expand T P1 Q1, expand T P2 Q2, convm U Q1 M U Q2.
+comp T P1 M T P2 :- env T _ U, !,
+                    expand T P1 Q1, expand T P2 Q2, comp U Q1 M U Q2.
 
 % candidate left delta.
-convm T1 P1 M T2 P2 :- env T1 H1 U1, !, check_rhs T1 P1 H1 U1 M T2 P2.
+comp T1 P1 M T2 P2 :- env T1 H1 U1, !, check_rhs T1 P1 H1 U1 M T2 P2.
 
 % forced right delta.
-convm T1 P1 M T2 P2 :- env T2 _ U2, !,
-                       expand T2 P2 Q2, convm T1 P1 M U2 Q2.
+comp T1 P1 M T2 P2 :- env T2 _ U2, !,
+                      expand T2 P2 Q2, comp T1 P1 M U2 Q2.
 
 % candidate right delta.
-check_rhs T1 P1 H1 U1 M T2 P2 :- env T2 H2 U2, !, check_height T1 P1 H1 U1 M T2 P2 H2 U2.
+check_rhs T1 P1 H1 U1 M T2 P2 :- env T2 H2 U2, !,
+                                 check_height T1 P1 H1 U1 M T2 P2 H2 U2.
 
 % forced left delta.
-check_rhs T1 P1 _ U1 M T2 P2 :- expand T1 P1 Q1, convm U1 Q1 M T2 P2.
+check_rhs T1 P1 _ U1 M T2 P2 :- expand T1 P1 Q1, comp U1 Q1 M T2 P2.
 
 % IMPLIED DELTA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % age/hight-implied left delta.
 check_height T1 P1 H1 U1 M T2 P2 H2 _ :- H1 < H2, !,
-                                         expand T1 P1 Q1, convm U1 Q1 M T2 P2.
+                                         expand T1 P1 Q1, comp U1 Q1 M T2 P2.
 
 % age/hight-implied right delta.
-check_height T1 P1 _ _ M T2 P2 _ U2 :- expand T2 P2 Q2, convm T1 P1 M U2 Q2.
+check_height T1 P1 _ _ M T2 P2 _ U2 :- expand T2 P2 Q2, comp T1 P1 M U2 Q2.
 
-% INTERFACE WITH GLOBAL ENVIRONMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INTERFACE WITH ENVIRONMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % instantiable with environment_matita.elpi
 
-env T H U :- has_expansion T H U.
+env T H U :- get_expansion T H U.
 
-of T U :- has_type T U.
+of T U :- get_type T U.

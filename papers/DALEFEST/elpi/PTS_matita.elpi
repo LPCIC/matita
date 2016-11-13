@@ -1,0 +1,11 @@
+% Interface with Matita ITP
+
+% implementation of the queries to the environment %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+accumulate environment_matita.
+
+% implementation of the queries from the environment %%%%%%%%%%%%%%%%%%%%%%%%%
+
+has_type T U :- of T U', sub U' U.
+
+is_type U :- of U S', match_sort S' _S.

@@ -26,7 +26,7 @@ whd1 (match V A W U) P C :- C [] V (match_trame A W U P).
 
 % iota for match
 % note: the left arguments must be removed
-whd1 T1 P1 C :- is_constructor T1 J K, !,
+whd1 T1 P1 C :- get_constructor T1 J K, !,
                 get_branch P1 J T2 P A, split A K SN DX, append DX P P2,
                 C [] T2 P2.
 
@@ -35,18 +35,18 @@ unwind_stack (match_trame A W U P) V1 (match V2 A W U) :- unwind_stack P V1 V2.
 
 % GLOBAL DELTA EXPANSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-check_constructor V P V P :- is_constructor V _ _.
+is_constructor V P V P :- get_constructor V _ _.
 
-unwind_whd_to_constructor V1 V2 :- whd_continue_unwind V1 check_constructor V2.
+unwind_whd_to_constructor V1 V2 :- whd_continue_unwind V1 is_constructor V2.
 
 % check constructor before expanding fixpoint
-expand T1 P1 P2 :- is_fixpoint T1 L, !,
+expand T1 P1 P2 :- get_fixpoint T1 L, !,
                    subst P1 L unwind_whd_to_constructor P2.
 
 % TYPING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mk_out_type V W0 U0 W0 P U0 DXV :-
- is_inductive W0 K, split P K SN DX, append DX [V] DXV.
+ get_inductive W0 K, split P K SN DX, append DX [V] DXV.
 
 % not complete, we just compute the output type ...
 of (match V A W0 U0) U :- !, of V W, whd_continue_unwind W (mk_out_type V W0 U0) U.
