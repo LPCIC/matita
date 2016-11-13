@@ -12,7 +12,7 @@ type match_trame stack -> term -> term -> stack -> stack.
 % Whd followed by continuation and machine unwinding.
 type whd_continue_unwind term -> (term -> stack -> term -> stack -> prop) -> term -> prop.
 whd_continue_unwind N K NF :-
- whd* N [] (l \ t1 \ s1 \ sigma TS \ K t1 s1 t2 s2, unwind_stack s2 t2 TS, put_abbr l TS NF).
+ whd* N [] (l \ t1 \ s1 \ sigma t2 \ sigma s2 \ sigma TS \ K t1 s1 t2 s2, unwind_stack s2 t2 TS, put_abbr l TS NF).
 
 % REDUCTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
