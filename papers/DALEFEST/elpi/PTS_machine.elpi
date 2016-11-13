@@ -1,0 +1,64 @@
+accumulate logic_and_lists.
+
+% Requires the accumulation of PTS_abbr_typing.
+
+%%%%%%%%%%%%%%%% Reduction
+
+type whd1 term -> list term -> (list term /*var*/ -> term -> list term -> prop) -> prop.
+type whd* term -> list term -> (list term /*var*/ -> term -> list term -> prop) -> prop.
+
+% KAM-like rules in CPS style
+whd1 (app M N) S K :- K [] M [N|S].
+whd1 (lam T F1) [N|NS] K :- pi x \ val x T N _NF => K [x] (F1 x) NS.
+whd1 (abbr T N F1) NS K :- pi x \ val x T N _NF => K [x] (F1 x) NS.
+whd1 X S K :- val X _ N NF, if ($is_flex NF) (whd_unwind N NF), K [] NF S.
+
+% Reflexive, transitive closure
+whd* T1 S1 K :- whd1 T1 S1 (vl1 \ t1 \ s1 \ whd* t1 s1 (vl2 \ t2 \ s2 \ sigma VL \ append vl1 vl2 VL, K VL t2 s2)), !.
+whd* T1 S1 K :- K [] T1 S1.
+
+% Whd followed by machine unwinding.
+type whd_unwind term -> term -> prop.
+whd_unwind N NF :-
+ whd* N [] (l \ t \ s \ sigma TS \ unwind_stack s t TS, put_abbr l TS NF).
+
+type match_sort term -> @univ -> prop.
+match_sort T I :- whd* T [] (l \ t \ s \ t = sort I, s = []).
+
+type match_arr term -> term -> (term -> term) -> prop.
+match_arr T A F :-
+ whd* T [] (l \ t \ s \ sigma A' \sigma F' \
+  s = [], t = arr A' F', put_abbr l A' A,
+  pi x \ put_abbr l (F' x) (F x)).
+
+% unwind_stack takes an head and a stack and decodes them to a term
+type unwind_stack list term /*var*/ -> term -> term -> prop.
+unwind_stack [] T T.
+unwind_stack [X|XS] T O :- unwind_stack XS (app T X) O.
+
+% put_abbr takes a list of variables and a term and wraps the latter
+% with local definitions for the variables in the list
+put_abbr [] NF NF.
+put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
+
+%%%%%%%%%%%%%%%% Conversion
+
+type conv term -> term -> prop.
+type sub term -> term -> prop.
+
+type comp term -> list term -> eq_or_leq ->  term -> list term -> prop.
+
+conv T1 T2 :- comp T1 [] eq T2 [].
+sub T1 T2 :- comp T1 [] leq T2 [].
+
+% fast path + axiom rules
+comp T1 S1 _ T1 S1 :- !.
+comp (sort I) [] leq (sort J) [] :- lt I J.
+% congruence + fast path rule
+comp X S1 _ X S2 :- forall2 S1 S2 conv, !.
+% congruence rules
+comp (lam T1 F1) [] _ (lam T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
+comp (arr T1 F1) [] D (arr T2 F2) [] :- conv T1 T2, pi x \ comp (F1 x) [] D (F2 x) [].
+% reduction rules
+comp T1 S1 D T2 S2 :- whd1 T1 S1 (_ \ t1 \ s1 \ comp t1 s1 D T2 S2), !.
+comp T1 S1 D T2 S2 :- whd1 T2 S2 (_ \ t2 \ s2 \ comp T1 S1 D t2 s2).

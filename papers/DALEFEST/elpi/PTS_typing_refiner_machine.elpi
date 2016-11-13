@@ -1,0 +1,23 @@
+%% To be accumulated *before* PTS_typing to turn the kernel into a refiner
+
+% vim: set ft=lprolog:
+mode (of i o).
+of (?? as K) T :- !, $constraint (of K T) K.
+
+constraint of val {
+  rule (G1 ?- of (?? X1 L1) T1) \ (G2 ?- of (?? X2 L2) T2) > X1 ~ X2
+   | (is_canonical L1, compat G1 L1 T1 G2 L2 T2 L3) <=> L3.
+}
+
+is_canonical [].
+is_canonical [X|XS] :- $is_name X, is_canonical XS.
+
+% (G2 ?- T2) is the canonical one
+compat G2 [] T2 G1 [] T1 H :- append G1 G2 G12, H = (G12 => conv T2 T1).
+
+compat G2 [X2|XS2] T2 G1 [X1|XS1] T1 K :-
+ H1 = (G1 => of X1 U1),
+ H2 = (G2 => of X2 U2),
+ append G1 G2 G12, H3 = (G12 => conv U1 U2),
+ compat G1 XS1 T1 [val X2 U2 X1 _NF|G2] XS2 T2 K2,
+ K = (H1, H2, H3, K2).

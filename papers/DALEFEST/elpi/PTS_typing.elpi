@@ -1,0 +1,22 @@
+% vim:set ft=lprolog:
+
+kind term type.
+type sort @univ -> term.
+type app term -> term -> term.
+type lam term -> (term -> term) -> term.
+type arr term -> (term -> term) -> term.
+
+type of term -> term -> prop.
+
+of (sort I) (sort J) :- succ I J.
+
+of (app M N) BN :- of M TM, match_arr TM A1 Bx, of N A2, sub A2 A1, BN = Bx N.
+
+of (lam A F) (arr A B) :-
+  of A SA, match_sort SA _,
+  (pi x\ of x A => of (F x) (B x)),
+  of (arr A B) _. % can't put this early, since B flexible
+
+of (arr A Bx) (sort K) :-
+  of A TA, (pi x\ of x A => of (Bx x) TB),
+  match_sort TA I, match_sort TB J, max I J K.
