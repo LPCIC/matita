@@ -1,0 +1,57 @@
+%%%%%%%%%%%% A bit of library
+
+% naturals
+of nat (sort type0).
+of o nat.
+of s (arr nat x \ nat).
+
+copy nat nat.
+copy o o.
+copy s s.
+
+% vectors
+of vect (arr (sort type0) _ \ arr nat _ \ sort type0).
+of vnil (arr (sort type0) a \  app (app vect a) o).
+of vcons (arr (sort type0) a \ arr nat n \ arr a _ \ arr (app (app vect a) n) _ \ app (app vect a) (app s n)).
+
+copy vect vect.
+copy vnil vnil.
+copy vcons vcons.
+
+main :-
+/*
+ % kernel test:
+ (sigma T \ sigma TY \ T = app (app (app (app vcons nat) o) o) (app vnil nat), of T TY, $print 1 T ":" TY),
+
+ % floating universes test:
+ % FAILURE: it enters one non-implemented restriction test in Matita
+ % (sigma I \ sigma T \ sigma J \ sigma H \ sigma TY \ T = (app (lam (sort I) x \ (sort H)) (sort J)), of T TY, $print 2 T ":" TY),
+ % Variations that delays a solvable non-pattern unification problem
+ (sigma I \ sigma T \ sigma J \ sigma H \ sigma TY \
+  (leq type1 type1, ltn type0 type1) => (
+  T = (app (lam (sort I) x \ (sort H)) (sort type0)), of T TY, $print 2 T ":" TY
+ , H = type0, I = type1, TY = sort type1, $print 2 T ":" TY
+ )
+ ),
+
+ % unicity of typing:
+ (sigma X \sigma TT \ (pi v \ pi w \ pi c \ pi d \ (of c nat => of v (app (app vect nat) c) => of (X c v) nat), (of d nat => of w (app (app vect nat) (app s d)) => of (X (app s d) w) TT)), $print 3 TT),
+*/
+ 
+ % match_sort
+ (sigma N \ sigma T \ sigma TY \
+   T = (lam S N \ lam N n \ nat), of T TY, $print 4 T TY
+ ),
+
+ % match_arr
+ (sigma N \ sigma T \ sigma TY \
+   T = (lam TF f \ app f o), of T TY, $print 5 T TY
+ ),
+
+ % whd1 triggered by call-by-need
+ (sigma X \ conv (app (lam nat x \ x) X) s, $print 6 X),
+
+ % refinement test:
+ (sigma T \ sigma TY \ sigma NAT \sigma VECTn \
+  T = (lam NAT n \ lam (VECTn n) v \ app (app (app (app vcons nat) n) o) v),
+  of T TY, $print 7 T ":" TY).

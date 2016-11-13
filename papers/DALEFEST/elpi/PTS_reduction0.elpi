@@ -1,0 +1,33 @@
+type whd* term -> term -> prop.
+type whd1 term -> term -> prop.
+
+whd1 (app M N) R :- whd* M (lam _ F), R = F N.
+whd* A B :- whd1 A A1, !, whd* A1 B.
+whd* X X.
+
+type match_sort term -> @univ -> prop.
+match_sort T I :- whd* T (sort I).
+
+type match_arr term -> term -> (term -> term) -> prop.
+match_arr T A F :- whd* T (arr A F).
+
+type conv term -> term -> prop.
+type conv-whd term -> term -> prop.
+
+conv A B :- whd* A A1, whd* B B1, conv-whd A1 B1, !.
+
+% fast path + axiom rule for sorts and bound variables
+conv-whd X X :- !.
+% congruence rules
+conv-whd (app M1 N1) (app M2 N2) :- conv M1 M2, conv N1 N2.
+conv-whd (lam A1 F1) (lam A2 F2) :- conv A1 A2, pi x\ conv (F1 x) (F2 x).
+conv-whd (arr A1 F1) (arr A2 F2) :- conv A1 A2, pi x\ conv (F1 x) (F2 x).
+
+type sub term -> term -> prop.
+type sub-whd term -> term -> prop.
+
+sub A B :- whd* A A1, whd* B B1, sub-whd A1 B1, !.
+
+sub-whd A B :- conv A B, !.
+sub-whd (sort I) (sort J) :- lt I J.
+sub-whd (arr A1 F1) (arr A2 F2) :- conv A1 A2, pi x\ sub (F1 x) (F2 x).

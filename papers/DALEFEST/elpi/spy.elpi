@@ -1,0 +1,2 @@
+spy P :- $print "----<<---- enter: " {$counter "run"} P, P, $print "---->>---- exit: " P, !.
+spy P :- $print "---->>---- fail: " P, fail.

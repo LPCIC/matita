@@ -1,0 +1,7 @@
+accumulate PTS_cic.
+accumulate PTS_typing.
+accumulate PTS_abbr_typing.
+accumulate PTS_machine.
+accumulate PTS_inductives.
+accumulate PTS_global.
+accumulate test_kernel.
