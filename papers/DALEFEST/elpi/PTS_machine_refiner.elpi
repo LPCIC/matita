@@ -22,16 +22,16 @@ comp (?? as T1) [A|AS] M T2 L2 :- !,
 comp (?? as V1) [] M T2 S2 :- val X _ _ _, V1 = X, comp V1 [] M T2 S2, !.
 
 % MIMIC
-comp (?? as V1) [] eq (sort I) [] :- !, V1 = sort I.
-comp (?? as V1) [] leq (sort I) [] :- !, V1 = sort J, leq J I.
 comp (?? as V1) [] _ T2 S2 :-
  append S21 [S2l] S2, !,
  V1 = app X Y, comp X [] eq T2 S21, comp Y [] eq S2l [].
+comp (?? as V1) [] eq (sort I) [] :- !, V1 = sort I.
+comp (?? as V1) [] leq (sort I) [] :- !, V1 = sort J, leq J I.
 comp (?? as V1) [] _ (app A2 B2) [] :-
  !, V1 = app X Y, comp X [] eq A2 [], comp Y [] eq B2 [].
-comp (?? as V1) [] _ ((lam TY2 F2) as T2) [] :-
+comp (?? as V1) [] _ (lam TY2 F2) [] :-
  !,V1 = lam TY1 F1, comp TY1 [] eq TY2 [], (pi x \ comp (F1 x) [] eq (F2 x) []).
-comp (?? as V1) [] M ((arr TY2 F2) as T2) [] :-
+comp (?? as V1) [] M (arr TY2 F2) [] :-
  !, V1 = arr TY1 F1, comp TY1 [] eq TY2 [], (pi x \ comp (F1 x) [] M (F2 x) []).
 % variables and constants
 comp (?? as V1) [] M T2 [] :- !, V1 = T2.
@@ -47,11 +47,11 @@ comp T2 L2 M (?? as T1) [A|AS] :- !,
 comp T2 S2 M (?? as V1) :- val X _ _ _, V1 = X, comp T2 S2 M V1 [], !.
 
 % MIMIC
-comp (sort I) [] eq (?? as V1) [] :- !, V1 = sort I.
-comp (sort I) [] leq (?? as V1) [] :- !, V1 = sort J, leq I J.
 comp T2 S2 _ (?? as V1) [] :-
  append S21 [S2l] S2, !,
  V1 = app X Y, comp T2 S21 eq X [], comp S2l [] eq Y [].
+comp (sort I) [] eq (?? as V1) [] :- !, V1 = sort I.
+comp (sort I) [] leq (?? as V1) [] :- !, V1 = sort J, leq I J.
 comp (app A2 B2) [] _ (?? as V1) [] :-
  !, V1 = app X Y, comp S2 [] eq X [], comp B2 [] eq Y [].
 comp ((lam TY2 F2) as T2) [] _ (?? as V1) [] :-
