@@ -31,7 +31,7 @@ whd1 T1 P1 C :- get_constructor T1 J K, !,
                 C [] T2 P2.
 
 % unwind for match
-unwind_stack (match_trame A W U P) V1 (match V2 A W U) :- unwind_stack P V1 V2.
+unwind_stack (match_trame A W U P) V1 V2 :- unwind_stack P (match V1 A W U) V2.
 
 % GLOBAL DELTA EXPANSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
