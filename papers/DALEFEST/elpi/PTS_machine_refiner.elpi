@@ -19,9 +19,11 @@ comp (?? as T1) [A|AS] M T2 L2 :-
 comp (?? as V1) [] M T2 S2 :- val X _ _ _, V1 = X, comp V1 [] M T2 S2, !.
 
 % MIMIC
+% non empty stack = application
 comp (?? as V1) [] _ T2 S2 :-
  append S21 [S2l] S2,
  V1 = app X Y, comp X [] eq T2 S21, comp Y [] eq S2l [].
+% regular mimic rules
 comp (?? as V1) [] M T2 [] :- mcomp V1 M T2. % mcomp used generatively
 % variables and constants
 comp (?? as V1) [] M T2 [] :- V1 = T2.
@@ -53,9 +55,11 @@ comp T2 L2 M (?? as T1) [A|AS] :-
 comp T2 S2 M (?? as V1) :- val X _ _ _, V1 = X, comp T2 S2 M V1 [], !.
 
 % MIMIC
+% non empty stack = application
 comp T2 S2 _ (?? as V1) [] :-
  append S21 [S2l] S2,
  V1 = app X Y, comp T2 S21 eq X [], comp S2l [] eq Y [].
+% regular mimic rules
 comp T2 [] M (?? as V1) [] :- mcomp T2 M V1. % mcomp used generatively
 % variables and constants
 comp T2 [] M (?? as V1) [] :- V1 = T2.
