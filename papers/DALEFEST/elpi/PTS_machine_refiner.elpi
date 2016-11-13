@@ -8,24 +8,31 @@ mode (comp i i i i i).
 
 comp A B C D E :- $print "##" (comp A B C D E), fail.
 
+%%%%%%%%%% BUG/TODO:
+% - Mancano casi X vs X e X vs Y
+% - Manca riduzione nel lato concreto che potrebbe portare ad altre soluzioni
+%   nel caso leq
+
 % T1 :- lam TYA F  + beta step
 comp (?? as T1) [A|AS] M T2 L2 :- !,
  % creare catena qui?
  of A TYA, pi x \ val x TYA A _NF => comp (T1 x) AS M T2 L2.
 
 % PROJECTION
-comp (?? as V1) [] M T2 S2 :- val X _ _ _, V1 = X, comp V1 [] M T2 S2.
+comp (?? as V1) [] M T2 S2 :- val X _ _ _, V1 = X, comp V1 [] M T2 S2, !.
 
 % MIMIC
-comp (?? as V1) [] M (sort I) [] :- !, V1 = sort J, comp V1 [] M (sort I) [].
-comp (?? as V1) [] _ T2 [A2|S2] :-
- !, V1 = app X Y, comp V1 [] M T2 [A2|S2].
+comp (?? as V1) [] eq (sort I) [] :- !, V1 = sort I.
+comp (?? as V1) [] leq (sort I) [] :- !, V1 = sort J, leq J I.
+comp (?? as V1) [] _ T2 S2 :-
+ append S21 [S2l] S2, !,
+ V1 = app X Y, comp X [] eq T2 S21, comp Y [] eq S2l [].
 comp (?? as V1) [] _ (app A2 B2) [] :-
  !, V1 = app X Y, comp X [] eq A2 [], comp Y [] eq B2 [].
-comp (?? as V1) [] M ((lam TY2 F2) as T2) [] :-
- !, V1 = lam TY2 F, comp V1 [] M T2 [].
+comp (?? as V1) [] _ ((lam TY2 F2) as T2) [] :-
+ !,V1 = lam TY1 F1, comp TY1 [] eq TY2 [], (pi x \ comp (F1 x) [] eq (F2 x) []).
 comp (?? as V1) [] M ((arr TY2 F2) as T2) [] :-
- !, V1 = arr TY2 F, comp V1 [] M T2 [].
+ !, V1 = arr TY1 F1, comp TY1 [] eq TY2 [], (pi x \ comp (F1 x) [] M (F2 x) []).
 % variables and constants
 comp (?? as V1) [] M T2 [] :- !, V1 = T2.
 
@@ -36,44 +43,29 @@ comp T2 L2 M (?? as T1) [A|AS] :- !,
  % creare catena qui?
  of A TYA, pi x \ val x TYA A _NF => comp T2 L2 M (T1 x) AS M.
 
-comp T2 L2 M (?? as V1) [] :- !, $print "## GIVE UP" (comp T2 L2 M V1 []).
+% PROJECTION
+comp T2 S2 M (?? as V1) :- val X _ _ _, V1 = X, comp T2 S2 M V1 [], !.
+
+% MIMIC
+comp (sort I) [] eq (?? as V1) [] :- !, V1 = sort I.
+comp (sort I) [] leq (?? as V1) [] :- !, V1 = sort J, leq I J.
+comp T2 S2 _ (?? as V1) [] :-
+ append S21 [S2l] S2, !,
+ V1 = app X Y, comp T2 S21 eq X [], comp S2l [] eq Y [].
+comp (app A2 B2) [] _ (?? as V1) [] :-
+ !, V1 = app X Y, comp S2 [] eq X [], comp B2 [] eq Y [].
+comp ((lam TY2 F2) as T2) [] _ (?? as V1) [] :-
+ !,V1 = lam TY1 F1, comp TY2 [] eq TY1 [], (pi x \ comp (F2 x) [] eq (F1 x) []).
+comp ((arr TY2 F2) as T2) [] M (?? as V1) [] :-
+ !, V1 = arr TY1 F1, comp TY2 [] eq TY1 [], (pi x \ comp (F2 x) [] M (F1 x) []).
+% variables and constants
+comp T2 [] M (?? as V1) [] :- !, V1 = T2.
+
 
 %%%%%%%%% tests
 %pi a \ pi b \ pi c \ val b nat (app s a) (B a) => val c nat a (C a) => conv (X a b c) (app (app s a) a).
 
-/*
-% Bug1: ci possono essere let-in sulle var in Ti
-% Bug2: potrebbe servire un <= se il secondo è una sorta
-%comp (?? as T1) [] _M T2 L2 :- !, $llam_unif T1 {zip T2 L2}.
-comp T1 L1 _M (?? as V) L2 :- !, bind-list L2 {zip T1 L1} V.
-
-comp (?? as T1) L1 M T2 L2 :- !, $constraint (comp T1 L1 M T2 L2) T1.
-comp T1 L1 M (?? as T2) L2 :- !, $constraint (comp T1 L1 M T2 L2) T2.
-
-%%% library
-mode (zip i i o).
-zip HD [] HD :- !.
-zip (app HD TL) Args (app HD TLArgs) :- !, append TL Args TLArgs.
-zip HD Args (app HD Args).
-
-is_rigid C :- $is_name C. % ; C = const _ ; C = indt _ ; C = indc _
-
-mode (bind-list i i o).
-bind-list [] T T' :- copy T T'.
-bind-list [ ?? |VS] T R :- !, pi x\ bind-list VS T (R x).
-bind-list [app C AS | VS] T R :- is_rigid C, !,
-  pi x\ (pi L\ copy (app[C|L]) x :- conv+args L AS) => bind-list VS T (R x).
-bind-list [C|VS] T R :- is_rigid C, !,
-  pi x\ copy C x => bind-list VS T (R x).
-
-mode (copy i o).
-copy A B :- $print "AA" (copy A B), fail.
-copy X Y :- r+step X Y _. % Bang or not???
-copy X Y :- $is_name X, X = Y, !.
-copy X Y :- $is_name X, r+step X T _, !, copy T Y.
-copy (sort _ as C) C :- !.
-copy (app X1 L1) (app X2 L2) :- copy X1 X2, $print "UU", map copy L1 L2.
-
+/* %%%%%% OLD TESTS
 % test:
 %  T = (app (lam (sort u0) x \ F x) [sort W]), t+step T TY, $print T TY.
 %  T = (app (lam nat x \ x) [X]), t+step T TY, $print T TY.
