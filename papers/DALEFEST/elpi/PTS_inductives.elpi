@@ -9,6 +9,10 @@ type match_trame stack -> term -> term -> stack -> stack.
 
 % HELPERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% we need to compare match frames on stacks
+forall2 (match_trame A1 W U1 P1) (match_trame A2 W U2 P2) F :-
+ F U1 U2, forall2 A1 A2 F, forall2 P1 P2 F.
+
 % Whd followed by continuation and machine unwinding.
 type whd_continue_unwind term -> (term -> stack -> term -> stack -> prop) -> term -> prop.
 whd_continue_unwind N K NF :-
@@ -54,6 +58,3 @@ of (match V A W0 U0) U :- !, of V W, whd_continue_unwind W (mk_out_type V W0 U0)
 % DO WE NEED THEESE EXTENSIONS? %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % append (match_trame A W U P1) P2 (match_trame A W U P) :- append P1 P2 P.
-
-% forall2 (match_trame A1 W U1 P1) (match_trame A2 W U2 P2) F :-
-%  forall2 A1 A2 F, F U1 U2, forall2 P1 P2 F.
