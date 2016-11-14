@@ -12,7 +12,7 @@ type expand term -> stack -> stack -> prop. /* name, old stack, new stack */
 % base case (the stack does not change)
 expand _ P P.
 
-% FORCED DELTA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FORCED DELTA (COMP) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % parallel delta.
 comp T P1 M T P2 :- env T _ U, !,
@@ -32,7 +32,7 @@ check_rhs T1 P1 H1 U1 M T2 P2 :- env T2 H2 U2, !,
 % forced left delta.
 check_rhs T1 P1 _ U1 M T2 P2 :- expand T1 P1 Q1, comp U1 Q1 M T2 P2.
 
-% IMPLIED DELTA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% IMPLIED DELTA (COMP) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % age/hight-implied left delta.
 check_height T1 P1 H1 U1 M T2 P2 H2 _ :- H1 < H2, !,
@@ -40,6 +40,10 @@ check_height T1 P1 H1 U1 M T2 P2 H2 _ :- H1 < H2, !,
 
 % age/hight-implied right delta.
 check_height T1 P1 _ _ M T2 P2 _ U2 :- expand T2 P2 Q2, comp T1 P1 M U2 Q2.
+
+% FORCED DELTA (WHD*) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+whd* T1 S1 K :- env T1 _ T2, !, expand T1 S1 S2, whd* T2 S2 K.
 
 % INTERFACE WITH ENVIRONMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % instantiable with environment_matita.elpi
