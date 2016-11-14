@@ -10,7 +10,7 @@ constraint of val {
 }
 
 is_canonical [].
-is_canonical [X|XS] :- $is_name X, is_canonical XS.
+is_canonical [X|XS] :- $is_name X, not (mem XS X), is_canonical XS.
 
 % (G2 ?- T2) is the canonical one
 compat G2 [] T2 G1 [] T1 H :- append G1 G2 G12, H = (G12 => conv T2 T1).
