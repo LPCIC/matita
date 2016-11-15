@@ -1,3 +1,4 @@
 type abbr term -> term -> (term -> term) -> term.  % local definition (let-in)
 
-of (abbr TY TE F) U :- of TE TY', sub TY' TY, pi x \ of x TY => val x TY TE NF => of (F x) U.
+of (abbr TY TE F) (abbr TY TE G) :-
+ of TE TY', sub TY' TY, pi x \ of x TY => val x TY TE NF => of (F x) (G x).
