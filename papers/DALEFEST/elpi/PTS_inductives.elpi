@@ -54,7 +54,3 @@ mk_out_type V W0 U0 W0 P U0 DXV :-
 
 % not complete, we just compute the output type ...
 of (match V A W0 U0) U :- !, of V W, whd_continue_unwind W (mk_out_type V W0 U0) U.
-
-% DO WE NEED THEESE EXTENSIONS? %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% append (match_trame A W U P1) P2 (match_trame A W U P) :- append P1 P2 P.
