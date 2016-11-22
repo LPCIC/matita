@@ -1,0 +1,34 @@
+% Trace facilities for PTS_kernel_machine
+% accumulate before the environment and before PTS_kernel_machine.elpi
+% uncomment the traces to catch
+
+% Note: longest object to validate in nat.ma for now
+% focus :- on_object "cic:/matita/arithmetics/nat/plus_minus+def<5>".
+
+% UTILITIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+trace P :- if focus ($print "----<<---- enter: " {$counter "run"} P), P, if focus ($print "---->>---- exit: " P), !.
+trace P :- if focus ($print "---->>---- fail: " P), fail.
+
+vals :- val X T N NF, focus, $print "VAL" X "##" T "##" N "##" NF, fail.
+
+ofs [] :- fail.
+ofs [T | L] :- if (focus, of T U) ($print "OF" T "##" U), ofs L.
+
+% TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% has_type T U :- focus, $print (has_type T U), fail.
+
+% of T U :- focus, $print (of T "##" U), fail. % $names X, ofs X.
+
+% whd* T S _ :- focus, $print (whd* T S), fail.
+
+% match_arr TM A1 Bx :- focus, $print (match_arr TM "##" A1 "##" Bx), fail.
+
+% comp T1 S1 M T2 S2 :- focus, $print (comp T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
+
+% sub U1 U2 :- focus, $print (sub U1 "<=>" U2), fail.
+
+% whd_continue_unwind W _ _ :- focus, $print (whd_continue_unwind W), fail.
+
+% mk_out_type W0 U0 V W P _ _ :- focus, $print (mk_out_type W0 U0 V W P), fail.

@@ -1,0 +1,9 @@
+% Debug facilities for PTS_kernel_machine
+% accumulate after PTS_kernel_machine.elpi
+% uncomment the traces to catch
+
+% TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% comp T1 S1 M T2 S2 :- focus, $print (comp++failure T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
+
+% of T U :- focus, $print (of++failure T "##" U), fail.
