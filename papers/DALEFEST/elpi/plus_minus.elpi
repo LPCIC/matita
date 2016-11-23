@@ -1,0 +1,225 @@
+has_type
+ (app
+   (app
+     (app
+       (app cic:/matita/arithmetics/nat/nat_elim2#def/2
+         (lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x0 \
+           lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x1 \
+            arr cic:/matita/arithmetics/nat/nat#ind/1/0/0 x2 \
+             arr (app (app cic:/matita/arithmetics/nat/le#ind/1/0/1 x0) x1)
+              x3 \
+              app
+               (app
+                 (app cic:/matita/basics/logic/eq#ind/1/0/2
+                   cic:/matita/arithmetics/nat/nat#ind/1/0/0)
+                 (app
+                   (app cic:/matita/arithmetics/nat/plus#fix/0/0/1
+                     (app
+                       (app cic:/matita/arithmetics/nat/minus#fix/0/0/1 x1)
+                       x0)) x2))
+               (app
+                 (app cic:/matita/arithmetics/nat/minus#fix/0/0/1
+                   (app (app cic:/matita/arithmetics/nat/plus#fix/0/0/1 x1)
+                     x2)) x0)))
+       (lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x0 \
+         lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x1 \
+          lam
+           (app
+             (app cic:/matita/arithmetics/nat/le#ind/1/0/1
+               cic:/matita/arithmetics/nat/nat#con/0/1/0) x0) x2 \
+           app
+            (app
+              (app
+                (app
+                  (app
+                    (app cic:/matita/basics/logic/rewrite_l#def/1
+                      cic:/matita/arithmetics/nat/nat#ind/1/0/0) x0)
+                  (lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x3 \
+                    app
+                     (app
+                       (app cic:/matita/basics/logic/eq#ind/1/0/2
+                         cic:/matita/arithmetics/nat/nat#ind/1/0/0)
+                       (app
+                         (app cic:/matita/arithmetics/nat/plus#fix/0/0/1 x3)
+                         x1))
+                     (app
+                       (app cic:/matita/arithmetics/nat/minus#fix/0/0/1
+                         (app
+                           (app cic:/matita/arithmetics/nat/plus#fix/0/0/1 x0)
+                           x1)) cic:/matita/arithmetics/nat/nat#con/0/1/0)))
+                (app
+                  (app
+                    (app
+                      (app
+                        (app
+                          (app cic:/matita/basics/logic/rewrite_l#def/1
+                            cic:/matita/arithmetics/nat/nat#ind/1/0/0)
+                          (app
+                            (app cic:/matita/arithmetics/nat/plus#fix/0/0/1
+                              x0) x1))
+                        (lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x3 \
+                          app
+                           (app
+                             (app cic:/matita/basics/logic/eq#ind/1/0/2
+                               cic:/matita/arithmetics/nat/nat#ind/1/0/0)
+                             (app
+                               (app
+                                 cic:/matita/arithmetics/nat/plus#fix/0/0/1
+                                 x0) x1)) x3))
+                      (app
+                        (app cic:/matita/basics/logic/eq#con/0/1/2
+                          cic:/matita/arithmetics/nat/nat#ind/1/0/0)
+                        (app
+                          (app cic:/matita/arithmetics/nat/plus#fix/0/0/1 x0)
+                          x1)))
+                    (app
+                      (app cic:/matita/arithmetics/nat/minus#fix/0/0/1
+                        (app
+                          (app cic:/matita/arithmetics/nat/plus#fix/0/0/1 x0)
+                          x1)) cic:/matita/arithmetics/nat/nat#con/0/1/0))
+                  (app cic:/matita/arithmetics/nat/minus_n_O#def/3
+                    (app (app cic:/matita/arithmetics/nat/plus#fix/0/0/1 x0)
+                      x1))))
+              (app (app cic:/matita/arithmetics/nat/minus#fix/0/0/1 x0)
+                cic:/matita/arithmetics/nat/nat#con/0/1/0))
+            (app cic:/matita/arithmetics/nat/minus_n_O#def/3 x0)))
+     (lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x0 \
+       lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x1 \
+        lam
+         (app
+           (app cic:/matita/arithmetics/nat/le#ind/1/0/1
+             (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x0))
+           cic:/matita/arithmetics/nat/nat#con/0/1/0) x2 \
+         app
+          (app cic:/matita/basics/logic/False_ind#fix/0/1/1
+            (lam cic:/matita/basics/logic/False#ind/1/0/0 x3 \
+              app
+               (app
+                 (app cic:/matita/basics/logic/eq#ind/1/0/2
+                   cic:/matita/arithmetics/nat/nat#ind/1/0/0)
+                 (app
+                   (app cic:/matita/arithmetics/nat/plus#fix/0/0/1
+                     (app
+                       (app cic:/matita/arithmetics/nat/minus#fix/0/0/1
+                         cic:/matita/arithmetics/nat/nat#con/0/1/0)
+                       (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x0)))
+                   x1))
+               (app
+                 (app cic:/matita/arithmetics/nat/minus#fix/0/0/1
+                   (app
+                     (app cic:/matita/arithmetics/nat/plus#fix/0/0/1
+                       cic:/matita/arithmetics/nat/nat#con/0/1/0) x1))
+                 (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x0))))
+          (app
+            (app
+              (app cic:/matita/basics/logic/absurd#def/2
+                (app
+                  (app cic:/matita/arithmetics/nat/le#ind/1/0/1
+                    (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x0))
+                  cic:/matita/arithmetics/nat/nat#con/0/1/0)) x2)
+            (app cic:/matita/arithmetics/nat/not_le_Sn_O#def/3 x0))))
+   (lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x0 \
+     lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x1 \
+      lam
+       (arr cic:/matita/arithmetics/nat/nat#ind/1/0/0 x2 \
+         arr (app (app cic:/matita/arithmetics/nat/le#ind/1/0/1 x0) x1) x3 \
+          app
+           (app
+             (app cic:/matita/basics/logic/eq#ind/1/0/2
+               cic:/matita/arithmetics/nat/nat#ind/1/0/0)
+             (app
+               (app cic:/matita/arithmetics/nat/plus#fix/0/0/1
+                 (app (app cic:/matita/arithmetics/nat/minus#fix/0/0/1 x1) x0))
+               x2))
+           (app
+             (app cic:/matita/arithmetics/nat/minus#fix/0/0/1
+               (app (app cic:/matita/arithmetics/nat/plus#fix/0/0/1 x1) x2))
+             x0)) x2 \
+       lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x3 \
+        lam
+         (app
+           (app cic:/matita/arithmetics/nat/le#ind/1/0/1
+             (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x0))
+           (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x1)) x4 \
+         app (app x2 x3)
+          (app
+            (app
+              (app
+                (app cic:/matita/basics/logic/eq_coerc#def/2
+                  (app
+                    (app cic:/matita/arithmetics/nat/le#ind/1/0/1
+                      (app cic:/matita/arithmetics/nat/pred#def/1
+                        (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x0)))
+                    (app cic:/matita/arithmetics/nat/pred#def/1
+                      (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x1))))
+                (app (app cic:/matita/arithmetics/nat/le#ind/1/0/1 x0) x1))
+              (app
+                (app
+                  (app cic:/matita/arithmetics/nat/monotonic_pred#def/4
+                    (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x0))
+                  (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x1)) x4))
+            (app
+              (app
+                (app
+                  (app
+                    (app
+                      (app cic:/matita/basics/logic/rewrite_l#def/1
+                        cic:/matita/arithmetics/nat/nat#ind/1/0/0) x0)
+                    (lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x5 \
+                      app
+                       (app
+                         (app cic:/matita/basics/logic/eq#ind/1/0/2
+                           (sort (s+type u+0)))
+                         (app
+                           (app cic:/matita/arithmetics/nat/le#ind/1/0/1 x5)
+                           (app cic:/matita/arithmetics/nat/pred#def/1
+                             (app cic:/matita/arithmetics/nat/nat#con/0/2/0
+                               x1))))
+                       (app (app cic:/matita/arithmetics/nat/le#ind/1/0/1 x0)
+                         x1)))
+                  (app
+                    (app
+                      (app
+                        (app
+                          (app
+                            (app cic:/matita/basics/logic/rewrite_l#def/1
+                              cic:/matita/arithmetics/nat/nat#ind/1/0/0) x1)
+                          (lam cic:/matita/arithmetics/nat/nat#ind/1/0/0 x5 \
+                            app
+                             (app
+                               (app cic:/matita/basics/logic/eq#ind/1/0/2
+                                 (sort (s+type u+0)))
+                               (app
+                                 (app
+                                   cic:/matita/arithmetics/nat/le#ind/1/0/1
+                                   x0) x5))
+                             (app
+                               (app cic:/matita/arithmetics/nat/le#ind/1/0/1
+                                 x0) x1)))
+                        (app
+                          (app cic:/matita/basics/logic/eq#con/0/1/2
+                            (sort (s+type u+0)))
+                          (app
+                            (app cic:/matita/arithmetics/nat/le#ind/1/0/1 x0)
+                            x1)))
+                      (app cic:/matita/arithmetics/nat/pred#def/1
+                        (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x1)))
+                    (app cic:/matita/arithmetics/nat/pred_Sn#def/2 x1)))
+                (app cic:/matita/arithmetics/nat/pred#def/1
+                  (app cic:/matita/arithmetics/nat/nat#con/0/2/0 x0)))
+              (app cic:/matita/arithmetics/nat/pred_Sn#def/2 x0)))))
+ (arr cic:/matita/arithmetics/nat/nat#ind/1/0/0 x0 \
+   arr cic:/matita/arithmetics/nat/nat#ind/1/0/0 x1 \
+    arr cic:/matita/arithmetics/nat/nat#ind/1/0/0 x2 \
+     arr (app (app cic:/matita/arithmetics/nat/le#ind/1/0/1 x0) x1) x3 \
+      app
+       (app
+         (app cic:/matita/basics/logic/eq#ind/1/0/2
+           cic:/matita/arithmetics/nat/nat#ind/1/0/0)
+         (app
+           (app cic:/matita/arithmetics/nat/plus#fix/0/0/1
+             (app (app cic:/matita/arithmetics/nat/minus#fix/0/0/1 x1) x0))
+           x2))
+       (app
+         (app cic:/matita/arithmetics/nat/minus#fix/0/0/1
+           (app (app cic:/matita/arithmetics/nat/plus#fix/0/0/1 x1) x2)) x0)).
