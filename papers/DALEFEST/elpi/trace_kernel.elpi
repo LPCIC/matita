@@ -3,7 +3,7 @@
 % uncomment the traces to catch
 
 % Note: longest object to validate in nat.ma for now
-% focus :- on_object "cic:/matita/arithmetics/nat/plus_minus#def:5".
+% focus :- on_object cic:/matita/arithmetics/nat/plus_minus#def:5.
 
 % UTILITIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
