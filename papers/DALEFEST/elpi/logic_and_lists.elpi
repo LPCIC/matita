@@ -4,6 +4,9 @@ orelse _A B :- B.
 if A B :- A, !, B.
 if _A _B.
 
+ifnotelse A _B C :- A, !, C.
+ifnotelse _A B _C :- B.
+
 append [] L L.
 append [X|XS] L [X|XSL] :- append XS L XSL.
 
