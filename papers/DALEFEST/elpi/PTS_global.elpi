@@ -42,11 +42,11 @@ check_height T1 P1 H U1 M T2 P2 H U2 :- !, ifnotelse (expand T1 P1 Q1) (expand_d
                                            ).
 % age/hight-implied left delta first.
 check_height T1 P1 H1 U1 M T2 P2 H2 U2 :- H1 < H2, !,
-                                          orelse (expand_sn T1 U1 P1 M T2 P2)
-                                                 (expand_dx T1 P1 M T2 U2 P2).
+                                          ifnot (expand_sn T1 U1 P1 M T2 P2)
+                                                (expand_dx T1 P1 M T2 U2 P2).
 % age/hight-implied right delta first.
-check_height T1 P1 _ U1 M T2 P2 _ U2 :- orelse (expand_dx T1 P1 M T2 U2 P2)
-                                               (expand_sn T1 U1 P1 M T2 P2).
+check_height T1 P1 _ U1 M T2 P2 _ U2 :- ifnot (expand_dx T1 P1 M T2 U2 P2)
+                                              (expand_sn T1 U1 P1 M T2 P2).
 
 % FORCED DELTA (WHD*) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
