@@ -7,20 +7,20 @@ ifnot _A B :- B.
 ifnotelse A _B C :- A, !, C.
 ifnotelse _A B _C :- B.
 
-append [] L L.
-append [X|XS] L [X|XSL] :- append XS L XSL.
+append [] YS YS.
+append [X|XS] YS [X|ZS] :- append XS YS ZS.
 
-nth [A|_L] 0 A :- !.
-nth [_A|L] M B :- N is M - 1, nth L N B.
+nth [X|_] 0 X :- !.
+nth [_|XS] M X :- N is M - 1, nth XS N X.
 
-split L 0 [] L :- !.
-split [A|L] M [A|L1] L2 :- N is M - 1, split L N L1 L2.
+split ZS 0 [] ZS :- !.
+split [Z|ZS] M [Z|XS] YS :- N is M - 1, split ZS N XS YS.
 
-subst [A1|L] 0 C [A2|L] :- !, C A1 A2.
-subst [A|L1] M C [A|L2] :- N is M - 1, subst L1 N C L2.
+subst [X|ZS] 0 R [Y|ZS] :- !, R X Y.
+subst [Z|XS] M R [Z|YS] :- N is M - 1, subst XS N R YS.
 
 forall2 [] [] _.
-forall2 [X|XS] [Y|YS] P :- P X Y, forall2 XS YS P.
+forall2 [X|XS] [Y|YS] R :- R X Y, forall2 XS YS R.
 
 mem [X|_] X :- !.
-mem [_|XS] X :- mem XS X. 
+mem [_|XS] X :- mem XS X.
