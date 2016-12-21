@@ -50,7 +50,7 @@ expand T1 P1 P2 :- get_fixpoint T1 L, !,
 % TYPING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mk_out_type W0 U0 V W0 P U0 DXV :-
- get_inductive W0 K, split P K SN DX, append DX [V] DXV.
+ get_inductive W0 K _, split P K SN DX, append DX [V] DXV.
 
 % not complete, we just compute the output type ...
 of (match W0 U0 V A) U :- !, of V W, whd_continue_unwind W (mk_out_type W0 U0 V) U.
