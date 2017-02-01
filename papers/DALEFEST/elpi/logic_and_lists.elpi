@@ -24,3 +24,6 @@ forall2 [X|XS] [Y|YS] R :- R X Y, forall2 XS YS R.
 
 mem [X|_] X :- !.
 mem [_|XS] X :- mem XS X.
+
+fold_left [] _ Y Y.
+fold_left [X|XS] R Y Z :- fold_left XS R (R Y X) Z.
