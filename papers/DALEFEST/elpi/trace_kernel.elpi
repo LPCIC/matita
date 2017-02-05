@@ -33,6 +33,4 @@ ofs [T | L] :- if (focus, of T U) ($print "OF" T "##" U), ofs L.
 
 % mk_out_type W0 U0 V W P _ _ :- focus, $print (mk_out_type W0 U0 V W P), fail.
 
-% comp1 T1 S1 M T2 S2 :- focus, $print (comp1 T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
-
-% comp2 T1 S1 M T2 S2 :- focus, $print (comp2 T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
+% comp* T1 S1 M T2 S2 :- focus, $print (comp* T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
