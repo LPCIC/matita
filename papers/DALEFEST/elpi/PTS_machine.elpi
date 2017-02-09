@@ -1,4 +1,5 @@
-accumulate logic_and_lists.
+accumulate logic.
+accumulate list.
 
 % Requires the accumulation of PTS_abbr_typing.
 

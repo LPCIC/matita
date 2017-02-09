@@ -55,6 +55,6 @@ whd* T1 S1 K :- env T1 _ T2, !, expand T1 S1 S2, whd* T2 S2 K.
 % INTERFACE WITH ENVIRONMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % instantiable with environment_matita.elpi
 
-env T H U :- get_expansion T H U.
+env X H U :- get_expansion X H U.
 
-of T U :- get_type T U, !.
+of3 X U X :- get_type X U, !.

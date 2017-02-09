@@ -6,6 +6,6 @@
 
 % comp T1 S1 M T2 S2 :- focus, $print (comp++failure T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
 
-% of T U :- focus, $print (of++failure T "##" U), fail.
+% of3 T U _ :- focus, $print (of3++failure T "##" U), fail.
 
 % put_abbr XS I O :- focus, $print (put_abbr++failure XS "##" I "##" O), fail.

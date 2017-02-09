@@ -1,14 +1,14 @@
 % test for CIC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-of nat (sort (s+type u+0)).
-of o nat.
-of s (app (lam (sort (s+type u+0)) x\ x) (arr nat _\ nat)). % redex
+of3 nat (sort (s+type u+0)) nat.
+of3 o nat o.
+of3 s (app (lam (sort (s+type u+0)) x\ x) (arr nat _\ nat)) s. % redex
 
 main_cic :-
   P1 = (lam (sort (s+type u+1)) t\ lam t x\ x),
-  of P1 P1T, $print 1 P1T, !,
+  of3 P1 P1T P1R, $print 1 P1T P1R, !,
   P2 = (app (app P1 nat) (app s o)),
-  of P2 P2T, $print 2 P2T, !,
+  of3 P2 P2T P2R, $print 2 P2T P2R, !,
   P3 = (app (app P1 (app (app P1 (sort (s+type u+0))) nat)) (app s o)), % redex
-  of P3 P3T, $print 3 P3T, !,
+  of3 P3 P3T P3R, $print 3 P3T P3R, !,
   true.

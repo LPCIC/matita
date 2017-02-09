@@ -49,18 +49,18 @@ expand T1 P1 P2 :- get_fixpoint T1 L, !,
 
 % TYPING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-check_branch U K SN V0 T0 :-
- of V0 W0, of T0 U0,
- fold_left SN app V0 SNV0,
+check_branch U K SN V0 T0 RT0 :-
+ of3 V0 W0 RV0, of3 T0 U0 RT0,
+ fold_left SN app RV0 SNV0,
  conv_match_branch W0 SNV0 K SN U U0.
 
-mk_out_type W U V TS W S U DXV :-
+mk_out_type W U V TS RW RU RA W S U DXV :-
  get_inductive W K VS, split S K SN DX,
- of W T1, of U T2,
- conv_match_type T1 W K SN DX T2,
- forall2 VS TS (check_branch U K SN),
+ of3 W T1 RW, of3 U T2 RU,
+ conv_match_type T1 RW K SN DX T2,
+ forall3 VS TS RA (check_branch RU K SN),
  append DX [V] DXV.
 
 % not complete, we do not check allowed sort elimination
-of (match W U V A) X :- !,
- of V W1, whd_continue_unwind W1 (mk_out_type W U V A) X.
+of3 (match W U V A) X (match RW RU RV RA) :-
+ of3 V W1 RV, whd_continue_unwind W1 (mk_out_type W U RV A RW RU RA) X.
