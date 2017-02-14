@@ -1,8 +1,6 @@
 type abbr term -> term -> (term -> term) -> term.  % local definition (let-in)
 
-of3 X U X :- val X U  _ _.
-
-% M or RM in val x A ... NF ?
-% depends on who is in charge of refinement: of3 or reduction/conversion
-of3 (abbr A M F) (abbr A M G) (abbr A RM RF) :-
+of3 (abbr A M F) (abbr A RM G) (abbr A RM RF) :- !,
  of3 M B RM, sub B A, pi x \ val x A RM NF => of3 (F x) (G x) (RF x).
+
+of3 X U X :- val X U  _ _, !.
