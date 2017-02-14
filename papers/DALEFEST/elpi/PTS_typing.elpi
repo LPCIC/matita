@@ -6,16 +6,13 @@ type app term -> term -> term.
 type lam term -> (term -> term) -> term.
 type arr term -> (term -> term) -> term.
 
-type hole term.
-type vect term.
-
 % approximant, inferred type, refined term
 type of3 term -> term -> term -> prop.
 
 of3 (sort I) (sort J) (sort I) :- !, succ I J.
 
-of3 (app M N) BN (app RM RN) :- !,
-  of3 M TM RM, match_arr TM A1 Bx, of3 N A2 RN, sub A2 A1, BN = Bx RN.
+of3 (app M N) (abbr A2 RN Bx) (app RM RN) :- !,
+  of3 M TM RM, match_arr TM A1 Bx, of3 N A2 RN, sub A2 A1.
 
 of3 (lam A F) (arr A B) (lam RA RF):- !,
   of3 A SA RA, match_sort SA _,

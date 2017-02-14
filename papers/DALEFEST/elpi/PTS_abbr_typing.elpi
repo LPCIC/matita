@@ -1,3 +1,5 @@
+% accumulate after PTS_typing.elpi
+
 type abbr term -> term -> (term -> term) -> term.  % local definition (let-in)
 
 of3 (abbr A M F) (abbr A RM G) (abbr A RM RF) :- !,
