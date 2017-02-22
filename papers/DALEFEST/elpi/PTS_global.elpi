@@ -29,7 +29,6 @@ comp T1 P1 M T2 P2 :- env T2 _ U2, !, expand_dx T1 P1 M T2 U2 P2.
 % candidate right delta.
 check_rhs T1 P1 H1 U1 M T2 P2 :- env T2 H2 U2, !,
                                  check_height T1 P1 H1 U1 M T2 P2 H2 U2.
-
 % forced left delta.
 check_rhs T1 P1 _ U1 M T2 P2 :- expand_sn T1 U1 P1 M T2 P2.
 

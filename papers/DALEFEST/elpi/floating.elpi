@@ -1,0 +1,35 @@
+% inequality resolver: lle X Y is x <= Y, llt X Y is x < Y
+
+mode (lle i i).
+lle (?? as A) (?? as B) :- !,  $constraint (lle A B) [A,B].
+lle A         (?? as B) :- !,  $constraint (lle A B) [B].
+lle (?? as A) B         :- !,  $constraint (lle A B) [A].
+
+mode (llt i i).
+llt (?? as A) (?? as B) :- !,  $constraint (llt A B) [A,B].
+llt A         (?? as B) :- !,  $constraint (llt A B) [B].
+llt (?? as A) B         :- !,  $constraint (llt A B) [A].
+
+constraint lle llt {
+  % incompat (FIRST!!)
+  rule (lle X Y) (llt Y1 X1) | (X = X1, Y = Y1) <=> false.
+  rule (llt X Y) (llt Y1 X1) | (X = X1, Y = Y1) <=> false.
+  rule (llt X Y) | (X = Y) <=> false.
+
+  % refl
+  rule \ (lle X Y) | (X = Y).
+
+  % atisym
+  rule (lle X Y) \ (lle Y1 X1) | (X = X1, Y = Y1) <=> (Y = X).
+
+  % trans
+  rule (lle X Y) (lle Y1 Z) | (Y = Y1) <=> (lle X Z).
+  rule (lle X Y) (llt Y1 Z) | (Y = Y1) <=> (llt X Z).
+  rule (llt X Y) (lle Y1 Z) | (Y = Y1) <=> (llt X Z).
+  rule (llt X Y) (llt Y1 Z) | (Y = Y1) <=> (llt X Z).
+
+  % idempotence
+  rule (lle X Y) \ (lle X1 Y1) | (X = X1, Y = Y1).
+  rule (llt X Y) \ (llt X1 Y1) | (X = X1, Y = Y1).
+
+}
