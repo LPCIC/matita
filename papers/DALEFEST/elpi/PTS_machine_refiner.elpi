@@ -6,8 +6,6 @@ whd1 ?? _ _ :- fail.
 
 mode (comp i i i i i).
 
-comp A B C D E :- $print "##" (comp A B C D E), fail.
-
 %%%%%%%%%% BUG/TODO:
 % - Mancano casi X vs X e X vs Y
 
