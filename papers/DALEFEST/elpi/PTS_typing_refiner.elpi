@@ -4,7 +4,7 @@ type hole term.
 type vect term.
 
 mode (of3 i o o).
-of3 (?? as K) T K :- !, $constraint (of3 K T K) K.
+of3 (?? as K) T K :- !, $constraint (of3 K T K) [K].
 
 of3 hole U RT :- !, of3 T U RT.
 
@@ -14,7 +14,7 @@ of3 (app M vect) TM RM :- of3 M TM RM.
 of3 (app M vect) U RT :-
   of3 M TM RM, ifelse (is_flex TM) fail (of3 (app (app RM hole) vect) U RT).
 
-constraint of val {
+constraint of3 val {
   rule (G1 ?- of3 (?? X1 L1) T1 _) \ (G2 ?- of3 (?? X2 L2) T2 _) > X1 ~ X2
    | (is_canonical L1, compat G1 L1 T1 G2 L2 T2 L3) <=> L3.
 }
