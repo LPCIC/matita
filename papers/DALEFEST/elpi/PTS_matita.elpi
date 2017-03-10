@@ -10,10 +10,22 @@ has_type T U :- of3 T U' _, of3 U _ RU, sub U' RU.
 
 is_type U :- of3 U S' _, match_sort S' _S.
 
-approx T V W :- of3 T U' RT, U' = W, RT = V.
+approx T V W :- print "*", of3 T U' RT, $print "** of3" T ":" U' "~" RT, U' = W, RT = V, !.
 
-approx_cast T U V :- of3 T U' RT, of3 U _ RU, sub U' RU, RT = V.
+approx_cast T U V :- $print "*1" T, of3 T U' RT, $print "*2" U' "#" RT, of3 U _ RU, $print "*3 sub" U "~" RU, sub U' RU, RT = V, !.
 
-ldec X W :- of3 X W X.
+of3 X W X :- ldec X W.
 
-ldef X W V :- val X W V NF.
+val X W V NF :- ldef X W V.
+
+% fall back %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ldecs :- ldec X W, $print X ":" W, fail.
+
+ldefs :- ldef X W V, $print X ":" W "=" V, fail.
+
+at_end :- $print "context", (ldecs; ldefs).
+
+approx T V W :- $print "approx" T "as" V ":" W, at_end.
+
+approx_cast T U V :- $print "approx cast" T ":" U "as" V, at_end.
