@@ -7,6 +7,7 @@ matita/Makefile.defs:
 	cd matita && autoconf && ./configure
 
 elpi/elpi.cmxa:
+	git submodule update --init
 	$(MAKE) -C elpi
 
 clean:
