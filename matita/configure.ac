@@ -40,16 +40,17 @@ fi
 # look for METAS dir
 
 LIBSPATH="`pwd`/components"
-OCAMLPATH="$LIBSPATH/METAS"
+OCAMLPATH="$OCAMLPATH:$LIBSPATH/METAS:`pwd`/../elpi/"
+export OCAMLPATH
 
 # creating META.*
 
 echo -n "creating METAs ... "
-for f in $OCAMLPATH/meta.*.src; do
+for f in $LIBSPATH/METAS/meta.*.src; do
   basename=`basename $f`
   metaname=`echo $basename | sed 's/meta\.\(.*\)\.src/\1/'`
   dirname=`echo $metaname | sed 's/^helm-//'`
-  metafile="$OCAMLPATH/META.$metaname"
+  metafile="$LIBSPATH/METAS/META.$metaname"
   cp $f $metafile
   echo "directory=\"$LIBSPATH/$dirname\"" >> $metafile
 done
@@ -59,7 +60,6 @@ echo "done"
 
 FINDLIB_LIBSREQUIRES="\
 expat \
-gdome2 \
 http \
 lablgtk2 \
 lablgtk2.sourceview2 \
@@ -92,7 +92,7 @@ lablgtk2.sourceview2 \
 for r in $FINDLIB_LIBSREQUIRES $FINDLIB_REQUIRES
 do
   AC_MSG_CHECKING(for $r ocaml library)
-  if OCAMLPATH=$OCAMLPATH:/usr/lib/ocaml:../ $OCAMLFIND query $r &> /dev/null; then
+  if $OCAMLFIND query $r &> /dev/null; then
     AC_MSG_RESULT(yes)
   else
     AC_MSG_ERROR(could not find $r ocaml library)

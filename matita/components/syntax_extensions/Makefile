@@ -37,7 +37,7 @@ profiling_macros.cma:profiling_macros.cmo
 
 .PHONY: test
 test: test.ml
-	$(OCAMLFIND) ocamlc -package helm-utf8_macros -syntax camlp5o $< -o $@
+#	$(OCAMLFIND) ocamlc -package helm-utf8_macros -syntax camlp5o $< -o $@
 
 clean:
 distclean: extra_clean
