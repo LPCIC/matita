@@ -1,5 +1,7 @@
 all: matita/matita/matita
 
+.PHONY: matita/matita/matita
+
 matita/matita/matita: elpi/elpi.cmxa matita/Makefile.defs
 	$(MAKE) -C matita
 
