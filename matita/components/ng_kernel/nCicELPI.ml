@@ -78,8 +78,13 @@ let get_program kernel =
                 ]
       | _    -> ["../.."; ], []
    in
-   let paths = List.map (Filename.concat matita_dir) paths in
-   LPR.program_of_ast (LPP.parse_program ~paths ~filenames)
+   let ast =
+     if filenames <> [] then begin
+       let paths = List.map (Filename.concat matita_dir) paths in
+       LPP.init ~paths;
+       LPP.parse_program filenames
+     end else [] in
+   LPR.program_of_ast ast 
 
 let program = ref (get_program !kernel)
 
