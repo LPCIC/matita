@@ -6,6 +6,8 @@ accumulate environment_matita.
 
 % traces %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+of3 M _ _ :- $print "?? of3" M, fail.
+
 approx T V W :- $print "?? approx" T "as" V ":" W, at_end.
 
 approx_cast T U V :- $print "?? approx cast" T ":" U "as" V, at_end.
