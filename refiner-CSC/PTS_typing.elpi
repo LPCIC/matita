@@ -6,20 +6,32 @@ type app term -> term -> term.
 type lam term -> (term -> term) -> term.
 type arr term -> (term -> term) -> term.
 
-% approximant, inferred type, refined term
+% approximant, refined inferred type, refined term
 type of3 term -> term -> term -> prop.
 
 of3 (sort I) (sort J) (sort I) :- !, succ I J.
 
 of3 (app M N) (abbr A2 RN Bx) (app RM RN) :- !,
-  of3 M TM RM, match_arr TM A1 Bx, of3 N A2 RN, sub A2 A1.
+  $print "A1" M "&" N,
+  of3 M TM RM, match_arr TM A1 Bx,
+  $print "A2" M ":" TM "=" RM,
+  of3 N A2 RN, sub A2 A1,
+  $print "A3" N ":" A2 "=" RN "done".
 
-of3 (lam A F) (arr A B) (lam RA RF):- !,
-  of3 A SA RA, match_sort SA _,
-  (pi x\ of3 x A x => of3 (F x) (B x) (RF x)),
-  of3 (arr A B) _ _. % can't put this early, since B flexible
+of3 (lam A F) (arr RA B) (lam RA RF):- !,
+  $print "L1" A "&" F,
+  of3 A TA RA, match_sort TA _,
+  $print "L2" A ":" TA "=" RA,
+  (pi x\ of3 x RA x => of3 (F x) (B x) (RF x)),
+  $print "L3" F ":" B "=" RF,
+  of3 (arr RA B) _ _, % can't put this early, since B flexible
+  $print "L4 done".
 
 of3 (arr A B) (sort K) (arr RA RB) :- !,
+  $print "P1" A "&" B,
   of3 A TA RA, match_sort TA I,
-  (pi x\ of3 x A x => of3 (B x) (TB x) (RB x), match_sort (TB x) J),
-  max I J K.
+  $print "P2" A ":" TA ">" I "=" RA,
+  (pi x\ of3 x RA x => of3 (B x) (TB x) (RB x), match_sort (TB x) J),
+  $print "P3" B ":" TB ">" J "=" RB,
+  max I J K,
+  $print "P4" K "done".
