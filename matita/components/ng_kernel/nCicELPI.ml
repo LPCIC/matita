@@ -18,7 +18,9 @@ module LPT = Elpi_trace
 module LPA = Elpi_ast
 module LPX = Elpi_latex_exporter (* initializes the parser, puah :( *)
 module LPP = Elpi_parser
-module LPR = Elpi_runtime
+module LPR = Elpi_API.Data
+module LPRR = Elpi_API.Runtime
+module LPRC = Elpi_API.Compiler
 module LPC = Elpi_custom (* registers the custom predicates, if we need them *)
 
 exception Error of string
@@ -81,10 +83,11 @@ let get_program kernel =
    let ast =
      if filenames <> [] then begin
        let paths = List.map (Filename.concat matita_dir) paths in
-       LPP.init ~paths;
+       let args = List.map (fun x -> ["-I";x]) paths in
+       Elpi_API.init (List.flatten args);
        LPP.parse_program filenames
      end else [] in
-   LPR.program_of_ast ast 
+   LPRC.program_of_ast ast 
 
 let program = ref (get_program !kernel)
 
@@ -305,10 +308,10 @@ let split_fixpoint = function
    |_                           -> fail ()
 
 let mk_term ~depth t =
-   LPR.term_of_ast ~depth t
+   LPRC.term_of_ast ~depth t
 
 let mk_int ~depth i =
-   LPR.term_of_ast ~depth (LPA.mkInt i)
+   LPRC.term_of_ast ~depth (LPA.mkInt i)
 
 let mk_eq t1 t2 = LPR.App (LPR.Constants.eqc, t1, [t2])
 
@@ -320,9 +323,9 @@ let rec get_gref ~depth = function
    | LPR.Const c                                                    ->
        if c >= 0 then fail () else R.reference_of_string (show c)
    | LPR.UVar ({LPR.contents=t;_},vardepth,args) when t != dummy    ->
-      get_gref ~depth (LPR.deref_uv ~from:vardepth ~to_:depth args t)
+      get_gref ~depth (LPRR.deref_uv ~from:vardepth ~to_:depth args t)
    | LPR.AppUVar ({LPR.contents=t;_},vardepth,args) when t != dummy ->
-      get_gref ~depth (LPR.deref_appuv ~from:vardepth ~to_:depth args t)
+      get_gref ~depth (LPRR.deref_appuv ~from:vardepth ~to_:depth args t)
    | _                                                              -> fail ()
 
 let get_gref f ~depth t =
@@ -372,12 +375,12 @@ let on_object ~depth ~env:_ _ args = match args, !current with
 (* initialization ***********************************************************)
 
 let _ =
-   LPR.register_custom "$get_type" get_type;
-   LPR.register_custom "$get_expansion" get_expansion;
-   LPR.register_custom "$get_constructor" get_constructor;
-   LPR.register_custom "$get_inductive" get_inductive;
-   LPR.register_custom "$get_fixpoint" get_fixpoint;
-   LPR.register_custom "$on_object" on_object
+   LPRR.register_custom "$get_type" get_type;
+   LPRR.register_custom "$get_expansion" get_expansion;
+   LPRR.register_custom "$get_constructor" get_constructor;
+   LPRR.register_custom "$get_inductive" get_inductive;
+   LPRR.register_custom "$get_fixpoint" get_fixpoint;
+   LPRR.register_custom "$on_object" on_object
 
 (* interface ****************************************************************)
 
@@ -394,10 +397,8 @@ let set_kernel_from_string s = match String.uppercase s with
    | _     -> ()
 
 let trace_on () =
-   let rest = LPT.parse_argv [| "-trace-on"; "-trace-at"; "run"; "1"; "99999999";
-                                "-trace-only"; "add"; "-trace-only"; "remove" |]
-   in
-   assert (rest = [||])
+   Elpi_API.trace [ "-trace-on"; "-trace-at"; "run"; "1"; "99999999";
+                    "-trace-only"; "add"; "-trace-only"; "remove" ]
 
 let prints_off () =
    verbose := false
@@ -426,7 +427,7 @@ let execute r query =
    current := Some (C.Const r);
    let result, msg = try
       let query = query () in
-      if LPR.execute_once !program ~print_constraints:!verbose (LPR.query_of_ast !program query) then
+      if LPRR.execute_once !program ~print_constraints:!verbose (LPRC.query_of_ast !program query) then
          Fail, "KO"
       else
          OK, "OK"
