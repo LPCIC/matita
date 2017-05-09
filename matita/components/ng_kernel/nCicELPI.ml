@@ -61,18 +61,18 @@ let error s = raise (Error s)
 
 let get_program kernel =
    let paths, filenames = match kernel with
-      | FG 0 -> ["../.."; "../../lib"; "../../refiner-ALT-0"; ],
+      | FG 0 -> ["../../elpi"; "../../lib"; "../../refiner-ALT-0"; ],
                 ["debug_front.elpi";
                  "kernel_matita.elpi";
                  "kernel.elpi";
                  "debug_end.elpi";
                 ]
-      | FG 1 -> ["../.."; "../../lib"; "../../refiner-ALT-1"; ],
+      | FG 1 -> ["../../elpi"; "../../lib"; "../../refiner-ALT-1"; ],
                 [ "kernel_trace.elpi";
                   "kernel.elpi";
                   "kernel_matita.elpi";
                 ]
-      | CSC  -> ["../.."; "../../../refiner-CSC"; ],
+      | CSC  -> ["../../elpi"; "../../refiner-CSC"; ],
                 [ "trace_kernel.elpi";
                   "PTS_matita.elpi";
                   "PTS_refiner_machine.elpi";
