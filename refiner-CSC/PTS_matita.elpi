@@ -27,7 +27,7 @@ approx T V W :-
 approx_cast T U V :-
   $print "XC1" T,
   of3 T U' RT,
-  $print "XC2" U' "#" RT,
+  $print "XC2" T ":" U' "~" RT,
   of3 U _ RU,
   $print "XC3 sub" U "~" RU,
   sub U' RU, RT = V, !.
