@@ -11,7 +11,13 @@ type whd* term -> list term -> (list term /*var*/ -> term -> list term -> prop) 
 % KAM-like rules in CPS style
 whd1 (app M N) S K :- K [] M [N|S].
 whd1 (lam T F1) [N|NS] K :- pi x \ val x T N _NF => K [x] (F1 x) NS.
-whd1 (abbr T N F1) NS K :- pi x \ val x T N _NF => K [x] (F1 x) NS.
+whd1 (abbr T N F1) NS K :-
+ % CSC: scommentando le righe dopo cambia il comportamento di ELPI
+ % $print "WH1" (abbr T N F1) NS K,
+ pi x \ val x T N _NF =>
+ % CSC: scommentando le righe dopo cambia il comportamento di ELPI
+ % $print "WH2" (K [x] (F1 x) NS),
+ K [x] (F1 x) NS.
 whd1 X S K :- val X _ N NF, if ($is_flex NF) (whd_unwind N NF), K [] NF S.
 
 % Reflexive, transitive closure
@@ -28,8 +34,13 @@ match_sort T I :- whd* T [] (l \ t \ s \ t = sort I, s = []).
 
 type match_arr term -> term -> (term -> term) -> prop.
 match_arr T A F :-
+ $print "MA0" T,
  whd* T [] (l \ t \ s \ sigma A' \sigma F' \
-  s = [], t = arr A' F', put_abbr l A' A,
+  s = [],
+  $print "MA1" (t = arr A' F'),
+  t = arr A' F',
+  $print "MA2" A' F',
+  put_abbr l A' A,
   pi x \ put_abbr l (F' x) (F x)).
 
 % unwind_stack takes an head and a stack and decodes them to a term
