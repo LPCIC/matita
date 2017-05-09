@@ -117,6 +117,17 @@ let init_debugging_menu gui =
     addDebugSeparator ();
     addDebugItem "Expand virtuals"
     (fun _ -> (MatitaScript.current ())#expandAllVirtuals);
+    addDebugSeparator ();
+    let trace_options = ref [] in
+    addDebugItem "Elpi trace ..."
+      (fun _ -> 
+        let d = GWindow.dialog ~modal:true ~decorated:true ~width:600 ~height:400 ~title:"Elpi trace options" () in
+        let e = GEdit.entry ~packing:d#vbox#add ~text:(String.concat " " !trace_options) () in
+        let b = GMisc.label ~selectable:true ~packing:d#vbox#add ~text:"ESC-ESC to set\nEmpty to disable tracing\nExample: -trace-on -trace-at run 1 10 -trace-only \\(run\\|select\\)" () in
+        ignore(d#run ());
+        trace_options := (Str.split (Str.regexp " ") e#text);
+        Elpi_API.trace !trace_options;
+        );
   end
   (** Debugging }}} *)
 
