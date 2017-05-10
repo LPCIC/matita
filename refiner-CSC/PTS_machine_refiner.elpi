@@ -4,7 +4,7 @@
 mode (whd1 i i o).
 whd1 ?? _ _ :- fail.
 
-mode (val i i o o).
+mode (val i o o o).
 
 mode (comp i i i i i).
 
