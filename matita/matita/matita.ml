@@ -46,6 +46,9 @@ let _ =
      "-elpi-cache", Arg.Unit
       NCicELPI.cache_on,
       "turn on prolog query caching";
+     "-elpi-trace", Arg.String
+       (fun s -> NCicELPI.trace_options := Str.split (Str.regexp " ") s),
+      "set trace options";
     ];
   MatitaInit.initialize_all ();
   MatitaMisc.reset_font_size ()
