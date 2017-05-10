@@ -16,8 +16,7 @@ type outcome = private Skip of string
 (* use this kernel: valid values "NO" (default), "CSC", "FG0", "FG1" *)
 val set_kernel_from_string: string -> unit
 
-(* turn trace facility on *)
-val trace_on: unit -> unit
+val trace_options : string list ref
 
 (* turn informational prints off *)
 val prints_off: unit -> unit

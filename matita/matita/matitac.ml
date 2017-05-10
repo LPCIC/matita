@@ -31,9 +31,6 @@ let main_compiler () =
     ["-elpi", Arg.String
       NCicELPI.set_kernel_from_string,
       "the prolog kernel to use: NO, CSC, FG0, FG1";
-     "-elpi-trace", Arg.Unit
-      NCicELPI.trace_on,
-      "turn on prolog query tracing";
      "-elpi-quiet", Arg.Unit
       NCicELPI.prints_off,
       "turn off prolog informational prints";

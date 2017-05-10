@@ -396,10 +396,6 @@ let set_kernel_from_string s = match String.uppercase s with
    | "CSC" -> set_kernel CSC
    | _     -> ()
 
-let trace_on () =
-   Elpi_API.trace [ "-trace-on"; "-trace-at"; "run"; "1"; "99999999";
-                    "-trace-only"; "add"; "-trace-only"; "remove" ]
-
 let prints_off () =
    verbose := false
 
@@ -421,12 +417,15 @@ let at_exit () =
       Printf.eprintf "cache length: %u\n%!" (QH.length cache)
    end
 
+let trace_options = ref []
+
 let execute r query =
    let str = R.string_of_reference r in
    if !verbose then Printf.printf "?? %s\n%!" str;
    current := Some (C.Const r);
    let result, msg = try
       let query = query () in
+      Elpi_API.trace !trace_options;
       if LPRR.execute_once !program ~print_constraints:!verbose (LPRC.query_of_ast !program query) then
          Fail, "KO"
       else
