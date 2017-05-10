@@ -22,7 +22,6 @@ module LPR = Elpi_API.Runtime
 module LPC = Elpi_API.Compiler
 (* elpi initialization only *)
 module LPT = Elpi_trace
-(* module LPL = Elpi_latex_exporter (* initializes the parser, puah :( *) *)
 module LPX = Elpi_custom (* registers the custom predicates, if we need them *)
 
 exception Error of string
@@ -86,7 +85,7 @@ let get_program kernel =
      if filenames <> [] then begin
        let paths = List.map (Filename.concat matita_dir) paths in
        let args = List.map (fun x -> ["-I";x]) paths in
-       Elpi_API.init (List.flatten args);
+       let _args = Elpi_API.init (List.flatten args) in
        LPP.parse_program filenames
      end else [] in
    LPC.program_of_ast ast 
@@ -98,6 +97,8 @@ let current = ref None
 let verbose = ref true
 
 let caching = ref false
+
+let refine = ref false
 
 (* guess based on nat.ma *)
 let cache_size = 223
@@ -445,9 +446,15 @@ let has_type r t u =
    execute r query
 
 let approx r d c t v w =
-   let query i = mk_approx (lp_term d i t) (lp_term d i v) (lp_term d i w) in
-   execute r (lp_context query d c)
+   if !refine then
+     let query i = mk_approx (lp_term d i t) (lp_term d i v) (lp_term d i w) in
+     execute r (lp_context query d c)
+   else
+     Skip "not refining"
 
 let approx_cast r d c t u v =
-   let query i = mk_approx_cast (lp_term d i t) (lp_term d i u) (lp_term d i v) in
-   execute r (lp_context query d c)
+   if !refine then
+     let query i = mk_approx_cast (lp_term d i t) (lp_term d i u) (lp_term d i v) in
+     execute r (lp_context query d c)
+   else
+     Skip "not refining"
