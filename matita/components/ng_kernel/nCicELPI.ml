@@ -98,7 +98,7 @@ let verbose = ref true
 
 let caching = ref false
 
-let refine = ref false
+let refine = ref true
 
 (* guess based on nat.ma *)
 let cache_size = 223

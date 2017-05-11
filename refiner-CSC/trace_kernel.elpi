@@ -4,6 +4,8 @@
 
 % Note: longest object to validate in nat.ma for now
 % focus :- on_object cic:/matita/arithmetics/nat/plus_minus#def:5.
+% Note: very slow
+% focus :- on_object cic:/matita/arithmetics/nat/nat_discr#def:2.
 
 % UTILITIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -20,6 +22,10 @@ ofs [] :- fail.
 ofs [T | L] :- if (focus, of3 T U _) ($print "OF3" T "##" U), ofs L.
 
 % TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+llt U1 U2 :- focus, $print (llt U1 U2), fail.
+
+succ S1 S2 :- focus, $print (succ S1 S2), fail.
 
 % has_type T U :- focus, $print (has_type T U), fail.
 
