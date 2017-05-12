@@ -1,10 +1,13 @@
 %% To be accumulated *before* kernel_pts to turn the kernel into a refiner
 % vim: set ft=lprolog:
 
+mode (val i o o o).
+
 mode (whd1 i i o).
 whd1 ?? _ _ :- fail.
 
-mode (val i o o o).
+mode (match_sort i o).
+match_sort (?? as S) U :- !, $constraint (match_sort S U) [S].
 
 mode (comp i i i i i).
 
