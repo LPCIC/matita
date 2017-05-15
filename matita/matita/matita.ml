@@ -126,6 +126,8 @@ let init_debugging_menu gui =
         ignore(d#run ());
         NCicELPI.trace_options := Str.split (Str.regexp " ") e#text;
         );
+    addDebugCheckbox "Elpi typecheck"
+      (fun mi () -> NCicELPI.typecheck := mi#active);
   end
   (** Debugging }}} *)
 

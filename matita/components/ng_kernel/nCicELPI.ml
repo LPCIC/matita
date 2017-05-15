@@ -264,7 +264,7 @@ let lp_context query d c () =
          let v = lp_term d i v in
          mk_pi_impl n (mk_ldef n w v) (aux (succ i) c)
    in
-   aux 0 (List.rev c)
+   Ploc.dummy, aux 0 (List.rev c)
 
 let split_type r =
    let aux () =
@@ -421,15 +421,17 @@ let at_exit () =
    end
 
 let trace_options = ref []
+let typecheck = ref false
 
 let execute r query =
    let str = R.string_of_reference r in
    if !verbose then Printf.printf "?? %s\n%!" str;
    current := Some (C.Const r);
    let result, msg = try
-      let query = query () in
+      let query = LPC.query_of_ast !program (query ()) in
+      if !typecheck then LPC.typecheck !program query;
       Elpi_API.trace !trace_options;
-      if LPR.execute_once !program ~print_constraints:!verbose (LPC.query_of_ast !program query) then
+      if LPR.execute_once !program ~print_constraints:!verbose query then
          Fail, "KO"
       else
          OK, "OK"
@@ -438,11 +440,11 @@ let execute r query =
    if !verbose then Printf.printf "%s %s\n%!" msg str; result
 
 let is_type r u =
-   let query () = mk_is_type (lp_term [] 0 u) in
+   let query () = Ploc.dummy, mk_is_type (lp_term [] 0 u) in
    execute r query
 
 let has_type r t u =
-   let query () = mk_has_type (lp_term [] 0 t) (lp_term [] 0 u) in
+   let query () = Ploc.dummy, mk_has_type (lp_term [] 0 t) (lp_term [] 0 u) in
    execute r query
 
 let approx r d c t v w =

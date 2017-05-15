@@ -19,6 +19,9 @@ val set_kernel_from_string: string -> unit
 (* trace options *)
 val trace_options : string list ref
 
+(* run elpi typechecker *)
+val typecheck : bool ref
+
 (* turn informational prints off *)
 val prints_off: unit -> unit
 
