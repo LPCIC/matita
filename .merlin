@@ -1,0 +1,60 @@
+
+S elpi
+B elpi
+
+FLG -rectypes
+PKG camlp5 lablgtk2
+
+S matita/matita
+S matita/components/ng_refiner
+S matita/components/ng_extraction
+S matita/components/logger
+S matita/components/thread
+S matita/components/thread/fake
+S matita/components/registry
+S matita/components/registry/tests
+S matita/components/grafite_parser
+S matita/components/ng_tactics
+S matita/components/ng_cic_content
+S matita/components/syntax_extensions
+S matita/components/syntax_extensions/data
+S matita/components/content_pres
+S matita/components/extlib
+S matita/components/grafite
+S matita/components/getter
+S matita/components/ng_kernel
+S matita/components/library
+S matita/components/ng_disambiguation
+S matita/components/ng_paramodulation
+S matita/components/content
+S matita/components/grafite_engine
+S matita/components/disambiguation
+S matita/components/ng_library
+S matita/components/xml
+
+B matita/matita
+B matita/components/ng_refiner
+B matita/components/ng_extraction
+B matita/components/logger
+B matita/components/thread
+B matita/components/thread/fake
+B matita/components/registry
+B matita/components/registry/tests
+B matita/components/grafite_parser
+B matita/components/ng_tactics
+B matita/components/ng_cic_content
+B matita/components/syntax_extensions
+B matita/components/syntax_extensions/data
+B matita/components/content_pres
+B matita/components/extlib
+B matita/components/grafite
+B matita/components/getter
+B matita/components/ng_kernel
+B matita/components/library
+B matita/components/ng_disambiguation
+B matita/components/ng_paramodulation
+B matita/components/content
+B matita/components/grafite_engine
+B matita/components/disambiguation
+B matita/components/ng_library
+B matita/components/xml
