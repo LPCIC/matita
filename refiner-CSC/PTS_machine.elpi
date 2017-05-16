@@ -3,6 +3,8 @@ accumulate list.
 
 % Requires the accumulation of PTS_abbr_typing.
 
+macro @stack :- list term.
+
 %%%%%%%%%%%%%%%% Reduction
 
 type whd1 term -> list term -> (list term /*var*/ -> term -> list term -> prop) -> prop.
@@ -55,10 +57,15 @@ put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
 
 %%%%%%%%%%%%%%%% Conversion
 
+type lt @univ -> @univ -> prop.
+
 type conv term -> term -> prop.
 type sub term -> term -> prop.
 
 type comp term -> list term -> eq_or_leq ->  term -> list term -> prop.
+
+type eq eq_or_leq.
+type leq eq_or_leq.
 
 conv T1 T2 :- comp T1 [] eq T2 [].
 sub T1 T2 :- comp T1 [] leq T2 [].

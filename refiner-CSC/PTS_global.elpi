@@ -5,7 +5,7 @@ type env term -> int -> term -> prop. /* name, height, definiens */
 
 % note: reductions (call-by-need?) in this predicate, *not* in env
 % note: only reductions on the stack for now
-type expand term -> stack -> stack -> prop. /* name, old stack, new stack */
+type expand term -> @stack -> @stack -> prop. /* name, old stack, new stack */
 
 % EXPAND %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

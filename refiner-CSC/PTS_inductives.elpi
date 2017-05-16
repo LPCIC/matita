@@ -5,7 +5,7 @@
 type match term -> term -> term -> list term -> term.
 
 % match_trame W U A P: stack frame for match
-type match_trame term -> term -> list term -> stack -> stack.
+type match_trame term -> term -> list term -> @stack -> @stack.
 
 % HELPERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -14,13 +14,13 @@ forall2 (match_trame W U1 A1 P1) (match_trame W U2 A2 P2) F :-
  F U1 U2, forall2 A1 A2 F, forall2 P1 P2 F.
 
 % Whd followed by continuation and machine unwinding.
-type whd_continue_unwind term -> (term -> stack -> term -> stack -> prop) -> term -> prop.
+type whd_continue_unwind term -> (term -> @stack -> term -> @stack -> prop) -> term -> prop.
 whd_continue_unwind N K NF :-
  whd* N [] (l \ t1 \ s1 \ sigma t2 \ sigma s2 \ sigma TS \ K t1 s1 t2 s2, unwind_stack s2 t2 TS, put_abbr l TS NF).
 
 % REDUCTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-type get_branch int -> stack -> term -> stack -> stack -> prop.
+type get_branch int -> @stack -> term -> @stack -> @stack -> prop.
 /* stack, constructor => branch, rear stack, front stack */ 
 get_branch (match_trame _ _ A P) J T P [] :- nth A J T.
 get_branch [V|P] J T P1 [V|P2] :- get_branch P J T P1 P2.

@@ -3,18 +3,22 @@
 
 % HELPERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-type conv*_sn term -> stack -> conversion_mode -> term -> stack -> prop.
+type conv*_sn term -> @stack -> conversion_mode -> term -> @stack -> prop.
 conv*_sn T1 S1 M T2 S2 :- whd* T1 S1 (_\ T\ S\ comp* T S M T2 S2).
 
-type conv*_dx term -> stack -> conversion_mode -> term -> stack -> prop.
+type conv*_dx term -> @stack -> conversion_mode -> term -> @stack -> prop.
 conv*_dx T1 S1 M T2 S2 :- whd* T2 S2 (_\ T\ S\ comp* T1 S1 M T S).
 
-type conv* term -> stack -> conversion_mode -> term -> stack -> prop.
+type conv* term -> @stack -> conversion_mode -> term -> @stack -> prop.
 conv* T1 S1 M T2 S2 :- whd* T1 S1 (_\ T\ S\ conv*_dx T S M T2 S2).
 
-type comp* term -> stack -> conversion_mode -> term -> stack -> prop.
+type comp* term -> @stack -> conversion_mode -> term -> @stack -> prop.
 
 % OUTPUT TYPE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+type on_match_type term -> int -> @stack -> @stack -> @stack -> conversion_mode.
+
+type on_match_proj conversion_mode.
 
 % removing left product (on_match_type).
 comp* (arr W1 F1) [] (on_match_type W K S [V|SN] DX) U2 S2 :- !,
@@ -37,10 +41,12 @@ comp* (sort YI) [] (on_match_type W1 K SN1 [] []) (arr W2 F2) [] :-
 % note: we do nothing for now ...
 comp* (sort YI) [] on_match_proj (sort YO) [] :- true.
 
-type conv_match_type term -> term -> int -> stack -> stack -> term -> prop.
+type conv_match_type term -> term -> int -> @stack -> @stack -> term -> prop.
 conv_match_type T1 W K SN DX T2 :- conv* T1 [] (on_match_type W K SN SN DX) T2 [].
 
 % BRANCHES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+type on_match_branch term -> int -> term -> @stack -> conversion_mode.
 
 % removing left arruct (on_match_branch).
 comp* (arr W1 F1) [] (on_match_branch V0 K U0 [V|SN]) U2 S2 :- !,
@@ -55,6 +61,6 @@ comp* (arr W1 F1) [] (on_match_branch V0 K U0 []) (arr W2 F2) [] :- !,
 comp* _ S1 (on_match_branch V K U []) U2 S2 :-
   split S1 K _ DX, append DX [V] DXV, comp U DXV eq U2 S2.
 
-type conv_match_branch term -> term -> int -> stack -> term -> term -> prop.
+type conv_match_branch term -> term -> int -> @stack -> term -> term -> prop.
 conv_match_branch T1 V0 K SN U0 T2 :-
   conv* T1 [] (on_match_branch V0 K U0 SN) T2 [].

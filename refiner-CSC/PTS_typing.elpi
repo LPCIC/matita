@@ -6,6 +6,9 @@ type app term -> term -> term.
 type lam term -> (term -> term) -> term.
 type arr term -> (term -> term) -> term.
 
+type succ @univ -> @univ -> prop.
+type max  @univ -> @univ -> @univ -> prop.
+
 % approximant, refined inferred type, refined term
 type of3 term -> term -> term -> prop.
 

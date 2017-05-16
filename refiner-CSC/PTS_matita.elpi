@@ -32,8 +32,10 @@ approx_cast T U V :-
   $print "XC3 sub" U "~" RU,
   sub U' RU, RT = V, !.
 
+type ldec term -> term -> prop.
 of3 X W X :- ldec X W.
 
+type ldef term -> term -> term -> prop.
 val X W V NF :- ldef X W V.
 
 % fall back %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
