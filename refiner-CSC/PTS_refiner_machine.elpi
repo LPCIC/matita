@@ -14,5 +14,5 @@ accumulate PTS_inductives.
 accumulate PTS_global.
 
 % tests
-accumulate test_refiner.
-accumulate test_kernel_cic.
+% accumulate test_refiner.
+% accumulate test_kernel_cic.
