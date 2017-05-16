@@ -98,6 +98,8 @@ let verbose = ref true
 
 let caching = ref false
 
+let validate = ref false
+
 let refine = ref true
 
 (* guess based on nat.ma *)
@@ -440,23 +442,29 @@ let execute r query =
    if !verbose then Printf.printf "%s %s\n%!" msg str; result
 
 let is_type r u =
-   let query () = Ploc.dummy, mk_is_type (lp_term [] 0 u) in
-   execute r query
+   if !validate then
+      let query () = Ploc.dummy, mk_is_type (lp_term [] 0 u) in
+      execute r query
+   else
+      Skip "not validating"
 
 let has_type r t u =
-   let query () = Ploc.dummy, mk_has_type (lp_term [] 0 t) (lp_term [] 0 u) in
-   execute r query
+   if !validate then
+      let query () = Ploc.dummy, mk_has_type (lp_term [] 0 t) (lp_term [] 0 u) in
+      execute r query
+   else
+      Skip "not validating"
 
 let approx r d c t v w =
    if !refine then
-     let query i = mk_approx (lp_term d i t) (lp_term d i v) (lp_term d i w) in
-     execute r (lp_context query d c)
+      let query i = mk_approx (lp_term d i t) (lp_term d i v) (lp_term d i w) in
+      execute r (lp_context query d c)
    else
-     Skip "not refining"
+      Skip "not refining"
 
 let approx_cast r d c t u v =
    if !refine then
-     let query i = mk_approx_cast (lp_term d i t) (lp_term d i u) (lp_term d i v) in
-     execute r (lp_context query d c)
+      let query i = mk_approx_cast (lp_term d i t) (lp_term d i u) (lp_term d i v) in
+      execute r (lp_context query d c)
    else
-     Skip "not refining"
+      Skip "not refining"
