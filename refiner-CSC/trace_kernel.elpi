@@ -23,6 +23,8 @@ ldefs :- ldef X W V, focus, $print "* ldef" X "=" V ":" W, fail.
 ofs [] :- fail.
 ofs [T | L] :- if (focus, of3 T U _) ($print "OF3" T "##" U), ofs L.
 
+at_end :- $print "context", (ldecs; ldefs).
+
 % TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % llt U1 U2 :- focus, $print (llt U1 U2), fail.
@@ -39,7 +41,9 @@ of3 T U RT :- focus, $print "of3" T "##" U "##" RT, $names X, $print X, fail. % 
 
 % match_arr TM A1 Bx :- focus, $print (match_arr TM "##" A1 "##" Bx), fail.
 
-% comp T1 S1 M T2 S2 :- focus, $print (comp T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
+comp T1 S1 M T2 S2 :- focus, $print "comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
+
+mcomp T1 S1 M T2 S2 :- focus, $print "mcomp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
 
 % sub U1 U2 :- focus, $print (sub U1 "<=>" U2), fail.
 
@@ -48,3 +52,7 @@ of3 T U RT :- focus, $print "of3" T "##" U "##" RT, $names X, $print X, fail. % 
 % mk_out_type W0 U0 V W P _ _ :- focus, $print (mk_out_type W0 U0 V W P), fail.
 
 % comp* T1 S1 M T2 S2 :- focus, $print (comp* T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
+
+approx T V W :- $print "?? approx" T "as" V ":" W, at_end.
+
+approx_cast T U V :- $print "?? approx cast" T ":" U "as" V, at_end.

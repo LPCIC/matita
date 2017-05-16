@@ -4,14 +4,6 @@
 
 accumulate environment_matita.
 
-% traces %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-of3 M _ _ :- $print "?? of3" M, fail.
-
-approx T V W :- $print "?? approx" T "as" V ":" W, at_end.
-
-approx_cast T U V :- $print "?? approx cast" T ":" U "as" V, at_end.
-
 % implementation of the queries from the environment %%%%%%%%%%%%%%%%%%%%%%%%%
 
 has_type T U :- of3 T U' _, of3 U _ RU, sub U' RU.
@@ -37,15 +29,3 @@ of3 X W X :- ldec X W.
 
 type ldef term -> term -> term -> prop.
 val X W V NF :- ldef X W V.
-
-% fall back %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-ldecs :- ldec X W, $print X ":" W, fail.
-
-ldefs :- ldef X W V, $print X ":" W "=" V, fail.
-
-at_end :- $print "context", (ldecs; ldefs).
-
-approx T V W :- $print "KO approx" T "as" V ":" W, at_end.
-
-approx_cast T U V :- $print "KO approx cast" T ":" U "as" V, at_end.
