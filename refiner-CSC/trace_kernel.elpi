@@ -6,7 +6,8 @@
 % focus :- on_object cic:/matita/arithmetics/nat/plus_minus#def:5.
 % Note: very slow
 % focus :- on_object cic:/matita/arithmetics/nat/nat_discr#def:2.
-focus :- on_object cic:/matita/basics/logic/eq_rect_r#def:1.
+focus :- true.
+% on_object cic:/matita/basics/logic/eq_rect_r#def:1.
 
 % UTILITIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -24,15 +25,15 @@ ofs [T | L] :- if (focus, of3 T U _) ($print "OF3" T "##" U), ofs L.
 
 % TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-llt U1 U2 :- focus, $print (llt U1 U2), fail.
+% llt U1 U2 :- focus, $print (llt U1 U2), fail.
 
 % succ S1 S2 :- focus, $print (succ S1 S2), fail.
 
-max S1 S2 S3 :- focus, $print (max S1 S2 S3), fail.
+% max S1 S2 S3 :- focus, $print (max S1 S2 S3), fail.
 
 % has_type T U :- focus, $print (has_type T U), fail.
 
-% of3 T U _ :- focus, $print (of3 T "##" U), fail. % $names X, ofs X.
+of3 T U RT :- focus, $print "of3" T "##" U "##" RT, $names X, $print X, fail. % ofs X.
 
 % whd* T S _ :- focus, $print (whd* T S), fail.
 
