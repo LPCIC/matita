@@ -47,3 +47,20 @@ lt (?? as S1) S2 :- $constraint (lt S1 S2) [S1].
 lt (s+type U1) (s+type U2) :- llt U1 U2, !.
 lt (s+cprop U1) (s+type U2) :- llt U1 U2.
 lt (s+cprop U1) (s+cprop U2) :- llt U1 U2, !.
+
+% succ issued by PTS_typing %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mode (succ i o).
+
+succ (?? as S1) S2 :- $constraint (succ S1 S2) [S1].
+
+% max issued by PTS_typing %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mode (max i i o).
+
+max (?? as S1) (?? as S2) S3 :- !, $constraint (max S1 S2 S3) [S1, S2].
+
+max (?? as S1) (s+type U2) (s+type U3) :- !, $constraint (max S1 (s+type U2) (s+type U3)) [S1].
+max (?? as S1) (s+cprop U2) (s+cprop U3) :- !, $constraint (max S1 (s+type U2) (s+cprop U3)) [S1].
+max (s+type U1) (?? as S2) (s+type U3) :- !, $constraint (max (s+type U1) S2 (s+type U3)) [S2].
+max (s+cprop U1) (?? as S2) (s+cprop U3) :- !, $constraint (max (s+cprop U1) S2 (s+cprop U3)) [S2].

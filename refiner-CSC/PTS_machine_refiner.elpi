@@ -6,9 +6,6 @@ mode (val i o o o).
 mode (whd1 i i o).
 whd1 ?? _ _ :- fail.
 
-mode (match_sort i o).
-match_sort (?? as S) U :- !, $constraint (match_sort S U) [S].
-
 mode (comp i i i i i).
 
 %%%%%%%%%% BUG/TODO:

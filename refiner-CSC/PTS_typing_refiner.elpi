@@ -3,6 +3,9 @@
 type hole term.
 type vect term.
 
+mode (match_sort i o).
+match_sort (?? as S) U :- !, $constraint (match_sort S U) [S].
+
 mode (of3 i o o).
 of3 (?? as K) T K :- !, $constraint (of3 K T K) [K].
 
