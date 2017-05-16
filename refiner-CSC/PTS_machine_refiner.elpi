@@ -68,7 +68,7 @@ comp T2 [] M (?? as V1) [] :- mcomp T2 M V1. % mcomp used generatively
 comp T2 [] M (?? as V1) [] :- V1 = T2.
 
 % REDUCTION
-comp T2 S2 M (?? as V1) [] :- whd1 T2 S2 (_ \ T \ S \ comp T S D V1 []).
+comp T2 S2 M (?? as V1) [] :- whd1 T2 S2 (_ \ T \ S \ comp T S M V1 []).
 
 % FAIL
 comp _ _ _ ?? [] :- !, fail. % to avoid falling back in the fast path of the
