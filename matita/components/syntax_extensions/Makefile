@@ -1,4 +1,4 @@
-PACKAGE = utf8_macros
+PACKAGE = syntax_extensions
 PREDICATES =
 MAKE_TABLE_PACKAGES = helm-xml
 
