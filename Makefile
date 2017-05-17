@@ -18,3 +18,9 @@ clean:
 
 run: matita/matita/matita
 	TJPATH=`pwd`/elpi ./matita/matita/matita -elpi FG1 matita/matita/lib/arithmetics/nat.ma
+
+print:
+	cd refiner-CSC;\
+	../elpi/elpi ../elpi/utils/elpi2mathjx.elpi -exec \
+		main -- PTS_refiner_engine.elpi ../refiner-CSC.html \
+		pervasives test_refiner test_kernel list logic
