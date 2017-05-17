@@ -8,7 +8,7 @@ IMPLEMENTATION_FILES = utf8MacroTable.ml $(INTERFACE_FILES:%.mli=%.ml)
 EXTRA_OBJECTS_TO_INSTALL =
 EXTRA_OBJECTS_TO_CLEAN =
 
-all: utf8_macros.cma pa_unicode_macro.cma profiling_macros.cma
+all: syntax_extensions.cma pa_unicode_macro.cma profiling_macros.cma
 
 make_table: make_table.ml
 	@echo "  OCAMLC $<"
