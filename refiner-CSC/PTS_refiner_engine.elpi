@@ -1,6 +1,7 @@
 % refiner
 accumulate floating.
 accumulate PTS_cic_floating.
+accumulate PTS_cic_refiner.
 accumulate PTS_typing_refiner.
 accumulate PTS_machine_refiner.
 

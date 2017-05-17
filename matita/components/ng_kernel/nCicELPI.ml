@@ -76,7 +76,7 @@ let get_program kernel =
       | CSC  -> ["../../elpi"; "../../refiner-CSC"; ],
                 [ "trace_kernel.elpi";
                   "PTS_matita.elpi";
-                  "PTS_refiner_machine.elpi";
+                  "PTS_refiner_engine.elpi";
                   "debug_kernel.elpi";
                 ]
       | _    -> ["../.."; ], []
