@@ -61,9 +61,13 @@ at_end :- $print "context", (ldecs; ldefs).
 
 % univ+pair U1 U2 :- focus, $print "?? univ pair" U1 ">" U2, fail.
 
+% pts+pair S1 S2 :- focus, $print "?? pts pair" S1 ">" S2, fail.
+
+pts+triple S1 S2 S3 :- focus, $print "?? pts triple" S1 "\\/" S2 ">" S3, fail.
+
 %%% For PTS_machine_refiner.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% mcomp T1 S1 M T2 S2 :- focus, $print "?? mcomp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
+% mcomp T1 S1 M T2 S2 :- focus, $print "?? meta comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
 
 %%% For PTS_cic_floating.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -36,12 +36,9 @@ match_sort T I :- whd* T [] (l \ t \ s \ t = sort I, s = []).
 
 type match_arr term -> term -> (term -> term) -> prop.
 match_arr T A F :-
- $print "MA0" T,
  whd* T [] (l \ t \ s \ sigma A' \sigma F' \
   s = [],
-  $print "MA1" (t = arr A' F'),
   t = arr A' F',
-  $print "MA2" A' F',
   put_abbr l A' A,
   pi x \ put_abbr l (F' x) (F x)).
 
@@ -71,7 +68,8 @@ conv T1 T2 :- comp T1 [] eq T2 [].
 sub T1 T2 :- comp T1 [] leq T2 [].
 
 % fast path + axiom rules
-comp T1 S1 _ T1 S1 :- !.
+comp T S _ T S :- !.
+
 comp (sort I) [] leq (sort J) [] :- lt I J.
 % congruence + fast path rule
 comp X S1 _ X S2 :- forall2 S1 S2 conv, !.

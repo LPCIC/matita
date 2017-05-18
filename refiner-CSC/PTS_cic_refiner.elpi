@@ -30,7 +30,5 @@ pts+pair (?? as S1) S2 :- $constraint (pts+pair S1 S2) [S1].
 
 mode (pts+triple i i o).
 pts+triple (?? as S1) (?? as S2) S3 :- !, $constraint (pts+triple S1 S2 S3) [S1, S2].
-pts+triple (?? as S1) (s+type U2) (s+type U3) :- !, $constraint (pts+triple S1 (s+type U2) (s+type U3)) [S1].
-pts+triple (?? as S1) (s+cprop U2) (s+cprop U3) :- !, $constraint (pts+triple S1 (s+type U2) (s+cprop U3)) [S1].
-pts+triple (s+type U1) (?? as S2) (s+type U3) :- !, $constraint (pts+triple (s+type U1) S2 (s+type U3)) [S2].
-pts+triple (s+cprop U1) (?? as S2) (s+cprop U3) :- !, $constraint (pts+triple (s+cprop U1) S2 (s+cprop U3)) [S2].
+pts+triple (?? as S1) S2 S3 :- !, $constraint (pts+triple S1 S2 S3) [S1].
+pts+triple S1 (?? as S2) S3 :- !, $constraint (pts+triple S1 S2 S3) [S2].

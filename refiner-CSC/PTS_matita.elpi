@@ -6,23 +6,13 @@ accumulate environment_matita.
 
 % implementation of the queries from the environment %%%%%%%%%%%%%%%%%%%%%%%%%
 
-has_type T U :- of3 T U' _, of3 U _ RU, sub U' RU.
+has_type T U :- of3 T U' _, of3 U _ RU, sub U' RU, !.
 
-is_type U :- of3 U S' _, match_sort S' _S.
+is_type U :- of3 U S' _, match_sort S' _S, !.
 
-approx T V W :-
-  print "X1",
-  of3 T U' RT,
-  $print "X2" T ":" U' "~" RT,
-  U' = W, RT = V, !.
+approx T V W :- of3 T U' RT, conv U' W, conv RT V, !.
 
-approx_cast T U V :-
-  $print "XC1" T,
-  of3 T U' RT,
-  $print "XC2" T ":" U' "~" RT,
-  of3 U _ RU,
-  $print "XC3 sub" U "~" RU,
-  sub U' RU, RT = V, !.
+approx_cast T U V :- of3 T U' RT, of3 U _ RU, sub U' RU, conv RT V, !.
 
 type ldec term -> term -> prop.
 of3 X W X :- ldec X W.
