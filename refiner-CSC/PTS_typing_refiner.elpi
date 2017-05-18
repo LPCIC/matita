@@ -35,5 +35,12 @@ compat C [V|VS] TC L [Arg|Args] TL K :-
  compat [val V U2 R1 _NF|C] VS TC L Args TL K2,
  K = (H1, H2, H3, K2).
 
-% vim: set ft=lprolog:
+% succ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+mode (succ i o).
+
+% max %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mode (max i i o).
+
+% vim: set ft=lprolog:

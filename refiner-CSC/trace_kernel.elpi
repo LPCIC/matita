@@ -27,33 +27,51 @@ at_end :- $print "context", (ldecs; ldefs).
 
 % TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% llt U1 U2 :- focus, $print (llt U1 U2), fail.
-
-succ S1 S2 :- focus, $print (succ S1 S2), fail.
-
-% max S1 S2 S3 :- focus, $print (max S1 S2 S3), fail.
-
-% has_type T U :- focus, $print (has_type T U), fail.
-
-of3 T U RT :- focus, $print "of3" T "~" RT ":" U, $names X, $print X, fail. % ofs X.
+%%% For PTS_machine.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % whd* T S _ :- focus, $print (whd* T S), fail.
 
-match_sort T S :- focus, $print "match_sort" T "->" S, fail.
+% match_sort T S :- focus, $print "match_sort" T "->" S, fail.
 
 % match_arr TM A1 Bx :- focus, $print (match_arr TM "##" A1 "##" Bx), fail.
 
-comp T1 S1 M T2 S2 :- focus, $print "comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
-
-mcomp T1 S1 M T2 S2 :- focus, $print "mcomp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
+% comp T1 S1 M T2 S2 :- focus, $print "?? comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
 
 % sub U1 U2 :- focus, $print (sub U1 "<=>" U2), fail.
+
+%%% For PTS_typing.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% of3 T U RT :- focus, $print "of3" T "~" RT ":" U, $names X, $print X, fail. % ofs X.
+
+% succ S1 S2 :- focus, $print (succ S1 S2), fail.
+
+% max S1 S2 S3 :- focus, $print (max S1 S2 S3), fail.
+
+%%% For PTS_match.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% comp* T1 S1 M T2 S2 :- focus, $print (comp* T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
+
+%%% For PTS_inductives.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % whd_continue_unwind W _ _ :- focus, $print (whd_continue_unwind W), fail.
 
 % mk_out_type W0 U0 V W P _ _ :- focus, $print (mk_out_type W0 U0 V W P), fail.
 
-% comp* T1 S1 M T2 S2 :- focus, $print (comp* T1 "##" S1 "<=" M "=>" T2 "##" S2), fail.
+%%% For PTS_cic.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% univ+pair U1 U2 :- focus, $print "?? univ pair" U1 ">" U2, fail.
+
+%%% For PTS_machine_refiner.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% mcomp T1 S1 M T2 S2 :- focus, $print "?? mcomp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
+
+%%% For PTS_cic_floating.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% llt U1 U2 :- focus, $print (llt U1 U2), fail.
+
+%%% For PTS_matita.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% has_type T U :- focus, $print (has_type T U), fail.
 
 approx T V W :- $print "?? approx" T "as" V ":" W, at_end.
 

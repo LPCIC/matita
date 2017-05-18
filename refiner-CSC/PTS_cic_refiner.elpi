@@ -1,18 +1,36 @@
 % accumulate before PTS_cic.elpi to refine universes
 
-% succ issued by PTS_typing %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% univ+pair %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-mode (succ i o).
+mode (univ+pair i i).
+univ+pair (?? as U1) (?? as U2) :- $constraint (univ+pair U1 U2) [U1, U2].
+univ+pair (?? as U1) U2 :- $constraint (univ+pair U1 U2) [U1].
+univ+pair U1 (?? as U2) :- $constraint (univ+pair U1 U2) [U2].
 
-succ (?? as S1) S2 :- $constraint (succ S1 S2) [S1].
+% univ+chain %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% max issued by PTS_typing %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+mode (univ+chain i i).
+univ+chain (?? as U1) (?? as U2) :- $constraint (univ+chain U1 U2) [U1, U2].
+univ+chain (?? as U1) U2 :- $constraint (univ+chain U1 U2) [U1].
+univ+chain U1 (?? as U2) :- $constraint (univ+chain U1 U2) [U2].
 
-mode (max i i o).
+% pts+sub %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-max (?? as S1) (?? as S2) S3 :- !, $constraint (max S1 S2 S3) [S1, S2].
+mode (pts+sub i i).
+univ+sub (?? as S1) (?? as S2) :- $constraint (univ+sub S1 S2) [S1, S2].
+univ+sub (?? as S1) S2 :- $constraint (univ+sub S1 S2) [S1].
+univ+sub S1 (?? as S2) :- $constraint (univ+sub S1 S2) [S2].
 
-max (?? as S1) (s+type U2) (s+type U3) :- !, $constraint (max S1 (s+type U2) (s+type U3)) [S1].
-max (?? as S1) (s+cprop U2) (s+cprop U3) :- !, $constraint (max S1 (s+type U2) (s+cprop U3)) [S1].
-max (s+type U1) (?? as S2) (s+type U3) :- !, $constraint (max (s+type U1) S2 (s+type U3)) [S2].
-max (s+cprop U1) (?? as S2) (s+cprop U3) :- !, $constraint (max (s+cprop U1) S2 (s+cprop U3)) [S2].
+% pts+pair %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mode (pts+pair i o).
+pts+pair (?? as S1) S2 :- $constraint (pts+pair S1 S2) [S1].
+
+% pts+triple %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mode (pts+triple i i o).
+pts+triple (?? as S1) (?? as S2) S3 :- !, $constraint (pts+triple S1 S2 S3) [S1, S2].
+pts+triple (?? as S1) (s+type U2) (s+type U3) :- !, $constraint (pts+triple S1 (s+type U2) (s+type U3)) [S1].
+pts+triple (?? as S1) (s+cprop U2) (s+cprop U3) :- !, $constraint (pts+triple S1 (s+type U2) (s+cprop U3)) [S1].
+pts+triple (s+type U1) (?? as S2) (s+type U3) :- !, $constraint (pts+triple (s+type U1) S2 (s+type U3)) [S2].
+pts+triple (s+cprop U1) (?? as S2) (s+cprop U3) :- !, $constraint (pts+triple (s+cprop U1) S2 (s+cprop U3)) [S2].
