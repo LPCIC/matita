@@ -63,7 +63,7 @@ at_end :- $print "context", (ldecs; ldefs).
 
 % pts+pair S1 S2 :- focus, $print "?? pts pair" S1 ">" S2, fail.
 
-pts+triple S1 S2 S3 :- focus, $print "?? pts triple" S1 "\\/" S2 ">" S3, fail.
+% pts+triple S1 S2 S3 :- focus, $print "?? pts triple" S1 "\\/" S2 ">" S3, fail.
 
 %%% For PTS_machine_refiner.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

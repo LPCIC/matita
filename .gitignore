@@ -9,6 +9,8 @@
 *~
 .*.swp
 
+refiner-CSC.html
+
 matita/Makefile.defs
 matita/autom4te.cache
 matita/components/METAS/META*
