@@ -35,6 +35,11 @@ on_object X :- $on_object X. % true if we are checking object X,
                              % X must be a constant produced by NReference.string_of_reference;
                              % false otherwise
 
+type after_object term -> prop.
+after_object X :- $after_object X. % true if we already checked object X,
+                                   % X must be a constant produced by NReference.string_of_reference;
+                                   % false otherwise
+
 % Queries issued by NCicELPI.ml
 
 /* has_type T U: T has expected type U */

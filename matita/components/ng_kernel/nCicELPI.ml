@@ -88,11 +88,13 @@ let get_program kernel =
        let _args = Elpi_API.init (List.flatten args) in
        LPP.parse_program filenames
      end else [] in
-   LPC.program_of_ast ast 
+   LPC.program_of_ast ast
 
 let program = ref (get_program !kernel)
 
 let current = ref None
+
+let seen = ref []
 
 let verbose = ref true
 
@@ -226,12 +228,12 @@ let mk_ldef n w v = LPA.mkApp [LPA.mkCon "ldef"; LPA.mkCon n; w; v]
 
 (* matita to elpi *)
 let rec lp_term d c = function
-   | C.Implicit `Closed 
+   | C.Implicit `Closed
    | C.Implicit `Type
    | C.Implicit `Term      -> mk_hole ()
    | C.Implicit `Vector    -> mk_vect ()
-   | C.Implicit _          -> assert false (* are these cases meaningful? *) 
-   | C.Meta (i, l)         -> 
+   | C.Implicit _          -> assert false (* are these cases meaningful? *)
+   | C.Meta (i, l)         ->
       begin try
          let _, _, v, _ = List.assoc i d in
          lp_term d c (NCicSubstitution.subst_meta status l v)
@@ -255,12 +257,12 @@ and lp_terms d c = function
 
 let lp_context query d c () =
    let rec aux i = function
-      | []                     -> query i  
-      | (_, C.Decl w) :: c     -> 
+      | []                     -> query i
+      | (_, C.Decl w) :: c     ->
          let n = mk_name i in
          let w = lp_term d i w in
          mk_pi_impl n (mk_ldec n w) (aux (succ i) c)
-      | (_, C.Def (v, w)) :: c -> 
+      | (_, C.Def (v, w)) :: c ->
          let n = mk_name i in
          let w = lp_term d i w in
          let v = lp_term d i v in
@@ -320,6 +322,8 @@ let mk_int ~depth i =
 
 let mk_eq t1 t2 = LPD.App (LPD.Constants.eqc, t1, [t2])
 
+let mk_true ~depth = LPC.term_of_ast ~depth (LPA.mkCon "true")
+
 let show = LPD.Constants.show
 
 let dummy = LPD.Constants.dummy
@@ -373,9 +377,14 @@ let get_fixpoint ~depth ~env:_ _ = function
 
 let on_object ~depth ~env:_ _ args = match args, !current with
    | [t1], Some t ->
-      let t = lp_term [] 0 t in
       [mk_eq (mk_term ~depth t) t1]
    | _            -> fail ()
+
+let after_object ~depth ~env:_ _ args = match args with
+   | [t1] ->
+      let pred t = mk_term ~depth t = t1 in
+      if List.exists pred !seen then [mk_true ~depth] else fail ()
+   | _    -> fail ()
 
 (* initialization ***********************************************************)
 
@@ -385,7 +394,8 @@ let _ =
    LPR.register_custom "$get_constructor" get_constructor;
    LPR.register_custom "$get_inductive" get_inductive;
    LPR.register_custom "$get_fixpoint" get_fixpoint;
-   LPR.register_custom "$on_object" on_object
+   LPR.register_custom "$on_object" on_object;
+   LPR.register_custom "$after_object" after_object
 
 (* interface ****************************************************************)
 
@@ -425,11 +435,14 @@ let at_exit () =
 let trace_options = ref []
 let typecheck = ref false
 
-let execute r query =
+let execute kind r query =
    let str = R.string_of_reference r in
    if !verbose then Printf.printf "?? %s\n%!" str;
-   current := Some (C.Const r);
+   let t = lp_term [] 0 (C.Const r) in
+   current := Some t;
    let result, msg = try
+      if kind && not !validate then error "not validating";
+      if not kind && not !refine then error "not refining";
       let query = LPC.query_of_ast !program (query ()) in
       if !typecheck then LPC.typecheck !program query;
       Elpi_API.trace !trace_options;
@@ -439,32 +452,22 @@ let execute r query =
          OK, "OK"
       with Error s -> Skip s, "OO"
    in
-   if !verbose then Printf.printf "%s %s\n%!" msg str; result
+   if !verbose then Printf.printf "%s %s\n%!" msg str;
+   if kind then seen := t :: !seen;
+ result
 
 let is_type r u =
-   if !validate then
-      let query () = Ploc.dummy, mk_is_type (lp_term [] 0 u) in
-      execute r query
-   else
-      Skip "not validating"
+   let query () = Ploc.dummy, mk_is_type (lp_term [] 0 u) in
+   execute true r query
 
 let has_type r t u =
-   if !validate then
-      let query () = Ploc.dummy, mk_has_type (lp_term [] 0 t) (lp_term [] 0 u) in
-      execute r query
-   else
-      Skip "not validating"
+   let query () = Ploc.dummy, mk_has_type (lp_term [] 0 t) (lp_term [] 0 u) in
+   execute true r query
 
 let approx r d c t v w =
-   if !refine then
-      let query i = mk_approx (lp_term d i t) (lp_term d i v) (lp_term d i w) in
-      execute r (lp_context query d c)
-   else
-      Skip "not refining"
+   let query i = mk_approx (lp_term d i t) (lp_term d i v) (lp_term d i w) in
+   execute false r (lp_context query d c)
 
 let approx_cast r d c t u v =
-   if !refine then
-      let query i = mk_approx_cast (lp_term d i t) (lp_term d i u) (lp_term d i v) in
-      execute r (lp_context query d c)
-   else
-      Skip "not refining"
+   let query i = mk_approx_cast (lp_term d i t) (lp_term d i u) (lp_term d i v) in
+   execute false r (lp_context query d c)

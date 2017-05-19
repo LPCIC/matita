@@ -31,6 +31,12 @@ val cache_on: unit -> unit
 (* actions to take at exit, if any *)
 val at_exit: unit -> unit
 
+(* execute kernel queries: is_type, has_type *)
+val validate: bool ref
+
+(* execute refiner queries: approx, approx_cast *)
+val refine: bool ref
+
 (* is_type r u is OK if the type of u is a sort *)
 val is_type: NReference.reference -> NCic.term -> outcome
 
