@@ -3,23 +3,23 @@
 % univ+pair %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mode (univ+pair i i).
-univ+pair (?? as U1) (?? as U2) :- $constraint (univ+pair U1 U2) [U1, U2].
-univ+pair (?? as U1) U2 :- $constraint (univ+pair U1 U2) [U1].
-univ+pair U1 (?? as U2) :- $constraint (univ+pair U1 U2) [U2].
+univ+pair (?? as U1) (?? as U2) :- !, $constraint (univ+pair U1 U2) [U1, U2].
+univ+pair (?? as U1) U2 :- !, $constraint (univ+pair U1 U2) [U1].
+univ+pair U1 (?? as U2) :- !, $constraint (univ+pair U1 U2) [U2].
 
 % univ+chain %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mode (univ+chain i i).
-univ+chain (?? as U1) (?? as U2) :- $constraint (univ+chain U1 U2) [U1, U2].
-univ+chain (?? as U1) U2 :- $constraint (univ+chain U1 U2) [U1].
-univ+chain U1 (?? as U2) :- $constraint (univ+chain U1 U2) [U2].
+univ+chain (?? as U1) (?? as U2) :- !, $constraint (univ+chain U1 U2) [U1, U2].
+univ+chain (?? as U1) U2 :- !, $constraint (univ+chain U1 U2) [U1].
+univ+chain U1 (?? as U2) :- !, $constraint (univ+chain U1 U2) [U2].
 
 % pts+sub %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mode (pts+sub i i).
-univ+sub (?? as S1) (?? as S2) :- $constraint (univ+sub S1 S2) [S1, S2].
-univ+sub (?? as S1) S2 :- $constraint (univ+sub S1 S2) [S1].
-univ+sub S1 (?? as S2) :- $constraint (univ+sub S1 S2) [S2].
+univ+sub (?? as S1) (?? as S2) :- !, $constraint (univ+sub S1 S2) [S1, S2].
+univ+sub (?? as S1) S2 :- !, $constraint (univ+sub S1 S2) [S1].
+univ+sub S1 (?? as S2) :- !, $constraint (univ+sub S1 S2) [S2].
 
 % pts+pair %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -29,6 +29,7 @@ pts+pair (?? as S1) S2 :- $constraint (pts+pair S1 S2) [S1].
 % pts+triple %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mode (pts+triple i i o).
+% pts+triple (?? as S) S S :- !. % fast path for idempotency
 pts+triple (?? as S1) (?? as S2) S3 :- !, $constraint (pts+triple S1 S2 S3) [S1, S2].
 pts+triple (?? as S1) S2 S3 :- !, $constraint (pts+triple S1 S2 S3) [S1].
 pts+triple S1 (?? as S2) S3 :- !, $constraint (pts+triple S1 S2 S3) [S2].

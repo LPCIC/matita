@@ -16,6 +16,7 @@ lle U1 U2 :- univ+chain U1 U2.
 mode (leq i i).
 
 % meta, meta: ??
+% leq (?? as A) A :- !. % fast path for reflexivity
 leq (?? as A) (?? as B) :- !, $constraint (leq A B) [A, B].
 
 % meta can be prop, cprop, or type: ??
