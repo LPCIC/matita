@@ -11,8 +11,8 @@ focus :- after_object cic:/matita/basics/relations/reflexive#def:2.
 
 % UTILITIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-trace P :- if focus ($print "----<<---- enter: " {$counter "run"} P), P, if focus ($print "---->>---- exit: " P), !.
-trace P :- if focus ($print "---->>---- fail: " P), fail.
+trace S P :- if focus ($print "----<<---- enter: " S {$counter "run"} P), P, if focus ($print "---->>---- exit: " S P), !.
+trace S P :- if focus ($print "---->>---- fail: " S P), fail.
 
 vals :- val X T N NF, focus, $print "VAL" X "##" T "##" N "##" NF, fail.
 
@@ -31,21 +31,21 @@ at_end :- $print "context", (ldecs; ldefs).
 
 % whd* T S _ :- focus, $print (whd* T S), fail.
 
-% match_sort T S :- focus, $print "match_sort" T "->" S, fail.
+match_sort T S :- focus, $print "match_sort" T "->" S, fail.
 
-% match_arr TM A1 Bx :- focus, $print (match_arr TM "##" A1 "##" Bx), fail.
+match_arr TM A1 Bx :- focus, $print (match_arr TM "##" A1 "##" Bx), fail.
 
-% comp T1 S1 M T2 S2 :- focus, $print "?? comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
+comp T1 S1 M T2 S2 :- focus, $print "?? comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
 
 % sub U1 U2 :- focus, $print (sub U1 "<=>" U2), fail.
 
 %%% For PTS_typing.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% of3 T U RT :- focus, $print "of3" T "~" RT ":" U, $names X, $print X, fail. % ofs X.
+of3 T U RT :- focus, $print "of3" T "~" RT ":" U, $names X, $print X, fail. % ofs X.
 
-% succ S1 S2 :- focus, $print (succ S1 S2), fail.
+succ S1 S2 :- focus, $print (succ S1 S2), fail.
 
-% max S1 S2 S3 :- focus, $print (max S1 S2 S3), fail.
+max S1 S2 S3 :- focus, $print (max S1 S2 S3), fail.
 
 %%% For PTS_match.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -77,6 +77,6 @@ at_end :- $print "context", (ldecs; ldefs).
 
 % has_type T U :- focus, $print (has_type T U), fail.
 
-approx T V W :- $print "?? approx" T "as" V ":" W, at_end.
+approx T V W :- focus, $print "?? approx" T "as" V ":" W, at_end.
 
-approx_cast T U V :- $print "?? approx cast" T ":" U "as" V, at_end.
+approx_cast T U V :- focus, $print "?? approx cast" T ":" U "as" V, at_end.

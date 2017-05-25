@@ -32,7 +32,7 @@ whd_unwind N NF :-
  whd* N [] (l \ t \ s \ sigma TS \ unwind_stack s t TS, put_abbr l TS NF).
 
 type match_sort term -> @univ -> prop.
-match_sort T I :- whd* T [] (l \ t \ s \ t = sort I, s = []).
+match_sort T I :- whd* T [] (l \ t \ s \ trace "MS" (t = sort I), s = []).
 
 type match_arr term -> term -> (term -> term) -> prop.
 match_arr T A F :-
