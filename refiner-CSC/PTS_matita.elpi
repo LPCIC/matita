@@ -13,10 +13,10 @@ is_type U :- of3 U S' _, match_sort S' _S, !.
 approx T V W :- of3 T U' RT, conv U' W, conv RT V, !.
 
 approx_cast T U V :-
-  trace "XC1" (of3 T U' RT),
-  trace "XC2" (of3 U _ RU),
-  trace "XC3" (sub U' RU),
-  trace "XC4" (conv RT V), !.
+  of3 T U' RT,
+  of3 U _ RU,
+  sub U' RU,
+  conv RT V, !.
 
 type ldec term -> term -> prop.
 of3 X W X :- ldec X W.
