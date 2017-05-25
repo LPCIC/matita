@@ -10,6 +10,6 @@
 
 % put_abbr XS I O :- focus, $print (put_abbr++failure XS "##" I "##" O), fail.
 
-approx T V W :- focus, $print "KO approx" T "as" V ":" W, at_end.
+% approx T V W :- focus, $print "KO approx" T "as" V ":" W, at_end.
 
-approx_cast T U V :- focus, $print "KO approx cast" T ":" U "as" V, at_end.
+% approx_cast T U V :- focus, $print "KO approx cast" T ":" U "as" V, at_end.
