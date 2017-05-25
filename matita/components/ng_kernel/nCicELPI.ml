@@ -100,7 +100,7 @@ let verbose = ref true
 
 let caching = ref false
 
-let validate = ref false
+let validate = ref true
 
 let refine = ref true
 
