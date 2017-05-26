@@ -1314,7 +1314,7 @@ let typecheck_obj status (uri,height,metasenv,subst,kind) =
       (*check_relevance status ~in_type:false ~subst ~metasenv relevance te*)
 (* FG: extension for ELPI *)
       let r = Ref.reference_of_spec uri (Ref.Def height) in
-      let time,res = LP.has_type r te ty in
+      let time,res = LP.has_type status r te ty in
       log res ;
       time
       )
@@ -1326,7 +1326,7 @@ let typecheck_obj status (uri,height,metasenv,subst,kind) =
       ) (fun () ->
 (* FG: extension for ELPI *)
       let r = Ref.reference_of_spec uri Ref.Decl in
-      let time,res = LP.is_type r ty in
+      let time,res = LP.is_type status r ty in
       log res ;
       time
       )

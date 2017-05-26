@@ -38,13 +38,13 @@ val validate: bool ref
 val refine: bool ref
 
 (* is_type r u is OK if the type of u is a sort *)
-val is_type: NReference.reference -> NCic.term -> float*outcome
+val is_type: #NCic.status -> NReference.reference -> NCic.term -> float*outcome
 
 (* has_type r t u is OK if the type of t is u *)
-val has_type: NReference.reference -> NCic.term -> NCic.term -> float*outcome
+val has_type: #NCic.status -> NReference.reference -> NCic.term -> NCic.term -> float*outcome
 
 (* approx s c r t v w is OK if v of inferred type w refines t in context c and subst s *)
-val approx: NReference.reference -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome
+val approx: #NCic.status -> NReference.reference -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome
 
 (* approx_cast r s c t u v is OK if v refines t of expected type u in context c and subst s *)
-val approx_cast: NReference.reference -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome
+val approx_cast: #NCic.status -> NReference.reference -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome

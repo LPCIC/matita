@@ -214,6 +214,8 @@ let mk_gref r = LPA.mkCon (R.string_of_reference r)
 
 let mk_sort s = LPA.mkApp [mk_head SORT; mk_univ s]
 
+let mk_meta l = LPA.mkApp (LPA.mkFreshUVar ()::l)
+
 let mk_prod n w t = LPA.mkApp [mk_head PROD; w; LPA.mkLam (mk_name n) t]
 
 let mk_abst n w t = LPA.mkApp [mk_head ABST; w; LPA.mkLam (mk_name n) t]
@@ -241,52 +243,56 @@ let mk_ldec n w = LPA.mkApp [LPA.mkCon "ldec"; LPA.mkCon n; w]
 let mk_ldef n w v = LPA.mkApp [LPA.mkCon "ldef"; LPA.mkCon n; w; v]
 
 (* matita to elpi *)
-let rec lp_term d c = function
+let rec lp_term status d c = function
    | C.Implicit `Closed
    | C.Implicit `Type
    | C.Implicit `Term      -> mk_hole ()
    | C.Implicit `Vector    -> mk_vect ()
    | C.Implicit _          -> assert false (* are these cases meaningful? *)
-   | C.Meta (i, l)         ->
+   | C.Meta (i, (liftno,lc as l))         ->
       begin try
          let _, _, v, _ = List.assoc i d in
-         lp_term d c (NCicSubstitution.subst_meta status l v)
-      with Not_found -> error "meta here" (* for now we process just closed terms *)
+         lp_term status d c (NCicSubstitution.subst_meta status l v)
+      with Not_found ->
+       let lc = NCicUtils.expand_local_context lc in
+       let lc = List.map (NCicSubstitution.lift status liftno) lc in
+       let lc = List.map (lp_term status d c) lc in
+       (*mk_meta lc*) error "meta here" (* uncomment to use fresh metas *)
       end
    | C.Rel i               -> mk_lref c i
    | C.Const r             -> mk_gref r
    | C.Sort s              -> mk_sort s
-   | C.Prod (_, w, t)      -> mk_prod c (lp_term d c w) (lp_term d (succ c) t)
-   | C.Lambda (_, w, t)    -> mk_abst c (lp_term d c w) (lp_term d (succ c) t)
-   | C.LetIn (_, w, v, t)  -> mk_abbr c (lp_term d c w) (lp_term d c v) (lp_term d (succ c) t)
+   | C.Prod (_, w, t)      -> mk_prod c (lp_term status d c w) (lp_term status d (succ c) t)
+   | C.Lambda (_, w, t)    -> mk_abst c (lp_term status d c w) (lp_term status d (succ c) t)
+   | C.LetIn (_, w, v, t)  -> mk_abbr c (lp_term status d c w) (lp_term status d c v) (lp_term status d (succ c) t)
    | C.Appl []             -> assert false
-   | C.Appl [t]            -> lp_term d c t
-   | C.Appl [t; v]         -> mk_appl (lp_term d c t) (lp_term d c v)
-   | C.Appl (t :: v :: vs) -> lp_term d c (C.Appl (C.Appl [t; v] :: vs))
-   | C.Match (r, u, v, ts) -> mk_case (mk_gref r) (lp_term d c v) (lp_term d c u) (lp_terms d c ts)
+   | C.Appl [t]            -> lp_term status d c t
+   | C.Appl [t; v]         -> mk_appl (lp_term status d c t) (lp_term status d c v)
+   | C.Appl (t :: v :: vs) -> lp_term status d c (C.Appl (C.Appl [t; v] :: vs))
+   | C.Match (r, u, v, ts) -> mk_case (mk_gref r) (lp_term status d c v) (lp_term status d c u) (lp_terms status d c ts)
 
-and lp_terms d c = function
+and lp_terms status d c = function
    | []      -> mk_nil
-   | v :: vs -> mk_cons (lp_term d c v) (lp_terms d c vs)
+   | v :: vs -> mk_cons (lp_term status d c v) (lp_terms status d c vs)
 
-let lp_context query d c () =
+let lp_context status query d c () =
    let rec aux i = function
       | []                     -> query i
       | (_, C.Decl w) :: c     ->
          let n = mk_name i in
-         let w = lp_term d i w in
+         let w = lp_term status d i w in
          mk_pi_impl n (mk_ldec n w) (aux (succ i) c)
       | (_, C.Def (v, w)) :: c ->
          let n = mk_name i in
-         let w = lp_term d i w in
-         let v = lp_term d i v in
+         let w = lp_term status d i w in
+         let v = lp_term status d i v in
          mk_pi_impl n (mk_ldef n w v) (aux (succ i) c)
    in
    Ploc.dummy, aux 0 (List.rev c)
 
 let split_type r =
    let aux () =
-      let _, u = rt_gref r in lp_term [] 0 u
+      let _, u = rt_gref r in lp_term status [] 0 u
    in
    if !caching then match QH.find_all cache (QueryType, r) with
       | [GetType x] -> x
@@ -299,7 +305,7 @@ let split_type r =
 
 let split_expansion r =
    let aux () = match rt_gref r with
-      | Some (h, t), _ -> h, lp_term [] 0 t
+      | Some (h, t), _ -> h, lp_term status [] 0 t
       | _              -> fail ()
    in
    if !caching then match QH.find_all cache (QueryExpansion, r) with
@@ -465,7 +471,7 @@ let execute engine r query =
    let str = R.string_of_reference r in
    let str = str ^ " (" ^ (match engine with Kernel -> "kernel" | Refiner -> "refiner") ^ ")" in
    if !verbose then Printf.printf "ELPI ?? %s\n%!" str;
-   let t = lp_term [] 0 (C.Const r) in
+   let t = lp_term status [] 0 (C.Const r) in
    current := Some t;
    let time, (result, msg) = try
       if engine = Kernel && not !validate then error "not validating";
@@ -493,18 +499,18 @@ let execute engine r query =
    if engine = Kernel then seen := t :: !seen;
    time,result
 
-let is_type r u =
-   let query () = Ploc.dummy, mk_is_type (lp_term [] 0 u) in
+let is_type status r u =
+   let query () = Ploc.dummy, mk_is_type (lp_term status [] 0 u) in
    execute Kernel r query
 
-let has_type r t u =
-   let query () = Ploc.dummy, mk_has_type (lp_term [] 0 t) (lp_term [] 0 u) in
+let has_type status r t u =
+   let query () = Ploc.dummy, mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) in
    execute Kernel r query
 
-let approx r d c t v w =
-   let query i = mk_approx (lp_term d i t) (lp_term d i v) (lp_term d i w) in
-   execute Refiner r (lp_context query d c)
+let approx status r d c t v w =
+   let query i = mk_approx (lp_term status d i t) (lp_term status d i v) (lp_term status d i w) in
+   execute Refiner r (lp_context status query d c)
 
-let approx_cast r d c t u v =
-   let query i = mk_approx_cast (lp_term d i t) (lp_term d i u) (lp_term d i v) in
-   execute Refiner r (lp_context query d c)
+let approx_cast status r d c t u v =
+   let query i = mk_approx_cast (lp_term status d i t) (lp_term status d i u) (lp_term status d i v) in
+   execute Refiner r (lp_context status query d c)
