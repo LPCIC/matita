@@ -31,7 +31,10 @@ of3 (arr A B) (sort K) (arr RA RB) :- !,
   match_sort TA I,
   (pi x\ of3 x RA x => (
     %CSC: scommentando la riga dopo cambia il comportamento di ELPI
+    %$dprint "P2.4" (B x),
     %$print "P2.5" (B x),
+    $deref (B x),
+    %$dprint "P2.6" (B x),
     of3 (B x) (TB x) (RB x),
     match_sort (TB x) J
     )
