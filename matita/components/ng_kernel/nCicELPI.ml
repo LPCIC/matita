@@ -114,7 +114,7 @@ let caching = ref false
 
 let validate = ref true
 
-let refine = ref false
+let refine = ref true
 
 (* guess based on nat.ma *)
 let cache_size = 223
@@ -470,7 +470,7 @@ let execute engine r query =
          Fail, "KO"
       else
          OK, "OK"
-      with Error s -> Skip s, "OO"
+      with Error s -> Skip s, "OO[" ^ s ^ "]"
    in
    if !verbose then Printf.printf "ELPI %s %s\n%!" msg str;
    if engine = Kernel then seen := t :: !seen;
