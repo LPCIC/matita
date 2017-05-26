@@ -1158,6 +1158,7 @@ and eat_prods status ~localise force_ty metasenv subst context expty orig_t orig
 (* FG: extension for ELPI *)
 let total_matita_time = ref 0.0
 let total_elpi_time = ref 0.0
+let total_query_elpi_time = ref 0.0
 
 let _ =
  at_exit
@@ -1165,7 +1166,9 @@ let _ =
     print_endline ("Matita whole refinement time: " ^
      string_of_float !total_matita_time) ;
     print_endline ("ELPI whole refinement time: " ^
-     string_of_float !total_elpi_time));
+     string_of_float !total_elpi_time);
+    print_endline ("ELPI whole query-refinement time: " ^
+     string_of_float !total_query_elpi_time));
  at_exit LP.at_exit
 ;;
 
@@ -1180,17 +1183,27 @@ let typeof status ?localise
   let res = typeof status ?localise metasenv subst context term expty in
   let _, _, refined_term, ty = res in
   let t1 = now () in
-  begin match expty with
-     | `XTNone       -> log (LP.approx !current subst context term refined_term ty)
-     | `XTSome expty -> log (LP.approx_cast !current subst context term expty refined_term)
-     | _             -> ()
-  end;
+  let skipped = function LP.Skip _ -> true | _ -> false in
+  let tdiff,skipped = begin match expty with
+     | `XTNone       ->
+        let tdiff, res = LP.approx !current subst context term refined_term ty in
+        log res ;
+        tdiff, skipped res
+     | `XTSome expty ->
+        let tdiff, res = LP.approx_cast !current subst context term expty refined_term in
+        log res ;
+        tdiff, skipped res
+     | _             -> 0., true
+  end in
   let t2 = now () in
   let d1, d2 = t1 -. t0, t2 -. t1 in
-  total_matita_time := !total_matita_time +. d1 ;
-  total_elpi_time := !total_elpi_time +. d2;
-  Printf.printf "Matita refinement time: %f\n" d1;
-  Printf.printf "ELPI refinement time: %f\n" d2;
+  if not skipped then begin
+   total_matita_time := !total_matita_time +. d1 ;
+   total_elpi_time := !total_elpi_time +. d2;
+   total_query_elpi_time := !total_query_elpi_time +. tdiff;
+   Printf.printf "Matita refinement time: %f\n" d1;
+   Printf.printf "ELPI refinement time: %f\n" d2;
+  end ;
   res 
 (*FG: end of extension for ELPI *)
 

@@ -27,6 +27,7 @@ let log = function
 
 let total_matita_time = ref 0.0
 let total_elpi_time = ref 0.0
+let total_query_elpi_time = ref 0.0
 
 let _ =
  at_exit
@@ -34,7 +35,9 @@ let _ =
     print_endline ("Matita whole type-checking time: " ^
      string_of_float !total_matita_time) ;
     print_endline ("ELPI whole type-checking time: " ^
-     string_of_float !total_elpi_time));
+     string_of_float !total_elpi_time);
+    print_endline ("ELPI whole query-type-checking time: " ^
+     string_of_float !total_query_elpi_time));
  at_exit LP.at_exit
 
 let now () =
@@ -45,11 +48,12 @@ let benchmark f g =
  let t0 = now () in
  f () ;
  let t1 = now () in
- g () ;
+ let tdiff = g () in
  let t2 = now () in
  let d1, d2 = t1 -. t0, t2 -. t1 in
  total_matita_time := !total_matita_time +. d1 ;
  total_elpi_time := !total_elpi_time +. d2;
+ total_query_elpi_time := !total_query_elpi_time +. tdiff;
  Printf.printf "Matita type-checking time: %f\n" d1;
  Printf.printf "ELPI type-checking time: %f\n" d2
 (*FG: end of extension for ELPI *)
@@ -1310,7 +1314,9 @@ let typecheck_obj status (uri,height,metasenv,subst,kind) =
       (*check_relevance status ~in_type:false ~subst ~metasenv relevance te*)
 (* FG: extension for ELPI *)
       let r = Ref.reference_of_spec uri (Ref.Def height) in
-      log (LP.has_type r te ty)
+      let time,res = LP.has_type r te ty in
+      log res ;
+      time
       )
 (* FG: end of extension for ELPI *)
    | C.Constant (relevance,_,None,ty,_) ->
@@ -1320,7 +1326,9 @@ let typecheck_obj status (uri,height,metasenv,subst,kind) =
       ) (fun () ->
 (* FG: extension for ELPI *)
       let r = Ref.reference_of_spec uri Ref.Decl in
-      log (LP.is_type r ty)
+      let time,res = LP.is_type r ty in
+      log res ;
+      time
       )
 (* FG: end of extension for ELPI *)
    | C.Inductive (_, leftno, tyl, _) -> 

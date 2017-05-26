@@ -467,7 +467,7 @@ let execute engine r query =
    if !verbose then Printf.printf "ELPI ?? %s\n%!" str;
    let t = lp_term [] 0 (C.Const r) in
    current := Some t;
-   let result, msg = try
+   let time, (result, msg) = try
       if engine = Kernel && not !validate then error "not validating";
       if engine = Refiner && not !refine then error "not refining";
       let program = match engine with
@@ -484,13 +484,14 @@ let execute engine r query =
       else
          OK, "OK" in
       let t1 = Unix.gettimeofday () in
-      total_query_time := !total_query_time +. (t1 -. t0);
-      res
-      with Error s -> Skip s, "OO[" ^ s ^ "]"
+      let timediff = t1 -. t0 in
+      total_query_time := !total_query_time +. timediff;
+      timediff,res
+      with Error s -> 0.,(Skip s, "OO[" ^ s ^ "]")
    in
    if !verbose then Printf.printf "ELPI %s %s\n%!" msg str;
    if engine = Kernel then seen := t :: !seen;
-   result
+   time,result
 
 let is_type r u =
    let query () = Ploc.dummy, mk_is_type (lp_term [] 0 u) in
