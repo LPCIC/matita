@@ -1156,16 +1156,41 @@ and eat_prods status ~localise force_ty metasenv subst context expty orig_t orig
 ;;
 
 (* FG: extension for ELPI *)
+let total_matita_time = ref 0.0
+let total_elpi_time = ref 0.0
+
+let _ =
+ at_exit
+  (fun () ->
+    print_endline ("Matita whole refinement time: " ^
+     string_of_float !total_matita_time) ;
+    print_endline ("ELPI whole refinement time: " ^
+     string_of_float !total_elpi_time));
+ at_exit LP.at_exit
+;;
+
+let now () =
+  Unix.gettimeofday ()
+  (*let {Unix.tms_utime = u; _} = Unix.times () in u*)
+
 let typeof status ?localise 
   metasenv subst context term expty 
 =
+  let t0 = now () in
   let res = typeof status ?localise metasenv subst context term expty in
   let _, _, refined_term, ty = res in
+  let t1 = now () in
   begin match expty with
      | `XTNone       -> log (LP.approx !current subst context term refined_term ty)
      | `XTSome expty -> log (LP.approx_cast !current subst context term expty refined_term)
      | _             -> ()
   end;
+  let t2 = now () in
+  let d1, d2 = t1 -. t0, t2 -. t1 in
+  total_matita_time := !total_matita_time +. d1 ;
+  total_elpi_time := !total_elpi_time +. d2;
+  Printf.printf "Matita refinement time: %f\n" d1;
+  Printf.printf "ELPI refinement time: %f\n" d2;
   res 
 (*FG: end of extension for ELPI *)
 

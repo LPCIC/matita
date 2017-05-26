@@ -38,7 +38,8 @@ let _ =
  at_exit LP.at_exit
 
 let now () =
-  let {Unix.tms_utime = u; _} = Unix.times () in u
+  Unix.gettimeofday ()
+  (*let {Unix.tms_utime = u; _} = Unix.times () in u*)
 
 let benchmark f g =
  let t0 = now () in
