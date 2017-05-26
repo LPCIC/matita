@@ -63,45 +63,46 @@ let kernel = ref NO
 
 let error s = raise (Error s)
 
-let get_program kernel engine =
-   let paths, filenames = match kernel, engine with
-      | FG 0, _      -> ["../../elpi"; "../../lib"; "../../refiner-ALT-0"; ],
-                        [ "debug_front.elpi";
-                          "kernel_matita.elpi";
-                          "kernel.elpi";
-                          "debug_end.elpi";
-                        ]
-      | FG 1, _      -> [   "../../elpi"; "../../lib"; "../../refiner-ALT-1"; ],
-                        [ "kernel_trace.elpi";
-                          "kernel.elpi";
-                          "kernel_matita.elpi";
-                        ]
-      | CSC, Kernel  -> [ "../../elpi"; "../../refiner-CSC"; ],
-                        [ "trace_kernel.elpi";
-                          "PTS_matita.elpi";
-                          "PTS_kernel_engine.elpi";
-                          "debug_kernel.elpi";
-                        ]
-      | CSC, Refiner -> [ "../../elpi"; "../../refiner-CSC"; ],
-                        [ "trace_kernel.elpi";
-                          "PTS_matita.elpi";
-                          "PTS_refiner_engine.elpi";
-                          "debug_kernel.elpi";
-                        ]
-      | _            -> [ "../.."; ], []
+let get_program kernel =
+   let paths, (filenames_kernel, filenames_refiner) = match kernel with
+      | FG 0      -> ["../../elpi"; "../../lib"; "../../refiner-ALT-0"; ],
+                     let p =
+                     [ "debug_front.elpi";
+                       "kernel_matita.elpi";
+                       "kernel.elpi";
+                       "debug_end.elpi";
+                     ] in p,p
+      | FG 1      -> [   "../../elpi"; "../../lib"; "../../refiner-ALT-1"; ],
+                     let p =
+                     [ "kernel_trace.elpi";
+                       "kernel.elpi";
+                       "kernel_matita.elpi";
+                     ] in p,p
+      | CSC  -> [ "../../elpi"; "../../refiner-CSC"; ],
+                ([ "trace_kernel.elpi";
+                  "PTS_matita.elpi";
+                  "PTS_kernel_engine.elpi";
+                  "debug_kernel.elpi";
+                ],
+                [ "trace_kernel.elpi";
+                  "PTS_matita.elpi";
+                  "PTS_refiner_engine.elpi";
+                  "debug_kernel.elpi";
+                ])
+      | _            -> [ "../.."; ], ([], [])
    in
-   let ast =
-     if filenames <> [] then begin
+   let ast_kernel,ast_refiner =
+     if filenames_kernel <> [] then begin
        let paths = List.map (Filename.concat matita_dir) paths in
        let args = List.map (fun x -> ["-I";x]) paths in
        let _args = Elpi_API.init (List.flatten args) in
-       LPP.parse_program filenames
-     end else [] in
-   LPC.program_of_ast ast
+       LPP.parse_program filenames_kernel, LPP.parse_program filenames_refiner
+     end else [],[] in
+   LPC.program_of_ast ast_kernel, LPC.program_of_ast ast_refiner
 
-let kernel_program = ref (get_program !kernel Kernel)
-
-let refiner_program = ref (get_program !kernel Refiner)
+let kernel_program, refiner_program =
+ let kernel,refiner = get_program !kernel in
+ ref kernel, ref refiner
 
 let current = ref None
 
@@ -412,8 +413,9 @@ let _ =
 
 let set_kernel e =
    kernel := e;
-   kernel_program := get_program e Kernel;
-   refiner_program := get_program e Refiner
+   let program_ker, program_ref = get_program e in
+   kernel_program := program_ker;
+   refiner_program := program_ref
 
 (* Note: to be replaced by String.uppercase_ascii *)
 let set_kernel_from_string s = match String.uppercase s with
