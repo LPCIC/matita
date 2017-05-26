@@ -452,6 +452,15 @@ let at_exit () =
 let trace_options = ref []
 let typecheck = ref false
 
+let total_query_time = ref 0.0
+
+let _ =
+ Pervasives.at_exit
+  (fun () ->
+    print_endline ("ELPI whole query-execution time: " ^
+     string_of_float !total_query_time))
+;;
+
 let execute engine r query =
    let str = R.string_of_reference r in
    let str = str ^ " (" ^ (match engine with Kernel -> "kernel" | Refiner -> "refiner") ^ ")" in
@@ -468,10 +477,15 @@ let execute engine r query =
       let query = LPC.query_of_ast program (query ()) in
       if !typecheck then LPC.typecheck program query;
       Elpi_API.trace !trace_options;
+      let t0 = Unix.gettimeofday () in
+      let res =
       if LPR.execute_once program ~print_constraints:!print_constraints query then
          Fail, "KO"
       else
-         OK, "OK"
+         OK, "OK" in
+      let t1 = Unix.gettimeofday () in
+      total_query_time := !total_query_time +. (t1 -. t0);
+      res
       with Error s -> Skip s, "OO[" ^ s ^ "]"
    in
    if !verbose then Printf.printf "ELPI %s %s\n%!" msg str;
