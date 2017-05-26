@@ -402,6 +402,16 @@ let _ =
 let set_kernel e =
    kernel := e; program := get_program e
 
+let start_stop_elpi =
+ let saved_kernel = ref !kernel in
+ function ~start ->
+  if start then
+   kernel := !saved_kernel
+  else begin
+   saved_kernel := !kernel ;
+   kernel := NO
+  end
+
 (* Note: to be replaced by String.uppercase_ascii *)
 let set_kernel_from_string s = match String.uppercase s with
    | "NO"  -> set_kernel NO

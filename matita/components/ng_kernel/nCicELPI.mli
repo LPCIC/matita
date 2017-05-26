@@ -16,6 +16,9 @@ type outcome = private Skip of string
 (* use this kernel: valid values "NO" (default), "CSC", "FG0", "FG1" *)
 val set_kernel_from_string: string -> unit
 
+(* stops/restart elpi *)
+val start_stop_elpi: start:bool -> unit
+
 (* trace options *)
 val trace_options : string list ref
 
