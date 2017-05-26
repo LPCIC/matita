@@ -108,7 +108,9 @@ let current = ref None
 
 let seen = ref []
 
-let verbose = ref true
+let verbose = ref false
+
+let print_constraints = ref true
 
 let caching = ref false
 
@@ -466,7 +468,7 @@ let execute engine r query =
       let query = LPC.query_of_ast program (query ()) in
       if !typecheck then LPC.typecheck program query;
       Elpi_API.trace !trace_options;
-      if LPR.execute_once program ~print_constraints:!verbose query then
+      if LPR.execute_once program ~print_constraints:!print_constraints query then
          Fail, "KO"
       else
          OK, "OK"
