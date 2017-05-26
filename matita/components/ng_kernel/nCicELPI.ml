@@ -452,7 +452,8 @@ let typecheck = ref false
 
 let execute engine r query =
    let str = R.string_of_reference r in
-   if !verbose then Printf.printf "?? %s\n%!" str;
+   let str = str ^ " (" ^ (match engine with Kernel -> "kernel" | Refiner -> "refiner") ^ ")" in
+   if !verbose then Printf.printf "ELPI ?? %s\n%!" str;
    let t = lp_term [] 0 (C.Const r) in
    current := Some t;
    let result, msg = try
@@ -471,7 +472,7 @@ let execute engine r query =
          OK, "OK"
       with Error s -> Skip s, "OO"
    in
-   if !verbose then Printf.printf "%s %s\n%!" msg str;
+   if !verbose then Printf.printf "ELPI %s %s\n%!" msg str;
    if engine = Kernel then seen := t :: !seen;
    result
 
