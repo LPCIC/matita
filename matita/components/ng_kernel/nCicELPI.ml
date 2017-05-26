@@ -26,6 +26,9 @@ module LPX = Elpi_custom (* registers the custom predicates, if we need them *)
 
 exception Error of string
 
+type engine = Kernel
+            | Refiner
+
 type outcome = Skip of string
              | Fail
              | OK
@@ -60,26 +63,32 @@ let kernel = ref NO
 
 let error s = raise (Error s)
 
-let get_program kernel =
-   let paths, filenames = match kernel with
-      | FG 0 -> ["../../elpi"; "../../lib"; "../../refiner-ALT-0"; ],
-                ["debug_front.elpi";
-                 "kernel_matita.elpi";
-                 "kernel.elpi";
-                 "debug_end.elpi";
-                ]
-      | FG 1 -> ["../../elpi"; "../../lib"; "../../refiner-ALT-1"; ],
-                [ "kernel_trace.elpi";
-                  "kernel.elpi";
-                  "kernel_matita.elpi";
-                ]
-      | CSC  -> ["../../elpi"; "../../refiner-CSC"; ],
-                [ "trace_kernel.elpi";
-                  "PTS_matita.elpi";
-                  "PTS_refiner_engine.elpi";
-                  "debug_kernel.elpi";
-                ]
-      | _    -> ["../.."; ], []
+let get_program kernel engine =
+   let paths, filenames = match kernel, engine with
+      | FG 0, _      -> ["../../elpi"; "../../lib"; "../../refiner-ALT-0"; ],
+                        [ "debug_front.elpi";
+                          "kernel_matita.elpi";
+                          "kernel.elpi";
+                          "debug_end.elpi";
+                        ]
+      | FG 1, _      -> [   "../../elpi"; "../../lib"; "../../refiner-ALT-1"; ],
+                        [ "kernel_trace.elpi";
+                          "kernel.elpi";
+                          "kernel_matita.elpi";
+                        ]
+      | CSC, Kernel  -> [ "../../elpi"; "../../refiner-CSC"; ],
+                        [ "trace_kernel.elpi";
+                          "PTS_matita.elpi";
+                          "PTS_kernel_engine.elpi";
+                          "debug_kernel.elpi";
+                        ]
+      | CSC, Refiner -> [ "../../elpi"; "../../refiner-CSC"; ],
+                        [ "trace_kernel.elpi";
+                          "PTS_matita.elpi";
+                          "PTS_refiner_engine.elpi";
+                          "debug_kernel.elpi";
+                        ]
+      | _            -> [ "../.."; ], []
    in
    let ast =
      if filenames <> [] then begin
@@ -90,7 +99,9 @@ let get_program kernel =
      end else [] in
    LPC.program_of_ast ast
 
-let program = ref (get_program !kernel)
+let kernel_program = ref (get_program !kernel Kernel)
+
+let refiner_program = ref (get_program !kernel Refiner)
 
 let current = ref None
 
@@ -102,7 +113,7 @@ let caching = ref false
 
 let validate = ref true
 
-let refine = ref true
+let refine = ref false
 
 (* guess based on nat.ma *)
 let cache_size = 223
@@ -400,17 +411,9 @@ let _ =
 (* interface ****************************************************************)
 
 let set_kernel e =
-   kernel := e; program := get_program e
-
-let start_stop_elpi =
- let saved_kernel = ref !kernel in
- function ~start ->
-  if start then
-   kernel := !saved_kernel
-  else begin
-   saved_kernel := !kernel ;
-   kernel := NO
-  end
+   kernel := e;
+   kernel_program := get_program e Kernel;
+   refiner_program := get_program e Refiner
 
 (* Note: to be replaced by String.uppercase_ascii *)
 let set_kernel_from_string s = match String.uppercase s with
@@ -445,39 +448,43 @@ let at_exit () =
 let trace_options = ref []
 let typecheck = ref false
 
-let execute kind r query =
+let execute engine r query =
    let str = R.string_of_reference r in
    if !verbose then Printf.printf "?? %s\n%!" str;
    let t = lp_term [] 0 (C.Const r) in
    current := Some t;
    let result, msg = try
-      if kind && not !validate then error "not validating";
-      if not kind && not !refine then error "not refining";
-      let query = LPC.query_of_ast !program (query ()) in
-      if !typecheck then LPC.typecheck !program query;
+      if engine = Kernel && not !validate then error "not validating";
+      if engine = Refiner && not !refine then error "not refining";
+      let program = match engine with
+         | Kernel  -> !kernel_program
+         | Refiner -> !refiner_program
+      in
+      let query = LPC.query_of_ast program (query ()) in
+      if !typecheck then LPC.typecheck program query;
       Elpi_API.trace !trace_options;
-      if LPR.execute_once !program ~print_constraints:!verbose query then
+      if LPR.execute_once program ~print_constraints:!verbose query then
          Fail, "KO"
       else
          OK, "OK"
       with Error s -> Skip s, "OO"
    in
    if !verbose then Printf.printf "%s %s\n%!" msg str;
-   if kind then seen := t :: !seen;
- result
+   if engine = Kernel then seen := t :: !seen;
+   result
 
 let is_type r u =
    let query () = Ploc.dummy, mk_is_type (lp_term [] 0 u) in
-   execute true r query
+   execute Kernel r query
 
 let has_type r t u =
    let query () = Ploc.dummy, mk_has_type (lp_term [] 0 t) (lp_term [] 0 u) in
-   execute true r query
+   execute Kernel r query
 
 let approx r d c t v w =
    let query i = mk_approx (lp_term d i t) (lp_term d i v) (lp_term d i w) in
-   execute false r (lp_context query d c)
+   execute Refiner r (lp_context query d c)
 
 let approx_cast r d c t u v =
    let query i = mk_approx_cast (lp_term d i t) (lp_term d i u) (lp_term d i v) in
-   execute false r (lp_context query d c)
+   execute Refiner r (lp_context query d c)

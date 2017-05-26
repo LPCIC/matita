@@ -128,8 +128,10 @@ let init_debugging_menu gui =
         );
     addDebugCheckbox "Elpi typecheck"
       (fun mi () -> NCicELPI.typecheck := mi#active);
-    addDebugCheckbox "Elpi active" ~init:true
-      (fun mi () -> NCicELPI.start_stop_elpi mi#active);
+    addDebugCheckbox "Elpi kernel" ~init:true
+      (fun mi () -> NCicELPI.validate := mi#active);
+    addDebugCheckbox "Elpi refiner" ~init:true
+      (fun mi () -> NCicELPI.refine := mi#active);
   end
   (** Debugging }}} *)
 
