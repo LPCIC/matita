@@ -6,8 +6,8 @@ mode (val i o o o).
 mode (whd1 i i o).
 whd1 ?? _ _ :- fail.
 
-mode (whd** i i o).
-whd** (?? as X) S K L :- K L X S.
+%%%mode (whd** i i o).
+%%%whd** (?? as X) S K L :- K L X S.
 
 mode (comp i i i i i).
 

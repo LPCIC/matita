@@ -22,24 +22,24 @@ whd1 (abbr T N F1) NS K :- !,
  K [x] (F1 x) NS.
 whd1 X S K :- val X _ N NF, if (is_flex NF) (whd_unwind N NF), !, K [] NF S.
 
-%%%type whd*_inner @whd_continuation -> @vars -> @whd_continuation.
-%%%type whd*_outer @whd_continuation -> @whd_continuation.
-%%%type whd* term -> list term -> @whd_continuation -> prop.
-%%%% Reflexive, transitive closure
-%%%whd*_inner K VL1 VL2 T2 S2 :- append VL1 VL2 VL, K VL T2 S2.
-%%%whd*_outer K VL1 T1 S1 :- whd* T1 S1 (whd*_inner K VL1).
-%%%whd* T1 S1 K :- whd1 T1 S1 (whd*_outer K), !.
-%%%whd* T1 S1 K :- K [] T1 S1.
-
-type whd** term -> list term -> @whd_continuation -> list term -> prop.
+type whd*_inner @whd_continuation -> @vars -> @whd_continuation.
+type whd*_outer @whd_continuation -> @whd_continuation.
 type whd* term -> list term -> @whd_continuation -> prop.
-% KAM-like rules in CPS style
-whd** (app M N) S K L :- !, whd** M [N|S] K L.
-whd** (lam T F1) [N|NS] K L :- !, pi x \ val x T N _NF => whd** (F1 x) NS K [x|L].
-whd** (abbr T N F1) NS K L :- !, pi x \ val x T N _NF => whd** (F1 x) NS K [x|L].
-whd** X S K :- val X _ N NF, if (is_flex NF) (whd_unwind N NF), !, whd** NF S K L.
-whd** T S K L :- K L T S.
-whd* T S K :- whd** T S K [].
+% Reflexive, transitive closure
+whd*_inner K VL1 VL2 T2 S2 :- append VL1 VL2 VL, K VL T2 S2.
+whd*_outer K VL1 T1 S1 :- whd* T1 S1 (whd*_inner K VL1).
+whd* T1 S1 K :- whd1 T1 S1 (whd*_outer K), !.
+whd* T1 S1 K :- K [] T1 S1.
+
+%%%type whd** term -> list term -> @whd_continuation -> list term -> prop.
+%%%type whd* term -> list term -> @whd_continuation -> prop.
+%%%% KAM-like rules in CPS style
+%%%whd** (app M N) S K L :- !, whd** M [N|S] K L.
+%%%whd** (lam T F1) [N|NS] K L :- !, pi x \ val x T N _NF => whd** (F1 x) NS K [x|L].
+%%%whd** (abbr T N F1) NS K L :- !, pi x \ val x T N _NF => whd** (F1 x) NS K [x|L].
+%%%whd** X S K :- val X _ N NF, if (is_flex NF) (whd_unwind N NF), !, whd** NF S K L.
+%%%whd** T S K L :- K L T S.
+%%%whd* T S K :- whd** T S K [].
 
 type whd_unwind_inner term -> @whd_continuation.
 type whd_unwind term -> term -> prop.
