@@ -19,7 +19,9 @@ approx_cast T U V :-
   conv RT V, !.
 
 type ldec term -> term -> prop.
+mode (ldec i o).
 of3 X W X :- ldec X W.
 
 type ldef term -> term -> term -> prop.
+mode (ldef i o o o).
 val X W V NF :- ldef X W V.
