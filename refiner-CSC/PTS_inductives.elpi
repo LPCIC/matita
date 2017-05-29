@@ -1,6 +1,8 @@
 % PTS extension with inductive types and recursive functions
 % accumulate after PTS_machine.elpi, and before PTS_global.elpi
 
+macro @whd_unwind_continuation :- term -> @stack -> term -> @stack -> prop.
+
 % match W U V A: match V with constructors of ind. type W, and select branch in A of type U
 type match term -> term -> term -> list term -> term.
 
@@ -13,10 +15,13 @@ type match_trame term -> term -> list term -> @stack -> @stack.
 forall2 (match_trame W U1 A1 P1) (match_trame W U2 A2 P2) F :-
  F U1 U2, forall2 A1 A2 F, forall2 P1 P2 F.
 
+type whd_continue_unwind_inner @whd_unwind_continuation -> term -> @whd_continuation.
+type whd_continue_unwind term -> @whd_unwind_continuation -> term -> prop.
 % Whd followed by continuation and machine unwinding.
-type whd_continue_unwind term -> (term -> @stack -> term -> @stack -> prop) -> term -> prop.
+whd_continue_unwind_inner K NF L T1 S1 :-
+ K T1 S1 T2 S2, unwind_stack S2 T2 TS, put_abbr L TS NF.
 whd_continue_unwind N K NF :-
- whd* N [] (l \ t1 \ s1 \ sigma t2 \ sigma s2 \ sigma TS \ K t1 s1 t2 s2, unwind_stack s2 t2 TS, put_abbr l TS NF).
+ whd* N [] (whd_continue_unwind_inner K NF).
 
 % REDUCTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

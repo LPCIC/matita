@@ -3,14 +3,23 @@
 
 % HELPERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+type comp*_sn term -> @stack -> conversion_mode -> @whd_continuation.
 type conv*_sn term -> @stack -> conversion_mode -> term -> @stack -> prop.
-conv*_sn T1 S1 M T2 S2 :- whd* T1 S1 (_\ T\ S\ comp* T S M T2 S2).
+%
+comp*_sn T2 S2 M _ T S :- comp* T S M T2 S2.
+conv*_sn T1 S1 M T2 S2 :- whd* T1 S1 (comp*_sn T2 S2 M).
 
+type comp*_dx term -> @stack -> conversion_mode -> @whd_continuation.
 type conv*_dx term -> @stack -> conversion_mode -> term -> @stack -> prop.
-conv*_dx T1 S1 M T2 S2 :- whd* T2 S2 (_\ T\ S\ comp* T1 S1 M T S).
+%
+comp*_dx T1 S1 M _ T S :- comp* T1 S1 M T S.
+conv*_dx T1 S1 M T2 S2 :- whd* T2 S2 (comp*_dx T1 S1 M).
 
+type conv*_dx_sn term -> @stack -> conversion_mode -> @whd_continuation.
 type conv* term -> @stack -> conversion_mode -> term -> @stack -> prop.
-conv* T1 S1 M T2 S2 :- whd* T1 S1 (_\ T\ S\ conv*_dx T S M T2 S2).
+%
+conv*_dx_sn T2 S2 M _ T S :- conv*_dx T S M T2 S2.
+conv* T1 S1 M T2 S2 :- whd* T1 S1 (conv*_dx_sn T2 S2 M).
 
 type comp* term -> @stack -> conversion_mode -> term -> @stack -> prop.
 
@@ -30,11 +39,10 @@ comp* (arr W1 F1) [] (on_match_type W K S [] [_|DX]) (arr W2 F2) [] :- !,
   pi x\ conv* (F1 x) [] (on_match_type W K S [] DX) (F2 x) [].
 
 % final checks (on_match_type).
+comp*_inner W1 K SN1 _ W S :- 
+  W = W1, split S K SN DX, forall2 SN1 SN conv.
 comp* (sort YI) [] (on_match_type W1 K SN1 [] []) (arr W2 F2) [] :-
-  whd* W2 []
-    (_\ W\ S\ sigma SN\ sigma DX\
-      W = W1, split S K SN DX, forall2 SN1 SN conv
-    ),
+  whd* W2 [] (comp*_inner W1 K SN1),
   pi x\ conv*_dx (sort YI) [] on_match_proj (F2 x) [].
 
 % projectability (on_match_proj)
