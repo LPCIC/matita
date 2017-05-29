@@ -67,5 +67,9 @@ mk_out_type W U V TS RW RU RA W S RU DXV :-
  append DX [V] DXV.
 
 % not complete, we do not check allowed sort elimination
+% W = inductive type matched on
+% U = out-type (used to compute the type of the branches)
+% V = scrutinee
+% A = branches
 of3 (match W U V A) X (match RW RU RV RA) :-
  of3 V W1 RV, whd_continue_unwind W1 (mk_out_type W U RV A RW RU RA) X.
