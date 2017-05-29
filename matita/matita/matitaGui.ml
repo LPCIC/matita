@@ -775,8 +775,7 @@ class gui () =
         (Helm_registry.get_bool "matita.paste_unicode_as_tex");
         (* log *)
       HLog.set_log_callback (fun tag msg ->
-       prerr_endline msg;
-       GtkThread.async (self#console#log_callback tag) msg
+        GtkThread.async (self#console#log_callback tag) msg
       );
 
       GtkSignal.user_handler :=

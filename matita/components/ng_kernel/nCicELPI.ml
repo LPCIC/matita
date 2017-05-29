@@ -108,7 +108,7 @@ let current = ref None
 
 let seen = ref []
 
-let verbose = ref false
+let verbose = ref true
 
 let print_constraints = ref true
 
