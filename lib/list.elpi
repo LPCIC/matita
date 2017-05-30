@@ -3,6 +3,9 @@
 append [] YS YS.
 append [X|XS] YS [X|ZS] :- append XS YS ZS.
 
+rev_append [] YS YS.
+rev_append [X|XS] YS ZS :- rev_append XS [X|YS] ZS.
+
 nth [X|_] 0 X :- !.
 nth [_|XS] M X :- N is M - 1, nth XS N X.
 
@@ -23,6 +26,3 @@ mem [_|XS] X :- mem XS X.
 
 fold_left [] _ Y Y.
 fold_left [X|XS] R Y Z :- fold_left XS R (R Y X) Z.
-
-rev [] YS YS.
-rev [X|XS] YS ZS :- rev XS YS [X|ZS].

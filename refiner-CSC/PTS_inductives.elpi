@@ -32,17 +32,12 @@ get_branch [V|P] J T P1 [V|P2] :- get_branch P J T P1 P2.
 
 % wind for match
 whd1 (match W U V A) P C :- C [] V (match_trame W U A P).
-whd** (match W U V A) P L C :- !, whd** V (match_trame W U A P) L C.
 
 % iota for match
 % note: the left arguments must be removed
 whd1 T1 P1 C :- get_constructor T1 J K, !,
                 get_branch P1 J T2 P A, split A K SN DX, append DX P P2,
                 C [] T2 P2.
-
-whd** T1 P1 L C :- get_constructor T1 J K, !,
-                   get_branch P1 J T2 P A, split A K SN DX, append DX P P2,
-                   whd** T2 P2 L.
 
 % unwind for match
 unwind_stack (match_trame W U A P) V1 V2 :-

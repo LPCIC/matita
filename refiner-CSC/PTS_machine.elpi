@@ -37,7 +37,15 @@ whd** (app M N) S L K :- !, whd** M [N|S] L K.
 whd** (lam T F1) [N|NS] L K :- !, pi x \ val x T N _NF => whd** (F1 x) NS [x|L] K.
 whd** (abbr T N F1) NS L K :- !, pi x \ val x T N _NF => whd** (F1 x) NS [x|L] K.
 whd** X S L K :- val X _ N NF, if (is_flex NF) (whd_unwind N NF), !, whd** NF S L K.
-whd** T S L1 K :- rev L1 L2 [] , K L2 T S.
+% from PTS_inductives.elpi
+whd** (match W U V A) P L C :- !, whd** V (match_trame W U A P) L C.
+whd** T1 P1 L C :- get_constructor T1 J K,
+                   get_branch P1 J T2 P A, split A K SN DX, append DX P P2,
+                   !, whd** T2 P2 L C.
+% from PTS_global.elpi
+whd** T1 S1 L K :- env T1 _ T2, expand T1 S1 S2, !, whd** T2 S2 L K.
+%
+whd** T S L1 K :- rev_append L1 [] L2, K L2 T S.
 whd* T S K :- whd** T S [] K.
 
 type whd_unwind_inner term -> @whd_continuation.
