@@ -49,7 +49,7 @@ check_height T1 P1 _ U1 M T2 P2 _ U2 :- ifnot (expand_dx T1 P1 M T2 U2 P2)
 
 % FORCED DELTA (WHD*) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-whd* T1 S1 K :- env T1 _ T2, !, expand T1 S1 S2, whd* T2 S2 K.
+%% whd* T1 S1 K :- env T1 _ T2, !, expand T1 S1 S2, whd* T2 S2 K.
 whd** T1 S1 L K :- env T1 _ T2, !, expand T1 S1 S2, whd** T2 S2 L K.
 
 % INTERFACE WITH ENVIRONMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
