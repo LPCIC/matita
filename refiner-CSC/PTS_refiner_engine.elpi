@@ -5,15 +5,5 @@ accumulate PTS_cic_refiner.
 accumulate PTS_typing_refiner.
 accumulate PTS_machine_refiner.
 
-% kernel
-accumulate PTS_cic.
-accumulate PTS_typing.
-accumulate PTS_abbr_typing.
-accumulate PTS_machine.
-accumulate PTS_match.
-accumulate PTS_inductives.
-accumulate PTS_global.
-
 % tests
 % accumulate test_refiner.
-% accumulate test_kernel_cic.

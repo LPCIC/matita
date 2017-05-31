@@ -64,32 +64,41 @@ let kernel = ref NO
 let error s = raise (Error s)
 
 let get_program kernel =
-   let paths, (filenames_kernel, filenames_refiner) = match kernel with
-      | FG 0      -> ["../../elpi"; "../../lib"; "../../refiner-ALT-0"; ],
-                     let p =
-                     [ "debug_front.elpi";
-                       "kernel_matita.elpi";
-                       "kernel.elpi";
-                       "debug_end.elpi";
-                     ] in p,p
-      | FG 1      -> [   "../../elpi"; "../../lib"; "../../refiner-ALT-1"; ],
-                     let p =
-                     [ "kernel_trace.elpi";
-                       "kernel.elpi";
-                       "kernel_matita.elpi";
-                     ] in p,p
+   let paths, filenames_kernel, filenames_refiner = match kernel with
+      | FG 0 -> ["../../elpi"; "../../lib"; "../../refiner-ALT-0"; ],
+                [ "debug_front.elpi";
+                  "kernel_matita.elpi";
+                  "kernel.elpi";
+                  "debug_end.elpi";
+                ],
+                [ "debug_front.elpi";
+                  "kernel_matita.elpi";
+                  "kernel.elpi";
+                  "debug_end.elpi";
+                ]
+      | FG 1 -> [ "../../elpi"; "../../lib"; "../../refiner-ALT-1"; ],
+                [ "kernel_trace.elpi";
+                  "kernel.elpi";
+                  "kernel_matita.elpi";
+                ],
+                [ "kernel_trace.elpi";
+                  "kernel.elpi";
+                  "kernel_matita.elpi";
+                ]
       | CSC  -> [ "../../elpi"; "../../refiner-CSC"; ],
-                ([ "trace_kernel.elpi";
+                [ "trace_kernel.elpi";
                   "PTS_kernel_engine.elpi";
                   "PTS_matita.elpi";
                   "debug_kernel.elpi";
                 ],
                 [ "trace_kernel.elpi";
                   "PTS_refiner_engine.elpi";
+                  "PTS_matita_refiner.elpi";
+                  "PTS_kernel_engine.elpi";
                   "PTS_matita.elpi";
                   "debug_kernel.elpi";
-                ])
-      | _            -> [ "../.."; ], ([], [])
+                ]
+      | _    -> [ "../.."; ], [], []
    in
    let ast_kernel,ast_refiner =
      if filenames_kernel <> [] then begin
@@ -435,10 +444,13 @@ let set_kernel_from_string s = match String.uppercase s with
    | _     -> ()
 
 let prints_off () =
-   verbose := false
+   verbose := false;
+   print_constraints := false
 
 let cache_on () =
    caching := true
+
+let total_query_time = ref 0.0
 
 let at_exit () =
 (*
@@ -453,21 +465,15 @@ let at_exit () =
 *)
    if !caching then begin
       Printf.eprintf "cache length: %u\n%!" (QH.length cache)
-   end
+   end;
+   print_endline ("ELPI whole query-execution time: " ^
+      string_of_float !total_query_time
+   )
 
 let trace_options = ref []
 let typecheck = ref false
 
-let total_query_time = ref 0.0
-
-let _ =
- Pervasives.at_exit
-  (fun () ->
-    print_endline ("ELPI whole query-execution time: " ^
-     string_of_float !total_query_time))
-;;
-
-let execute engine r query =
+let execute engine status r query =
    let str = R.string_of_reference r in
    let str = str ^ " (" ^ (match engine with Kernel -> "kernel" | Refiner -> "refiner") ^ ")" in
    if !verbose then Printf.printf "ELPI ?? %s\n%!" str;
@@ -501,16 +507,16 @@ let execute engine r query =
 
 let is_type status r u =
    let query () = Ploc.dummy, mk_is_type (lp_term status [] 0 u) in
-   execute Kernel r query
+   execute Kernel status r query
 
 let has_type status r t u =
    let query () = Ploc.dummy, mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) in
-   execute Kernel r query
+   execute Kernel status r query
 
 let approx status r d c t v w =
    let query i = mk_approx (lp_term status d i t) (lp_term status d i v) (lp_term status d i w) in
-   execute Refiner r (lp_context status query d c)
+   execute Refiner status r (lp_context status query d c)
 
 let approx_cast status r d c t u v =
    let query i = mk_approx_cast (lp_term status d i t) (lp_term status d i u) (lp_term status d i v) in
-   execute Refiner r (lp_context status query d c)
+   execute Refiner status r (lp_context status query d c)

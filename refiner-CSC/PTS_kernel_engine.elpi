@@ -1,3 +1,4 @@
+% kernel
 accumulate PTS_cic.
 accumulate PTS_typing.
 accumulate PTS_abbr_typing.
@@ -5,4 +6,6 @@ accumulate PTS_machine.
 accumulate PTS_match.
 accumulate PTS_inductives.
 accumulate PTS_global.
+
+% tests
 % accumulate test_kernel_cic.
