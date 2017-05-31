@@ -26,8 +26,10 @@ comp (?? as V1) [] M T2 S2 :- val X _ _ _, V1 = X, comp V1 [] M T2 S2, !.
 comp (?? as V1) [] _ T2 S2 :-
  append S21 [S2l] S2,
  V1 = app X Y, comp X [] eq T2 S21, comp Y [] eq S2l [].
+
 % regular mimic rules
-comp (?? as V1) [] M T2 [] :- mcomp V1 M T2. % mcomp used generatively
+comp (?? as V1) [] M T2 [] :- mcompoii V1 M T2. % mcomp used generatively
+
 % variables and constants
 comp (?? as V1) [] M T2 [] :- V1 = T2.
 
@@ -37,6 +39,31 @@ comp (?? as V1) [] M T2 S2 :- whd1 T2 S2 (comp_dx V1 [] M).
 % FAIL
 comp ?? [] _ _ _ :- !, fail. % to avoid falling back in the fast path of the
                              % kernel
+
+mode (mcomp o i i) xas mcompoii, (mcomp i i o) xas mcompiio.
+
+% MIMIC
+%mcompoii V1 M (?? as V2) :-
+% $print "FLEX-FLEX CASEoii: " V1 V2,
+% V1 = V2,  %is_llam in ELPI is bugged!
+% $print "FLEX-FLEXoii CASE DONE: " V1 V2,
+% $dprint "FLEX-FLEXoii CASE DONE: " V1 V2.
+
+%mcompiio (?? as V1) M V2 :-
+% $print "FLEX-FLEX CASEiio: " V1 V2,
+% V1 = V2,  %is_llam in ELPI is bugged!
+% $print "FLEX-FLEXiio CASE DONE: " V1 V2,
+% $dprint "FLEX-FLEXiio CASE DONE: " V1 V2.
+
+mcompoii V1 M (?? as V2) :- !,
+ $print "FLEX-FLEX CASEoii: " V1 V2,
+ $constraint ($print "--- FLEX-FLEX-CASEoii RESUMED ----" (comp V1 [] M V2 []), comp V1 [] M V2 [], $print "<<< FLEX-FLEX-CASEoii (RESUMED) COMPLETED" (comp V1 [] M V2 [])) [V1,V2],
+ $print "FLEX-FLEXoii CASE DELAYED".
+
+mcompiio (?? as V1) M V2 :- !,
+ $print "FLEX-FLEX CASEiio: " V1 V2,
+ $constraint ($print "--- FLEX-FLEX-CASEiio RESUMED ----" (comp V1 [] M V2 []), comp V1 [] M V2 [], $print "<<< FLEX-FLEX-CASEiio (RESUMED) COMPLETED" (comp V1 [] M V2 [])) [V1,V2],
+ $print "FLEX-FLEXiio CASE DELAYED".
 
 % MIMIC
 mcomp (sort I) eq (sort I) :- !.
@@ -63,7 +90,7 @@ comp T2 S2 _ (?? as V1) [] :-
  append S21 [S2l] S2,
  V1 = app X Y, comp T2 S21 eq X [], comp S2l [] eq Y [].
 % regular mimic rules
-comp T2 [] M (?? as V1) [] :- mcomp T2 M V1. % mcomp used generatively
+comp T2 [] M (?? as V1) [] :- mcompiio T2 M V1. % mcomp used generatively
 % variables and constants
 comp T2 [] M (?? as V1) [] :- V1 = T2.
 

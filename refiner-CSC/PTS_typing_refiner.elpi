@@ -11,7 +11,14 @@ match_sort (?? as S) U :- !, $constraint (match_sort S U) [S].
 % of3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mode (of3 i o o).
-of3 (?? as T) U RT :- !, $constraint (of3 T U RT) [T].
+of3 (?? as T) U RT :- !, $constraint (of3bidir T U RT) [T].
+
+of3bidir T (?? as TY) T' :-
+ !, of3 T TY T'.
+
+of3bidir T TY T' :-
+ of3 T TY' T',
+ sub TY' TY.
 
 of3 hole U RT :- !, of3 T U RT.
 
