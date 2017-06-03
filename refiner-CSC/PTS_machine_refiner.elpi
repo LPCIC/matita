@@ -82,7 +82,7 @@ comp T2 L2 M (?? as T1) [A|AS] :-
  of3 A TA RA, T1 = lam TA F, pi x \ val x TA RA _NF => comp T2 L2 M (F x) AS.
 
 % PROJECTION
-comp T2 S2 M (?? as V1) :- val X _ _ _, V1 = X, comp T2 S2 M V1 [], !.
+comp T2 S2 M (?? as V1) [] :- val X _ _ _, V1 = X, comp T2 S2 M V1 [], !.
 
 % MIMIC
 % non empty stack = application
