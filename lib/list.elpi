@@ -15,6 +15,9 @@ split [Z|ZS] M [Z|XS] YS :- N is M - 1, split ZS N XS YS.
 subst [X|ZS] 0 R [Y|ZS] :- !, R X Y.
 subst [Z|XS] M R [Z|YS] :- N is M - 1, subst XS N R YS.
 
+forall [] _.
+forall [X|XS] R :- R X, forall XS R.
+
 forall2 [] [] _.
 forall2 [X|XS] [Y|YS] R :- R X Y, forall2 XS YS R.
 

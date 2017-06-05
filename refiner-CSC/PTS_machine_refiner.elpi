@@ -7,6 +7,18 @@ whd1 ?? _ _ :- fail.
 mode (whd** i i o i).
 whd** (?? as X) S L K :- K L X S.
 
+mode (occur_check i i).
+occur_check (?? _ L1 as V1) (?? as V2) :-
+ !, not ($is_same_flex V1 V2),
+ forall L1 (x \ occur_check x V2).
+occur_check (sort _) _ :- !.
+occur_check (app A B) X :- !, occur_check A X, occur_check B X.
+occur_check (lam TY F) X :- !,
+ occur_check TY X, pi x \ occur_check (F x) X.
+occur_check (arr TY F) X :- !,
+ occur_check TY X, pi x \ occur_check (F x) X.
+occur_check V X :- val V _ T _, !, occur_check T X.
+occur_check T V :- !. % for non-let-bound variables
 mode (comp i i i i i).
 
 comp A1 S1 M A2 S2 :- $print "COMP" (comp A1 S1 M A2 S2), fail.
@@ -41,7 +53,9 @@ comp (?? as V1) [] _ T2 S2 :-
  V1 = app X Y, comp X [] eq T2 S21, comp Y [] eq S2l [].
 
 % regular mimic rules
-comp (?? as V1) [] M T2 [] :- mcompoii V1 M T2. % mcomp used generatively
+comp (?? as V1) [] M T2 [] :-
+ ifnot (occur_check T2 V1) ($print "OCCUR CHECK FAILED FOR" (comp V1 [] M T2 []), fail),
+ mcompoii V1 M T2. % mcomp used generatively
 
 % variables and constants
 comp (?? as V1) [] M T2 [] :- V1 = T2.
@@ -108,7 +122,9 @@ comp T2 S2 _ (?? as V1) [] :-
  append S21 [S2l] S2,
  V1 = app X Y, comp T2 S21 eq X [], comp S2l [] eq Y [].
 % regular mimic rules
-comp T2 [] M (?? as V1) [] :- mcompiio T2 M V1. % mcomp used generatively
+comp T2 [] M (?? as V1) [] :-
+ ifnot (occur_check T2 V1) ($print "OCCUR CHECK FAILED FOR" (comp T2 [] M V1 []), fail),
+ mcompiio T2 M V1. % mcomp used generatively
 % variables and constants
 comp T2 [] M (?? as V1) [] :- V1 = T2.
 
