@@ -21,8 +21,6 @@ occur_check V X :- val V _ T _, !, occur_check T X.
 occur_check T V :- !. % for non-let-bound variables
 mode (comp i i i i i).
 
-comp A1 S1 M A2 S2 :- $print "COMP" (comp A1 S1 M A2 S2), fail.
-
 % These two redundant rules are here to turn an (app X t) into an X
 % such that X is later detected as flexible in the rule for projection
 % (to limit projections)
