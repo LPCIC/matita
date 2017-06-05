@@ -28,10 +28,10 @@ of3 (app M vect) TM RM :- of3 M TM RM.
 of3 (app M vect) U RT :-
   of3 M TM RM, ifelse (is_flex TM) fail (of3 (app (app RM hole) vect) U RT).
 
-% constraint of3 val {
+constraint of3 val ldef ldec comp mcomp match_sort {
 %   rule (G1 ?- of3 (?? as X1) T1 _) \ (G2 ?- of3 (?? as X2) T2 _) > X1 = X2
 %     | ($match_frozen X1 _ L1, $match_frozen X2 _ L2, is_canonical L1, compat G1 L1 T1 G2 L2 T2 L3) <=> L3.
-% }
+}
 
 is_canonical [].
 is_canonical [X|XS] :- $is_name X, not (mem XS X), is_canonical XS.
