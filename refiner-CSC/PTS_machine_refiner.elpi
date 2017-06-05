@@ -9,15 +9,30 @@ whd** (?? as X) S L K :- K L X S.
 
 mode (comp i i i i i).
 
-%%%%%%%%%% BUG/TODO:
-% - Mancano casi X vs X e X vs Y
+comp A1 S1 M A2 S2 :- $print "COMP" (comp A1 S1 M A2 S2), fail.
+
+% These two redundant rules are here to turn an (app X t) into an X
+% such that X is later detected as flexible in the rule for projection
+% (to limit projections)
+comp (app T1 T2) S1 M V2 S2 :- comp T1 [T2|S1] M V2 S2. 
+comp V2 S2 M (app T1 T2) S1 :- comp V2 S2 M T1 [T2|S1]. 
+
+comp (?? as V1) S1 M (?? as V2) S2 :- !,
+ $print "FLEX-FLEX COMP: " (comp V1 S1 M V2 S2),
+ $constraint ($print "--- FLEX-FLEX-COMP RESUMED ----" (comp V1 S1 M V2 S2), comp V1 S1 M V2 S2, $print "<<< FLEX-FLEX-COMP (RESUMED) COMPLETED" (comp V1 S1 M V2 S2)) [V1,V2],
+ $print "FLEX-FLEX-COMP DELAYED".
 
 % T1 :- lam TYA F  + beta step
 comp (?? as T1) [A|AS] M T2 L2 :-
  of3 A TA RA, T1 = lam TA F, pi x \ val x TA RA _NF => comp (F x) AS M T2 L2.
 
 % PROJECTION
-comp (?? as V1) [] M T2 S2 :- val X _ _ _, V1 = X, comp V1 [] M T2 S2, !.
+comp (?? as V1) [] M T2 S2 :-
+ val X _ B _,
+ not (is_flex B),
+ V1 = X,
+ comp V1 [] M T2 S2,
+ !.
 
 % MIMIC
 % non empty stack = application
@@ -80,7 +95,12 @@ comp T2 L2 M (?? as T1) [A|AS] :-
  of3 A TA RA, T1 = lam TA F, pi x \ val x TA RA _NF => comp T2 L2 M (F x) AS.
 
 % PROJECTION
-comp T2 S2 M (?? as V1) [] :- val X _ _ _, V1 = X, comp T2 S2 M V1 [], !.
+comp T2 S2 M (?? as V1) [] :-
+ val X _ B _,
+ not (is_flex B),
+ V1 = X,
+ comp T2 S2 M V1 [],
+ !.
 
 % MIMIC
 % non empty stack = application
