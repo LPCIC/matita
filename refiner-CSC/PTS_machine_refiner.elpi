@@ -24,8 +24,8 @@ mode (comp i i i i i).
 % These two redundant rules are here to turn an (app X t) into an X
 % such that X is later detected as flexible in the rule for projection
 % (to limit projections)
-comp (app T1 T2) S1 M V2 S2 :- comp T1 [T2|S1] M V2 S2. 
-comp V2 S2 M (app T1 T2) S1 :- comp V2 S2 M T1 [T2|S1]. 
+comp (app T1 T2) S1 M V2 S2 :- !, comp T1 [T2|S1] M V2 S2. 
+comp V2 S2 M (app T1 T2) S1 :- !, comp V2 S2 M T1 [T2|S1]. 
 
 comp (?? as V1) S1 M (?? as V2) S2 :- !,
  $print "FLEX-FLEX COMP: " (comp V1 S1 M V2 S2),
