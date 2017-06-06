@@ -29,8 +29,10 @@ comp V2 S2 M (app T1 T2) S1 :- !, comp V2 S2 M T1 [T2|S1].
 
 comp (?? as V1) S1 M (?? as V2) S2 :- !,
  $print "FLEX-FLEX COMP: " (comp V1 S1 M V2 S2),
- $constraint ($print "--- FLEX-FLEX-COMP RESUMED ----" (comp V1 S1 M V2 S2), comp V1 S1 M V2 S2, $print "<<< FLEX-FLEX-COMP (RESUMED) COMPLETED" (comp V1 S1 M V2 S2)) [V1,V2],
- $print "FLEX-FLEX-COMP DELAYED".
+ $constraint (
+   comp V1 S1 M V2 S2
+ ) [V1,V2]
+ .
 
 % T1 :- lam TYA F  + beta step
 comp (?? as T1) [A|AS] M T2 L2 :-
