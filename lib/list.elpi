@@ -1,5 +1,9 @@
 % LIBRARY OF OPERATIONS ON LISTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% (mk_list N L) assigns to L a list of metavariables of length N
+mk_list 0 [].
+mk_list N [X|XS] :- M is N - 1, mk_list M XS.
+
 append [] YS YS.
 append [X|XS] YS [X|ZS] :- append XS YS ZS.
 
