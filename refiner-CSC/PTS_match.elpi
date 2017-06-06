@@ -47,7 +47,7 @@ count_arrows (arr _ T) M :- !,
  pi x \ (count_arrows (T x) N, M is N + 1).
 count_arrows (sort _) 0.
 
-comp*_inner W1 K SN1 L (?? as W) S :- 
+comp*_inner W1 K SN1 L (?? as W) S :- !,
   get_type W1 TYW1,
   count_arrows TYW1 ARGS,
   mk_list ARGS S',
