@@ -102,7 +102,7 @@ comp T S _ T S :- !.
 % cumulativity
 comp (sort I) [] leq (sort J) [] :- lt I J.
 % congruence + fast path rule
-comp X S1 _ X S2 :- forall2 S1 S2 conv, !.
+comp X S1 _ X S2 :- forall2 S1 S2 (A \ B \ conv A B, !), !.
 % congruence rules
 comp (lam T1 F1) [] eq (lam T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
 comp (arr T1 F1) [] D (arr T2 F2) [] :- conv T1 T2, pi x \ comp (F1 x) [] D (F2 x) [].
