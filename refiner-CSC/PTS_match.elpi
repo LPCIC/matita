@@ -38,26 +38,6 @@ comp* (arr W1 F1) [] (on_match_type W K S [] [_|DX]) (arr W2 F2) [] :- !,
   conv W1 W2,
   pi x\ (of3 x W1 x :- !) => conv* (F1 x) [] (on_match_type W K S [] DX) (F2 x) [].
 
-%%% <<< da spostare in file PTS_match_refiner.elpi
-mode (match_indty_inner o o o i i i).
-
-% CSC: Ferruccio, fix me: now reduction is performed here
-% to find the arrows. Use match_arr or something like that
-count_arrows (arr _ T) M :- !,
- pi x \ (count_arrows (T x) N, M is N + 1).
-count_arrows (sort _) 0.
-
-match_indty_inner W1 K CONT L (?? as W) S :- !,
-  get_type W1 TYW1,
-  count_arrows TYW1 ARGS,
-  mk_list ARGS S',
-  comp W S eq W1 S',
-  % cut & paste from kernel case from now on ==> factorize
-  split S' K SN DX,
-  CONT SN DX
-  .
-%%% >>> da spostare in file PTS_match_refiner.elpi
-
 % final checks (on_match_type).
 match_indty_inner W1 K CONT _ W S :- 
   W = W1,

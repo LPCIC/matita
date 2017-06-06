@@ -1,0 +1,17 @@
+mode (match_indty_inner o o o i i i).
+
+% CSC: Ferruccio, fix me: now reduction is performed here
+% to find the arrows. Use match_arr or something like that
+% Moreover, maybe this function should be moved elsewhere
+count_arrows (arr _ T) M :- !,
+ pi x \ (count_arrows (T x) N, M is N + 1).
+count_arrows (sort _) 0.
+
+match_indty_inner W1 K CONT L (?? as W) S :- !,
+  get_type W1 TYW1,
+  count_arrows TYW1 ARGS,
+  mk_list ARGS S',
+  comp W S eq W1 S',
+  split S' K SN DX,
+  CONT SN DX
+  .
