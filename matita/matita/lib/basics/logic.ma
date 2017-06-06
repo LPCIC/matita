@@ -73,7 +73,7 @@ theorem eq_f2: ∀A,B,C.∀f:A→B→C.
 
 lemma eq_f3: ∀A,B,C,D.∀f:A→B→C->D.
 ∀x1,x2:A.∀y1,y2:B. ∀z1,z2:C. x1=x2 → y1=y2 → z1=z2 → f x1 y1 z1 = f x2 y2 z2.
-#A #B #C #D #f #x1 #x2 #y1 #y2 #z1 #z2 #E1 #E2 #E3 >E1; >E2; >E3 //; qed.
+#A #B #C #D #f #x1 #x2 #y1 #y2 #z1 #z2 #E1 #E2 #E3 >E1; >E2; >E3 % qed.
 
 (* hint to genereric equality 
 definition eq_equality: equality ≝
