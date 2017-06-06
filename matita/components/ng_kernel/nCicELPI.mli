@@ -9,6 +9,14 @@
      \ /   This software is distributed as is, NO WARRANTY.     
       V_______________________________________________________________ *)
 
+val set_apply_subst:
+ (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term)
+ -> unit
+
+val set_apply_subst_to_context:
+ (NCic.status -> fix_projections:bool -> NCic.substitution -> NCic.context -> NCic.context)
+ -> unit
+
 type outcome = private Skip of string
              |         Fail
              |         OK
@@ -44,7 +52,7 @@ val is_type: #NCic.status -> NReference.reference -> NCic.term -> float*outcome
 val has_type: #NCic.status -> NReference.reference -> NCic.term -> NCic.term -> float*outcome
 
 (* approx s c r t v w is OK if v of inferred type w refines t in context c and subst s *)
-val approx: #NCic.status -> NReference.reference -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome
+val approx: #NCic.status -> NReference.reference -> NCic.substitution -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome
 
 (* approx_cast r s c t u v is OK if v refines t of expected type u in context c and subst s *)
-val approx_cast: #NCic.status -> NReference.reference -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome
+val approx_cast: #NCic.status -> NReference.reference -> NCic.substitution -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome

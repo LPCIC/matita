@@ -513,10 +513,34 @@ let has_type status r t u =
    let query () = Ploc.dummy, mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) in
    execute Kernel status r query
 
-let approx status r d c t v w =
-   let query i = mk_approx (lp_term status d i t) (lp_term status d i v) (lp_term status d i w) in
-   execute Refiner status r (lp_context status query d c)
+let set_apply_subst, apply_subst =
+ let g : (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term) ref = ref (fun _ -> assert false) in
+ (function f -> g := f),
+ (fun x -> !g x)
+;;
 
-let approx_cast status r d c t u v =
-   let query i = mk_approx_cast (lp_term status d i t) (lp_term status d i u) (lp_term status d i v) in
-   execute Refiner status r (lp_context status query d c)
+let apply_subst x = apply_subst (x :> NCic.status);;
+
+let set_apply_subst_to_context, apply_subst_to_context =
+ let g : (NCic.status -> fix_projections:bool -> NCic.substitution -> NCic.context -> NCic.context) ref = ref (fun _ -> assert false) in
+ (function f -> g := f),
+ (fun x -> !g x)
+;;
+
+let apply_subst_to_context x = apply_subst_to_context (x :> NCic.status);;
+
+let approx status r d d' c t v w =
+   let t = apply_subst status d c t in
+   let v = apply_subst status d' c v in
+   let w = apply_subst status d' c w in
+   let c = apply_subst_to_context status ~fix_projections:false d' c in
+   let query i = mk_approx (lp_term status [] i t) (lp_term status [] i v) (lp_term status [] i w) in
+   execute Refiner status r (lp_context status query [] c)
+
+let approx_cast status r d d' c t u v =
+   let t = apply_subst status d c t in
+   let u = apply_subst status d c u in
+   let v = apply_subst status d' c v in
+   let c = apply_subst_to_context status ~fix_projections:false d' c in
+   let query i = mk_approx_cast (lp_term status [] i t) (lp_term status [] i u) (lp_term status [] i v) in
+   execute Refiner status r (lp_context status query [] c)

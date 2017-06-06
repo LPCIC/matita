@@ -1181,16 +1181,16 @@ let typeof status ?localise
 =
   let t0 = now () in
   let res = typeof status ?localise metasenv subst context term expty in
-  let _, _, refined_term, ty = res in
+  let _, subst', refined_term, ty = res in
   let t1 = now () in
   let skipped = function LP.Skip _ -> true | _ -> false in
   let tdiff,skipped = begin match expty with
      | `XTNone       ->
-        let tdiff, res = LP.approx status !current subst context term refined_term ty in
+        let tdiff, res = LP.approx status !current subst subst' context term refined_term ty in
         log res ;
         tdiff, skipped res
      | `XTSome expty ->
-        let tdiff, res = LP.approx_cast status !current subst context term expty refined_term in
+        let tdiff, res = LP.approx_cast status !current subst subst' context term expty refined_term in
         log res ;
         tdiff, skipped res
      | _             -> 0., true
