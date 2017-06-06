@@ -44,7 +44,8 @@ match_indty_inner W1 K CONT _ W S :-
   split S K SN DX,
   CONT SN DX.
 
-% W2 is matched against (W1 SN RX) and then (CONT SN RX) is called where
+% (W2 S2) is matched against (W1 SN RX) and then (CONT SN RX) is called where
+% S2 is the stack for W2
 % W1 is an inductive type
 % K is the numer of left parameters of W1
 % SN and RX are the left/right actual parameters in W2
