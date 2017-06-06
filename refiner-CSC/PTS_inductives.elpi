@@ -6,13 +6,13 @@ macro @whd_unwind_continuation :- term -> @stack -> term -> @stack -> prop.
 % match W U V A: match V with constructors of ind. type W, and select branch in A of type U
 type match term -> term -> term -> list term -> term.
 
-% match_trame W U A P: stack frame for match
-type match_trame term -> term -> list term -> @stack -> @stack.
+% match_frame W U A P: stack frame for match
+type match_frame term -> term -> list term -> @stack -> @stack.
 
 % HELPERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % we need to compare match frames on stacks
-forall2 (match_trame W U1 A1 P1) (match_trame W U2 A2 P2) F :-
+forall2 (match_frame W U1 A1 P1) (match_frame W U2 A2 P2) F :-
  F U1 U2, forall2 A1 A2 F, forall2 P1 P2 F.
 
 type whd_continue_unwind_inner @whd_unwind_continuation -> term -> @whd_continuation.
@@ -27,11 +27,11 @@ whd_continue_unwind N K NF :-
 
 type get_branch int -> @stack -> term -> @stack -> @stack -> prop.
 /* stack, constructor => branch, rear stack, front stack */ 
-get_branch (match_trame _ _ A P) J T P [] :- nth A J T.
+get_branch (match_frame _ _ A P) J T P [] :- nth A J T.
 get_branch [V|P] J T P1 [V|P2] :- get_branch P J T P1 P2.
 
 % wind for match
-whd1 (match W U V A) P C :- C [] V (match_trame W U A P).
+whd1 (match W U V A) P C :- C [] V (match_frame W U A P).
 
 % iota for match
 % note: the left arguments must be removed
@@ -40,7 +40,7 @@ whd1 T1 P1 C :- get_constructor T1 J K, !,
                 C [] T2 P2.
 
 % unwind for match
-unwind_stack (match_trame W U A P) V1 V2 :-
+unwind_stack (match_frame W U A P) V1 V2 :-
  unwind_stack P (match W U V1 A) V2.
 
 % GLOBAL DELTA EXPANSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
