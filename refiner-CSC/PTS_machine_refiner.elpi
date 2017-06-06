@@ -39,12 +39,19 @@ comp (?? as T1) [A|AS] M T2 L2 :-
  conv TA TA',
  pi x \ val x TA RA _NF => ($print "VAL" (val x TA RA _NF), comp (F x) AS M T2 L2).
 
+on_rigid_term B S CONT :-
+ whd* B S (_ \ B' \ S' \
+  not (is_flex B'),
+  CONT B' S').
+
 % PROJECTION
 comp (?? as V1) [] M T2 S2 :-
  val X _ B _,
- not (is_flex B),
- V1 = X,
- comp V1 [] M T2 S2,
+ on_rigid_term B [] (_ \ _ \
+  V1 = X,
+  on_rigid_term T2 S2 (T2' \ S2' \
+    comp V1 [] M T2' S2'
+  )),
  !.
 
 % MIMIC
@@ -115,9 +122,11 @@ comp T2 L2 M (?? as T1) [A|AS] :-
 % PROJECTION
 comp T2 S2 M (?? as V1) [] :-
  val X _ B _,
- not (is_flex B),
- V1 = X,
- comp T2 S2 M V1 [],
+ on_rigid_term B [] (_ \ _ \
+  V1 = X,
+  on_rigid_term T2 S2 (T2' \ S2' \
+    comp T2' S2' M V1 []
+  )),
  !.
 
 % MIMIC
