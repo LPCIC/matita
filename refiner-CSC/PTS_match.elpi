@@ -47,32 +47,35 @@ count_arrows (arr _ T) M :- !,
  pi x \ (count_arrows (T x) N, M is N + 1).
 count_arrows (sort _) 0.
 
-match_indty_inner W1 K SN1 L (?? as W) S :- !,
+match_indty_inner W1 K CONT L (?? as W) S :- !,
   get_type W1 TYW1,
   count_arrows TYW1 ARGS,
   mk_list ARGS S',
   comp W S eq W1 S',
   % cut & paste from kernel case from now on ==> factorize
   split S' K SN DX,
-  forall2 SN1 SN conv
+  CONT SN DX
   .
 %%% >>> da spostare in file PTS_match_refiner.elpi
 
 % final checks (on_match_type).
-match_indty_inner W1 K SN1 _ W S :- 
+match_indty_inner W1 K CONT _ W S :- 
   W = W1,
   split S K SN DX,
-  forall2 SN1 SN conv.
+  CONT SN DX.
 
-% W2 must be matched with (W1 SN1 RX1) where
+% W2 is matched against (W1 SN RX) and then (CONT SN RX) is called where
 % W1 is an inductive type
 % K is the numer of left parameters of W1
-% SN1 is the list of actual left parameters
-% RX1 is the list of actual right parameters
-match_indty W2 W1 K SN1 :- whd* W2 [] (match_indty_inner W1 K SN1).
+% SN and RX are the left/right actual parameters in W2
+% CONT is a continuation
+match_indty W2 S2 W1 K CONT :-
+ whd* W2 S2 (match_indty_inner W1 K CONT).
+
+comp*_inner SN1 SN _ :- forall2 SN1 SN conv.
 
 comp* (sort YI) [] (on_match_type W1 K SN1 [] []) (arr W2 F2) [] :-
-  match_indty W2 W1 K SN1,
+  match_indty W2 [] W1 K (comp*_inner SN1),
   pi x\ (of3 x W2 x :- !) => conv*_dx (sort YI) [] on_match_proj (F2 x) [].
 
 % projectability (on_match_proj)
