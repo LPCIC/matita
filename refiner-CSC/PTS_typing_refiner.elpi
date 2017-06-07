@@ -21,7 +21,7 @@ of3 hole U RT :- !, of3 T U RT.
 of3 (app M vect) TM RM :- of3 M TM RM.
 
 % could be optimized
-of3 (app M vect) U RT :-
+of3 (app M vect) U RT :- !,
   of3 M TM RM, ifelse (is_flex TM) fail
    (match_arr TM _ _,
     of3 (app (app RM hole) vect) U RT).
