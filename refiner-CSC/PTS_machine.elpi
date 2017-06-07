@@ -94,23 +94,30 @@ type comp term -> @stack -> eq_or_leq -> term -> @stack -> prop.
 type eq eq_or_leq.
 type leq eq_or_leq.
 
+is_atom X :- $is_name X, !.
+is_atom X :- get_type X _.
 conv T1 T2 :- comp T1 [] eq T2 [].
 sub T1 T2 :- comp T1 [] leq T2 [].
 
-% fast path + axiom rules
-comp T S _ T S :- !.
+% fast paths (kernel only)
+%comp T S _ T S :- !.
+%comp X S1 _ X S2 :- forall2 S1 S2 (A \ B \ conv A B, !), !.
+% sorts equality
+comp (sort I) [] _ (sort J) [] :- I = J.
 % cumulativity
 comp (sort I) [] leq (sort J) [] :- lt I J.
-% congruence + fast path rule
-comp X S1 _ X S2 :- forall2 S1 S2 (A \ B \ conv A B, !), !.
+comp (sort I) [] leq (sort J) [] :- !, lt I J.
+% congruence
+comp X S1 _ Y S2 :-
+ is_atom X, is_atom Y, X = Y, forall2 S1 S2 (A \ B \ conv A B, !), !.
 % congruence rules
 comp (lam T1 F1) [] eq (lam T2 F2) [] :- !, conv T1 T2, pi x \ conv (F1 x) (F2 x).
 % eta-expansion
-comp (lam T1 F1) [] eq T S :-
+comp (lam T1 F1) [] eq T S :- !,
  pi x \ (of3 x T1 x :- !) => (comp (F1 x) [] eq T {append S [x]}).
-comp T S eq (lam T1 F1) [] :-
+comp T S eq (lam T1 F1) [] :- !,
  pi x \ (of3 x T1 x :- !) => (comp T {append S [x]} eq (F1 x) []).
-comp (arr T1 F1) [] D (arr T2 F2) [] :-
+comp (arr T1 F1) [] D (arr T2 F2) [] :- !,
  conv T1 T2,
  pi x \ comp (F1 x) [] D (F2 x) [].
 % reduction rules

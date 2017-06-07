@@ -31,7 +31,7 @@ get_branch (match_frame _ _ A P) J T P [] :- nth A J T.
 get_branch [V|P] J T P1 [V|P2] :- get_branch P J T P1 P2.
 
 % wind for match
-whd1 (match W U V A) P C :- C [] V (match_frame W U A P).
+whd1 (match W U V A) P C :- !, C [] V (match_frame W U A P).
 
 % iota for match
 % note: the left arguments must be removed
