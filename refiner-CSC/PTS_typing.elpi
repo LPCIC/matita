@@ -15,6 +15,12 @@ type of3 term -> term -> term -> prop.
 % aproximant, refined expected type, refined term
 type of3bidir term -> term -> term -> prop.
 
+of3bidir (lam A F) XU (lam RA RF):- !,
+  match_arr XU XA XB,
+  of3 A TA RA,
+  conv RA XA,
+  (pi x\ (of3 x RA x :- !) => of3bidir (F x) (XB x) (RF x)).
+
 of3bidir T XU RT :-
  of3 T RU RT,
  sub RU XU.
