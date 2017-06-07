@@ -12,13 +12,19 @@ type max  @univ -> @univ -> @univ -> prop.
 % approximant, refined inferred type, refined term
 type of3 term -> term -> term -> prop.
 
+% aproximant, refined expected type, refined term
+type of3bidir term -> term -> term -> prop.
+
+of3bidir T XU RT :-
+ of3 T RU RT,
+ sub RU XU.
+
 of3 (sort I) (sort J) (sort I) :- !, succ I J.
 
-of3 (app M N) (abbr A2 RN Bx) (app RM RN) :- !,
+of3 (app M N) (abbr A1 RN Bx) (app RM RN) :- !,
   of3 M TM RM,
   match_arr TM A1 Bx,
-  of3 N A2 RN,
-  sub A2 A1.
+  of3bidir N A1 RN.
 
 of3 (lam A F) (arr RA B) (lam RA RF):- !,
   of3 A TA RA,

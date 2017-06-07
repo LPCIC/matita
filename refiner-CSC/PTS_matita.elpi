@@ -6,16 +6,18 @@ accumulate environment_matita.
 
 % implementation of the queries from the environment %%%%%%%%%%%%%%%%%%%%%%%%%
 
-has_type T U :- of3 T U' _, of3 U _ RU, sub U' RU, !.
+has_type T U :-
+  of3 U _ RU,
+  of3bidir T RU _,
+  !.
 
 is_type U :- of3 U S' _, match_sort S' _S, !.
 
 approx T V W :- of3 T U' RT, conv U' W, conv RT V, !.
 
 approx_cast T U V :-
-  of3 T U' RT,
   of3 U _ RU,
-  sub U' RU,
+  of3bidir T RU RT,
   conv RT V, !.
 
 type ldec term -> term -> prop.
