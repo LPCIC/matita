@@ -7,7 +7,7 @@
 % Note: very slow
 % focus :- on_object cic:/matita/arithmetics/nat/nat_discr#def:2.
 % Note: refinement queries work up to here:
-focus :- after_object cic:/matita/basics/relations/reflexive#def:2.
+focus :- after_cic:/matita/arithmetics/nat/plus_n_Sm#def:4.
 
 % UTILITIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
