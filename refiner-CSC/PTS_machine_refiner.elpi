@@ -28,7 +28,6 @@ comp (app T1 T2) S1 M V2 S2 :- !, comp T1 [T2|S1] M V2 S2.
 comp V2 S2 M (app T1 T2) S1 :- !, comp V2 S2 M T1 [T2|S1]. 
 
 comp (?? as V1) S1 M (?? as V2) S2 :- !,
- $print "FLEX-FLEX COMP: " (comp V1 S1 M V2 S2),
  $constraint (
    comp V1 S1 M V2 S2
  ) [V1,V2]
@@ -39,7 +38,8 @@ comp (?? as T1) [A|AS] M T2 L2 :-
  of3 A TA RA,
  T1 = lam TA' F,
  conv TA TA',
- pi x \ val x TA RA _NF => ($print "VAL" (val x TA RA _NF), comp (F x) AS M T2 L2).
+ pi x \ val x TA RA _NF => (
+  comp (F x) AS M T2 L2).
 
 on_rigid_term B S CONT :-
  whd* B S (_ \ B' \ S' \
@@ -119,7 +119,8 @@ comp T2 L2 M (?? as T1) [A|AS] :-
  of3 A TA RA, 
  T1 = lam TA' F,
  conv TA TA',
- pi x \ val x TA RA _NF => ($print "VAL2" (val x TA RA _NF), comp T2 L2 M (F x) AS).
+ pi x \ val x TA RA _NF => (
+  comp T2 L2 M (F x) AS).
 
 % PROJECTION
 comp T2 S2 M (?? as V1) [] :-
