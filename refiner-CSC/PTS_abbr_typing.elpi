@@ -4,6 +4,8 @@ type abbr term -> term -> (term -> term) -> term.  % local definition (let-in)
 
 % must be chech that the expected type of A is a sort?
 of3 (abbr A M F) (abbr RA RM G) (abbr RA RM RF) :- !,
- of3 A _ RA, of3 M B RM, sub B RA, pi x \ val x RA RM NF => of3 (F x) (G x) (RF x).
+ of3 A _ RA,
+ of3bidir M RA RM,
+ pi x \ val x RA RM NF => of3 (F x) (G x) (RF x).
 
 of3 X U X :- val X U  _ _, !.
