@@ -2,6 +2,7 @@
 accumulate PTS_cic.
 accumulate PTS_typing.
 accumulate PTS_abbr_typing.
+accumulate PTS_machine_heuristics.
 accumulate PTS_machine.
 accumulate PTS_match.
 accumulate PTS_inductives.

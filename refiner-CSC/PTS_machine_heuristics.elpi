@@ -1,0 +1,9 @@
+% fast paths (kernel only)
+% You can uncomment one, two, or both.
+% Bencharks on arithmetics/nat.ma suggest that zero heuristics is
+% slower than at least one, and that one, the other or both is the same
+comp X1 S1 _ X2 S2 :-
+ X1 = X2,
+ (S1 = S2%, ! ;
+  %forall2 S1 S2 (A \ B \ conv A B, !)
+ ), !.
