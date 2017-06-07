@@ -5,7 +5,7 @@ mode (whd1 i i i).
 whd1 ?? _ _ :- fail.
 
 mode (whd** i i o i).
-whd** (?? as X) S L K :- K L X S.
+whd** (?? as X) S L K :- !, K L X S.
 
 mode (occur_check i i).
 occur_check (?? _ L1 as V1) (?? as V2) :-
