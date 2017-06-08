@@ -11,17 +11,18 @@ has_type T U :-
   of3bidir T RU _,
   !.
 
-is_type U :- of3 U S' _, match_sort S' _S, !.
+is_type U :-
+  of3 U S' _,
+  match_sort S' _S,
+  !.
 
-approx T V W :- of3 T U' RT, conv U' W, conv RT V, !.
+approx T V W :-
+  of3 T U' RT,
+  conv U' W,
+  conv RT V,
+  !.
 
 approx_cast T U V :-
   of3 U _ RU,
   of3bidir T RU RT,
   conv RT V, !.
-
-type ldec term -> term -> prop.
-of3 X W X :- ldec X W.
-
-type ldef term -> term -> term -> prop.
-val X W V NF :- ldef X W V.

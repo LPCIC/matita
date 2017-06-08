@@ -1,5 +1,0 @@
-% Interface with Matita ITP
-
-mode (ldec i o).
-
-mode (ldef i o o o).

@@ -243,7 +243,6 @@ let rec apply_subst_metasenv status subst = function
 let apply_subst status s c t = apply_subst status s c t;;
 
 NCicELPI.set_apply_subst apply_subst;;
-NCicELPI.set_apply_subst_to_context apply_subst_context;;
 
 type meta_kind = [ `IsSort | `IsType | `IsTerm ]
 

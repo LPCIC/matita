@@ -30,10 +30,10 @@ nCicPp.cmo : nUri.cmi nReference.cmi nCicSubstitution.cmi nCicReduction.cmi \
     nCicEnvironment.cmi nCic.cmx nCicPp.cmi
 nCicPp.cmx : nUri.cmx nReference.cmx nCicSubstitution.cmx nCicReduction.cmx \
     nCicEnvironment.cmx nCic.cmx nCicPp.cmi
-nCicELPI.cmo : nUri.cmi nReference.cmi nCicSubstitution.cmi nCicPp.cmi \
-    nCicEnvironment.cmi nCic.cmx nCicELPI.cmi
-nCicELPI.cmx : nUri.cmx nReference.cmx nCicSubstitution.cmx nCicPp.cmx \
-    nCicEnvironment.cmx nCic.cmx nCicELPI.cmi
+nCicELPI.cmo : nUri.cmi nReference.cmi nCicUtils.cmi nCicSubstitution.cmi \
+    nCicPp.cmi nCicEnvironment.cmi nCic.cmx nCicELPI.cmi
+nCicELPI.cmx : nUri.cmx nReference.cmx nCicUtils.cmx nCicSubstitution.cmx \
+    nCicPp.cmx nCicEnvironment.cmx nCic.cmx nCicELPI.cmi
 nCicTypeChecker.cmo : nUri.cmi nReference.cmi nCicUtils.cmi \
     nCicSubstitution.cmi nCicReduction.cmi nCicEnvironment.cmi nCicELPI.cmi \
     nCic.cmx nCicTypeChecker.cmi
@@ -41,6 +41,8 @@ nCicTypeChecker.cmx : nUri.cmx nReference.cmx nCicUtils.cmx \
     nCicSubstitution.cmx nCicReduction.cmx nCicEnvironment.cmx nCicELPI.cmx \
     nCic.cmx nCicTypeChecker.cmi
 nCicUntrusted.cmo : nReference.cmi nCicUtils.cmi nCicSubstitution.cmi \
-    nCicReduction.cmi nCicEnvironment.cmi nCic.cmx nCicUntrusted.cmi
+    nCicReduction.cmi nCicEnvironment.cmi nCicELPI.cmi nCic.cmx \
+    nCicUntrusted.cmi
 nCicUntrusted.cmx : nReference.cmx nCicUtils.cmx nCicSubstitution.cmx \
-    nCicReduction.cmx nCicEnvironment.cmx nCic.cmx nCicUntrusted.cmi
+    nCicReduction.cmx nCicEnvironment.cmx nCicELPI.cmx nCic.cmx \
+    nCicUntrusted.cmi

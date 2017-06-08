@@ -93,7 +93,6 @@ let get_program kernel =
                 ],
                 [ "trace_kernel.elpi";
                   "PTS_refiner_engine.elpi";
-                  "PTS_matita_refiner.elpi";
                   "PTS_kernel_engine.elpi";
                   "PTS_matita.elpi";
                   "debug_kernel.elpi";
@@ -206,13 +205,13 @@ let mk_univ s =
 let mk_nil = LPA.mkNil
 
 let mk_cons v vs = LPA.mkSeq [v; vs]
-
+(* Parked code:
 let mk_pi n f = LPA.mkApp [LPA.mkCon "pi"; LPA.mkLam n f]
 
 let mk_impl a b = LPA.mkApp [LPA.mkCon "=>"; a; b]
 
 let mk_pi_impl n a b = mk_pi n (mk_impl a b)
-
+*)
 let mk_head x = LPA.mkCon (xlate x)
 
 let mk_name i = Printf.sprintf "x%u" i
@@ -247,10 +246,6 @@ let mk_approx t v w = LPA.mkApp [LPA.mkCon "approx"; t; v; w]
 
 let mk_approx_cast t u v = LPA.mkApp [LPA.mkCon "approx_cast"; t; u; v]
 
-let mk_ldec n w = LPA.mkApp [LPA.mkCon "ldec"; LPA.mkCon n; w]
-
-let mk_ldef n w v = LPA.mkApp [LPA.mkCon "ldef"; LPA.mkCon n; w; v]
-
 (* matita to elpi *)
 let rec lp_term status d c = function
    | C.Implicit `Closed
@@ -283,21 +278,6 @@ let rec lp_term status d c = function
 and lp_terms status d c = function
    | []      -> mk_nil
    | v :: vs -> mk_cons (lp_term status d c v) (lp_terms status d c vs)
-
-let lp_context status query d c () =
-   let rec aux i = function
-      | []                     -> query i
-      | (_, C.Decl w) :: c     ->
-         let n = mk_name i in
-         let w = lp_term status d i w in
-         mk_pi_impl n (mk_ldec n w) (aux (succ i) c)
-      | (_, C.Def (v, w)) :: c ->
-         let n = mk_name i in
-         let w = lp_term status d i w in
-         let v = lp_term status d i v in
-         mk_pi_impl n (mk_ldef n w v) (aux (succ i) c)
-   in
-   Ploc.dummy, aux 0 (List.rev c)
 
 let split_type r =
    let aux () =
@@ -473,6 +453,24 @@ let at_exit () =
 let trace_options = ref []
 let typecheck = ref false
 
+let set_apply_subst, apply_subst =
+ let g : (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term) ref = ref (fun _ -> assert false) in
+ (function f -> g := f),
+ (fun x -> !g x)
+;;
+
+let apply_subst x = apply_subst (x :> NCic.status);;
+
+let apply_subst_to_closure status is_type d c t =
+   let rec aux t = function
+      | []                        -> t
+      | (name, C.Def (v, w)) :: c ->
+         aux (C.LetIn (name, w, v, t)) c
+      | (name, C.Decl w)     :: c ->
+         aux (if is_type then C.Prod (name, w, t) else C.Lambda (name, w, t)) c
+   in
+   apply_subst status d [] (aux t c)
+
 let execute engine status r query =
    let str = R.string_of_reference r in
    let str = str ^ " (" ^ (match engine with Kernel -> "kernel" | Refiner -> "refiner") ^ ")" in
@@ -486,7 +484,7 @@ let execute engine status r query =
          | Kernel  -> !kernel_program
          | Refiner -> !refiner_program
       in
-      let query = LPC.query_of_ast program (query ()) in
+      let query = LPC.query_of_ast program (Ploc.dummy, query ()) in
       if !typecheck then LPC.typecheck program query;
       Elpi_API.trace !trace_options;
       let t0 = Unix.gettimeofday () in
@@ -506,41 +504,23 @@ let execute engine status r query =
    time,result
 
 let is_type status r u =
-   let query () = Ploc.dummy, mk_is_type (lp_term status [] 0 u) in
+   let query () = mk_is_type (lp_term status [] 0 u) in
    execute Kernel status r query
 
 let has_type status r t u =
-   let query () = Ploc.dummy, mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) in
+   let query () = mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) in
    execute Kernel status r query
 
-let set_apply_subst, apply_subst =
- let g : (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term) ref = ref (fun _ -> assert false) in
- (function f -> g := f),
- (fun x -> !g x)
-;;
+let approx status r c s1 t s2 v w =
+   let t = apply_subst_to_closure status false s1 c t in
+   let v = apply_subst_to_closure status false s2 c v in
+   let w = apply_subst_to_closure status true  s2 c w in
+   let query () = mk_approx (lp_term status [] 0 t) (lp_term status [] 0 v) (lp_term status [] 0 w) in
+   execute Refiner status r query
 
-let apply_subst x = apply_subst (x :> NCic.status);;
-
-let set_apply_subst_to_context, apply_subst_to_context =
- let g : (NCic.status -> fix_projections:bool -> NCic.substitution -> NCic.context -> NCic.context) ref = ref (fun _ -> assert false) in
- (function f -> g := f),
- (fun x -> !g x)
-;;
-
-let apply_subst_to_context x = apply_subst_to_context (x :> NCic.status);;
-
-let approx status r d d' c t v w =
-   let t = apply_subst status d c t in
-   let v = apply_subst status d' c v in
-   let w = apply_subst status d' c w in
-   let c = apply_subst_to_context status ~fix_projections:false d' c in
-   let query i = mk_approx (lp_term status [] i t) (lp_term status [] i v) (lp_term status [] i w) in
-   execute Refiner status r (lp_context status query [] c)
-
-let approx_cast status r d d' c t u v =
-   let t = apply_subst status d c t in
-   let u = apply_subst status d c u in
-   let v = apply_subst status d' c v in
-   let c = apply_subst_to_context status ~fix_projections:false d' c in
-   let query i = mk_approx_cast (lp_term status [] i t) (lp_term status [] i u) (lp_term status [] i v) in
-   execute Refiner status r (lp_context status query [] c)
+let approx_cast status r c s1 t u s2 v =
+   let t = apply_subst_to_closure status false s1 c t in
+   let u = apply_subst_to_closure status true  s1 c u in
+   let v = apply_subst_to_closure status false s2 c v in
+   let query () = mk_approx_cast (lp_term status [] 0 t) (lp_term status [] 0 u) (lp_term status [] 0 v) in
+   execute Refiner status r query

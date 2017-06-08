@@ -16,14 +16,10 @@ trace S P :- if focus ($print "---->>---- fail: " S P), fail.
 
 vals :- val X T N NF, focus, $print "VAL" X "##" T "##" N "##" NF, fail.
 
-ldecs :- ldec X W, focus, $print "* ldec" X ":" W, fail.
-
-ldefs :- ldef X W V, focus, $print "* ldef" X "=" V ":" W, fail.
-
 ofs [] :- fail.
 ofs [T | L] :- if (focus, of3 T U _) ($print "OF3" T "##" U), ofs L.
 
-at_end :- $print "context", (ldecs; ldefs).
+at_end :- fail.
 
 % TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

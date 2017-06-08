@@ -9,14 +9,6 @@
      \ /   This software is distributed as is, NO WARRANTY.     
       V_______________________________________________________________ *)
 
-val set_apply_subst:
- (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term)
- -> unit
-
-val set_apply_subst_to_context:
- (NCic.status -> fix_projections:bool -> NCic.substitution -> NCic.context -> NCic.context)
- -> unit
-
 type outcome = private Skip of string
              |         Fail
              |         OK
@@ -46,13 +38,23 @@ val validate: bool ref
 val refine: bool ref
 
 (* is_type r u is OK if the type of u is a sort *)
-val is_type: #NCic.status -> NReference.reference -> NCic.term -> float*outcome
+val is_type: #NCic.status -> NReference.reference -> NCic.term -> float * outcome
 
 (* has_type r t u is OK if the type of t is u *)
-val has_type: #NCic.status -> NReference.reference -> NCic.term -> NCic.term -> float*outcome
+val has_type: #NCic.status -> NReference.reference -> NCic.term -> NCic.term -> float * outcome
 
-(* approx s c r t v w is OK if v of inferred type w refines t in context c and subst s *)
-val approx: #NCic.status -> NReference.reference -> NCic.substitution -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome
+(* approx r c s1 t s2 v w is OK if (s2, c, v) of inferred type (s2, c, w) refines (s1, c, t) *)
+val approx: #NCic.status -> NReference.reference -> NCic.context ->
+  NCic.substitution -> NCic.term ->
+  NCic.substitution -> NCic.term -> NCic.term ->
+  float * outcome
 
-(* approx_cast r s c t u v is OK if v refines t of expected type u in context c and subst s *)
-val approx_cast: #NCic.status -> NReference.reference -> NCic.substitution -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term -> NCic.term -> float*outcome
+(* approx_cast r c s1 t u s2 v is OK if (s2, c, v) refines (s1, c, t) of expected type (s1, c, u) *)
+val approx_cast: #NCic.status -> NReference.reference -> NCic.context ->
+  NCic.substitution -> NCic.term -> NCic.term ->
+  NCic.substitution -> NCic.term ->
+  float * outcome
+
+val set_apply_subst:
+ (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term)
+ -> unit
