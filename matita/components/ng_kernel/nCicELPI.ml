@@ -502,7 +502,7 @@ let execute engine status r query =
       with Error s -> 0.,(Skip s, "OO[" ^ s ^ "]")
    in
    if !verbose then Printf.printf "ELPI %s %s\n%!" msg str;
-   if engine = Kernel then seen := t :: !seen;
+   if engine = Kernel && not (List.mem t !seen) then seen := t :: !seen;
    time,result
 
 let is_type status r u =
