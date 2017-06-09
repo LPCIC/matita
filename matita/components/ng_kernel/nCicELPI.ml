@@ -482,6 +482,8 @@ let execute engine status r query =
       let query = LPC.query_of_ast program (Ploc.dummy, query ()) in
       if !typecheck then LPC.typecheck program query;
       Elpi_API.trace !trace_options;
+      Format.pp_set_margin Format.err_formatter 250;
+      Format.pp_set_margin Format.std_formatter 250;
       let t0 = Unix.gettimeofday () in
       let res =
       if LPR.execute_once program ~print_constraints:!print_constraints query then
