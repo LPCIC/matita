@@ -6,6 +6,7 @@ include ../Makefile.defs
 # Warning: the modules must be in compilation order
 NULL =
 MODULES =			\
+	ulex08			\
 	extlib			\
 	xml			\
 	registry		\
@@ -37,18 +38,21 @@ ifeq ($(DISTRIBUTED),no)
 endif
 
 all: metas $(MODULES:%=rec@all@%) 
-opt: metas syntax-extensions $(MODULES:%=rec@opt@%)
+opt: metas syntax-extensions ulex $(MODULES:%=rec@opt@%)
 
 ifeq ($(HAVE_OCAMLOPT),yes)
 world: opt
 else
 world: all
 endif
+ulex:
+	$(H)$(MAKE) -C ulex08 depend
+	$(H)$(MAKE) -C ulex08
 syntax-extensions:
 	$(H)$(MAKE) -C syntax_extensions depend
 	$(H)$(MAKE) -C syntax_extensions
-depend: syntax-extensions $(MODULES:%=rec@depend@%)
-depend.opt: syntax-extensions $(MODULES:%=rec@depend.opt@%)
+depend: ulex syntax-extensions $(MODULES:%=rec@depend@%)
+depend.opt: ulex syntax-extensions $(MODULES:%=rec@depend.opt@%)
 install-arch: $(MODULES:%=rec@install@%)
 install-indep:
 uninstall: $(MODULES:%=rec@uninstall@%)

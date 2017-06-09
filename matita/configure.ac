@@ -64,7 +64,6 @@ http \
 lablgtk2 \
 lablgtk2.sourceview2 \
 netstring \
-ulex08 \
 zip \
 "
 
