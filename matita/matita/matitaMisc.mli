@@ -65,7 +65,7 @@ class shell_history : int -> [string] history
   (** browser like history: new items added at the current point of the history
   * @param size maximum history size
   * @param first element in history (this history is never empty) *)
-class ['a] browser_history: ?memento:'a memento -> int -> 'a -> ['a] history
+class ['a] browser_history: memento:'a memento option -> int -> 'a -> ['a] history
 
   (** create a singleton from a given function. Given function is invoked the
   * first time it gets called. Next invocation will return first value *)

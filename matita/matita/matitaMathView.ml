@@ -658,7 +658,7 @@ let new_cicBrowser () =
     let win = browser#win in
     ignore (win#browserNewButton#connect#clicked (fun () ->
       let history =
-        new MatitaMisc.browser_history ~memento:history#save size
+        new MatitaMisc.browser_history ~memento:(Some history#save) size
           (`About `Blank)
       in
       let newBrowser = aux history in
@@ -671,7 +671,7 @@ let new_cicBrowser () =
     cicBrowsers := browser :: !cicBrowsers;
     browser
   in
-  let history = new MatitaMisc.browser_history size (`About `Blank) in
+  let history = new MatitaMisc.browser_history ~memento:None size (`About `Blank) in
   aux history
 
 (** @param reuse if set reused last opened cic browser otherwise 

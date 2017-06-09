@@ -103,7 +103,7 @@ class shell_history size =
     method save = (Array.copy data, hd, tl, cur)
   end
 
-class ['a] browser_history ?memento size init =
+class ['a] browser_history ~memento size init =
   object (self)
     initializer match memento with Some m -> self#load m | _ -> ()
     val data = Array.create size init
