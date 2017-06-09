@@ -1,0 +1,6 @@
+accumulate trace_kernel.
+accumulate PTS_refiner_engine.
+accumulate PTS_matita_refiner.
+accumulate PTS_kernel_engine.
+accumulate PTS_matita.
+accumulate debug_kernel.

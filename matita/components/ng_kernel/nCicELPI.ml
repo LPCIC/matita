@@ -91,12 +91,7 @@ let get_program kernel =
                   "PTS_matita.elpi";
                   "debug_kernel.elpi";
                 ],
-                [ "trace_kernel.elpi";
-                  "PTS_refiner_engine.elpi";
-                  "PTS_kernel_engine.elpi";
-                  "PTS_matita.elpi";
-                  "debug_kernel.elpi";
-                ]
+                [ "all_refiner.elpi" ]
       | _    -> [ "../.."; ], [], []
    in
    let ast_kernel,ast_refiner =

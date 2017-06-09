@@ -22,5 +22,5 @@ run: matita/matita/matita
 print:
 	cd refiner-CSC;\
 	../elpi/elpi ../elpi/utils/elpi2mathjx.elpi -exec \
-		main -- PTS_refiner_engine.elpi ../refiner-CSC.html \
+		main -- all_refiner.elpi ../refiner-CSC.html \
 		pervasives test_refiner test_kernel list logic
