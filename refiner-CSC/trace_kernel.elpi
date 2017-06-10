@@ -14,12 +14,12 @@ focus :- after_object cic:/matita/arithmetics/nat/plus_n_Sm#def:4.
 trace S P :- if focus ($print "----<<---- enter: " S {$counter "run"} P), P, if focus ($print "---->>---- exit: " S P), !.
 trace S P :- if focus ($print "---->>---- fail: " S P), fail.
 
-vals :- val X T N NF, focus, $print "VAL" X "##" T "##" N "##" NF, fail.
+vals :- val X T N NF, $print "VAL" X ":" T "=" N "=>" NF, fail.
 
 ofs [] :- fail.
 ofs [T | L] :- if (focus, of3 T U _) ($print "OF3" T "##" U), ofs L.
 
-at_end :- fail.
+at_end :- vals.
 
 % TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -31,7 +31,7 @@ at_end :- fail.
 
 % match_arr TM A1 Bx :- focus, $print (match_arr TM "##" A1 "##" Bx), fail.
 
-% comp T1 S1 M T2 S2 :- focus, $print "?? comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, fail.
+% comp T1 S1 M T2 S2 :- focus, $print "?? comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, at_end.
 
 % sub U1 U2 :- focus, $print (sub U1 "<=>" U2), fail.
 
