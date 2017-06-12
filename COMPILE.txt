@@ -1,0 +1,3 @@
+OPAM packages required (any OCAML >= 4.02.3):
+
+opam install camlp5 camlzip lablgtk ocaml-expat ocaml-http ocaml-migrate-parsetree ocamlfind ocamlnet pcre ppx_deriving ppx_tools ppx_tools_versioned 
