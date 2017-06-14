@@ -9,10 +9,14 @@
 % Note: refinement queries work up to here:
 focus :- after_object cic:/matita/arithmetics/nat/plus_n_Sm#def:4.
 
+type focus prop.
+type trace string -> prop -> prop.
+
 % UTILITIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-trace S P :- if focus ($print "----<<---- enter: " S {$counter "run"} P), P, if focus ($print "---->>---- exit: " S P), !.
-trace S P :- if focus ($print "---->>---- fail: " S P), fail.
+trace S P :-
+  if focus ($print "enter: " S {$counter "run"} P), P,
+  if focus ($print "leave: " S P).
 
 vals :- val X T N NF, $print "VAL" X ":" T "=" N "=>" NF, fail.
 
