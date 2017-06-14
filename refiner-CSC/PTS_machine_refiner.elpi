@@ -47,7 +47,9 @@ on_rigid_term B S CONT :-
   not (is_flex B'),
   CONT B' S').
 
-eta (lam _ F) [] :- is_flex F.
+is_rigid_term B S :- on_rigid_term (F x) S (_ \ _ \ true).
+
+eta (lam _ F) [] :- pi x \ is_rigid_term (F x) [].
 
 % PROJECTION
 comp (?? as V1) [] M T2 S2 :-
