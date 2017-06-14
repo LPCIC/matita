@@ -26,9 +26,10 @@ of3 (app M vect) TM RM :- of3 M TM RM.
 
 % could be optimized
 of3 (app M vect) U RT :- !,
-  of3 M TM RM, ifelse (is_flex TM) fail
+  of3 M TM RM, ifelse (is_rigid_term TM [])
    (match_arr TM _ _,
-    of3 (app (app RM hole) vect) U RT).
+    of3 (app (app RM hole) vect) U RT)
+   fail.
 
 constraint of3bidir of3 val comp mcomp match_sort {
 %   rule (G1 ?- of3 (?? as X1) T1 _) \ (G2 ?- of3 (?? as X2) T2 _) > X1 = X2
