@@ -28,7 +28,7 @@ leq (?? as A) (s+cprop U) :- !, $constraint (leq A (s+cprop U)) [A].
 % meta can be cprop or type: ??
 leq (s+cprop U) (?? as A) :- !, $constraint (leq (s+cprop U) A) [A].
 
-% this also resolves: leq (?? as A) prop
+leq (?? as A) s+prop :- A = s+prop.
 leq s+prop _.
 
 % when metas get e value, we check universe levels
