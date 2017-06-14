@@ -101,7 +101,8 @@ conv T1 T2 :- comp T1 [] eq T2 [].
 sub T1 T2 :- comp T1 [] leq T2 [].
 
 % sorts equality
-comp (sort I) [] _ (sort J) [] :- I = J.
+comp (sort I) [] eq (sort J) [] :- !, I = J.
+comp (sort I) [] leq (sort J) [] :- I = J.
 % cumulativity
 comp (sort I) [] leq (sort J) [] :- !, lt I J.
 % congruence
