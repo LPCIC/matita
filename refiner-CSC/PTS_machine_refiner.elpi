@@ -47,13 +47,16 @@ on_rigid_term B S CONT :-
   not (is_flex B'),
   CONT B' S').
 
+eta (lam _ F) [] :- is_flex F.
+
 % PROJECTION
 comp (?? as V1) [] M T2 S2 :-
- val X _ B _,
- on_rigid_term B [] (_ \ _ \
-  V1 = X,
-  on_rigid_term T2 S2 (T2' \ S2' \
-    comp V1 [] M T2' S2'
+ on_rigid_term T2 S2 (T2' \ S2' \
+  not (eta T2' S2'),
+  val X _ B _,
+  on_rigid_term B [] (_ \ _ \
+   V1 = X,
+   comp V1 [] M T2' S2'
   )),
  !.
 
@@ -130,11 +133,12 @@ comp T2 L2 M (?? as T1) [A|AS] :-
 
 % PROJECTION
 comp T2 S2 M (?? as V1) [] :-
- val X _ B _,
- on_rigid_term B [] (_ \ _ \
-  V1 = X,
-  on_rigid_term T2 S2 (T2' \ S2' \
-    comp T2' S2' M V1 []
+ on_rigid_term T2 S2 (T2' \ S2' \
+  not (eta T2' S2'),
+  val X _ B _,
+  on_rigid_term B [] (_ \ _ \
+   V1 = X,
+   comp T2' S2' M V1 []
   )),
  !.
 
