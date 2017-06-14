@@ -19,6 +19,7 @@ occur_check (arr TY F) X :- !,
  occur_check TY X, pi x \ occur_check (F x) X.
 occur_check V X :- val V _ T _, !, occur_check T X.
 occur_check T V :- !. % for non-let-bound variables
+
 mode (comp i i i i i).
 
 % These two redundant rules are here to turn an (app X t) into an X
@@ -60,15 +61,20 @@ comp (?? as V1) [] M T2 S2 :-
 % non empty stack = application
 comp (?? as V1) [] _ T2 S2 :-
  append S21 [S2l] S2,
- V1 = app X Y, comp X [] eq T2 S21, comp Y [] eq S2l [].
+ V1 = app X Y,
+ comp X [] eq T2 S21,
+ comp Y [] eq S2l [],
+ !
+ .
 
 % regular mimic rules
 comp (?? as V1) [] M T2 [] :-
  ifnot (occur_check T2 V1) ($print "OCCUR CHECK FAILED FOR" (comp V1 [] M T2 []), fail),
- mcompoii V1 M T2. % mcomp used generatively
+ mcompoii V1 M T2,
+ !. % mcomp used generatively
 
 % variables and constants
-comp (?? as V1) [] M T2 [] :- V1 = T2.
+comp (?? as V1) [] M T2 [] :- is_atom T2, V1 = T2, !.
 
 % REDUCTION
 comp (?? as V1) [] M T2 S2 :- whd1 T2 S2 (comp_dx V1 [] M).
@@ -136,13 +142,17 @@ comp T2 S2 M (?? as V1) [] :-
 % non empty stack = application
 comp T2 S2 _ (?? as V1) [] :-
  append S21 [S2l] S2,
- V1 = app X Y, comp T2 S21 eq X [], comp S2l [] eq Y [].
+ V1 = app X Y,
+ comp T2 S21 eq X [],
+ comp S2l [] eq Y [],
+ !
+ .
 % regular mimic rules
 comp T2 [] M (?? as V1) [] :-
  ifnot (occur_check T2 V1) ($print "OCCUR CHECK FAILED FOR" (comp T2 [] M V1 []), fail),
  mcompiio T2 M V1. % mcomp used generatively
 % variables and constants
-comp T2 [] M (?? as V1) [] :- V1 = T2.
+comp T2 [] M (?? as V1) [] :- is_atom T2, V1 = T2, !.
 
 % REDUCTION
 comp T2 S2 M (?? as V1) [] :- whd1 T2 S2 (comp_sn V1 [] M).
