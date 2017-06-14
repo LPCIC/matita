@@ -47,7 +47,7 @@ on_rigid_term B S CONT :-
   not (is_flex B'),
   CONT B' S').
 
-is_rigid_term B S :- on_rigid_term (F x) S (_ \ _ \ true).
+is_rigid_term B S :- on_rigid_term F S (_ \ _ \ true).
 
 eta (lam _ F) [] :- pi x \ is_rigid_term (F x) [].
 
