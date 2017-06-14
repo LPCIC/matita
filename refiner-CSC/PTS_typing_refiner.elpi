@@ -15,6 +15,7 @@ of3 (?? as T) U RT :- !, $constraint (of3bidir T U RT) [T].
 
 mode (of3bidir i i o).
 
+% CSC: XXX why not (is_rigid_term TY) does not work?
 of3bidir T (?? as TY) T' :-
  !, of3 T TY T'.
 
@@ -22,11 +23,17 @@ of3bidir (?? as T) XU RT :- !, $constraint (of3bidir T XU RT) [T].
 
 of3 hole U RT :- !, of3 T U RT.
 
+%of3bidir (app M vect) TM RM :- of3bidir M TM RM.
 of3 (app M vect) TM RM :- of3 M TM RM.
 
 % could be optimized
+%of3bidir (app M vect) U RT :- !,
+%  $print "OF3BIDIR SPECIAL" (of3bidir (app M vect) U RT),
+%  of3bidir (app (app M hole) vect) U RT.
+
+% could be optimized
 of3 (app M vect) U RT :- !,
-  of3 M TM RM, ifelse (is_rigid_term TM [])
+  of3 M TM RM, ifelse (not (is_flex TM))%(is_rigid_term TM [])
    (match_arr TM _ _,
     of3 (app (app RM hole) vect) U RT)
    fail.
