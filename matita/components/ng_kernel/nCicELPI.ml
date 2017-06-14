@@ -252,7 +252,7 @@ let rec lp_term status d c = function
        let lc = NCicUtils.expand_local_context lc in
        let lc = List.map (NCicSubstitution.lift status liftno) lc in
        let lc = List.map (lp_term status d c) lc in
-       (*mk_meta lc*) error "meta here" (* uncomment to use fresh metas *)
+       mk_meta lc (*error "meta here" (* uncomment to use fresh metas *)*)
       end
    | C.Rel i               -> mk_lref c i
    | C.Const r             -> mk_gref r
