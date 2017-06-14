@@ -86,11 +86,7 @@ let get_program kernel =
                   "kernel_matita.elpi";
                 ]
       | CSC  -> [ "../../elpi"; "../../refiner-CSC"; ],
-                [ "trace_kernel.elpi";
-                  "PTS_kernel_engine.elpi";
-                  "PTS_matita.elpi";
-                  "debug_kernel.elpi";
-                ],
+                [ "all_kernel.elpi" ],
                 [ "all_refiner.elpi" ]
       | _    -> [ "../.."; ], [], []
    in

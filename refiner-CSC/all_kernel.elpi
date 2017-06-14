@@ -1,0 +1,5 @@
+accumulate trace_kernel.elpi.
+accumulate PTS_machine_heuristics.elpi.
+accumulate PTS_kernel_engine.elpi.
+accumulate PTS_matita.elpi.
+accumulate debug_kernel.elpi.
