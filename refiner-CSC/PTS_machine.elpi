@@ -124,6 +124,7 @@ comp T1 S1 D T2 S2 :- whd1 T2 S2 (comp_dx T1 S1 D), !.
 
 % continuations
 comp_sn T2 S2 D _ T1 S1 :-
- ifnot (comp T1 S1 D T2 S2) (whd1 T2 S2 (comp_dx T1' S1' D)).
+ %ifnot (comp T1 S1 D T2 S2) (whd1 T2 S2 (comp_dx T1' S1' D)).
+ comp T1 S1 D T2 S2.
 comp_dx T1 S1 D _ T2 S2 :-
  comp T1 S1 D T2 S2.
