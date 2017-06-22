@@ -94,7 +94,7 @@ let get_program kernel =
      if filenames_kernel <> [] then begin
        let paths = List.map (Filename.concat matita_dir) paths in
        let args = List.map (fun x -> ["-I";x]) paths in
-       let _args = Elpi_API.init (List.flatten args) in
+       let _args = Elpi_API.init (List.flatten args) Sys.(getcwd ()) in
        LPP.parse_program filenames_kernel, LPP.parse_program filenames_refiner
      end else [],[] in
    LPC.program_of_ast ast_kernel, LPC.program_of_ast ast_refiner
