@@ -31,13 +31,14 @@ get_branch (match_frame _ _ A P) J T P [] :- nth A J T.
 get_branch [V|P] J T P1 [V|P2] :- get_branch P J T P1 P2.
 
 % wind for match
-whd1 (match W U V A) P C :- !, C [] V (match_frame W U A P).
+whd1 (match W U V A) P C Cf :- !, whd1-call-k [] V (match_frame W U A P) C Cf.
 
 % iota for match
 % note: the left arguments must be removed
-whd1 T1 P1 C :- get_constructor T1 J K, !,
-                get_branch P1 J T2 P A, split A K SN DX, append DX P P2,
-                C [] T2 P2.
+whd1 T1 P1 C Cf :- get_constructor T1 J K, get_branch P1 J T2 P A, !,
+   split A K SN DX, append DX P P2,
+   whd1-call-k [] T2 P2 C Cf.
+
 
 % unwind for match
 unwind_stack (match_frame W U A P) V1 V2 :-
@@ -79,3 +80,9 @@ mk_out_type W U V TS RW RU RA W' S RU DXV :-
 % A = branches
 of3 (match W U V A) X (match RW RU RV RA) :-
  of3 V W1 RV, whd_continue_unwind W1 (mk_out_type W U RV A RW RU RA) X.
+
+% must be the last one of whd1...
+whd1 T S _ Kf :- Kf.
+
+
+% vim: set ft=lprolog:

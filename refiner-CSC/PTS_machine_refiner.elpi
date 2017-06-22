@@ -1,11 +1,18 @@
 %% To be accumulated *before* kernel_pts to turn the kernel into a refiner
 % vim: set ft=lprolog:
 
-mode (whd1 i i i).
-whd1 ?? _ _ :- fail.
+% of3 A B C :- $print (of3 A B C), fail.
+conv A B :- $print (conv A B), fail.
+sub A B :- $print (sub A B), fail.
+
+mode (whd1 i i i i).
+whd1 ?? _ _ _ :- fail.
 
 mode (whd** i i o i).
 whd** (?? as X) S L K :- !, K L X S.
+
+mode (whd*-aux i i i i).
+whd*-aux (?? as X) S L K :- !, K L X S.
 
 mode (occur_check i i).
 occur_check (?? _ L1 as V1) (?? as V2) :-
@@ -83,7 +90,7 @@ comp (?? as V1) [] M T2 [] :-
 comp (?? as V1) [] M T2 [] :- is_atom T2, V1 = T2, !.
 
 % REDUCTION
-comp (?? as V1) [] M T2 S2 :- whd1 T2 S2 (comp_dx V1 [] M).
+comp (?? as V1) [] M T2 S2 :- whd1 T2 S2 (_\ comp V1 [] M) fail.
 
 % FAIL
 comp ?? [] _ _ _ :- !, fail. % to avoid falling back in the fast path of the
@@ -163,7 +170,8 @@ comp T2 [] M (?? as V1) [] :-
 comp T2 [] M (?? as V1) [] :- is_atom T2, V1 = T2, !.
 
 % REDUCTION
-comp T2 S2 M (?? as V1) [] :- whd1 T2 S2 (comp_sn V1 [] M).
+comp T2 S2 M (?? as V1) [] :-
+  whd1 T2 S2 (_\ t2\ s2\ comp t2 s2 M V1 []) fail.
 
 % FAIL
 comp _ _ _ ?? [] :- !, fail. % to avoid falling back in the fast path of the

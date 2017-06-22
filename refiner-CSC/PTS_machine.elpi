@@ -9,18 +9,21 @@ macro @whd_continuation :- @vars -> term -> @stack -> prop.
 
 %%%%%%%%%%%%%%%% Reduction
 
-type whd1 term -> @stack -> @whd_continuation -> prop.
+whd1-call-k VL T S K _Kf :- K  VL T S.
+
+type whd1 term -> @stack -> @whd_continuation -> prop -> prop.
 % KAM-like rules in CPS style
-whd1 (app M N) S K :- !, K [] M [N|S].
-whd1 (lam T F1) [N|NS] K :- !, pi x \ val x T N _NF => K [x] (F1 x) NS.
-whd1 (abbr T N F1) NS K :- !,
+whd1 (app M N) S K Kf :- !, whd1-call-k [] M [N|S] K Kf.
+whd1 (lam T F1) [N|NS] K Kf :- !, pi x \ val x T N _NF => whd1-call-k [x] (F1 x) NS K Kf.
+whd1 (abbr T N F1) NS K Kf :- !,
  % CSC: scommentando le righe dopo cambia il comportamento di ELPI
  % $print "WH1" (abbr T N F1) NS K,
  pi x \ val x T N _NF =>
  % CSC: scommentando le righe dopo cambia il comportamento di ELPI
  % $print "WH2" (K [x] (F1 x) NS),
- K [x] (F1 x) NS.
-whd1 X S K :- val X _ N NF, if (is_flex NF) (whd_unwind N NF), !, K [] NF S.
+ whd1-call-k [x] (F1 x) NS K Kf.
+whd1 X S K Kf :- val X _ N NF, if (is_flex NF) (whd_unwind N NF), !,
+ whd1-call-k [] NF S K Kf.
 
 type whd*_inner @whd_continuation -> @vars -> @whd_continuation.
 type whd*_outer @whd_continuation -> @whd_continuation.
@@ -46,7 +49,10 @@ whd** T1 P1 L C :- get_constructor T1 J K,
 whd** T1 S1 L K :- env T1 _ T2, expand T1 S1 S2, !, whd** T2 S2 L K.
 %
 whd** T S L1 K :- rev_append L1 [] L2, K L2 T S.
-whd* T S K :- whd** T S [] K.
+%whd* T S K :- whd** T S [] K.
+
+whd*-aux T S VL K :- whd1 T S (vl\ t1\ s1\ sigma VL2\ append VL vl VL2, (whd*-aux t1 s1 VL2 K)) ((env T _ B, expand T S S2, !, whd*-aux B S2 VL K) ; K VL T S).
+whd* T S K :- (whd*-aux T S [] K).
 
 type whd_unwind_inner term -> @whd_continuation.
 type whd_unwind term -> term -> prop.
@@ -119,8 +125,13 @@ comp (arr T1 F1) [] D (arr T2 F2) [] :- !,
  conv T1 T2,
  pi x \ comp (F1 x) [] D (F2 x) [].
 % reduction rules
-comp T1 S1 D T2 S2 :- whd1 T1 S1 (comp_sn T2 S2 D), !.
-comp T1 S1 D T2 S2 :- whd1 T2 S2 (comp_dx T1 S1 D), !.
+%comp T1 S1 D T2 S2 :- whd1 T1 S1 (comp_sn T2 S2 D), !.
+%comp T1 S1 D T2 S2 :- whd1 T2 S2 (comp_dx T1 S1 D), !.
+comp T1 S1 D T2 S2 :-
+  whd1 T1 S1 (_\ t1\ s1\ (comp t1 s1 D T2 S2, !) ;
+                         whd1 T2 S2 (_\ t2\ s2\ comp t1 s1 D t2 s2) fail)
+             (whd1 T2 S2 (_\ t2\ s2\ comp T1 S1 D t2 s2) fail).
+
 
 % continuations
 comp_sn T2 S2 D _ T1 S1 :-
@@ -128,3 +139,5 @@ comp_sn T2 S2 D _ T1 S1 :-
  comp T1 S1 D T2 S2.
 comp_dx T1 S1 D _ T2 S2 :-
  comp T1 S1 D T2 S2.
+
+% vim: set ft=lprolog:
