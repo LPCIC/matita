@@ -35,6 +35,7 @@ mode (comp i i i i i).
 comp (app T1 T2) S1 M V2 S2 :- !, comp T1 [T2|S1] M V2 S2. 
 comp V2 S2 M (app T1 T2) S1 :- !, comp V2 S2 M T1 [T2|S1]. 
 
+comp (?? _ L1 as V1) [] M (?? _ L2 as V2) [] :- L1 = L2, !, V1 = V2.
 comp (?? as V1) S1 M (?? as V2) S2 :- !,
  $constraint (
    comp V1 S1 M V2 S2
@@ -75,6 +76,7 @@ comp (?? as V1) [] M T2 S2 :-
 comp (?? as V1) [] _ T2 S2 :-
  append S21 [S2l] S2,
  not (T2 = lam _ _),
+ occur_check S2l V1,
  V1 = app X Y,
  comp X [] eq T2 S21,
  comp Y [] eq S2l [],
@@ -159,6 +161,7 @@ comp T2 S2 M (?? as V1) [] :-
 comp T2 S2 _ (?? as V1) [] :-
  append S21 [S2l] S2,
  not (T2 = lam _ _),
+ occur_check S2l V1,
  V1 = app X Y,
  comp T2 S21 eq X [],
  comp S2l [] eq Y [],
