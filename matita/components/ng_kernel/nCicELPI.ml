@@ -241,11 +241,8 @@ let mk_approx_cast t u v = LPA.mkApp [LPA.mkCon "approx_cast"; t; u; v]
 
 (* matita to elpi *)
 let rec lp_term status d c = function
-   | C.Implicit `Closed
-   | C.Implicit `Type
-   | C.Implicit `Term      -> mk_hole ()
    | C.Implicit `Vector    -> mk_vect ()
-   | C.Implicit _          -> assert false (* are these cases meaningful? *)
+   | C.Implicit _          -> mk_hole ()
    | C.Meta (i, (liftno,lc as l))         ->
       begin try
          let _, _, v, _ = List.assoc i d in
