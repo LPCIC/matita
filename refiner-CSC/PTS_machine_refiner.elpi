@@ -2,8 +2,8 @@
 % vim: set ft=lprolog:
 
 % of3 A B C :- $print (of3 A B C), fail.
-conv A B :- $print (conv A B), fail.
-sub A B :- $print (sub A B), fail.
+% conv A B :- $print (conv A B), fail.
+% sub A B :- $print (sub A B), fail.
 
 mode (whd1 i i i i).
 whd1 ?? _ _ _ :- fail.
@@ -37,6 +37,7 @@ comp V2 S2 M (app T1 T2) S1 :- !, comp V2 S2 M T1 [T2|S1].
 
 comp (?? _ L1 as V1) [] M (?? _ L2 as V2) [] :- L1 = L2, !, V1 = V2.
 comp (?? as V1) S1 M (?? as V2) S2 :- !,
+% $print "delay" (comp V1 S1 M V2 S2),
  $constraint (
    comp V1 S1 M V2 S2
  ) [V1,V2]
@@ -48,6 +49,7 @@ comp (?? as T1) [A|AS] M T2 L2 :-
  T1 = lam TA' F,
  conv TA TA',
  pi x \ val x TA RA _NF => (
+%$print "auto intro" (comp (F x) AS M T2 L2),
   comp (F x) AS M T2 L2).
 
 on_rigid_term B S CONT :-
@@ -86,6 +88,7 @@ comp (?? as V1) [] _ T2 S2 :-
 % regular mimic rules
 comp (?? as V1) [] M T2 [] :-
  ifnot (occur_check T2 V1) ($print "OCCUR CHECK FAILED FOR" (comp V1 [] M T2 []), fail),
+%$print "mimic" V1 "~" T2,
  mcompoii V1 M T2,
  !. % mcomp used generatively
 
