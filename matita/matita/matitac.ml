@@ -40,6 +40,8 @@ let main_compiler () =
      "-elpi-trace", Arg.String
        (fun s -> NCicELPI.trace_options := Str.split (Str.regexp " ") s),
       "set trace options";
+     "-elpi-maxsteps", Arg.Int (fun i-> NCicELPI.maxsteps := i),
+      "bound computation length";
     ];
   MatitaInit.initialize_all ();
   (* targets and deps *)

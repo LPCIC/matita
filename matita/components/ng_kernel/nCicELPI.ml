@@ -61,6 +61,8 @@ let matita_dir = Filename.dirname (Sys.argv.(0))
 
 let kernel = ref NO
 
+let maxsteps = ref max_int
+
 let error s = raise (Error s)
 
 let get_program kernel =
@@ -482,7 +484,7 @@ let execute engine status r query =
       Format.pp_set_margin Format.std_formatter 250;
       let t0 = Unix.gettimeofday () in
       let res =
-      if LPR.execute_once program ~print_constraints:!print_constraints query then
+      if LPR.execute_once program ~max_steps:!maxsteps ~print_constraints:!print_constraints query then
          Fail, "KO"
       else
          OK, "OK" in

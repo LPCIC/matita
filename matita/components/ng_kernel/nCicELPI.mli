@@ -19,6 +19,9 @@ val set_kernel_from_string: string -> unit
 (* trace options *)
 val trace_options : string list ref
 
+(* computation length *)
+val maxsteps : int ref
+
 (* run elpi typechecker *)
 val typecheck : bool ref
 
