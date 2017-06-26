@@ -481,10 +481,14 @@ let execute engine status r query =
       Format.pp_set_margin Format.std_formatter 250;
       let t0 = Unix.gettimeofday () in
       let res =
-      if LPR.execute_once program ~max_steps:!maxsteps ~print_constraints:!print_constraints query then
-         Fail, "KO"
-      else
-         OK, "OK" in
+        try 
+          if LPR.execute_once program
+               ~max_steps:!maxsteps ~print_constraints:!print_constraints query 
+          then
+             Fail, "KO"
+          else
+             OK, "OK"
+        with e -> Fail, Printexc.to_string e in
       let t1 = Unix.gettimeofday () in
       let timediff = t1 -. t0 in
       total_query_time := !total_query_time +. timediff;
