@@ -766,7 +766,7 @@ let rec eval_ncommand ~include_paths opts status (text,prefix_len,cmd) =
                            "unable to generate leibniz discrimination principle (constructor %s too big)"
                            k);
                            let status = status#set_ng_mode `CommandMode in status
-                      | _ -> (*HLog.warn "error in generating discrimination principle"; *)
+                      | e -> HLog.warn ("error in generating discrimination principle: " ^ Printexc.to_string e);
                                 let status = status#set_ng_mode `CommandMode in
                                 status)
                   status itl
