@@ -24,6 +24,7 @@ let log = function
    | LP.Fail   -> HLog.error "ELPI refinement failed!"
    | LP.OK     -> HLog.message "ELPI refinement OK!"
    | LP.Skip s -> HLog.message ("ELPI refinement skipped: " ^ s)
+   | LP.Timeout -> HLog.message "ELPI refinement Timeout!"
 
 let current = 
   let uri = NUri.uri_of_string "cic:/matita/dummy/indty.ind" in 
@@ -1184,16 +1185,16 @@ let typeof status ?localise
   let _metasenv', subst', refined_term, ty = res in
   let t1 = now () in
   let skipped = function LP.Skip _ -> true | _ -> false in
-  let tdiff,skipped = begin match expty with
+  let tdiff,skipped,res_elpi = begin match expty with
      | `XTNone       ->
         let tdiff, res = LP.approx status !current context subst term subst' refined_term ty in
         log res ;
-        tdiff, skipped res
+        tdiff, skipped res, res
      | `XTSome expty ->
         let tdiff, res = LP.approx_cast status !current context subst term expty subst' refined_term in
         log res ;
-        tdiff, skipped res
-     | _             -> 0., true
+        tdiff, skipped res, res
+     | _             -> 0., true, LP.Skip "?"
   end in
   let t2 = now () in
   let d1, d2 = t1 -. t0, t2 -. t1 in
@@ -1202,7 +1203,13 @@ let typeof status ?localise
    total_elpi_time := !total_elpi_time +. d2;
    total_query_elpi_time := !total_query_elpi_time +. tdiff;
    Printf.printf "Matita refinement time: %f\n" d1;
-   Printf.printf "ELPI refinement time: %f\n" d2;
+   Printf.printf "ELPI all time: %f\n" d2;
+   Printf.printf "ELPI refinement time: %f %s\n" tdiff
+     (match res_elpi with
+     | LP.Fail -> "KO"
+     | LP.OK -> "OK"
+     | LP.Timeout -> "TIME"
+     | LP.Skip _ -> "SKIP");
   end ;
   res 
 (*FG: end of extension for ELPI *)

@@ -24,6 +24,7 @@ let log = function
    | LP.Fail   -> HLog.error "ELPI validation failed!"
    | LP.OK     -> HLog.message "ELPI validation OK!"
    | LP.Skip s -> HLog.message ("ELPI validation skipped: " ^ s)
+   | LP.Timeout -> HLog.message "ELPI validation TIMEOUT"
 
 let total_matita_time = ref 0.0
 let total_elpi_time = ref 0.0

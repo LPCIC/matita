@@ -6,23 +6,24 @@ accumulate environment_matita.
 
 % implementation of the queries from the environment %%%%%%%%%%%%%%%%%%%%%%%%%
 
-has_type T U :-
-  of3 U _ RU,
-  of3bidir T RU _,
-  !.
+% CAVEAT: we don't bang, so that is P is backtracked on we don't fail,
+% but in such case we also count in the time what happened after P and
+% that failed causing the backtracking...
+spy-time X P T :- $gettimeofday T0, P, $gettimeofday T1, T is T1 - T0.
 
-is_type U :-
-  of3 U S' _,
-  match_sort S' _S,
-  !.
+has_type T U Time :-
+  spy-time 1 (of3 U _ RU, of3bidir T RU _) Time, !.
 
-approx T V W :-
-  of3 T U' RT,
-  conv U' W,
-  conv RT V,
-  !.
+is_type U Time :- spy-time 2  (of3 U S' _, match_sort S' _S) Time, !.
 
-approx_cast T U V :-
-  of3 U _ RU,
-  of3bidir T RU RT,
-  conv RT V, !.
+
+approx T V W Time :-
+  spy-time 3 (of3 T U' RT, conv U' W) Time,
+  conv RT V, !. % we also check that the result is the same
+
+approx_cast T U V Time :-
+  spy-time 4 (of3 U _ RU, of3bidir T RU RT) Time,
+  conv RT V, !. % we also check that the result is the same
+
+
+% vim: set ft=lprolog:

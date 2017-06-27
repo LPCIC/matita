@@ -9,9 +9,10 @@
      \ /   This software is distributed as is, NO WARRANTY.     
       V_______________________________________________________________ *)
 
-type outcome = private Skip of string
+type outcome = Skip of string
              |         Fail
              |         OK
+             |         Timeout
 
 (* use this kernel: valid values "NO" (default), "CSC", "FG0", "FG1" *)
 val set_kernel_from_string: string -> unit

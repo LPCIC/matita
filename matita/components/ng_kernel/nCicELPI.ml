@@ -32,6 +32,7 @@ type engine = Kernel
 type outcome = Skip of string
              | Fail
              | OK
+             | Timeout
 
 type kernel_t = NO | FG of int | CSC
 
@@ -231,13 +232,14 @@ let mk_hole () = LPA.mkApp [mk_head HOLE]
 
 let mk_vect () = LPA.mkApp [mk_head VECT]
 
-let mk_is_type u = LPA.mkApp [LPA.mkCon "is_type"; u]
+let mk_is_type u time = LPA.mkApp [LPA.mkCon "is_type"; u; time]
 
-let mk_has_type t u = LPA.mkApp [LPA.mkCon "has_type"; t; u]
+let mk_has_type t u time = LPA.mkApp [LPA.mkCon "has_type"; t; u; time]
 
-let mk_approx t v w = LPA.mkApp [LPA.mkCon "approx"; t; v; w]
+let mk_approx t v w time = LPA.mkApp [LPA.mkCon "approx"; t; v; w; time]
 
-let mk_approx_cast t u v = LPA.mkApp [LPA.mkCon "approx_cast"; t; u; v]
+let mk_approx_cast t u v time =
+  LPA.mkApp [LPA.mkCon "approx_cast"; t; u; v; time]
 
 (* matita to elpi *)
 let rec lp_term status d c = function
@@ -467,56 +469,67 @@ let execute engine status r query =
    if !verbose then Printf.printf "ELPI ?? %s\n%!" str;
    let t = lp_term status [] 0 (C.Const r) in
    current := Some t;
-   let time, (result, msg) = try
+   let result, msg, time = try
       if engine = Kernel && not !validate then error "not validating";
       if engine = Refiner && not !refine then error "not refining";
       let program = match engine with
          | Kernel  -> !kernel_program
          | Refiner -> !refiner_program
       in
-      let query = LPC.query_of_ast program (Ploc.dummy, query ()) in
+      let query, get_lp_time =
+        let time = LPA.mkCon "TIME" in
+        LPC.query_of_ast program (Ploc.dummy, query time),
+        fun s ->
+          match LPD.SMap.find "TIME" s with
+          | LPD.CData d when LPD.CD.is_float d -> LPD.CD.to_float d
+          | _ -> assert false
+        in
       if !typecheck then LPC.typecheck program query;
       Elpi_API.trace !trace_options;
       Format.pp_set_margin Format.err_formatter 250;
       Format.pp_set_margin Format.std_formatter 250;
       let t0 = Unix.gettimeofday () in
-      let res =
+      let time () =
+        let t1 = Unix.gettimeofday () in
+        t1 -. t0 in
+      let (_,_,timediff) as res =
         try 
-          if LPR.execute_once program
+          match 
+            LPR.execute_once program
                ~max_steps:!maxsteps ~print_constraints:!print_constraints query 
-          then
-             Fail, "KO"
-          else
-             OK, "OK"
-        with e -> Fail, Printexc.to_string e in
-      let t1 = Unix.gettimeofday () in
-      let timediff = t1 -. t0 in
+          with
+          | `Success s -> OK, "OK", get_lp_time (Lazy.force s)
+          | `Failure -> Fail, "KO", time ()
+          | `NoMoreSteps ->
+               Timeout, Printf.sprintf "KO(steps=%d)" !maxsteps, time ()
+        with e -> Fail, Printexc.to_string e, time () in
       total_query_time := !total_query_time +. timediff;
-      timediff,res
-      with Error s -> 0.,(Skip s, "OO[" ^ s ^ "]")
+      res
+      with Error s -> Skip s, "OO[" ^ s ^ "]", 0.0
    in
    if !verbose then Printf.printf "ELPI %s %s\n%!" msg str;
    if engine = Kernel && not (List.mem t !seen) then seen := t :: !seen;
    time,result
 
 let is_type status r u =
-   let query () = mk_is_type (lp_term status [] 0 u) in
+   let query time = mk_is_type (lp_term status [] 0 u) time in
    execute Kernel status r query
 
 let has_type status r t u =
-   let query () = mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) in
+   let query time =
+     mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) time in
    execute Kernel status r query
 
 let approx status r c s1 t s2 v w =
    let t = apply_subst_to_closure status false s1 c t in
    let v = apply_subst_to_closure status false s2 c v in
    let w = apply_subst_to_closure status true  s2 c w in
-   let query () = mk_approx (lp_term status [] 0 t) (lp_term status [] 0 v) (lp_term status [] 0 w) in
+   let query time = mk_approx (lp_term status [] 0 t) (lp_term status [] 0 v) (lp_term status [] 0 w) time in
    execute Refiner status r query
 
 let approx_cast status r c s1 t u s2 v =
    let t = apply_subst_to_closure status false s1 c t in
    let u = apply_subst_to_closure status true  s1 c u in
    let v = apply_subst_to_closure status false s2 c v in
-   let query () = mk_approx_cast (lp_term status [] 0 t) (lp_term status [] 0 u) (lp_term status [] 0 v) in
+   let query time = mk_approx_cast (lp_term status [] 0 t) (lp_term status [] 0 u) (lp_term status [] 0 v) time in
    execute Refiner status r query
