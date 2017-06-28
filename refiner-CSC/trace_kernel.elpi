@@ -7,7 +7,7 @@
 % Note: very slow
 % focus :- on_object cic:/matita/arithmetics/nat/nat_discr#def:2.
 % Note: refinement queries work up to here:
-focus :- after_object cic:/matita/arithmetics/nat/plus_n_Sm#def:4.
+% focus :- after_object cic:/matita/arithmetics/nat/plus_n_Sm#def:4.
 
 type focus prop.
 type trace string -> prop -> prop.
@@ -29,11 +29,17 @@ at_end :- vals.
 
 %%% For PTS_machine.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% whd* T S _ :- focus, $print (whd* T S), fail.
+% whd1 T S _ _ :- focus, $print (whd1 T S), at_end.
+
+% whd*-aux T S VL _ :- focus, $print (whd*-aux T S VL), at_end.
+
+% whd* T S _ :- focus, $print (whd* T S), at_end.
 
 % match_sort T S :- focus, $print "match_sort" T "->" S, fail.
 
 % match_arr TM A1 Bx :- focus, $print (match_arr TM "##" A1 "##" Bx), fail.
+
+% match_arr_inner A F L T S :- focus, $print (match_arr_inner A F L T S), at_end.
 
 % comp T1 S1 M T2 S2 :- focus, $print "?? comp" T1 "##" S1 "<=" M "=>" T2 "##" S2, at_end.
 
@@ -41,7 +47,7 @@ at_end :- vals.
 
 %%% For PTS_typing.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% of3 T U RT :- focus, $print "of3" T "~" RT ":" U, $names X, $print X, fail. % ofs X.
+% of3 T U RT :- focus, $print "of3" T "~" RT ":" U, at_end.
 
 % succ S1 S2 :- focus, $print (succ S1 S2), fail.
 
@@ -75,8 +81,8 @@ at_end :- vals.
 
 %%% For PTS_matita.elpi %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% has_type T U :- focus, $print (has_type T U), fail.
+% has_type T U _ :- focus, $print (has_type T U), at_end.
 
-% approx T V W :- focus, $print "?? approx" T "as" V ":" W, at_end.
+% approx T V W _ :- focus, $print "?? approx" T "as" V ":" W, at_end.
 
-% approx_cast T U V :- focus, $print "?? approx cast" T ":" U "as" V, at_end.
+% approx_cast T U V _ :- focus, $print "?? approx cast" T ":" U "as" V, at_end.
