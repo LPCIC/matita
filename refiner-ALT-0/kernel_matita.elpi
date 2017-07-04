@@ -6,6 +6,8 @@ accumulate environment_matita.elpi.
 
 % QUERIES FROM THE ENVIRONMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-has_type T U :- has+type T U.
+spy-time X P T :- $gettimeofday T0, P, $gettimeofday T1, T is T1 - T0.
 
-is_type U :- has+sort U S.
+has_type T U Time :- spy-time 1 (has+type T U) Time.
+
+is_type U Time :- spy-time 2 (has+sort U S) Time.
