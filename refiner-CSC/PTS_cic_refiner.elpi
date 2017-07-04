@@ -2,10 +2,7 @@
 
 % univ+pair %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-mode (univ+pair i i).
-univ+pair (?? as U1) (?? as U2) :- !, $constraint (univ+pair U1 U2) [U1, U2].
-univ+pair (?? as U1) U2 :- !, $constraint (univ+pair U1 U2) [U1].
-univ+pair U1 (?? as U2) :- !, $constraint (univ+pair U1 U2) [U2].
+% mode (univ+pair o o).
 
 % univ+chain %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
