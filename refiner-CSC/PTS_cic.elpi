@@ -6,6 +6,7 @@ type u+2 universe.
 type u+3 universe.
 type u+4 universe.
 type u+5 universe.
+type u+6 universe.
 
 type s+prop  sort.
 type s+cprop universe -> sort.
@@ -20,6 +21,7 @@ univ+pair u+1 u+2 :- !.
 univ+pair u+2 u+3 :- !.
 univ+pair u+3 u+4 :- !.
 univ+pair u+4 u+5 :- !.
+univ+pair u+5 u+6 :- !.
 
 type univ+chain universe -> universe -> prop.
 
