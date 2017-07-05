@@ -51,7 +51,10 @@ whd** T1 S1 L K :- env T1 _ T2, expand T1 S1 S2, !, whd** T2 S2 L K.
 whd** T S L1 K :- rev_append L1 [] L2, K L2 T S.
 %whd* T S K :- whd** T S [] K.
 
-whd*-aux T S VL K :- whd1 T S (vl\ t1\ s1\ sigma VL2\ append VL vl VL2, (whd*-aux t1 s1 VL2 K)) ((env T _ B, expand T S S2, !, whd*-aux B S2 VL K) ; K VL T S).
+whd*-aux T S VL K :-
+  whd1 T S
+  (vl\ t1\ s1\ sigma VL2\ append VL vl VL2, whd*-aux t1 s1 VL2 K) 
+  ((env T _ B, expand T S S2, !, whd*-aux B S2 VL K) ; K VL T S).
 whd* T S K :- (whd*-aux T S [] K).
 
 type whd_unwind_inner term -> @whd_continuation.
@@ -85,6 +88,24 @@ unwind_stack [X|XS] T O :- unwind_stack XS (app T X) O.
 % with local definitions for the variables in the list
 put_abbr [] NF NF.
 put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
+%  , ifelse (occurs X (K X)) (O = abbr T N K) (O = K X)
+%.
+
+%%%%%%%%%%%%%%%% code to remove useless abbreviations
+
+% put_abbr L I T' :-
+%  put_abbr0 L I T,
+%  clean_useless_abbr T T'.
+
+% clean_useless_abbr (abbr T N K) O :-
+% if_not_else ($occurs T (K T)) (clean_useless_abbr (K T) O)
+%  (O = abbr T N O', pi x \ clean_useless_abbr (K x) (O' x)).
+
+%clean_useless_abbr (abbr T N K) O :-
+% if_then_else ($occurs T K Lin)
+% (if_then_else (Lin = linearly) (clean_useless_abbr (K N) O)
+% (O = abbr T N O', pi x \ clean_useless_abbr (K x) (O' x)))
+% (clean_useless_abbr (K T) O) .
 
 %%%%%%%%%%%%%%%% Conversion
 

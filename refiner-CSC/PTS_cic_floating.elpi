@@ -2,12 +2,12 @@
 
 % llt issued by floating %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% fixed universes..
+% fixed universes
 llt U1 U2 :- univ+chain U1 U2.
 
 % lle issued by floating %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% fixed universes..
+% fixed universes
 lle U U :- !.
 lle U1 U2 :- univ+chain U1 U2.
 
