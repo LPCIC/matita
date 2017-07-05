@@ -7,7 +7,7 @@
 % Note: very slow
 % focus :- on_object cic:/matita/arithmetics/nat/nat_discr#def:2.
 % Note: refinement queries work up to here:
-% focus :- after_object cic:/matita/arithmetics/nat/plus_n_Sm#def:4.
+% focus :- after_object cic:/matita/basics/logic/True_inv_rect_CProp0#def:2
 
 type focus prop.
 type trace string -> prop -> prop.
@@ -83,6 +83,6 @@ at_end :- vals.
 
 % has_type T U _ :- focus, $print (has_type T U), at_end.
 
-% approx T V W _ :- focus, $print "?? approx" T "as" V ":" W, at_end.
+% approx_check T V W _ :- focus, $print "?? approx" T "as" V ":" W, at_end.
 
-% approx_cast T U V _ :- focus, $print "?? approx cast" T ":" U "as" V, at_end.
+% approx_cast_check T U V _ :- focus, $print "?? approx cast check" T ":" U "as" V, at_end.

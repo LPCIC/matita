@@ -190,12 +190,25 @@ let rec fire_projection_redex status () = function
      NCicUtils.map status (fun _ x -> x) () (fire_projection_redex status) t
 ;;
 
-let apply_subst status ?(fix_projections=false) subst context t = 
+let apply_subst_gen status ?(fix_projections=false) subst context t =
+ let pattern = ref false in
  let rec apply_subst subst () =
  function
     NCic.Meta (i,lc) ->
      (try
-       let _,_,t,_ = NCicUtils.lookup_subst i subst in
+       let tags,_,t,_ = NCicUtils.lookup_subst i subst in
+       if List.exists (function `OutScope _ -> true | _ -> false) tags then
+        (try
+          match t with
+             NCic.Meta (i',_) ->
+              let tags',_,_,_ = NCicUtils.lookup_subst i' subst in
+              if List.exists (function `InScope -> true | _ -> false) tags' then
+               () (* pattern := false *)
+              else pattern := true;
+           | _ -> pattern := true
+         with
+          NCicUtils.Subst_not_found _ -> pattern := true
+        );
        let t = NCicSubstitution.subst_meta status lc t in
         apply_subst subst () t
       with
@@ -212,10 +225,15 @@ let apply_subst status ?(fix_projections=false) subst context t =
   let t = apply_subst subst () t in
   let t = clean_or_fix_dependent_abstrations status context t in
   if fix_projections then
-   fire_projection_redex status () t
+   fire_projection_redex status () t, !pattern
   else
-   t
+   t, !pattern
 ;;
+
+NCicELPI.set_apply_subst (fun status subst -> apply_subst_gen status subst);;
+
+let apply_subst status ?fix_projections subst context t =
+   fst (apply_subst_gen status ?fix_projections subst context t)
 
 let apply_subst_context status ~fix_projections subst context =
   let apply_subst = apply_subst status ~fix_projections in
@@ -241,8 +259,6 @@ let rec apply_subst_metasenv status subst = function
 
 (* hide optional arg *)
 let apply_subst status s c t = apply_subst status s c t;;
-
-NCicELPI.set_apply_subst apply_subst;;
 
 type meta_kind = [ `IsSort | `IsType | `IsTerm ]
 

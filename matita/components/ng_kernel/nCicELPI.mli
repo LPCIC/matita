@@ -60,5 +60,5 @@ val approx_cast: #NCic.status -> NReference.reference -> NCic.context ->
   float * outcome
 
 val set_apply_subst:
- (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term)
+ (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term * bool)
  -> unit

@@ -14,16 +14,18 @@ spy-time X P T :- $gettimeofday T0, P, $gettimeofday T1, T is T1 - T0.
 has_type T U Time :-
   spy-time 1 (of3 U _ RU, of3bidir T RU _) Time, !.
 
-is_type U Time :- spy-time 2  (of3 U S' _, match_sort S' _S) Time, !.
+is_type U Time :-
+  spy-time 2  (of3 U S' _, match_sort S' _S) Time, !.
 
+approx_check T V W Time :-
+  spy-time 3 (of3 T U' RT) Time,
+  conv U' W, conv RT V, !. % we also check that the result is the same
 
-approx T V W Time :-
-  spy-time 3 (of3 T U' RT, conv U' W) Time,
+approx_cast T U Time :-
+  spy-time 4 (of3 U _ RU, of3bidir T RU RT) Time, !.
+
+approx_cast_check T U V Time :-
+  spy-time 5 (of3 U _ RU, of3bidir T RU RT) Time,
   conv RT V, !. % we also check that the result is the same
-
-approx_cast T U V Time :-
-  spy-time 4 (of3 U _ RU, of3bidir T RU RT) Time,
-  conv RT V, !. % we also check that the result is the same
-
 
 % vim: set ft=lprolog:

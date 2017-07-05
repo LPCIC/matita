@@ -236,10 +236,11 @@ let mk_is_type u time = LPA.mkApp [LPA.mkCon "is_type"; u; time]
 
 let mk_has_type t u time = LPA.mkApp [LPA.mkCon "has_type"; t; u; time]
 
-let mk_approx t v w time = LPA.mkApp [LPA.mkCon "approx"; t; v; w; time]
+let mk_approx_check t v w time = LPA.mkApp [LPA.mkCon "approx_check"; t; v; w; time]
 
-let mk_approx_cast t u v time =
-  LPA.mkApp [LPA.mkCon "approx_cast"; t; u; v; time]
+let mk_approx_cast t u time = LPA.mkApp [LPA.mkCon "approx_cast"; t; u; time]
+
+let mk_approx_cast_check t u v time = LPA.mkApp [LPA.mkCon "approx_cast_check"; t; u; v; time]
 
 (* matita to elpi *)
 let rec lp_term status d c = function
@@ -446,7 +447,7 @@ let trace_options = ref []
 let typecheck = ref false
 
 let set_apply_subst, apply_subst =
- let g : (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term) ref = ref (fun _ -> assert false) in
+ let g : (NCic.status -> NCic.substitution -> NCic.context -> NCic.term -> NCic.term * bool) ref = ref (fun _ -> assert false) in
  (function f -> g := f),
  (fun x -> !g x)
 ;;
@@ -517,19 +518,25 @@ let is_type status r u =
 
 let has_type status r t u =
    let query time =
-     mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) time in
+     mk_has_type (lp_term status [] 0 t) (lp_term status [] 0 u) time
+   in
    execute Kernel status r query
 
 let approx status r c s1 t s2 v w =
-   let t = apply_subst_to_closure status false s1 c t in
-   let v = apply_subst_to_closure status false s2 c v in
-   let w = apply_subst_to_closure status true  s2 c w in
-   let query time = mk_approx (lp_term status [] 0 t) (lp_term status [] 0 v) (lp_term status [] 0 w) time in
+   let t, _ = apply_subst_to_closure status false s1 c t in
+   let v, _ = apply_subst_to_closure status false s2 c v in
+   let w, _ = apply_subst_to_closure status true  s2 c w in
+   let query time =
+      mk_approx_check (lp_term status [] 0 t) (lp_term status [] 0 v) (lp_term status [] 0 w) time
+   in
    execute Refiner status r query
 
 let approx_cast status r c s1 t u s2 v =
-   let t = apply_subst_to_closure status false s1 c t in
-   let u = apply_subst_to_closure status true  s1 c u in
-   let v = apply_subst_to_closure status false s2 c v in
-   let query time = mk_approx_cast (lp_term status [] 0 t) (lp_term status [] 0 u) (lp_term status [] 0 v) time in
+   let t, _ = apply_subst_to_closure status false s1 c t in
+   let u, p = apply_subst_to_closure status true  s1 c u in
+   let v, _ = apply_subst_to_closure status false s2 c v in
+   let query time =
+      if p then mk_approx_cast (lp_term status [] 0 t) (lp_term status [] 0 u) time
+      else mk_approx_cast_check (lp_term status [] 0 t) (lp_term status [] 0 u) (lp_term status [] 0 v) time
+   in
    execute Refiner status r query
