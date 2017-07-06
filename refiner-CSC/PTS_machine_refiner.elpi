@@ -74,7 +74,7 @@ comp (?? as V1) [] M T2 S2 :-
  !.
 
 % MIMIC
-% non empty stack = application
+% non empty stack: application frame
 comp (?? as V1) [] _ T2 S2 :-
  append S21 [S2l] S2,
  not (T2 = lam _ _),
@@ -82,6 +82,18 @@ comp (?? as V1) [] _ T2 S2 :-
  V1 = app X Y,
  comp X [] eq T2 S21,
  comp Y [] eq S2l [],
+ !
+ .
+
+% non empty stack: match frame
+comp (?? as V1) [] _ T2 S2 :-
+ append S (match_frame W U A []) S2,
+% not (T2 = lam _ _),
+ occur_check U V1,
+ V1 = match W Y X Z,
+ comp X [] eq T2 S,
+ conv Y W,
+ forall2 Z A (A \ B \ conv A B, !),
  !
  .
 
@@ -160,7 +172,7 @@ comp T2 S2 M (?? as V1) [] :-
  !.
 
 % MIMIC
-% non empty stack = application
+% non empty stack: application frame
 comp T2 S2 _ (?? as V1) [] :-
  append S21 [S2l] S2,
  not (T2 = lam _ _),
@@ -170,6 +182,19 @@ comp T2 S2 _ (?? as V1) [] :-
  comp S2l [] eq Y [],
  !
  .
+
+% non empty stack: match frame
+comp T2 S2 _ (?? as V1) [] :-
+ append S (match_frame W U A []) S2,
+% not (T2 = lam _ _),
+ occur_check U V1,
+ match W Y X Z = V1,
+ comp T2 S eq X [],
+ conv W Y,
+ forall2 A Z (A \ B \ conv A B, !),
+ !
+ .
+
 % regular mimic rules
 comp T2 [] M (?? as V1) [] :-
  ifnot (occur_check T2 V1) ($print "OCCUR CHECK FAILED FOR" (comp T2 [] M V1 []), fail),
