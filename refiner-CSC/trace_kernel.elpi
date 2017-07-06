@@ -20,9 +20,6 @@ trace S P :-
 
 vals :- val X T N NF, $print "VAL" X ":" T "=" N "=>" NF, fail.
 
-ofs [] :- fail.
-ofs [T | L] :- if (focus, of3 T U _) ($print "OF3" T "##" U), ofs L.
-
 at_end :- vals.
 
 % TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

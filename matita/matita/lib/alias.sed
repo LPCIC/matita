@@ -1,5 +1,6 @@
 s!cic:/matita/basics/logic/eq#ind:1:0:2!eq!g
 s!cic:/matita/basics/logic/eq#con:0:1:2!refl!g
+s!cic:/matita/basics/logic/eq_rect_Type2#fix:0:5:1!eq_rect_Type2!g
 s!cic:/matita/basics/logic/rewrite_r#def:3!rewrite_r!g
 s!cic:/matita/basics/logic/rewrite_l#def:1!rewrite_l!g
 s!cic:/matita/basics/logic/True#ind:1:0:0!True!g
@@ -13,4 +14,6 @@ s!cic:/matita/arithmetics/nat/plus#fix:0:0:1!plus!g
 s!cic:/matita/arithmetics/nat/plus_n_O#def:2!plus_n_O!g
 s!cic:/matita/arithmetics/nat/plus_n_Sm#def:4!plus_n_Sm!g
 #
+#s!!!g
+#s!!!g
 #s!!!g

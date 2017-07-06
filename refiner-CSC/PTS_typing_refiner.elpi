@@ -33,8 +33,10 @@ of3 (app M vect) TM RM :- of3 M TM RM.
 
 % could be optimized
 of3 (app M vect) U RT :- !,
-  of3 M TM RM, ifelse (not (is_flex TM))%(is_rigid_term TM [])
+%  $print "TRYING EXPANDING VECT" (app M vect),
+  of3 M TM RM, ifnotelse (is_flex TM)%(is_rigid_term TM [])
    (match_arr TM _ _,
+%    $print "EXPANDING VECT" (app (app RM hole) vect),
     of3 (app (app RM hole) vect) U RT)
    fail.
 
