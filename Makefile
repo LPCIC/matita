@@ -2,13 +2,13 @@ all: matita/matita/matita
 
 .PHONY: matita/matita/matita
 
-matita/matita/matita: elpi/elpi.cmxa matita/Makefile.defs
+matita/matita/matita: elpi/findlib/elpi/elpi.cmxa matita/Makefile.defs
 	$(MAKE) -C matita
 
 matita/Makefile.defs:
 	cd matita && autoconf && ./configure
 
-elpi/elpi.cmxa:
+elpi/findlib/elpi/elpi.cmxa:
 	git submodule update --init
 	$(MAKE) -C elpi
 

@@ -40,7 +40,7 @@ fi
 # look for METAS dir
 
 LIBSPATH="`pwd`/components"
-OCAMLPATH="$OCAMLPATH:$LIBSPATH/METAS:`pwd`/../elpi/"
+OCAMLPATH="$OCAMLPATH:$LIBSPATH/METAS:`pwd`/../elpi/findlib/"
 export OCAMLPATH
 
 # creating META.*
