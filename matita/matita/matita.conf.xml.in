@@ -14,7 +14,7 @@
     <!-- <key name="auto_disambiguation">true</key> -->
     <!-- Debug only. Stay away. -->
     <!-- <key name="environment_trust">true</key> -->
-    <key name="basedir">$(user.home)/.elpi</key>
+    <key name="basedir">$(user.home)/.matita_elpi</key>
     <!-- Where support files are installed -->
     <key name="rt_base_dir">@RT_BASE_DIR@</key>
     <!-- Metadata owner. It will be used to create user-specific tables
@@ -77,7 +77,7 @@
     Beware that this dir may become really space-consuming. It wont be
     used if all prefexises below are local (i.e. "file:///" URI scheme).
     -->
-    <key name="cache_dir">$(user.home)/.matita/getter/cache</key>
+    <key name="cache_dir">$(matita.basedir)/getter/cache</key>
     <!-- "Prefixes", i.e.: mappings URI -> URL of the global library
     Each prefix mapps an URI of the cic:/ namespace to an URL where the
     documents can actually be accessed. URL can be in the "file://" or
@@ -98,7 +98,7 @@
     </key>
     <key name="prefix">
       cic:/matita/
-      file://$(user.home)/.matita/xml/matita/
+      file://$(matita.basedir)/xml/matita/
     </key>
     <key name="prefix">
       cic:/
