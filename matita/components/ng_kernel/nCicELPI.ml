@@ -15,14 +15,18 @@ module C   = NCic
 module P   = NCicPp
 module E   = NCicEnvironment
 (* elpi interface *)
-module LPA = Elpi_ast
-module LPP = Elpi_parser
-module LPD = Elpi_API.Data
-module LPR = Elpi_API.Runtime
-module LPC = Elpi_API.Compiler
+module LPS = Elpi_API.Setup
+module LPP = Elpi_API.Parse
+module LPC = Elpi_API.Compile
+module LPE = Elpi_API.Execute
+module LPA = Elpi_API.Extend.Ast
+module LPD = Elpi_API.Extend.Data
+module LPB = Elpi_API.Extend.Compile
+module LPX = Elpi_API.Extend.CustomPredicate
+module LPU = Elpi_API.Extend.Utils
+
 (* elpi initialization only *)
-module LPT = Elpi_trace
-module LPX = Elpi_custom (* registers the custom predicates, if we need them *)
+(* module LPT = Elpi_trace *)
 
 exception Error of string
 
@@ -97,10 +101,10 @@ let get_program kernel =
      if filenames_kernel <> [] then begin
        let paths = List.map (Filename.concat matita_dir) paths in
        let args = List.map (fun x -> ["-I";x]) paths in
-       let _args = Elpi_API.init (List.flatten args) Sys.(getcwd ()) in
-       LPP.parse_program filenames_kernel, LPP.parse_program filenames_refiner
+       let _args = LPS.init (List.flatten args) Sys.(getcwd ()) in
+       [LPP.program filenames_kernel], [LPP.program filenames_refiner]
      end else [],[] in
-   LPC.program_of_ast ast_kernel, LPC.program_of_ast ast_refiner
+   LPC.program ast_kernel, LPC.program ast_refiner
 
 let kernel_program, refiner_program =
  let kernel,refiner = get_program !kernel in
@@ -129,7 +133,7 @@ let status = new P.status
 
 (* internals ****************************************************************)
 
-let fail () = raise LPD.No_clause
+let fail () = raise LPX.No_clause
 
 let xlate tag = match !kernel, tag with
    | NO  , _    -> "??"
@@ -241,6 +245,8 @@ let mk_approx t v w time = LPA.mkApp [LPA.mkCon "approx"; t; v; w; time]
 let mk_approx_cast t u v time =
   LPA.mkApp [LPA.mkCon "approx_cast"; t; u; v; time]
 
+let mk_time = LPA.mkCon "TIME"
+
 (* matita to elpi *)
 let rec lp_term status d c = function
    | C.Implicit `Vector    -> mk_vect ()
@@ -316,14 +322,14 @@ let split_fixpoint = function
    |_                           -> fail ()
 
 let mk_term ~depth t =
-   LPC.term_of_ast ~depth t
+   LPB.term_at ~depth t
 
 let mk_int ~depth i =
-   LPC.term_of_ast ~depth (LPA.mkInt i)
+   LPB.term_at ~depth (LPA.mkInt i)
 
 let mk_eq t1 t2 = LPD.App (LPD.Constants.eqc, t1, [t2])
 
-let mk_true ~depth = LPC.term_of_ast ~depth (LPA.mkCon "true")
+let mk_true ~depth = LPB.term_at ~depth (LPA.mkCon "true")
 
 let show = LPD.Constants.show
 
@@ -332,10 +338,10 @@ let dummy = LPD.Constants.dummy
 let rec get_gref ~depth = function
    | LPD.Const c                                                    ->
        if c >= 0 then fail () else R.reference_of_string (show c)
-   | LPD.UVar ({LPD.contents=t;_},vardepth,args) when t != dummy    ->
-      get_gref ~depth (LPR.deref_uv ~from:vardepth ~to_:depth args t)
+   | LPD.UVar ({LPD.contents=t;_},vardepth,argsno) when t != dummy  ->
+      get_gref ~depth (LPU.deref_uv ~from:vardepth ~to_:depth ~ano:argsno t)
    | LPD.AppUVar ({LPD.contents=t;_},vardepth,args) when t != dummy ->
-      get_gref ~depth (LPR.deref_appuv ~from:vardepth ~to_:depth args t)
+      get_gref ~depth (LPU.deref_appuv ~from:vardepth ~to_:depth ~args t)
    | _                                                              -> fail ()
 
 let get_gref f ~depth t =
@@ -344,44 +350,44 @@ let get_gref f ~depth t =
       | Invalid_argument "List.nth"
       | R.IllFormedReference _
       | E.ObjectNotFound _
-      | LPD.No_clause           -> fail ()
+      | LPX.No_clause           -> fail ()
 
-let get_type ~depth ~env:_ _ = function
+let get_type ~depth ~env:_ = function
    | [t1; t2] ->
       let u1 = get_gref split_type ~depth t1 in
       [mk_eq (mk_term ~depth u1) t2]
    | _        -> fail ()
 
-let get_expansion ~depth ~env:_ _ = function
+let get_expansion ~depth ~env:_ = function
    | [t1; t2; t3] ->
       let h, t = get_gref split_expansion ~depth t1 in
       [mk_eq (mk_int ~depth (-h)) t2; mk_eq (mk_term ~depth t) t3]
    | _            -> fail ()
 
-let get_constructor ~depth ~env:_ _ = function
+let get_constructor ~depth ~env:_ = function
    | [t1; t2; t3] ->
       let j, k = get_gref split_constructor ~depth t1 in
       [mk_eq (mk_int ~depth j) t2; mk_eq (mk_int ~depth k) t3]
    | _            -> fail ()
 
-let get_inductive ~depth ~env:_ _ = function
+let get_inductive ~depth ~env:_ = function
    | [t1; t2; t3] ->
       let k, ts = get_gref split_inductive ~depth t1 in
       [mk_eq (mk_int ~depth k) t2; mk_eq (mk_term ~depth ts) t3]
    | _            -> fail ()
 
-let get_fixpoint ~depth ~env:_ _ = function
+let get_fixpoint ~depth ~env:_ = function
    | [t1; t2] ->
       let l = get_gref split_fixpoint ~depth t1 in
       [mk_eq (mk_int ~depth l) t2]
    | _        -> fail ()
 
-let on_object ~depth ~env:_ _ args = match args, !current with
+let on_object ~depth ~env:_ args = match args, !current with
    | [t1], Some t ->
       [mk_eq (mk_term ~depth t) t1]
    | _            -> fail ()
 
-let after_object ~depth ~env:_ _ args = match args with
+let after_object ~depth ~env:_ args = match args with
    | [t1] ->
       let pred t = mk_term ~depth t = t1 in
       if List.exists pred !seen then [mk_true ~depth] else fail ()
@@ -390,13 +396,13 @@ let after_object ~depth ~env:_ _ args = match args with
 (* initialization ***********************************************************)
 
 let _ =
-   LPR.register_custom "$get_type" get_type;
-   LPR.register_custom "$get_expansion" get_expansion;
-   LPR.register_custom "$get_constructor" get_constructor;
-   LPR.register_custom "$get_inductive" get_inductive;
-   LPR.register_custom "$get_fixpoint" get_fixpoint;
-   LPR.register_custom "$on_object" on_object;
-   LPR.register_custom "$after_object" after_object
+   LPX.declare "$get_type" get_type;
+   LPX.declare "$get_expansion" get_expansion;
+   LPX.declare "$get_constructor" get_constructor;
+   LPX.declare "$get_inductive" get_inductive;
+   LPX.declare "$get_fixpoint" get_fixpoint;
+   LPX.declare "$on_object" on_object;
+   LPX.declare "$after_object" after_object
 
 (* interface ****************************************************************)
 
@@ -463,6 +469,12 @@ let apply_subst_to_closure status is_type d c t =
    in
    apply_subst status d [] (aux t c)
 
+let pp_constraints cs =
+   Format.eprintf "\nConstraints:\n%a\n%!"
+      Elpi_API.Pp.constraints cs.Elpi_API.Data.constraints;
+   Format.eprintf "\nCustom constraints:\n%a\n%!"
+      Elpi_API.Pp.custom_constraints cs.Elpi_API.Data.custom_constraints
+
 let execute engine status r query =
    let str = R.string_of_reference r in
    let str = str ^ " (" ^ (match engine with Kernel -> "kernel" | Refiner -> "refiner") ^ ")" in
@@ -476,36 +488,34 @@ let execute engine status r query =
          | Kernel  -> !kernel_program
          | Refiner -> !refiner_program
       in
-      let query, get_lp_time =
-        let time = LPA.mkCon "TIME" in
-        LPC.query_of_ast program (Ploc.dummy, query time),
-        fun s ->
-          match LPD.SMap.find "TIME" s with
-          | LPD.CData d when LPD.CD.is_float d -> LPD.CD.to_float d
-          | _ -> assert false
-        in
-      if !typecheck then LPC.typecheck program query;
-      Elpi_API.trace !trace_options;
+      let query = LPA.query_of_term (query mk_time) in
+      let query = LPC.query program query in
+      let process_solution (a, c) = match LPD.of_term (List.assoc "TIME" a) with
+          | LPD.CData d when LPD.C.is_float d ->
+             if !print_constraints then pp_constraints c;
+             LPD.C.to_float d
+          | _                                 -> assert false
+      in
+      if !typecheck then LPC.static_check program query;
+      LPS.trace !trace_options;
       Format.pp_set_margin Format.err_formatter 250;
       Format.pp_set_margin Format.std_formatter 250;
       let t0 = Unix.gettimeofday () in
       let time () =
-        let t1 = Unix.gettimeofday () in
-        t1 -. t0 in
-      let (_,_,timediff) as res =
-        try 
-          match 
-            LPR.execute_once program
-               ~max_steps:!maxsteps ~print_constraints:!print_constraints query 
-          with
-          | `Success s -> OK, "OK", get_lp_time (Lazy.force s)
-          | `Failure -> Fail, "KO", time ()
-          | `NoMoreSteps ->
+         let t1 = Unix.gettimeofday () in
+         t1 -. t0
+      in
+      let (_,_,timediff) as res = try
+         match LPE.once ~max_steps:!maxsteps program query with
+            | LPE.Success s   -> OK, "OK", process_solution s
+            | LPE.Failure     -> Fail, "KO", time ()
+            | LPE.NoMoreSteps ->
                Timeout, Printf.sprintf "KO(steps=%d)" !maxsteps, time ()
-        with e -> Fail, Printexc.to_string e, time () in
+         with e -> Fail, Printexc.to_string e, time ()
+      in
       total_query_time := !total_query_time +. timediff;
       res
-      with Error s -> Skip s, "OO[" ^ s ^ "]", 0.0
+   with Error s -> Skip s, "OO[" ^ s ^ "]", 0.0
    in
    if !verbose then Printf.printf "ELPI %s %s\n%!" msg str;
    if engine = Kernel && not (List.mem t !seen) then seen := t :: !seen;
