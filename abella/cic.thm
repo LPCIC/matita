@@ -1,0 +1,181 @@
+Specification "metacic".
+Import "copy".
+Import "lib".
+
+/**** The theory ****/
+
+/*********** Well typed terms can be copied **********/
+
+Define typing_context: olist -> prop by
+  typing_context nil ;
+  nabla x, typing_context (copy x x :: of x Ty x :: G x) :=
+   nabla x, typing_context (G x).
+
+Define var_decl: o -> prop by
+  nabla x, var_decl (of x T x).
+
+Theorem member_typing_context: forall X G,
+ typing_context G -> member X G -> var_decl X \/ exists x, X = copy x x.
+induction on 1. intros. case H1. case H2. case H2. search. case H4. search.
+apply IH to H3 H5. case H6. search. search.
+
+Theorem member_typing_context2: forall Ty G, nabla x,
+ typing_context (G x) -> member (of x Ty x) (G x) -> member (copy x x) (G x).
+induction on 1. intros. case H1. case H2.
+ case H2. case H4. apply IH to H3 H5. search. search.
+
+Theorem typing_context_to_irl: forall G,
+ typing_context G -> irl G.
+induction on 1. intros. case H1. search. apply IH to H2. search.
+
+Theorem append_typing_context: forall G1 G2 G3,
+ typing_context G1 -> typing_context G2 -> appendctx G1 G2 G3 ->
+  typing_context G3.
+induction on 3. intros. case H3. search.  case H1. case H4. apply IH to _ _ H6.
+search.
+
+Theorem well_typed_to_irl2:
+ forall G N M Ty, typing_context G -> { G |- of N Ty M } -> irl2 G M.
+induction on 2. intros. case H2.
+/* coerce */
+ apply IH to _ H3.
+ case H4.
+  search.
+  apply member_typing_context to H1 H7. case H8. case H9. case H6. case H6.
+/* implicit */
+ apply copy_eq to _ H6. backchain typing_context_to_irl.
+  apply IH to _ H5. search.
+/* lam */
+ apply IH to _ H3. apply IH to _ H4.
+ apply irl2_weaken to _ H6 with G2 = copy n1 n1 :: G.
+  intros. case H7. search. case H8. search.
+ search.
+/* prod */
+ apply IH to _ H3. apply IH to _ H4.
+ apply irl2_weaken to _ H6 with G2 = copy n1 n1 :: G.
+  intros. case H7. search. case H8. search.
+ search.
+/* app */
+skip.
+/* set */
+ search.
+/* lookup */
+ apply member_typing_context to H1 H4. case H5.
+  case H6. case H3. apply member_typing_context2 to H1 H4. search.
+  case H3.
+
+/*********** Variable typing inversion, partial information **********/
+
+Define tmfree: tm -> tm -> prop by
+ nabla x, tmfree x T.
+
+Theorem simple_variable_typing_inversion: forall G T, nabla x,
+ typing_context (G x) -> { G x |- of x (T x) x } ->
+  exists Ty, tmfree x Ty /\  member (of x Ty x) (G x).
+induction on 2. intros. case H2.
+ case H4.
+  apply IH to _ H3. case H6. search.
+ apply member_typing_context to H1 H6. case H7.
+  case H8. case H5. case H5. case H5.
+ apply member_typing_context to H1 H4. case H5. case H6.
+  case H3. case H3. search. case H3.
+
+/*********** More informative version, not necessary! **********/
+
+/* FALSE!!!!! Why is it true in our case??? */
+Theorem transitive_neq: forall G M1 M2 M3, typing_context G ->
+ { G |- neq M1 M2 } -> { G |- neq M2 M3 } -> { G |- neq M1 M3 }.
+skip.
+
+Theorem transitive_whd: forall G M1 M2 M3, typing_context G ->
+ { G |- whd M1 M2 } -> { G |- whd M2 M3 } -> { G |- whd M1 M3 }.
+skip.
+
+Theorem transitive_whd_progress: forall G M1 M2 M3, typing_context G ->
+ { G |- whd-progress M1 M2 } -> { G |- whd-progress M2 M3 } ->
+  { G |- whd-progress M1 M3 }.
+intros. case H2.
+ case H3.
+  apply transitive_whd to _ H4 H6. apply transitive_neq to _ H5 H7. search.
+  apply member_typing_context to H1 H7. case H8. case H9. case H6. case H6.
+ apply member_typing_context to H1 H5. case H6. case H7. case H4. case H4.
+
+Theorem unify_whd_progress: forall G M1 M2 M3, typing_context G ->
+ {G |- unify M1 M3} -> {G |- whd-progress M1 M2} -> { G |- unify M2 M3 }.
+skip.
+
+Theorem neq_irreflexive: forall G M, typing_context G -> ~ { G |- neq M M }.
+induction on 2. intros. case H2.
+ apply IH to _ H3.
+ apply IH to _ H3.
+ apply IH to _ H3.
+ apply IH to _ H3.
+ apply IH to _ H3.
+ apply member_typing_context to H1 H4. case H5. case H6. case H3. case H3.
+
+Theorem lam_stuck: forall G S F Z, typing_context G ->
+ ~ { G |- whd-progress (lam S F) Z }.
+intros. case H2.
+ case H3.
+  apply neq_irreflexive to _ H4.
+  apply member_typing_context to H1 H6. case H7. case H8. case H5. case H5.
+ apply member_typing_context to H1 H4. case H5. case H6. case H3. case H3.
+
+Theorem unify_lam: forall G X S1 F1,
+ typing_context G ->
+ { G |- unify (lam S1 F1) X } ->
+ exists S2 F2,
+  (X = lam S2 F2 \/ { G |- whd-progress X (lam S2 F2) }) /\
+  { G |- unify S1 S2 } /\
+  nabla x, { G, of x S1 x, copy x x |- unify (F1 x) (F2 x) }.
+induction on 2. intros. case H2.
+ search.
+ search.
+ apply lam_stuck to _ H3.
+ apply IH to _ H4. case H5. search. apply transitive_whd_progress to _ H3 H8.
+  search.
+ apply member_typing_context to H1 H4. case H5. case H6. case H3. case H3.
+
+Theorem transitive_unify: forall G T1 T2 T3, typing_context G ->
+ { G |- unify T1 T2 } -> { G |- unify T2 T3 } -> { G |- unify T1 T3 }.
+induction on 2. intros. case H2.
+/* id */ search.
+/* set */ search.
+/* app */ skip.
+/* lam */
+apply unify_lam to _ H3. assert { G |- unify (lam S F) (lam S2 F2) }.
+ apply IH to _ H4 H7.
+ monotone H8 with (copy n1 n1 :: of n1 S n1 :: of n1 T n1 :: G).
+ intros. case H10. search. search.
+ assert { G, of n1 S n1, copy n1 n1 |- of n1 T n1 }. cut H10 with H11.
+ apply IH to _ H5 H12. search.
+case H6. search. search.
+/* prod */ skip.
+/* whd-l */ apply IH to _ H5 H3. search.
+/* whd-r */ backchain IH. backchain unify_whd_progress.
+/* lookup */
+apply member_typing_context to H1 H5. case H6. case H7. case H4. case H4.
+
+Theorem reflexive_unify: forall G T, { G |- unify T T }.
+search.
+/*induction on 1. intros. case H1.
+ search.
+ apply IH to H3 _. apply IH to H4 _ with G = copy n1 n1 :: G.
+  apply irl2_cons to H2. search. search.
+ apply IH to H3 _. apply IH to H4 _ with G = copy n1 n1 :: G.
+  apply irl2_cons to H2. search. search.
+ skip.
+ case H2. apply H5 to H4. case H6. case H3.*/
+
+Theorem variable_typing_inversion: forall G T, nabla x,
+ typing_context (G x) -> { G x |- of x (T x) x } ->
+  exists Ty,
+   tmfree x Ty /\  member (of x Ty x) (G x) /\ { G x |- unify Ty (T x) }.
+induction on 2. intros. case H2.
+ case H4.
+  apply IH to _ H3. case H6. apply transitive_unify to _ H8 H5. search.
+ apply member_typing_context to H1 H6. case H7.
+  case H8. case H5. case H5. case H5.
+ apply member_typing_context to H1 H4. case H5. case H6.
+  case H3. case H3. apply reflexive_unify with G = G n1, T = T n1. search.
+  case H3.
