@@ -8,19 +8,17 @@
 
 % Predicates: * is+valid G  validity test for global environment G
 
-accumulate kernel_pts.
-
 % VALIDITY FOR GLOBAL ENVIRONMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 is+valid gtop.
 
 % sigma for definition.
 is+valid (gdef R G) :- g+line+2 R H V W,
-%                       $print constant H R,
+%                       print constant H R,
                        has+type V W,
-                       (r+step R V => t+step R W => is+valid G).
+                       (get_expansion R H V => get_type R W => is+valid G).
 % xi for declaration.
 is+valid (gdec R G) :- g+line+1 R H W,
-%                       $print constant H R,
+%                       print constant H R,
                        has+sort W S,
-                       (t+step R W => is+valid G).
+                       (get_type R W => is+valid G).

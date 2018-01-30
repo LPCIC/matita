@@ -11,6 +11,9 @@
 
 refiner-CSC.html
 
+refiner-ALT-0/helena
+refiner-ALT-0/etc
+
 matita/Makefile.defs
 matita/autom4te.cache
 matita/components/METAS/META*

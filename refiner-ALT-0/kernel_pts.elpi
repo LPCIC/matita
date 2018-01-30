@@ -51,7 +51,7 @@ unwind+stack [V1|P1] T1 T2 :- !, unwind+stack P1 (appl T1 V1) T2.
 
 % DELTA-EXPANSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-r+unwind T1 _T2 T1 :- /* is_flex _T2, */ !.
+r+unwind T1 _T2 T1 :- /* var _T2, */ !.
 
 % r+unwind T1 T2 T2 :- !.
 
@@ -59,15 +59,15 @@ r+unwind T1 _T2 T1 :- /* is_flex _T2, */ !.
 
 % beta
 whd+basic (abst W F) [V|P] M (abbr W V F) P :- !
-%                                            , if on+focus ($print beta)
+%                                            , if on+focus (print beta)
                                                .
 % nu for application.
 whd+basic (appl T V) P M T [V|P] :- !
-%                                 , if on+focus ($print nu)
+%                                 , if on+focus (print nu)
                                     .
 % local delta.
 whd+basic T1 P M T2 P :- l+subst T1 X T2, !,
-                         if (is_flex T2) (unwind+whd+short X [] T2).
+                         if (var T2) (unwind+whd+short X [] T2).
 
 % RESTRICTED WEAK HEAD COMPUTATION FOR CONVERSION + UNWIND %%%%%%%%%%%%%%%%%%%
 
@@ -76,7 +76,7 @@ unwind+whd+short T1 P1 T :- whd+basic T1 P1 on+conv T2 P2, !, unwind+whd+short T
 
 % sigma for abbreviation + theta + zeta.
 unwind+whd+short (abbr W V1 F1) P1 Y :- !, pi x\ l+subst x V1 X => (
-%                                                if on+focus ($print theta),
+%                                                if on+focus (print theta),
                                                  unwind+whd+short (F1 x) P1 (F2 x),
                                                  ifnotelse (occurs x (F2 x)) (F2 x = Y)
                                                            (r+unwind V1 X V2, abbr W V2 F2 = Y)
@@ -101,7 +101,7 @@ unwind+whd+pi (prod W F) [] [V|Q] T2 :- !, has+checked+type V W,
 
 % sigma for abbreviation + theta + zeta.
 unwind+whd+pi (abbr W V1 F1) P Q Y :- !, pi x\ l+subst x V1 X => (
-%                                              if on+focus ($print theta),
+%                                              if on+focus (print theta),
                                                unwind+whd+pi (F1 x) P Q (F2 x),
                                                ifnotelse (occurs x (F2 x)) (F2 x = Y)
                                                          (r+unwind V1 X V2, abbr W V2 F2 = Y)
@@ -114,7 +114,7 @@ unwind+whd+long T1 P1 C T :- whd+basic T1 P1 on+whd T2 P2, !, unwind+whd+long T2
 
 % sigma for abbreviation + theta + zeta.
 unwind+whd+long (abbr W V1 F1) P C Y :- !, pi x\ l+subst x V1 X => (
-%                                                if on+focus ($print theta),
+%                                                if on+focus (print theta),
                                                  unwind+whd+long (F1 x) P C (F2 x),
                                                  ifnotelse (occurs x (F2 x)) (F2 x = Y)
                                                            (r+unwind V1 X V2, abbr W V2 F2 = Y)
@@ -129,7 +129,7 @@ whd+long T1 P1 C :- whd+basic T1 P1 on+whd T2 P2, !, whd+long T2 P2 C.
 
 % sigma for abbreviation + theta + zeta.
 whd+long (abbr W V1 F1) P C :- !, pi x\ l+subst x V1 X =>
-%                                       if on+focus ($print theta),
+%                                       if on+focus (print theta),
                                         whd+long (F1 x) P C.
 % normal form
 whd+long T P C :- C T P, !.
@@ -143,7 +143,9 @@ conv+sub T1 T2 :- conv+main T1 [] on+sub T2 [], !.
 % CONVERSION OF WHNF'S %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % reflexivity: fast path for alpha-convertible stacks
-conv+main T P _ T P :- ! /* , if on+focus ($print reflexivity) */.
+conv+main T P _ T P :- !
+%                      , if on+focus (print reflexivity)
+.
 
 % left subsumption for sort
 conv+main (sort S1) [] on+sub (sort S2) [] :- !, pts+sub S1 S2.
@@ -156,7 +158,7 @@ conv+main T1 P1 M T2 P2 :- whd+basic T1 P1 on+conv T P, !, conv+main T P M T2 P2
 
 % left sigma for abbreviation + theta.
 conv+main (abbr _ V1 F1) P1 M T2 P2 :- !, pi x\ l+subst x V1 _ =>
-%                                      if on+focus ($print theta),
+%                                      if on+focus (print theta),
                                        conv+main (F1 x) P1 M T2 P2.
 
 % right basic reductions.
@@ -164,7 +166,7 @@ conv+main T1 P1 M T2 P2 :- whd+basic T2 P2 on+conv T P, !, conv+main T1 P1 M T P
 
 % right sigma for abbreviation + theta.
 conv+main T1 P1 M (abbr _ V2 F2) P2 :- !, pi x\ l+subst x V2 _X =>
-%                                      if on+focus ($print theta),
+%                                      if on+focus (print theta),
                                        conv+main T1 P1 M (F2 x) P2.
 % xi for product.
 conv+main (prod W1 F1) [] M (prod W2 F2) [] :- !, conv+eq W1 W2,
@@ -212,7 +214,7 @@ has+sort T S :- t+step T X, conv+eq X (sort S), !.
 % has+checked+type T (sort S) :- !, has+sort T S.
 
 has+checked+type T U :- t+step T X,
-%                       if on+focus ($print conversion),
+%                       if on+focus (print conversion),
                         conv+sub X U, !.
 %
 

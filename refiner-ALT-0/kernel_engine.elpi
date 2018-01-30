@@ -1,0 +1,9 @@
+accumulate logic.
+accumulate list.
+accumulate kernel_pts.
+accumulate kernel_global.
+accumulate pts_cc.
+accumulate environment_grundlagen.elpi.
+accumulate grundlagen_2b_pts.elpi.
+
+main :- grundlagen.

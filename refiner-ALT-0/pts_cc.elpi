@@ -1,7 +1,6 @@
 % PTS SPECIFICATION FOR THE CALCUS OF CONSTRUCTIONS (CC) %%%%%%%%%%%%%%%%%%%%%
 
 pts+pair (s+type 0) (s+type 1).
-
 pts+pair (s+prop 0) (s+prop 1).
 
 % (star, star, star).
@@ -27,3 +26,8 @@ pts+couple (s+type 1) (s+type 0) :- !.
 pts+couple (s+type 1) (s+prop 0) :- !.
 pts+couple (s+prop 1) (s+type 0) :- !.
 pts+couple (s+prop 1) (s+prop 0) :- !.
+
+% interface
+
+pts+triple S1 S2 S2 :- pts+couple S1 S2.
+pts+sub S S.
